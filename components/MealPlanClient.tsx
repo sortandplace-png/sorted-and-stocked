@@ -26,6 +26,7 @@ type Recipe = {
   servings: number;
   course: Course | null;
   kosher_type: string | null;
+  is_pesach: boolean;
 };
 
 type PlanEntry = {
@@ -34,10 +35,37 @@ type PlanEntry = {
   course: Course;
   recipe_id: string | null;
   custom_name: string | null;
-  recipes: { name: string; photo_url: string | null } | null;
+  recipes: { name: string; photo_url: string | null; kosher_type: string | null } | null;
 };
 
 type IngredientRow = { name: string; quantity: string; unit: string; category: string };
+
+type MenuType = 'regular' | 'pesach';
+type MealType = 'meat' | 'dairy' | 'parve';
+
+// Meat/dairy/parve is the only distinction that matters for "can this side
+// sit next to that main" — Parve (Fish) counts as parve for this purpose.
+function toMealType(kosherType: string | null): MealType | null {
+  if (!kosherType) return null;
+  if (kosherType === 'Meat') return 'meat';
+  if (kosherType === 'Dairy') return 'dairy';
+  if (kosherType.startsWith('Parve')) return 'parve';
+  return null;
+}
+
+// A meat main can share the table with meat or parve sides, never dairy —
+// and vice versa. Parve/unset days don't restrict anything.
+function isCompatible(dayType: MealType | null, recipeType: MealType | null): boolean {
+  if (!dayType || dayType === 'parve') return true;
+  if (!recipeType || recipeType === 'parve') return true;
+  return dayType === recipeType;
+}
+
+const MEAL_TYPE_PILL: Record<MealType, { label: string; icon: string }> = {
+  meat: { label: 'Meat', icon: '🥩' },
+  dairy: { label: 'Dairy', icon: '🥛' },
+  parve: { label: 'Parve', icon: '✡︎' },
+};
 
 const DAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -88,11 +116,19 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
     Record<string, { title: string; category: string; yomtov: boolean }[]>
   >({});
 
+  // Pesach lives on the same calendar dates as the regular week, just as a
+  // separate layer of entries — switching this never touches the regular
+  // plan. Meal-type is an explicit per-day choice (falls back to whatever
+  // the protein's kosher_type implies, if nothing's been set yet).
+  const [menuType, setMenuType] = useState<MenuType>('regular');
+  const [daySettings, setDaySettings] = useState<Record<string, MealType | null>>({});
+
   const [editing, setEditing] = useState<{ date: string; course: Course } | null>(null);
   const [pickerMode, setPickerMode] = useState<'existing' | 'custom'>('existing');
   const [pickedRecipeId, setPickedRecipeId] = useState('');
   const [recipeSearch, setRecipeSearch] = useState('');
   const [kosherFilter, setKosherFilter] = useState<string | null>(null);
+  const [overrideMealFilter, setOverrideMealFilter] = useState(false);
   const [customName, setCustomName] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -100,6 +136,7 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
   const [newRecipeName, setNewRecipeName] = useState('');
   const [newRecipeServings, setNewRecipeServings] = useState('4');
   const [newRecipeCourse, setNewRecipeCourse] = useState<Course>('protein');
+  const [newRecipeIsPesach, setNewRecipeIsPesach] = useState(false);
   const [ingredientRows, setIngredientRows] = useState<IngredientRow[]>([
     { name: '', quantity: '', unit: '', category: '' },
   ]);
@@ -121,21 +158,36 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
 
-    const [entriesRes, recipesRes] = await Promise.all([
+    const [entriesRes, recipesRes, daySettingsRes] = await Promise.all([
       supabase
         .from('meal_plan_entries')
-        .select('id, plan_date, course, recipe_id, custom_name, recipes(name, photo_url)')
+        .select('id, plan_date, course, recipe_id, custom_name, recipes(name, photo_url, kosher_type)')
         .eq('property_id', propertyId)
+        .eq('menu_type', menuType)
         .gte('plan_date', toDateStr(weekStart))
         .lte('plan_date', toDateStr(weekEnd)),
-      supabase.from('recipes').select('id, name, servings, course, kosher_type').eq('property_id', propertyId).order('name'),
+      supabase
+        .from('recipes')
+        .select('id, name, servings, course, kosher_type, is_pesach')
+        .eq('property_id', propertyId)
+        .order('name'),
+      supabase
+        .from('meal_plan_day_settings')
+        .select('plan_date, meal_type')
+        .eq('property_id', propertyId)
+        .eq('menu_type', menuType)
+        .gte('plan_date', toDateStr(weekStart))
+        .lte('plan_date', toDateStr(weekEnd)),
     ]);
 
     if (entriesRes.error) setError(entriesRes.error.message);
     setEntries((entriesRes.data as unknown as PlanEntry[]) ?? []);
     setRecipes(recipesRes.data ?? []);
+    setDaySettings(
+      Object.fromEntries((daySettingsRes.data ?? []).map((d) => [d.plan_date, d.meal_type as MealType | null]))
+    );
     setLoading(false);
-  }, [propertyId, supabase, weekStart]);
+  }, [propertyId, supabase, weekStart, menuType]);
 
   useEffect(() => {
     loadData();
@@ -179,6 +231,34 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
     return entry.recipes?.name ?? entry.custom_name;
   }
 
+  // Explicit per-day choice wins; otherwise infer from whatever's in the
+  // Protein slot. No protein picked yet (or it's parve) → no restriction.
+  function effectiveMealType(dateStr: string): MealType | null {
+    const explicit = daySettings[dateStr];
+    if (explicit) return explicit;
+    const protein = entryFor(dateStr, 'protein');
+    return toMealType(protein?.recipes?.kosher_type ?? null);
+  }
+
+  const MEAL_TYPE_CYCLE: (MealType | null)[] = [null, 'meat', 'dairy', 'parve'];
+
+  async function cycleMealType(dateStr: string) {
+    const current = daySettings[dateStr] ?? null;
+    const nextIndex = (MEAL_TYPE_CYCLE.indexOf(current) + 1) % MEAL_TYPE_CYCLE.length;
+    const next = MEAL_TYPE_CYCLE[nextIndex];
+
+    setDaySettings((prev) => ({ ...prev, [dateStr]: next }));
+
+    const { error: upsertError } = await supabase
+      .from('meal_plan_day_settings')
+      .upsert(
+        { property_id: propertyId, plan_date: dateStr, menu_type: menuType, meal_type: next },
+        { onConflict: 'property_id,plan_date,menu_type' }
+      );
+
+    if (upsertError) showToast('Failed to save meal type.', { variant: 'error' });
+  }
+
   function openPicker(dateStr: string, course: Course) {
     const recipesForCourse = recipes.filter((r) => r.course === course);
     setEditing({ date: dateStr, course });
@@ -187,6 +267,7 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
     setCustomName('');
     setRecipeSearch('');
     setKosherFilter(null);
+    setOverrideMealFilter(false);
   }
 
   async function saveEntry() {
@@ -206,6 +287,7 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
             course: editing.course,
             recipe_id: pickedRecipeId,
             meal_slot: 'dinner',
+            menu_type: menuType,
           }
         : {
             property_id: propertyId,
@@ -213,6 +295,7 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
             course: editing.course,
             custom_name: customName.trim(),
             meal_slot: 'dinner',
+            menu_type: menuType,
           };
 
     const result = await resilientInsert(supabase, 'meal_plan_entries', payload);
@@ -253,6 +336,7 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
         name: newRecipeName.trim(),
         servings: Number(newRecipeServings) || 4,
         course: newRecipeCourse,
+        is_pesach: newRecipeIsPesach,
       })
       .select('id')
       .single();
@@ -281,6 +365,7 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
     setNewRecipeName('');
     setNewRecipeServings('4');
     setNewRecipeCourse('protein');
+    setNewRecipeIsPesach(false);
     setIngredientRows([{ name: '', quantity: '', unit: '', category: '' }]);
     showToast('Recipe saved.', { variant: 'success' });
     loadData();
@@ -354,7 +439,19 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
 
   if (loading) return <SkeletonList rows={2} />;
 
-  const recipesForEditingCourse = editing ? recipes.filter((r) => r.course === editing.course) : [];
+  const editingDayMealType = editing ? effectiveMealType(editing.date) : null;
+  const mealFilterApplies =
+    !!editing &&
+    !overrideMealFilter &&
+    editing.course !== 'protein' &&
+    editing.course !== 'kids_platter' &&
+    !!editingDayMealType;
+  const recipesForEditingCourse = editing
+    ? recipes
+        .filter((r) => r.course === editing.course)
+        .filter((r) => menuType !== 'pesach' || r.is_pesach)
+        .filter((r) => !mealFilterApplies || isCompatible(editingDayMealType, toMealType(r.kosher_type)))
+    : [];
 
   return (
     <div className="max-w-md lg:max-w-6xl mx-auto p-4">
@@ -365,15 +462,43 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
             🖨️ Print
           </button>
           <button
-            onClick={() => setShowNewRecipe(true)}
+            onClick={() => {
+              setNewRecipeIsPesach(menuType === 'pesach');
+              setShowNewRecipe(true);
+            }}
             className="text-sm font-medium text-aubergine underline"
           >
             + New recipe
           </button>
         </div>
       </div>
+
+      <div className="mb-3 print:hidden">
+        <select
+          value={menuType}
+          onChange={(e) => setMenuType(e.target.value as MenuType)}
+          className={
+            'text-sm font-medium rounded-full px-4 py-2 border ' +
+            (menuType === 'pesach'
+              ? 'bg-aubergine text-cream border-aubergine'
+              : 'bg-white text-aubergine border-gold-light/60')
+          }
+        >
+          <option value="regular">🍽️ Regular menu</option>
+          <option value="pesach">✡︎ Pesach menu</option>
+        </select>
+        {menuType === 'pesach' && (
+          <p className="text-xs text-ink/40 mt-1.5">
+            A separate menu, same dates — this never touches your regular weekly plan.
+            Recipe picks are limited to dishes marked Pesach-kosher.
+          </p>
+        )}
+      </div>
+
       <div className="hidden print:block mb-3">
-        <h1 className="font-display text-2xl text-aubergine">Meal Plan</h1>
+        <h1 className="font-display text-2xl text-aubergine">
+          {menuType === 'pesach' ? 'Pesach Menu' : 'Meal Plan'}
+        </h1>
         <p className="text-sm text-ink/50">
           {weekDates[0].toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} –{' '}
           {weekDates[6].toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -430,6 +555,8 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
           const onDark = theme.text === 'text-cream';
           // Dessert shows on festive meals (Shabbos + Yom Tov).
           const isFestive = theme.special || isShabbos;
+          const mealType = effectiveMealType(dateStr);
+          const mealTypeIsExplicit = !!daySettings[dateStr];
           return (
             <div
               key={dateStr}
@@ -447,21 +574,45 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
                 <span className={'text-xs ' + (onDark ? 'text-cream/70' : 'text-ink/50')}>
                   {d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                 </span>
-                {dayHolidays.length > 0 && (
-                  <span
+                <span className="ml-auto flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => cycleMealType(dateStr)}
                     className={
-                      'ml-auto text-[10px] font-semibold px-2 py-0.5 rounded-full truncate max-w-[55%] ' +
-                      (isFast
-                        ? 'text-rust bg-rust/15'
+                      'text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ' +
+                      (mealType
+                        ? mealTypeIsExplicit
+                          ? 'text-aubergine bg-gold-light/70'
+                          : 'text-aubergine/70 bg-gold-light/30 italic'
                         : onDark
-                        ? 'text-aubergine bg-cream'
-                        : 'text-aubergine bg-gold-light/60')
+                        ? 'text-cream/60 bg-cream/10'
+                        : 'text-ink/30 bg-ink/5')
                     }
-                    title={dayHolidays.map((h) => h.title).join(' · ')}
+                    title={
+                      mealType
+                        ? mealTypeIsExplicit
+                          ? 'Set for this day — tap to change'
+                          : `Guessed from the protein pick — tap to set explicitly`
+                        : 'Tap to set meat / dairy / parve'
+                    }
                   >
-                    {dayHolidays.map((h) => h.title).join(' · ')}
-                  </span>
-                )}
+                    {mealType ? `${MEAL_TYPE_PILL[mealType].icon} ${MEAL_TYPE_PILL[mealType].label}` : '— / —'}
+                  </button>
+                  {dayHolidays.length > 0 && (
+                    <span
+                      className={
+                        'text-[10px] font-semibold px-2 py-0.5 rounded-full truncate max-w-[40%] ' +
+                        (isFast
+                          ? 'text-rust bg-rust/15'
+                          : onDark
+                          ? 'text-aubergine bg-cream'
+                          : 'text-aubergine bg-gold-light/60')
+                      }
+                      title={dayHolidays.map((h) => h.title).join(' · ')}
+                    >
+                      {dayHolidays.map((h) => h.title).join(' · ')}
+                    </span>
+                  )}
+                </span>
               </div>
               <div className="divide-y divide-gold-light/20">
                 {COURSES.filter(({ key }) => key !== 'dessert' || isFestive).map(({ key, label, icon }) => {
@@ -619,6 +770,19 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
               </button>
             </div>
 
+            {mealFilterApplies && editingDayMealType && (
+              <p className="text-xs text-ink/50 mb-2">
+                Showing {MEAL_TYPE_PILL[editingDayMealType].label.toLowerCase()}-friendly dishes only
+                (this day is {MEAL_TYPE_PILL[editingDayMealType].label.toLowerCase()}) ·{' '}
+                <button
+                  onClick={() => setOverrideMealFilter(true)}
+                  className="text-aubergine underline"
+                >
+                  show all instead
+                </button>
+              </p>
+            )}
+
             {pickerMode === 'existing' ? (
               recipesForEditingCourse.length > 0 ? (
                 <div className="mb-3">
@@ -747,6 +911,15 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
                 placeholder="Servings"
                 className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
               />
+              <label className="flex items-center gap-2 text-sm text-ink px-1">
+                <input
+                  type="checkbox"
+                  checked={newRecipeIsPesach}
+                  onChange={(e) => setNewRecipeIsPesach(e.target.checked)}
+                  className="accent-aubergine"
+                />
+                Pesach-kosher (shows up in the Pesach menu)
+              </label>
             </div>
 
             <p className="text-sm font-medium text-aubergine mb-2">Ingredients</p>
