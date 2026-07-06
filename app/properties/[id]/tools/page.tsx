@@ -20,6 +20,12 @@ const TOOLS = [
     title: 'Copycat Recipe',
     description: 'Photograph a dish, get a home-cookable recipe.',
   },
+  {
+    slug: 'kitchen-timer',
+    icon: '⏱️',
+    title: 'Kitchen Timer',
+    description: 'Quick presets and a clear alarm for what\'s on the stove.',
+  },
 ];
 
 export default async function ToolsPage({ params }: { params: Promise<{ id: string }> }) {
