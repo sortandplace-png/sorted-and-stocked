@@ -39,7 +39,31 @@ type PlanEntry = {
 
 type IngredientRow = { name: string; quantity: string; unit: string; category: string };
 
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+// A day's visual identity in the weekly grid. Fast days and Yom Tov take
+// priority over the regular Friday-night / Shabbos-day coloring, so the most
+// significant thing about the day is what reads first.
+type DayTheme = {
+  label: string;
+  emoji: string;
+  strip: string; // colored top bar on the card
+  header: string; // header background
+  text: string; // header text color
+  special: boolean; // festive meal → gets a dessert course
+};
+
+function dayTheme(i: number, isFast: boolean, isYomTov: boolean): DayTheme {
+  if (isFast)
+    return { label: DAY_FULL[i], emoji: '🕯️', strip: 'bg-rust', header: 'bg-rust/10', text: 'text-rust', special: false };
+  if (isYomTov)
+    return { label: 'Yom Tov', emoji: '✡︎', strip: 'bg-aubergine', header: 'bg-aubergine', text: 'text-cream', special: true };
+  if (i === 5)
+    return { label: 'Friday Night', emoji: '🌙', strip: 'bg-indigo-800', header: 'bg-indigo-50', text: 'text-indigo-900', special: true };
+  if (i === 6)
+    return { label: 'Shabbos Day', emoji: '✨', strip: 'bg-gold', header: 'bg-gold-light/50', text: 'text-aubergine', special: true };
+  return { label: DAY_FULL[i], emoji: '', strip: 'bg-gold-light', header: 'bg-gold-light/15', text: 'text-aubergine', special: false };
+}
 
 function toDateStr(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -379,15 +403,33 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
         <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2 mb-3">{error}</p>
       )}
 
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-3 text-[11px] text-ink/50 print:hidden">
+        <span className="flex items-center gap-1">
+          <span className="w-2.5 h-2.5 rounded-full bg-indigo-800 inline-block" /> Friday Night
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2.5 h-2.5 rounded-full bg-gold inline-block" /> Shabbos Day
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2.5 h-2.5 rounded-full bg-aubergine inline-block" /> Yom Tov
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2.5 h-2.5 rounded-full bg-rust inline-block" /> Fast day
+        </span>
+      </div>
+
       <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 mb-5">
         {weekDates.map((d, i) => {
           const dateStr = toDateStr(d);
           const isToday = toDateStr(new Date()) === dateStr;
-          // Shabbos = Friday night + Shabbos day. Dessert only shows on these.
           const isShabbos = i === 5 || i === 6;
           const dayHolidays = holidays[dateStr] ?? [];
           const isFast = dayHolidays.some((h) => h.category === 'fast');
           const isYomTov = dayHolidays.some((h) => h.yomtov);
+          const theme = dayTheme(i, isFast, isYomTov);
+          const onDark = theme.text === 'text-cream';
+          // Dessert shows on festive meals (Shabbos + Yom Tov).
+          const isFestive = theme.special || isShabbos;
           return (
             <div
               key={dateStr}
@@ -396,37 +438,33 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
                 (isToday ? ' ring-2 ring-gold' : '')
               }
             >
-              <div
-                className={
-                  'flex items-center gap-2 px-4 py-2 ' +
-                  (isShabbos ? 'bg-aubergine/10' : 'bg-gold-light/15')
-                }
-              >
-                <span className="text-xs font-semibold text-aubergine">{DAY_LABELS[i]}</span>
-                <span className="text-xs text-ink/50">{d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                {dayHolidays.length > 0 ? (
+              <div className={'h-1.5 ' + theme.strip} />
+              <div className={'flex items-center gap-2 px-4 py-2 ' + theme.header}>
+                <span className={'text-xs font-semibold ' + theme.text}>
+                  {theme.emoji && <span className="mr-1">{theme.emoji}</span>}
+                  {theme.label}
+                </span>
+                <span className={'text-xs ' + (onDark ? 'text-cream/70' : 'text-ink/50')}>
+                  {d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </span>
+                {dayHolidays.length > 0 && (
                   <span
                     className={
-                      'ml-auto text-[10px] font-semibold px-2 py-0.5 rounded-full truncate max-w-[60%] ' +
+                      'ml-auto text-[10px] font-semibold px-2 py-0.5 rounded-full truncate max-w-[55%] ' +
                       (isFast
-                        ? 'text-rust bg-rust/10'
-                        : isYomTov
-                        ? 'text-cream bg-aubergine'
-                        : 'text-aubergine bg-gold-light/50')
+                        ? 'text-rust bg-rust/15'
+                        : onDark
+                        ? 'text-aubergine bg-cream'
+                        : 'text-aubergine bg-gold-light/60')
                     }
                     title={dayHolidays.map((h) => h.title).join(' · ')}
                   >
-                    {isFast ? '✡︎ Fast: ' : isYomTov ? '✡︎ ' : '✡︎ '}
                     {dayHolidays.map((h) => h.title).join(' · ')}
                   </span>
-                ) : isShabbos ? (
-                  <span className="ml-auto text-[10px] font-semibold text-aubergine bg-gold-light/50 px-2 py-0.5 rounded-full">
-                    ✨ Shabbos
-                  </span>
-                ) : null}
+                )}
               </div>
               <div className="divide-y divide-gold-light/20">
-                {COURSES.filter(({ key }) => key !== 'dessert' || isShabbos).map(({ key, label, icon }) => {
+                {COURSES.filter(({ key }) => key !== 'dessert' || isFestive).map(({ key, label, icon }) => {
                   const entry = entryFor(dateStr, key);
                   const name = displayName(entry);
                   const photo = entry?.recipes?.photo_url;
