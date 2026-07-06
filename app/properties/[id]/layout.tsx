@@ -1,7 +1,7 @@
 // app/properties/[id]/layout.tsx
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import PropertyNav from '@/components/PropertyNav';
+import PropertyIconNav from '@/components/PropertyIconNav';
 import LogoutButton from '@/components/LogoutButton';
 import { PropertyRoleProvider, type PropertyRole } from '@/components/PropertyRoleContext';
 
@@ -50,11 +50,11 @@ export default async function PropertyLayout({
               <span className="block text-[11px] text-cream/70 truncate">{propertyName}</span>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <PropertyNav propertyId={id} role={membership.role as PropertyRole} />
-            <LogoutButton />
-          </div>
+          <LogoutButton />
         </header>
+        <div className="sticky top-[60px] z-20">
+          <PropertyIconNav propertyId={id} role={membership.role as PropertyRole} />
+        </div>
         <main>{children}</main>
       </div>
     </PropertyRoleProvider>

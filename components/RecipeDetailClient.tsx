@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { kosherIcon } from '@/lib/icon-maps';
 
 interface Ingredient {
   id: string;
@@ -160,7 +161,7 @@ export default function RecipeDetailClient({
       )}
       {recipe.kosher_type && (
         <span className="inline-block text-xs font-medium text-aubergine bg-gold-light/30 px-2.5 py-1 rounded-full mb-4">
-          {recipe.kosher_type}
+          {kosherIcon(recipe.kosher_type)} {recipe.kosher_type}
         </span>
       )}
 

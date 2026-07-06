@@ -8,6 +8,7 @@ import { usePropertyRole, canManage } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import { usePullToRefresh } from '@/lib/use-pull-to-refresh';
+import { categoryIcon } from '@/lib/icon-maps';
 
 type StorageLocation = {
   id: string;
@@ -465,14 +466,16 @@ export default function InventoryClient({
                       className="w-14 h-14 rounded-xl object-cover shrink-0 bg-gold-light/20"
                     />
                   ) : (
-                    <div className="w-14 h-14 rounded-xl bg-gold-light/20 shrink-0 flex items-center justify-center text-gold text-2xl">
-                      📦
+                    <div className="w-14 h-14 rounded-xl bg-gold-light/20 shrink-0 flex items-center justify-center text-2xl">
+                      {categoryIcon(item.category)}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-ink truncate">{item.name}</p>
                     <p className="text-xs text-ink/50 truncate mt-0.5">
-                      {[item.category, item.supplier].filter(Boolean).join(' · ')}
+                      {[item.category ? `${categoryIcon(item.category)} ${item.category}` : null, item.supplier]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </p>
                     <div className="mt-1.5">
                       {low ? (

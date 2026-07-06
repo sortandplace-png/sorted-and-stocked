@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientDelete } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
+import { kosherIcon } from '@/lib/icon-maps';
 
 type Course = 'soup' | 'protein' | 'starch' | 'vege' | 'salad' | 'dessert' | 'kids_platter';
 
@@ -408,12 +409,30 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
         .insert({ property_id: propertyId, name: 'Shopping List', status: 'active' })
         .select('id')
         .single();
-      if (createError || !created) {
+
+      if (createError?.code === '23505') {
+        // A near-simultaneous load already created the active list — not a
+        // real failure, just fetch the one that won the race.
+        const { data: existing } = await supabase
+          .from('shopping_lists')
+          .select('id')
+          .eq('property_id', propertyId)
+          .eq('status', 'active')
+          .single();
+        list = existing;
+      } else if (createError || !created) {
         setPushingToShopping(false);
         showToast('Failed to create shopping list.', { variant: 'error' });
         return;
+      } else {
+        list = created;
       }
-      list = created;
+    }
+
+    if (!list) {
+      setPushingToShopping(false);
+      showToast('Failed to create shopping list.', { variant: 'error' });
+      return;
     }
 
     const rows = ingredients.map((ing) => ({
@@ -800,7 +819,7 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
                                 : 'text-xs px-3 py-1 rounded-full border border-gold-light text-aubergine'
                             }
                           >
-                            {kt}
+                            {kosherIcon(kt)} {kt}
                           </button>
                         )
                       )}

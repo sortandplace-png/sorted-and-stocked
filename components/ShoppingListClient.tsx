@@ -44,12 +44,32 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
         .insert({ property_id: propertyId, name: 'Shopping List', status: 'active' })
         .select('id')
         .single();
-      if (createError) {
+
+      if (createError?.code === '23505') {
+        // Another near-simultaneous load already created the active list
+        // (double-render, a second tab, a slow-network retry) — the unique
+        // index on (property_id) where status='active' caught it. That's
+        // not a real failure, just fetch the list that won the race.
+        const { data: existing } = await supabase
+          .from('shopping_lists')
+          .select('id')
+          .eq('property_id', propertyId)
+          .eq('status', 'active')
+          .single();
+        list = existing;
+      } else if (createError) {
         setError(createError.message);
         setLoading(false);
         return;
+      } else {
+        list = created;
       }
-      list = created;
+    }
+
+    if (!list) {
+      setError('Failed to load or create the shopping list.');
+      setLoading(false);
+      return;
     }
 
     setListId(list.id);
