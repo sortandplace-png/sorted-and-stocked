@@ -1,0 +1,54 @@
+/* app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  height: 100%;
+}
+
+/* When printing, the fixed `height: 100%` above clips output to a single
+   screen — so only the top of the page (the header) comes out. Reset it so
+   long lists (meal plan, shopping list) flow across as many pages as needed. */
+@media print {
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+  }
+}
+
+body {
+  background-color: #FBF4EF; /* ivory */
+  color: #3A2A33; /* warm plum-black */
+  font-family: var(--font-body), sans-serif;
+  -webkit-tap-highlight-color: transparent; /* avoid the gray flash on tap for iOS Safari — this is a mobile-first app */
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display), serif;
+  letter-spacing: 0.01em;
+}
+
+/* Respect safe areas on notched/rounded-corner phones, used by PropertyNav's
+   fixed bottom bar (pb-[env(safe-area-inset-bottom)] alone isn't enough on
+   some older iOS Safari versions without this being declared at the root). */
+@supports (padding: max(0px)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Respect reduced-motion preferences — this app uses animate-pulse
+   (skeleton loaders, the "Analyzing…" state) and transition-colors
+   (hover states, pull-to-refresh) throughout. Without this override,
+   people who've asked their OS to minimize motion still get all of it. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

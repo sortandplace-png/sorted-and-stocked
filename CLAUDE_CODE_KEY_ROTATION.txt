@@ -1,0 +1,13 @@
+I need to rotate my Supabase service role key. I've already created a new
+secret key in the Supabase dashboard (Settings > API Keys > Secret keys).
+
+Here's the new key: [PASTE THE NEW sb_secret_... KEY HERE]
+
+Please:
+1. Open .env.local in this project
+2. Replace the current SUPABASE_SERVICE_ROLE_KEY value with the new one I pasted above
+3. Restart the dev server so it picks up the change
+4. Confirm the app still runs correctly after the restart
+
+I'll separately delete the old key in the Supabase dashboard once you confirm
+the new one is working.
