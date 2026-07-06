@@ -16,6 +16,7 @@ const ITEMS = [
   { segment: 'scan', label: 'Scan a label', icon: '📷', managerOnly: false },
   { segment: 'tools', label: 'Tools', icon: '🧰', managerOnly: false },
   { segment: 'print-labels', label: 'Print labels', icon: '🏷️', managerOnly: false },
+  { segment: 'bulk-photos', label: 'Bulk add photos', icon: '📸', managerOnly: false },
   { segment: 'staff', label: 'Staff', icon: '👥', managerOnly: true },
 ] as const;
 
