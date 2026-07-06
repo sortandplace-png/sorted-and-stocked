@@ -492,7 +492,7 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
         </div>
       </div>
 
-      <div className="mb-3 print:hidden">
+      <div className="mb-3 print:hidden flex items-center gap-3 flex-wrap">
         <select
           value={menuType}
           onChange={(e) => setMenuType(e.target.value as MenuType)}
@@ -506,8 +506,14 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
           <option value="regular">🍽️ Regular menu</option>
           <option value="pesach">✡︎ Pesach menu</option>
         </select>
+        <Link
+          href={`/properties/${propertyId}/yom-tov`}
+          className="text-sm font-medium text-aubergine underline"
+        >
+          📅 Full year of Yom Tov dates →
+        </Link>
         {menuType === 'pesach' && (
-          <p className="text-xs text-ink/40 mt-1.5">
+          <p className="text-xs text-ink/40 w-full">
             A separate menu, same dates — this never touches your regular weekly plan.
             Recipe picks are limited to dishes marked Pesach-kosher.
           </p>
