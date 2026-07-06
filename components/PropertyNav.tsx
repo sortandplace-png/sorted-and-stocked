@@ -14,6 +14,7 @@ const ITEMS = [
   { segment: 'meal-plan', label: 'Meal plan', icon: '🍽️', managerOnly: false },
   { segment: 'shopping-list', label: 'Shopping list', icon: '🛒', managerOnly: false },
   { segment: 'scan', label: 'Scan a label', icon: '📷', managerOnly: false },
+  { segment: 'shift-handover', label: 'Shift Handover', icon: '📝', managerOnly: false },
   { segment: 'tools', label: 'Tools', icon: '🧰', managerOnly: false },
   { segment: 'print-labels', label: 'Print labels', icon: '🏷️', managerOnly: false },
   { segment: 'bulk-photos', label: 'Bulk add photos', icon: '📸', managerOnly: false },

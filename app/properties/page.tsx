@@ -63,6 +63,15 @@ export default async function PropertiesPage() {
           </p>
         )}
 
+        {memberships && memberships.length > 1 && (
+          <Link
+            href="/procurement"
+            className="block text-center py-2.5 rounded-full bg-gold-light/40 text-aubergine text-sm font-medium mb-2"
+          >
+            🛒 Shop for multiple properties at once
+          </Link>
+        )}
+
         <Link
           href="/properties/new"
           className="block text-center py-2.5 rounded-full border border-aubergine/30 text-aubergine text-sm font-medium"
