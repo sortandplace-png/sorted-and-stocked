@@ -7,6 +7,7 @@ import QRScanner from '@/components/QRScanner';
 import { createClient } from '@/lib/supabase/client';
 import { resilientUpdate } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
+import { useScanFeedback } from '@/lib/hooks/useScanFeedback';
 
 type ScannedItem = {
   id: string;
@@ -30,6 +31,7 @@ export default function ScanClient({ propertyId }: { propertyId: string }) {
   const router = useRouter();
   const supabase = createClient();
   const showToast = useToast();
+  const { triggerFeedback, getFlashClass } = useScanFeedback();
 
   const handleScan = useCallback(
     async (code: string) => {
@@ -45,6 +47,7 @@ export default function ScanClient({ propertyId }: { propertyId: string }) {
         .maybeSingle();
 
       if (location) {
+        triggerFeedback('success');
         router.push(`/properties/${propertyId}/inventory?location=${location.id}`);
         return;
       }
@@ -57,19 +60,22 @@ export default function ScanClient({ propertyId }: { propertyId: string }) {
         .maybeSingle();
 
       if (error) {
+        triggerFeedback('error');
         setState({ status: 'error', message: error.message });
         return;
       }
 
       if (item) {
+        triggerFeedback('success');
         setAdjustedQty(String(item.current_qty));
         setState({ status: 'item-found', item });
         return;
       }
 
+      triggerFeedback('error');
       setState({ status: 'not-found', code });
     },
-    [propertyId, router, supabase]
+    [propertyId, router, supabase, triggerFeedback]
   );
 
   async function saveQty() {
@@ -99,7 +105,10 @@ export default function ScanClient({ propertyId }: { propertyId: string }) {
 
       {(state.status === 'scanning' || state.status === 'checking') && (
         <>
-          <QRScanner onScan={handleScan} active={state.status === 'scanning'} />
+          <div className="relative overflow-hidden rounded-xl">
+            <div className={`absolute inset-0 z-10 pointer-events-none border-4 transition-all duration-150 ${getFlashClass()}`} />
+            <QRScanner onScan={handleScan} active={state.status === 'scanning'} />
+          </div>
           {state.status === 'checking' && (
             <p className="text-sm text-ink/50 text-center mt-3">Looking that up…</p>
           )}
