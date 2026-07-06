@@ -143,8 +143,18 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
         }
 
         doc.setFontSize(7);
+        doc.setTextColor(0);
         const textX = x + qrSize + 0.15;
         doc.text(item.name, textX, textTop, { maxWidth: t.labelWidth - qrSize - 0.25 });
+
+        // Human-readable code along the bottom of the label — a fallback for
+        // when a QR won't scan (staff can look the code up by hand).
+        doc.setFontSize(5);
+        doc.setTextColor(150);
+        doc.text(item.qr_code, textX, y + t.labelHeight - 0.1, {
+          maxWidth: t.labelWidth - qrSize - 0.25,
+        });
+        doc.setTextColor(0);
       }
 
       doc.save(`item-labels-${propertyId}.pdf`);
