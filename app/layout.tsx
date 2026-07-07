@@ -1,6 +1,6 @@
 // app/layout.tsx
 import type { Metadata } from 'next';
-import { Cormorant_Garamond, Nunito_Sans } from 'next/font/google';
+import { Cormorant_Garamond, Nunito_Sans, Playfair_Display, Inter } from 'next/font/google';
 import OfflineSyncProvider from '@/components/OfflineSyncProvider';
 import { ToastProvider } from '@/components/Toast';
 import './globals.css';
@@ -16,6 +16,10 @@ const display = Cormorant_Garamond({
 });
 const body = Nunito_Sans({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
 
+// Luxury dashboard fonts
+const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfair', display: 'swap' });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
+
 export const metadata: Metadata = {
   title: 'Sorted & Stocked',
   manifest: '/manifest.json',
@@ -29,7 +33,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`}>
+    <html lang="en" className={`${display.variable} ${body.variable} ${playfair.variable} ${inter.variable}`}>
       <body>
         <OfflineSyncProvider>
           <ToastProvider>{children}</ToastProvider>

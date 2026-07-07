@@ -13,7 +13,8 @@ export const config = {
      * - _next/static, _next/image (build assets)
      * - favicon.ico, manifest.json, icons/ (PWA assets)
      * - anything with a file extension (images, etc.)
+     * - /api/diagnostic, /api/batch-* (public batch operations)
      */
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|icons/|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

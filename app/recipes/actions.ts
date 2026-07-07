@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 interface UpdateSubstitutionInput {
   recipeId: string;
@@ -14,7 +14,7 @@ export async function updateRecipeSubstitution({
   updatedBy,
 }: UpdateSubstitutionInput): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Verify recipe exists
     const { data: recipe, error: recipeError } = await supabase

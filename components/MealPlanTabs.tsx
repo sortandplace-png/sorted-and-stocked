@@ -9,11 +9,11 @@ interface MealPlanTabsProps {
     plan_date: string;
     meal_slot?: string;
     course?: string;
-    recipes?: {
+    recipes?: Array<{
       id: string;
       name: string;
       kosher_type?: string;
-    };
+    }>;
     custom_name?: string;
   }>;
 }

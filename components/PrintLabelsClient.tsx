@@ -1,7 +1,7 @@
 // components/PrintLabelsClient.tsx
 // Requires: npm install jspdf qrcode
 // Rebuilt per direct feedback: labels are now per INVENTORY ITEM (with photo),
-// not per storage location. Layout: Avery 5160 (30 labels/sheet, 3x10 grid).
+// not per storage location. Layout: Avery 22807 (20 labels/sheet, 4x5 grid of 2"×2" squares).
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -18,14 +18,14 @@ type Item = {
   photo_url: string | null;
 };
 
-const AVERY_5160 = {
-  cols: 3,
-  rows: 10,
-  labelWidth: 2.625,
-  labelHeight: 1,
-  marginLeft: 0.1875,
+const AVERY_22807 = {
+  cols: 4,
+  rows: 5,
+  labelWidth: 2,
+  labelHeight: 2,
+  marginLeft: 0.25,
   marginTop: 0.5,
-  colGap: 0.125,
+  colGap: 0,
   rowGap: 0,
 };
 
@@ -114,7 +114,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
     try {
       const toPrint = items.filter((i) => selected.has(i.id));
       const doc = new jsPDF({ unit: 'in', format: 'letter' });
-      const t = AVERY_5160;
+      const t = AVERY_22807;
       const perPage = t.cols * t.rows;
 
       for (let i = 0; i < toPrint.length; i++) {
@@ -128,31 +128,36 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
         const y = t.marginTop + row * (t.labelHeight + t.rowGap);
 
         const qrDataUrl = await QRCode.toDataURL(item.qr_code, { margin: 0 });
-        const qrSize = 0.8;
-        doc.addImage(qrDataUrl, 'PNG', x + 0.05, y + 0.1, qrSize, qrSize);
+        const qrSize = 0.6;
 
-        // Photo thumbnail, if we can actually load one — sits above the name.
-        let textTop = y + 0.15;
+        // Square label layout: photo at top-center, QR at bottom-left, name at bottom-right
+        let photoData: string | null = null;
         if (item.photo_url && isDirectImageUrl(item.photo_url)) {
-          const photoData = await loadImageAsDataUrl(item.photo_url);
-          if (photoData) {
-            const photoSize = 0.55;
-            doc.addImage(photoData, x + qrSize + 0.15, y + 0.05, photoSize, photoSize);
-            textTop = y + 0.65;
-          }
+          photoData = await loadImageAsDataUrl(item.photo_url);
         }
 
+        // Photo at top center (0.8" × 0.8")
+        if (photoData) {
+          const photoSize = 0.8;
+          const photoCenterX = x + (t.labelWidth - photoSize) / 2;
+          doc.addImage(photoData, photoCenterX, y + 0.1, photoSize, photoSize);
+        }
+
+        // QR code at bottom-left
+        doc.addImage(qrDataUrl, 'PNG', x + 0.08, y + t.labelHeight - qrSize - 0.08, qrSize, qrSize);
+
+        // Item name at bottom-right of QR
         doc.setFontSize(7);
         doc.setTextColor(0);
-        const textX = x + qrSize + 0.15;
-        doc.text(item.name, textX, textTop, { maxWidth: t.labelWidth - qrSize - 0.25 });
+        const nameX = x + qrSize + 0.18;
+        const nameY = y + t.labelHeight - 0.3;
+        doc.text(item.name, nameX, nameY, { maxWidth: t.labelWidth - qrSize - 0.3 });
 
-        // Human-readable code along the bottom of the label — a fallback for
-        // when a QR won't scan (staff can look the code up by hand).
-        doc.setFontSize(5);
+        // Human-readable code below name — a fallback for when a QR won't scan
+        doc.setFontSize(4.5);
         doc.setTextColor(150);
-        doc.text(item.qr_code, textX, y + t.labelHeight - 0.1, {
-          maxWidth: t.labelWidth - qrSize - 0.25,
+        doc.text(item.qr_code, nameX, y + t.labelHeight - 0.08, {
+          maxWidth: t.labelWidth - qrSize - 0.3,
         });
         doc.setTextColor(0);
       }
@@ -178,7 +183,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
     <div className="max-w-md mx-auto p-4">
       <h1 className="text-2xl font-display text-aubergine mb-1">Print Item Labels</h1>
       <p className="text-sm text-ink/50 mb-1">
-        Avery 5160 sheet · one label per item, with photo where available.
+        Avery 22807 (2"×2" squares) · 20 labels per sheet · one label per item, with photo where available.
       </p>
       {items.length > 0 && (
         <p className="text-xs text-ink/40 mb-4">

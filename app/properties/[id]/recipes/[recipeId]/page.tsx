@@ -1,6 +1,6 @@
 // app/properties/[id]/recipes/[recipeId]/page.tsx
 import RecipeDetailClient from '@/components/RecipeDetailClient';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export default async function RecipeDetailPage({
   params,

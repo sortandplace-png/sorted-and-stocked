@@ -7,6 +7,7 @@ export interface EnhancedShoppingItem {
   name: string;
   category: string;
   qty_needed: number;
+  unit_estimate: string | null;
   status: 'pending' | 'purchased';
   // Rich inventory fields (null if unmapped ingredient)
   inventory_item_id: string | null;

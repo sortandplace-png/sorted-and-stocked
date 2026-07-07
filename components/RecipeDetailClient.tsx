@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/client';
 import { kosherIcon } from '@/lib/icon-maps';
 import SubstitutionCallout from '@/components/SubstitutionCallout';
 import SubstitutionEditor from '@/components/SubstitutionEditor';
+import IngredientShoppingLink from '@/components/IngredientShoppingLink';
+import { fetchRecipeWithIngredients } from '@/lib/recipe-actions';
 
 interface Ingredient {
   id: string;
@@ -14,6 +16,11 @@ interface Ingredient {
   quantity: number | null;
   unit: string | null;
   category: string | null;
+  reorder_link?: string | null;
+  primary_store?: string | null;
+  alternative_stores?: string[] | null;
+  is_strictly_kosher?: boolean | null;
+  photo_url?: string | null;
 }
 
 interface Recipe {
@@ -81,29 +88,16 @@ export default function RecipeDetailClient({
 
   useEffect(() => {
     (async () => {
-      const supabase = createClient();
-      const [{ data: recipeData, error: recipeError }, { data: ingredientData }] =
-        await Promise.all([
-          supabase
-            .from('recipes')
-            .select('id, name, name_es, photo_url, instructions_en, instructions_es, kosher_type, course, servings')
-            .eq('id', recipeId)
-            .single(),
-          supabase
-            .from('recipe_ingredients')
-            .select('id, name, quantity, unit, category')
-            .eq('recipe_id', recipeId)
-            .order('category'),
-        ]);
-
-      if (recipeError) {
-        setError('Could not load this recipe.');
-      } else {
+      try {
+        const { recipe: recipeData, ingredients: ingredientData } = await fetchRecipeWithIngredients(recipeId);
         setRecipe(recipeData);
-        setIngredients(ingredientData ?? []);
+        setIngredients(ingredientData);
         setTargetServings(recipeData?.servings ?? 4);
+      } catch (err) {
+        setError('Could not load this recipe.');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     })();
   }, [recipeId]);
 
@@ -141,19 +135,31 @@ export default function RecipeDetailClient({
 
   return (
     <div className="max-w-md mx-auto p-4 print:max-w-full">
-      <div className="flex items-center justify-between mb-4 print:hidden">
+      <div className="flex items-center justify-between mb-4 print:hidden gap-2 flex-wrap">
         <Link
           href={`/properties/${propertyId}/meal-plan`}
           className="text-sm text-aubergine font-medium"
         >
           ← Meal plan
         </Link>
-        <button
-          onClick={() => window.print()}
-          className="text-sm font-medium bg-aubergine text-cream px-4 py-2 rounded-full"
-        >
-          🖨️ Print
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              const text = `Check out ${recipe.name} - ${recipe.instructions_en ? 'Serves ' + (recipe.servings || 4) : ''}\n\nIngredients:\n${ingredients.map(i => `• ${formatQty(i)}`).join('\n')}\n\nMeal planning with Sorted & Stocked`;
+              const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+              window.open(url, '_blank');
+            }}
+            className="text-sm font-medium bg-green-600 text-white px-4 py-2 rounded-full hover:bg-green-700 transition"
+          >
+            💬 Share
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="text-sm font-medium bg-aubergine text-cream px-4 py-2 rounded-full hover:opacity-90 transition"
+          >
+            🖨️ Print
+          </button>
+        </div>
       </div>
 
       {recipe.photo_url && isDirectImageUrl(recipe.photo_url) && (
@@ -217,11 +223,23 @@ export default function RecipeDetailClient({
         {ingredients.length === 0 ? (
           <p className="text-sm text-ink/40">No ingredients recorded for this recipe.</p>
         ) : (
-          <ul className="space-y-1.5">
+          <ul className="space-y-2">
             {ingredients.map((i) => (
-              <li key={i.id} className="text-sm text-ink flex gap-2">
-                <span className="text-gold shrink-0">•</span>
-                {formatQty(i)}
+              <li key={i.id} className="text-sm text-ink">
+                <div className="flex gap-2 print:hidden">
+                  <span className="text-gold shrink-0">•</span>
+                  <div className="flex-1">
+                    <div>{formatQty(i)}</div>
+                    <IngredientShoppingLink
+                      ingredient={i}
+                      recipeNames={[recipe.name]}
+                    />
+                  </div>
+                </div>
+                <div className="hidden print:flex gap-2">
+                  <span className="text-gold shrink-0">•</span>
+                  {formatQty(i)}
+                </div>
               </li>
             ))}
           </ul>

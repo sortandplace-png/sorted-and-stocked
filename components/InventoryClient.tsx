@@ -121,7 +121,7 @@ export default function InventoryClient({
     const [itemsRes, locationsRes, categoriesRes, favoritesRes] = await Promise.all([
       supabase
         .from('inventory_items')
-        .select('id, name, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, category_id, categories(name)')
+        .select('id, name, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, category')
         .eq('property_id', propertyId)
         .order('name'),
       supabase.from('locations').select('id, name').eq('property_id', propertyId).order('name'),
@@ -140,10 +140,7 @@ export default function InventoryClient({
     ]);
 
     if (itemsRes.error) setError(itemsRes.error.message);
-    setItems((itemsRes.data ?? []).map(item => ({
-      ...item,
-      category: (item.categories as any)?.name || null
-    })));
+    setItems(itemsRes.data ?? []);
     setLocations(locationsRes.data ?? []);
     setCategorySuggestions([...new Set((categoriesRes.data ?? []).map((c) => c.name))]);
     setFavoriteIds(new Set((favoritesRes.data ?? []).map((f) => f.inventory_item_id)));

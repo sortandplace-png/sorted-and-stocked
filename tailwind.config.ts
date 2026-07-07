@@ -28,10 +28,16 @@ const config: Config = {
         ink: '#3A2A33',        // warm plum-black
         sage: '#8CA085',       // success — softened, not clinical green
         rust: '#B5636B',       // alerts/low-stock — dusty rose-red, not brown-rust
+        luxury: {
+          cream: '#FAF7F2',
+          tan: '#C4A484',
+          charcoal: '#3C2F2F',
+        },
       },
       fontFamily: {
         display: ['var(--font-display)', 'serif'],
         sans: ['var(--font-body)', 'sans-serif'],
+        serif: ['var(--font-playfair)', 'serif'],
       },
       borderRadius: {
         xl2: '1.25rem',
