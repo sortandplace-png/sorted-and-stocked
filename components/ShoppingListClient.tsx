@@ -7,6 +7,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientUpdate } from '@/lib/resilient-write';
 import ShoppingListView, { ShoppingListItem } from '@/components/ShoppingListView';
+import ShoppingListViewEnhanced from '@/components/ShoppingListViewEnhanced';
+import StaplesTab from '@/components/StaplesTab';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import { usePullToRefresh } from '@/lib/use-pull-to-refresh';
@@ -18,6 +20,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
   const [error, setError] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState('');
   const [adding, setAdding] = useState(false);
+  const [activeTab, setActiveTab] = useState<'recipes' | 'staples'>('recipes');
 
   const supabase = createClient();
   const showToast = useToast();
@@ -145,7 +148,33 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
   if (loading) return <SkeletonList />;
 
   return (
-    <div className=" pt-4">
+    <div className="pt-4">
+      {/* Tab Navigation */}
+      <div className="bg-white border-b border-gold-light/20 sticky top-0 z-10 mb-4">
+        <div className="max-w-md mx-auto flex px-4">
+          <button
+            onClick={() => setActiveTab('recipes')}
+            className={`flex-1 py-3 font-medium text-sm border-b-2 transition-colors ${
+              activeTab === 'recipes'
+                ? 'border-aubergine text-aubergine'
+                : 'border-transparent text-ink/50 hover:text-ink'
+            }`}
+          >
+            Recipe Ingredients
+          </button>
+          <button
+            onClick={() => setActiveTab('staples')}
+            className={`flex-1 py-3 font-medium text-sm border-b-2 transition-colors ${
+              activeTab === 'staples'
+                ? 'border-aubergine text-aubergine'
+                : 'border-transparent text-ink/50 hover:text-ink'
+            }`}
+          >
+            Household Staples
+          </button>
+        </div>
+      </div>
+
       {(pullDistance > 0 || refreshing) && (
         <div
           className="flex justify-center text-xs text-ink/40 overflow-hidden transition-all"
@@ -160,29 +189,45 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
         </p>
       )}
 
-      <div className="max-w-md mx-auto px-4 mb-4 flex gap-2">
-        <input
-          value={newItemName}
-          onChange={(e) => setNewItemName(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && addCustomItem()}
-          placeholder="Add an item…"
-          className="flex-1 border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-white"
-        />
-        <button
-          onClick={addCustomItem}
-          disabled={adding || !newItemName.trim()}
-          className="px-5 rounded-full bg-aubergine text-cream text-sm disabled:opacity-40"
-        >
-          Add
-        </button>
-      </div>
+      {/* Recipe Ingredients Tab */}
+      {activeTab === 'recipes' && (
+        <>
+          <div className="max-w-md mx-auto px-4 mb-4 flex gap-2">
+            <input
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addCustomItem()}
+              placeholder="Add an item…"
+              className="flex-1 border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-white text-sm"
+            />
+            <button
+              onClick={addCustomItem}
+              disabled={adding || !newItemName.trim()}
+              className="px-5 rounded-full bg-aubergine text-cream text-sm disabled:opacity-40 font-medium"
+            >
+              Add
+            </button>
+          </div>
 
-      {items.length === 0 ? (
-        <p className="text-sm text-ink/40 text-center mt-8">
-          Nothing on the list right now.
-        </p>
-      ) : (
-        <ShoppingListView items={items} onToggle={handleToggle} />
+          <div className="max-w-md mx-auto px-4">
+            {listId ? (
+              <ShoppingListViewEnhanced shoppingListId={listId} />
+            ) : (
+              <p className="text-sm text-ink/40 text-center mt-8">Loading list…</p>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Household Staples Tab */}
+      {activeTab === 'staples' && (
+        <div className="max-w-md mx-auto px-4">
+          {listId ? (
+            <StaplesTab propertyId={propertyId} shoppingListId={listId} />
+          ) : (
+            <p className="text-sm text-ink/40 text-center mt-8">Loading staples…</p>
+          )}
+        </div>
       )}
     </div>
   );
