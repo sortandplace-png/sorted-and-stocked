@@ -19,7 +19,6 @@ const ITEMS = [
   { segment: 'shift-handover', label: 'Handover', icon: '📝', managerOnly: false },
   { segment: 'tools', label: 'Tools', icon: '🧰', managerOnly: false },
   { segment: 'print-labels', label: 'Labels', icon: '🏷️', managerOnly: false },
-  { segment: 'bulk-photos', label: 'Photos', icon: '📸', managerOnly: false },
   { segment: 'staff', label: 'Staff', icon: '👥', managerOnly: true },
 ] as const;
 

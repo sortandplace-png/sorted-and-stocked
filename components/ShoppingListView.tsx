@@ -51,6 +51,25 @@ function groupByCategory(items: ShoppingListItem[]) {
   });
 }
 
+// Formats the still-pending items as plain text grouped by aisle, then opens
+// wa.me with it pre-filled. wa.me works whether or not WhatsApp is installed
+// (falls back to WhatsApp Web on desktop), so no native share-sheet
+// permission dance is needed.
+function shareToWhatsApp(items: ShoppingListItem[]) {
+  const pending = items.filter((i) => i.status === 'pending');
+  const grouped = groupByCategory(pending);
+  const lines = ['🛒 Shopping List', ''];
+  for (const [category, categoryItems] of grouped) {
+    lines.push(`*${category}*`);
+    for (const item of categoryItems) {
+      lines.push(`☐ ${item.name}${item.qty_needed > 1 ? ` ×${item.qty_needed}` : ''}`);
+    }
+    lines.push('');
+  }
+  const text = encodeURIComponent(lines.join('\n').trim());
+  window.open(`https://wa.me/?text=${text}`, '_blank');
+}
+
 export default function ShoppingListView({ items, onToggle }: ShoppingListViewProps) {
   const [hidePurchased, setHidePurchased] = useState(false);
 
@@ -78,6 +97,12 @@ export default function ShoppingListView({ items, onToggle }: ShoppingListViewPr
             />
             Hide checked off
           </label>
+          <button
+            onClick={() => shareToWhatsApp(items)}
+            className="text-sm font-medium bg-sage text-white px-4 py-1.5 rounded-full"
+          >
+            💬 WhatsApp
+          </button>
           <button
             onClick={() => window.print()}
             className="text-sm font-medium bg-aubergine text-cream px-4 py-1.5 rounded-full"

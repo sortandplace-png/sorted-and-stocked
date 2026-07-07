@@ -45,13 +45,24 @@ export default function NewPropertyForm() {
       return;
     }
 
-    const { data: membership, error: membershipError } = await supabase
-      .from('property_members')
-      .select('property_id')
-      .eq('user_id', user.id)
-      .order('joined_at', { ascending: false })
-      .limit(1)
-      .single();
+    // Retry fetching the new property_members row (trigger may not have fired yet)
+    let membership = null;
+    let membershipError = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 100 * attempt));
+      const result = await supabase
+        .from('property_members')
+        .select('property_id')
+        .eq('user_id', user.id)
+        .order('joined_at', { ascending: false })
+        .limit(1)
+        .single();
+      if (!result.error) {
+        membership = result.data;
+        break;
+      }
+      membershipError = result.error;
+    }
 
     setSaving(false);
 

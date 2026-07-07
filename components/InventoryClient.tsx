@@ -121,16 +121,14 @@ export default function InventoryClient({
     const [itemsRes, locationsRes, categoriesRes, favoritesRes] = await Promise.all([
       supabase
         .from('inventory_items')
-        .select('id, name, category, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url')
+        .select('id, name, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, category_id, categories(name)')
         .eq('property_id', propertyId)
         .order('name'),
       supabase.from('locations').select('id, name').eq('property_id', propertyId).order('name'),
-      // Global defaults (property_id null) + this property's custom ones —
-      // see 005_seed_categories.sql. Suggestions only, not enforced.
+      // Fetch all available categories for autocomplete suggestions
       supabase
         .from('categories')
         .select('name')
-        .or(`property_id.is.null,property_id.eq.${propertyId}`)
         .order('name'),
       user
         ? supabase
@@ -142,7 +140,10 @@ export default function InventoryClient({
     ]);
 
     if (itemsRes.error) setError(itemsRes.error.message);
-    setItems(itemsRes.data ?? []);
+    setItems((itemsRes.data ?? []).map(item => ({
+      ...item,
+      category: (item.categories as any)?.name || null
+    })));
     setLocations(locationsRes.data ?? []);
     setCategorySuggestions([...new Set((categoriesRes.data ?? []).map((c) => c.name))]);
     setFavoriteIds(new Set((favoritesRes.data ?? []).map((f) => f.inventory_item_id)));

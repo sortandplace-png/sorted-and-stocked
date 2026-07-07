@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { kosherIcon } from '@/lib/icon-maps';
+import SubstitutionCallout from '@/components/SubstitutionCallout';
+import SubstitutionEditor from '@/components/SubstitutionEditor';
 
 interface Ingredient {
   id: string;
@@ -59,9 +61,17 @@ function isDirectImageUrl(url: string) {
 export default function RecipeDetailClient({
   propertyId,
   recipeId,
+  recipeName,
+  substitutionNotes,
+  substitutionUpdatedAt,
+  substitutionUpdatedBy,
 }: {
   propertyId: string;
   recipeId: string;
+  recipeName?: string;
+  substitutionNotes?: string | null;
+  substitutionUpdatedAt?: string;
+  substitutionUpdatedBy?: string;
 }) {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -165,6 +175,11 @@ export default function RecipeDetailClient({
         </span>
       )}
 
+      <SubstitutionCallout
+        recipeName={recipeName || recipe.name}
+        substitutionNotes={substitutionNotes}
+      />
+
       <div className="bg-white rounded-2xl shadow-sm shadow-aubergine/5 p-4 mb-4 print:shadow-none print:border print:border-gold-light">
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-display text-lg text-aubergine">
@@ -247,6 +262,15 @@ export default function RecipeDetailClient({
           No written instructions on file for this recipe yet.
         </p>
       )}
+
+      <div className="mt-8 print:hidden">
+        <SubstitutionEditor
+          recipeId={recipeId}
+          initialNotes={substitutionNotes || ''}
+          lastUpdatedBy={substitutionUpdatedBy}
+          lastUpdatedAt={substitutionUpdatedAt ? new Date(substitutionUpdatedAt) : undefined}
+        />
+      </div>
     </div>
   );
 }
