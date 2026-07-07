@@ -3,7 +3,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { fetchEnhancedShoppingList, updateShoppingItemStatus, removeShoppingItem } from '@/lib/api/shoppingList';
 import { ExternalLink, Trash2, CheckCircle2, Circle } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 
@@ -30,22 +30,19 @@ export default function ShoppingListViewEnhanced({ shoppingListId }: { shoppingL
   const [items, setItems] = useState<ShoppingListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [groupBy, setGroupBy] = useState<'category' | 'staples-first'>('staples-first');
-  const supabase = createClient();
   const showToast = useToast();
 
   const loadItems = async () => {
     setLoading(true);
-    const { data, error } = await supabase.rpc('get_shopping_list_with_inventory', {
-      p_shopping_list_id: shoppingListId
-    });
-
-    if (error) {
+    try {
+      const data = await fetchEnhancedShoppingList(shoppingListId);
+      setItems(data);
+    } catch (error) {
       console.error('Error loading shopping list:', error);
       showToast('Failed to load shopping list.', { variant: 'error' });
-    } else {
-      setItems(data || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -53,35 +50,27 @@ export default function ShoppingListViewEnhanced({ shoppingListId }: { shoppingL
   }, [shoppingListId]);
 
   const toggleStatus = async (itemId: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'purchased' ? 'pending' : 'purchased';
-    const { error } = await supabase
-      .from('shopping_list_items')
-      .update({ status: newStatus })
-      .eq('id', itemId);
-
-    if (error) {
+    const newStatus = (currentStatus === 'purchased' ? 'pending' : 'purchased') as 'pending' | 'purchased';
+    try {
+      await updateShoppingItemStatus(itemId, newStatus);
+      setItems(prev =>
+        prev.map(item => (item.item_id === itemId ? { ...item, status: newStatus } : item))
+      );
+    } catch (error) {
+      console.error('Error updating item:', error);
       showToast('Failed to update item.', { variant: 'error' });
-      return;
     }
-
-    setItems(prev =>
-      prev.map(item => (item.item_id === itemId ? { ...item, status: newStatus } : item))
-    );
   };
 
   const deleteItem = async (itemId: string) => {
-    const { error } = await supabase
-      .from('shopping_list_items')
-      .update({ status: 'deleted' })
-      .eq('id', itemId);
-
-    if (error) {
+    try {
+      await removeShoppingItem(itemId);
+      setItems(prev => prev.filter(item => item.item_id !== itemId));
+      showToast('Item removed.', { variant: 'success' });
+    } catch (error) {
+      console.error('Error deleting item:', error);
       showToast('Failed to delete item.', { variant: 'error' });
-      return;
     }
-
-    setItems(prev => prev.filter(item => item.item_id !== itemId));
-    showToast('Item removed.', { variant: 'success' });
   };
 
   const groupItems = () => {

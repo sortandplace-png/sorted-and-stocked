@@ -2,8 +2,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
+import { fetchStaplesWithInventory, addStapleToList } from '@/lib/api/staples';
 import { Search, Plus, Check } from 'lucide-react';
 
 type Staple = {
@@ -26,27 +26,21 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
   const [sortBy, setSortBy] = useState<'category' | 'name' | 'low-first'>('category');
   const [loading, setLoading] = useState(true);
   const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
-  const supabase = createClient();
   const showToast = useToast();
 
   // Fetch all staples with their inventory details
   const loadStaples = async () => {
     setLoading(true);
-    const { data, error } = await supabase.rpc('get_staples_with_inventory', {
-      p_property_id: propertyId,
-      p_shopping_list_id: shoppingListId
-    });
-
-    if (error) {
+    try {
+      const data = await fetchStaplesWithInventory(propertyId, shoppingListId);
+      setStaples(data);
+      applyFiltersAndSort(data, searchTerm, sortBy);
+    } catch (error) {
       console.error('Error loading staples:', error);
       showToast('Failed to load staples.', { variant: 'error' });
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setStaples(data || []);
-    applyFiltersAndSort(data || [], searchTerm, sortBy);
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -90,37 +84,30 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
 
     setAddingIds(prev => new Set(prev).add(staple.staple_id));
 
-    const { error } = await supabase.from('shopping_list_items').insert({
-      shopping_list_id: shoppingListId,
-      name: staple.staple_name,
-      category: staple.staple_category,
-      inventory_item_id: staple.inventory_item_id,
-      qty_needed: 1,
-      status: 'pending'
-    });
+    try {
+      await addStapleToList(shoppingListId, staple.staple_id);
 
-    setAddingIds(prev => {
-      const next = new Set(prev);
-      next.delete(staple.staple_id);
-      return next;
-    });
+      // Update local state to reflect the addition
+      setStaples(prev =>
+        prev.map(s => (s.staple_id === staple.staple_id ? { ...s, already_on_list: true } : s))
+      );
+      applyFiltersAndSort(
+        staples.map(s => (s.staple_id === staple.staple_id ? { ...s, already_on_list: true } : s)),
+        searchTerm,
+        sortBy
+      );
 
-    if (error) {
+      showToast(`Added ${staple.staple_name} to shopping list.`, { variant: 'success' });
+    } catch (error) {
+      console.error('Error adding staple:', error);
       showToast('Failed to add staple to list.', { variant: 'error' });
-      return;
+    } finally {
+      setAddingIds(prev => {
+        const next = new Set(prev);
+        next.delete(staple.staple_id);
+        return next;
+      });
     }
-
-    // Update local state to reflect the addition
-    setStaples(prev =>
-      prev.map(s => (s.staple_id === staple.staple_id ? { ...s, already_on_list: true } : s))
-    );
-    applyFiltersAndSort(
-      staples.map(s => (s.staple_id === staple.staple_id ? { ...s, already_on_list: true } : s)),
-      searchTerm,
-      sortBy
-    );
-
-    showToast(`Added ${staple.staple_name} to shopping list.`, { variant: 'success' });
   };
 
   if (loading) {
