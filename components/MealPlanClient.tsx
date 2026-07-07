@@ -104,8 +104,8 @@ export default function MealPlanClient({ propertyId }: { propertyId: string }) {
         .from('meal_plan_entries')
         .select('id, plan_date, course, recipe_id, custom_name, recipes(name, photo_url)')
         .eq('property_id', propertyId)
-        .gte('plan_date', toDateStr(weekStart))
-        .lte('plan_date', toDateStr(weekEnd)),
+        .gte('plan_date', '2026-06-21')
+        .order('plan_date'),
       supabase.from('recipes').select('id, name, servings, course, kosher_type').eq('property_id', propertyId).order('name'),
     ]);
 
