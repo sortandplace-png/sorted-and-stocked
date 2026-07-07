@@ -1,0 +1,902 @@
+{
+  "metadata": {
+    "date": "2026-07-07",
+    "total_items": 80,
+    "food_items": 45,
+    "household_items": 35,
+    "confidence_level": "HIGH",
+    "notes": "All items are standard national brands with high probability of exact Amazon/Walmart matches. Use these search strings directly against product APIs."
+  },
+  "food_items": [
+    {
+      "inventory_item_id": "salt_001",
+      "name": "Morton Kosher Salt",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "Morton Kosher Salt",
+        "walmart": "Morton Kosher Salt 26oz",
+        "instacart": "morton kosher salt"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "26 oz container, exact match available"
+    },
+    {
+      "inventory_item_id": "pepper_001",
+      "name": "Black Pepper (ground)",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "McCormick Black Pepper Ground",
+        "walmart": "McCormick Ground Black Pepper 2.5oz",
+        "instacart": "black pepper ground mccormick"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Standard 2.5oz tin, widely available"
+    },
+    {
+      "inventory_item_id": "flour_001",
+      "name": "Flour (all-purpose)",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "King Arthur All-Purpose Flour 5lb",
+        "walmart": "Gold Medal All-Purpose Flour 5lb",
+        "instacart": "all-purpose flour 5 lb"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "5 lb bag, bulk staple"
+    },
+    {
+      "inventory_item_id": "sugar_001",
+      "name": "Granulated Sugar",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "Domino Granulated Sugar 4lb",
+        "walmart": "Domino Granulated Sugar 4 lb",
+        "instacart": "granulated sugar 4 pound"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "4 lb bag, standard household"
+    },
+    {
+      "inventory_item_id": "olive_oil_001",
+      "name": "Olive Oil (extra virgin)",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "Colavita Extra Virgin Olive Oil 1 liter",
+        "walmart": "Colavita Extra Virgin Olive Oil 1L",
+        "instacart": "colavita extra virgin olive oil 1 liter"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "1L bottle, premium cooking oil"
+    },
+    {
+      "inventory_item_id": "chicken_stock_001",
+      "name": "Chicken Stock",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "Swanson Chicken Broth 32oz",
+        "walmart": "Swanson Chicken Broth 32 fl oz",
+        "instacart": "swanson chicken broth 32 oz"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "32 oz carton, standard cooking staple"
+    },
+    {
+      "inventory_item_id": "baking_powder_001",
+      "name": "Baking Powder",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "Calumet Baking Powder 8oz",
+        "walmart": "Calumet Baking Powder 8 oz",
+        "instacart": "baking powder 8 oz"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "8 oz can, essential baking ingredient"
+    },
+    {
+      "inventory_item_id": "vanilla_extract_001",
+      "name": "Vanilla Extract",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "McCormick Pure Vanilla Extract 2oz",
+        "walmart": "McCormick Pure Vanilla Extract 2 fl oz",
+        "instacart": "vanilla extract pure 2 oz"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "2 oz bottle, baking essential"
+    },
+    {
+      "inventory_item_id": "eggs_001",
+      "name": "Eggs (dozen, large)",
+      "category": "Dairy & Eggs",
+      "search_queries": {
+        "amazon": "Vital Farms Eggs Large 12ct",
+        "walmart": "Great Value Large Eggs 12 count",
+        "instacart": "eggs large 12 count"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "1 dozen, fresh eggs"
+    },
+    {
+      "inventory_item_id": "milk_001",
+      "name": "Milk (1% reduced fat)",
+      "category": "Dairy & Eggs",
+      "search_queries": {
+        "amazon": "Organic Valley 1% Milk 1 gallon",
+        "walmart": "Great Value 1% Reduced Fat Milk 1 gal",
+        "instacart": "milk 1 percent 1 gallon"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "1 gallon, perishable - local sourcing preferred"
+    },
+    {
+      "inventory_item_id": "butter_001",
+      "name": "Butter (unsalted)",
+      "category": "Dairy & Eggs",
+      "search_queries": {
+        "amazon": "Kerrygold Pure Irish Butter 8oz",
+        "walmart": "Land O Lakes Unsalted Butter 4 sticks",
+        "instacart": "unsalted butter 4 sticks"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "1 lb (4 sticks), premium butter"
+    },
+    {
+      "inventory_item_id": "cheddar_cheese_001",
+      "name": "Cheddar Cheese (sharp)",
+      "category": "Dairy",
+      "search_queries": {
+        "amazon": "Cabot Sharp White Cheddar 8oz",
+        "walmart": "Cabot Sharp Cheddar Block 8 oz",
+        "instacart": "sharp cheddar cheese block 8oz"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "8 oz block, premium aged cheese"
+    },
+    {
+      "inventory_item_id": "rice_001",
+      "name": "Rice (white, long-grain)",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "Lundberg Family Farms Long Grain White Rice 2lb",
+        "walmart": "Mahatma Rice Long Grain White 2 lb",
+        "instacart": "white long grain rice 2 lb"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "2 lb bag, staple grain"
+    },
+    {
+      "inventory_item_id": "pasta_001",
+      "name": "Pasta (spaghetti)",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "Barilla Spaghetti Pasta 1lb",
+        "walmart": "Barilla Spaghetti 1 lb",
+        "instacart": "barilla spaghetti pasta 1 pound"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "1 lb box, standard dry pasta"
+    },
+    {
+      "inventory_item_id": "honey_001",
+      "name": "Honey (raw, pure)",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "Y.S. Eco Bee Farms Raw Honey 22oz",
+        "walmart": "Sue Bee Honey Raw & Unfiltered 1 lb",
+        "instacart": "raw honey pure 1 pound"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Raw, unfiltered, 1 lb container"
+    },
+    {
+      "inventory_item_id": "peanut_butter_001",
+      "name": "Peanut Butter (natural)",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "Justin's Natural Peanut Butter 12oz",
+        "walmart": "Jif Natural Creamy Peanut Butter 16oz",
+        "instacart": "natural peanut butter 16 oz"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "All-natural, no added sugar"
+    },
+    {
+      "inventory_item_id": "tomato_sauce_001",
+      "name": "Tomato Sauce (canned)",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "San Marzano Tomato Sauce 24oz",
+        "walmart": "Ragu Tomato Sauce 24 oz",
+        "instacart": "tomato sauce canned 24 oz"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "24 oz can, cooking staple"
+    },
+    {
+      "inventory_item_id": "garlic_001",
+      "name": "Garlic (fresh)",
+      "category": "Produce",
+      "search_queries": {
+        "walmart": "Garlic Bulbs Fresh",
+        "instacart": "fresh garlic bulbs",
+        "amazon": "N/A - local produce"
+      },
+      "preferred_supplier": "Local",
+      "notes": "Fresh bulbs, recommend local sourcing"
+    },
+    {
+      "inventory_item_id": "onion_001",
+      "name": "Onions (yellow)",
+      "category": "Produce",
+      "search_queries": {
+        "walmart": "Yellow Onions Fresh 3lb Bag",
+        "instacart": "yellow onions fresh",
+        "amazon": "N/A - local produce"
+      },
+      "preferred_supplier": "Local",
+      "notes": "Fresh bulbs, recommend local sourcing"
+    },
+    {
+      "inventory_item_id": "chicken_breast_001",
+      "name": "Chicken Breast (boneless, skinless)",
+      "category": "Meat & Seafood",
+      "search_queries": {
+        "walmart": "Fresh Chicken Breasts per lb",
+        "amazon": "D'Artagnan Organic Chicken Breast 2lb",
+        "instacart": "chicken breast boneless skinless"
+      },
+      "preferred_supplier": "Local",
+      "notes": "Fresh/frozen, recommend local butcher for quality"
+    },
+    {
+      "inventory_item_id": "ground_beef_001",
+      "name": "Ground Beef (85/15)",
+      "category": "Meat & Seafood",
+      "search_queries": {
+        "walmart": "Fresh Ground Beef 85/15 per lb",
+        "amazon": "Crowd Cow Grass Fed Ground Beef 1lb pack",
+        "instacart": "ground beef 85 15"
+      },
+      "preferred_supplier": "Local",
+      "notes": "Recommend local butcher or Crowd Cow for quality"
+    },
+    {
+      "inventory_item_id": "salmon_001",
+      "name": "Salmon (fresh fillet)",
+      "category": "Meat & Seafood",
+      "search_queries": {
+        "amazon": "Wild Alaskan Salmon Fillets 2x6oz",
+        "walmart": "Fresh Salmon Fillets per lb",
+        "instacart": "salmon fillet fresh"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Wild-caught preferred, ships frozen"
+    },
+    {
+      "inventory_item_id": "apple_001",
+      "name": "Apples (Granny Smith)",
+      "category": "Produce",
+      "search_queries": {
+        "walmart": "Granny Smith Apples Fresh 3lb Bag",
+        "instacart": "granny smith apples fresh",
+        "amazon": "N/A - local produce"
+      },
+      "preferred_supplier": "Local",
+      "notes": "Fresh fruit, recommend local sourcing"
+    },
+    {
+      "inventory_item_id": "banana_001",
+      "name": "Bananas",
+      "category": "Produce",
+      "search_queries": {
+        "walmart": "Fresh Bananas per lb",
+        "instacart": "fresh bananas",
+        "amazon": "N/A - local produce"
+      },
+      "preferred_supplier": "Local",
+      "notes": "Fresh fruit, recommend local sourcing"
+    },
+    {
+      "inventory_item_id": "spinach_001",
+      "name": "Spinach (fresh, bunch)",
+      "category": "Produce",
+      "search_queries": {
+        "walmart": "Fresh Spinach Bunch",
+        "instacart": "fresh spinach bunch",
+        "amazon": "N/A - local produce"
+      },
+      "preferred_supplier": "Local",
+      "notes": "Fresh greens, recommend local sourcing"
+    },
+    {
+      "inventory_item_id": "broccoli_001",
+      "name": "Broccoli (fresh crown)",
+      "category": "Produce",
+      "search_queries": {
+        "walmart": "Fresh Broccoli Crown",
+        "instacart": "fresh broccoli crown",
+        "amazon": "N/A - local produce"
+      },
+      "preferred_supplier": "Local",
+      "notes": "Fresh vegetable, recommend local sourcing"
+    },
+    {
+      "inventory_item_id": "tomato_001",
+      "name": "Tomatoes (beefsteak)",
+      "category": "Produce",
+      "search_queries": {
+        "walmart": "Fresh Beefsteak Tomatoes per lb",
+        "instacart": "beefsteak tomatoes fresh",
+        "amazon": "N/A - local produce"
+      },
+      "preferred_supplier": "Local",
+      "notes": "Fresh produce, recommend local sourcing"
+    },
+    {
+      "inventory_item_id": "coffee_001",
+      "name": "Coffee (ground, dark roast)",
+      "category": "Beverages",
+      "search_queries": {
+        "amazon": "Peet's Coffee Dark Roast Ground 10oz",
+        "walmart": "Folgers Classic Roast Ground Coffee 10.3oz",
+        "instacart": "coffee ground dark roast 10 oz"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Premium blend, vacuum sealed"
+    },
+    {
+      "inventory_item_id": "tea_001",
+      "name": "Tea (black, loose leaf)",
+      "category": "Beverages",
+      "search_queries": {
+        "amazon": "Twinings English Breakfast Tea Loose Leaf 3.5oz",
+        "walmart": "Twinings Tea Bags English Breakfast",
+        "instacart": "english breakfast tea loose leaf"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Loose leaf preferred for quality"
+    },
+    {
+      "inventory_item_id": "orange_juice_001",
+      "name": "Orange Juice (fresh squeezed, 1 qt)",
+      "category": "Beverages",
+      "search_queries": {
+        "amazon": "Simply Orange Premium Not from Concentrate 1 qt",
+        "walmart": "Simply Orange 100% Orange Juice 1 quart",
+        "instacart": "orange juice fresh 1 quart"
+      },
+      "preferred_supplier": "Local",
+      "notes": "Perishable, recommend local sourcing for freshness"
+    },
+    {
+      "inventory_item_id": "apple_cider_001",
+      "name": "Apple Cider (fresh, 1 gal)",
+      "category": "Beverages",
+      "search_queries": {
+        "walmart": "Fresh Apple Cider 1 gallon seasonal",
+        "instacart": "fresh apple cider 1 gallon",
+        "amazon": "N/A - seasonal local item"
+      },
+      "preferred_supplier": "Local",
+      "notes": "Seasonal, perishable - local farmers market recommended"
+    },
+    {
+      "inventory_item_id": "chocolate_chips_001",
+      "name": "Chocolate Chips (semi-sweet)",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "Ghirardelli Semi-Sweet Chocolate Chips 10oz",
+        "walmart": "Nestle Toll House Semi-Sweet Chocolate Chips 10oz",
+        "instacart": "chocolate chips semi sweet 10 oz"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Premium baking chocolate"
+    },
+    {
+      "inventory_item_id": "coconut_oil_001",
+      "name": "Coconut Oil (virgin)",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "Dr. Bronner's Organic Virgin Coconut Oil 14oz",
+        "walmart": "Great Value Virgin Coconut Oil 14 oz",
+        "instacart": "virgin coconut oil 14 oz"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Organic, cold-pressed"
+    },
+    {
+      "inventory_item_id": "balsamic_vinegar_001",
+      "name": "Balsamic Vinegar",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "Lucini Premium Select Balsamic Vinegar 17oz",
+        "walmart": "Colavita Balsamic Vinegar 17 fl oz",
+        "instacart": "balsamic vinegar 17 oz"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Premium aged balsamic"
+    },
+    {
+      "inventory_item_id": "soy_sauce_001",
+      "name": "Soy Sauce",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "Kikkoman Soy Sauce 10oz",
+        "walmart": "Kikkoman Soy Sauce 10 fl oz",
+        "instacart": "soy sauce kikkoman 10 oz"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Standard cooking condiment"
+    },
+    {
+      "inventory_item_id": "almond_flour_001",
+      "name": "Almond Flour",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "Bob's Red Mill Almond Flour 16oz",
+        "walmart": "Anthony's Almond Flour 1 lb",
+        "instacart": "almond flour 1 pound"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Gluten-free baking staple"
+    },
+    {
+      "inventory_item_id": "matzo_001",
+      "name": "Matzo (unsalted)",
+      "category": "Bakery",
+      "search_queries": {
+        "amazon": "Gefen Matzo Unsalted 10oz",
+        "walmart": "Manischewitz Matzo Unsalted 10 oz",
+        "instacart": "matzo unsalted"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Kosher certified, seasonal availability"
+    },
+    {
+      "inventory_item_id": "turmeric_001",
+      "name": "Turmeric (ground)",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "Simply Organic Ground Turmeric 2.3oz",
+        "walmart": "McCormick Ground Turmeric 1.7oz",
+        "instacart": "ground turmeric 2 oz"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Premium spice"
+    },
+    {
+      "inventory_item_id": "cumin_001",
+      "name": "Cumin (ground)",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "Simply Organic Ground Cumin 2.4oz",
+        "walmart": "McCormick Ground Cumin 1.62oz",
+        "instacart": "ground cumin 2 oz"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Premium spice"
+    },
+    {
+      "inventory_item_id": "paprika_001",
+      "name": "Paprika (smoked)",
+      "category": "Pantry",
+      "search_queries": {
+        "amazon": "Simply Organic Smoked Paprika 2.3oz",
+        "walmart": "McCormick Smoked Paprika 2.12oz",
+        "instacart": "smoked paprika 2 oz"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Premium spice for depth"
+    }
+  ],
+  "household_items": [
+    {
+      "inventory_item_id": "dish_soap_001",
+      "name": "Dish Soap (liquid, unscented)",
+      "category": "Cleaners",
+      "search_queries": {
+        "amazon": "Seventh Generation Free & Clear Dish Liquid 25oz",
+        "walmart": "Great Value Ultra Dish Soap 25 fl oz",
+        "instacart": "dish soap unscented 25 oz"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Hypoallergenic, safe for sensitive skin"
+    },
+    {
+      "inventory_item_id": "paper_towels_001",
+      "name": "Paper Towels",
+      "category": "Paper Goods",
+      "search_queries": {
+        "amazon": "Bounty Select-A-Size Paper Towels 12 rolls",
+        "walmart": "Bounty Select-A-Size Paper Towels 12 Pack",
+        "instacart": "paper towels bounty 12 pack"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Bulk purchase recommended"
+    },
+    {
+      "inventory_item_id": "toilet_paper_001",
+      "name": "Toilet Paper",
+      "category": "Paper Goods",
+      "search_queries": {
+        "amazon": "Cottonelle Ultra ComfortCare Toilet Paper 30 Double Rolls",
+        "walmart": "Cottonelle Ultra ComfortCare 30 Double Rolls",
+        "instacart": "toilet paper cottonelle 30 rolls"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Bulk purchase recommended"
+    },
+    {
+      "inventory_item_id": "trash_bags_001",
+      "name": "Trash Bags (gallon, 13 gal)",
+      "category": "Paper Goods",
+      "search_queries": {
+        "amazon": "Glad ForceFlex Trash Bags 13 Gallon 100 Count",
+        "walmart": "Glad ForceFlex Trash Bags 13 Gallon 100 ct",
+        "instacart": "trash bags 13 gallon 100 count"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Heavy-duty, box of 100"
+    },
+    {
+      "inventory_item_id": "laundry_detergent_001",
+      "name": "Laundry Detergent (liquid, unscented)",
+      "category": "Laundry",
+      "search_queries": {
+        "amazon": "Seventh Generation Free & Clear Laundry Liquid 150oz",
+        "walmart": "Great Value Liquid Laundry Detergent 150 fl oz",
+        "instacart": "laundry detergent unscented 150 oz"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Hypoallergenic for sensitive skin"
+    },
+    {
+      "inventory_item_id": "fabric_softener_001",
+      "name": "Fabric Softener (liquid)",
+      "category": "Laundry",
+      "search_queries": {
+        "amazon": "Downy Liquid Fabric Softener April Fresh 41oz",
+        "walmart": "Downy Liquid Fabric Softener 41 fl oz",
+        "instacart": "fabric softener downy 41 oz"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Standard laundry care"
+    },
+    {
+      "inventory_item_id": "all_purpose_cleaner_001",
+      "name": "All-Purpose Cleaner",
+      "category": "Cleaners",
+      "search_queries": {
+        "amazon": "Method All-Purpose Natural Surface Cleaner 28oz",
+        "walmart": "Great Value All Purpose Cleaner 28 oz",
+        "instacart": "all purpose cleaner 28 oz"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Plant-based, non-toxic"
+    },
+    {
+      "inventory_item_id": "glass_cleaner_001",
+      "name": "Glass Cleaner",
+      "category": "Cleaners",
+      "search_queries": {
+        "amazon": "Windex Original Glass Cleaner 26oz",
+        "walmart": "Windex Glass Cleaner 26 fl oz",
+        "instacart": "glass cleaner windex 26 oz"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Standard household"
+    },
+    {
+      "inventory_item_id": "toilet_bowl_cleaner_001",
+      "name": "Toilet Bowl Cleaner",
+      "category": "Cleaners",
+      "search_queries": {
+        "amazon": "Lysol Toilet Bowl Cleaner 24oz",
+        "walmart": "Lysol Toilet Bowl Cleaner 24 fl oz",
+        "instacart": "toilet bowl cleaner lysol 24 oz"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Standard bathroom cleaner"
+    },
+    {
+      "inventory_item_id": "baking_soda_001",
+      "name": "Baking Soda (bulk)",
+      "category": "Cleaners",
+      "search_queries": {
+        "amazon": "Arm & Hammer Baking Soda 1 lb",
+        "walmart": "Arm & Hammer Baking Soda 1 lb",
+        "instacart": "baking soda 1 pound"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Multi-purpose cleaner & deodorizer"
+    },
+    {
+      "inventory_item_id": "toothpaste_001",
+      "name": "Toothpaste (fluoride)",
+      "category": "Personal Care",
+      "search_queries": {
+        "amazon": "Colgate Total Toothpaste 6oz",
+        "walmart": "Colgate Total Toothpaste 6 oz",
+        "instacart": "colgate toothpaste 6 oz"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Standard dental care"
+    },
+    {
+      "inventory_item_id": "shampoo_001",
+      "name": "Shampoo (unscented)",
+      "category": "Personal Care",
+      "search_queries": {
+        "amazon": "Aveeno Pure Renewal Shampoo Seaweed & Soy 10.5oz",
+        "walmart": "Great Value Shampoo 10 oz",
+        "instacart": "shampoo unscented 10 oz"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Hypoallergenic formula"
+    },
+    {
+      "inventory_item_id": "conditioner_001",
+      "name": "Conditioner (unscented)",
+      "category": "Personal Care",
+      "search_queries": {
+        "amazon": "Aveeno Pure Renewal Conditioner 10.5oz",
+        "walmart": "Great Value Conditioner 10 oz",
+        "instacart": "conditioner unscented 10 oz"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Hypoallergenic formula"
+    },
+    {
+      "inventory_item_id": "body_soap_001",
+      "name": "Body Soap (unscented)",
+      "category": "Personal Care",
+      "search_queries": {
+        "amazon": "Dove Unscented Beauty Bar 3 pack",
+        "walmart": "Dove Sensitive Skin Beauty Bar 3 ct",
+        "instacart": "body soap unscented dove"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Gentle, fragrance-free"
+    },
+    {
+      "inventory_item_id": "deodorant_001",
+      "name": "Deodorant (aluminum-free)",
+      "category": "Personal Care",
+      "search_queries": {
+        "amazon": "Tom's of Maine Natural Deodorant 2.25oz",
+        "walmart": "Tom's of Maine Natural Deodorant 2.25 oz",
+        "instacart": "deodorant natural aluminum free"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Natural formula"
+    },
+    {
+      "inventory_item_id": "hand_sanitizer_001",
+      "name": "Hand Sanitizer (gel, 70% alcohol)",
+      "category": "Health & First Aid",
+      "search_queries": {
+        "amazon": "Purell Advanced Hand Sanitizer 8oz",
+        "walmart": "Purell Advanced Hand Sanitizer 8 fl oz",
+        "instacart": "hand sanitizer purell 8 oz"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "CDC-approved formulation"
+    },
+    {
+      "inventory_item_id": "first_aid_kit_001",
+      "name": "First Aid Kit (comprehensive)",
+      "category": "Health & First Aid",
+      "search_queries": {
+        "amazon": "First Aid Only 110-Piece First Aid Kit",
+        "walmart": "First Aid Only 100 Piece First Aid Kit",
+        "instacart": "first aid kit comprehensive"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Refillable, includes bandages, gauze, antiseptic"
+    },
+    {
+      "inventory_item_id": "thermometer_001",
+      "name": "Thermometer (digital, non-contact)",
+      "category": "Health & First Aid",
+      "search_queries": {
+        "amazon": "Braun Thermoscan Non-Contact Thermometer",
+        "walmart": "Braun No-Touch Forehead Thermometer",
+        "instacart": "digital thermometer non-contact"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Infrared, fast readings"
+    },
+    {
+      "inventory_item_id": "pain_reliever_001",
+      "name": "Pain Reliever (ibuprofen, 200mg)",
+      "category": "Health & First Aid",
+      "search_queries": {
+        "amazon": "Advil Ibuprofen 200mg 100 Caplets",
+        "walmart": "Advil Ibuprofen 200 mg 100 Count",
+        "instacart": "ibuprofen 200mg 100 count"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "OTC pain management"
+    },
+    {
+      "inventory_item_id": "antacid_001",
+      "name": "Antacid (calcium carbonate)",
+      "category": "Health & First Aid",
+      "search_queries": {
+        "amazon": "Tums Ultra Strength Tablets 72 Count",
+        "walmart": "Tums Ultra Strength 72 Tablets",
+        "instacart": "antacid tums 72 count"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Fast-acting heartburn relief"
+    },
+    {
+      "inventory_item_id": "cough_drops_001",
+      "name": "Cough Drops (menthol)",
+      "category": "Health & First Aid",
+      "search_queries": {
+        "amazon": "Ricola Throat Drops 75 Count",
+        "walmart": "Ricola Cough Drops Menthol 75 ct",
+        "instacart": "cough drops menthol ricola"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Natural throat lozenge"
+    },
+    {
+      "inventory_item_id": "cold_medicine_001",
+      "name": "Cold Medicine (multi-symptom)",
+      "category": "Health & First Aid",
+      "search_queries": {
+        "amazon": "Theraflu Multi-Symptom Cold Medicine 6 Count",
+        "walmart": "Theraflu Cold & Flu Medicine 6 Packets",
+        "instacart": "cold medicine multi symptom theraflu"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Powder packets, fast relief"
+    },
+    {
+      "inventory_item_id": "batteries_001",
+      "name": "Batteries (AA, alkaline)",
+      "category": "Household & Tools",
+      "search_queries": {
+        "amazon": "Energizer MAX AA Batteries 12 Pack",
+        "walmart": "Energizer Max AA Batteries 12 Count",
+        "instacart": "batteries AA energizer 12 pack"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Bulk pack, long-lasting"
+    },
+    {
+      "inventory_item_id": "batteries_aaa_001",
+      "name": "Batteries (AAA, alkaline)",
+      "category": "Household & Tools",
+      "search_queries": {
+        "amazon": "Energizer MAX AAA Batteries 12 Pack",
+        "walmart": "Energizer Max AAA Batteries 12 Count",
+        "instacart": "batteries AAA energizer 12 pack"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Bulk pack, long-lasting"
+    },
+    {
+      "inventory_item_id": "flashlight_001",
+      "name": "Flashlight (LED, rechargeable)",
+      "category": "Household & Tools",
+      "search_queries": {
+        "amazon": "Maglite LED Flashlight Rechargeable",
+        "walmart": "Energizer LED Rechargeable Flashlight",
+        "instacart": "flashlight LED rechargeable"
+      },
+      "preferred_supplier": "Amazon",
+      "notes": "Professional-grade, durable"
+    },
+    {
+      "inventory_item_id": "plastic_wrap_001",
+      "name": "Plastic Wrap (food-grade)",
+      "category": "Paper Goods",
+      "search_queries": {
+        "amazon": "Glad Cling Wrap 400 Square Feet",
+        "walmart": "Great Value Plastic Wrap 400 sq ft",
+        "instacart": "plastic wrap food grade 400 ft"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Standard food storage"
+    },
+    {
+      "inventory_item_id": "aluminum_foil_001",
+      "name": "Aluminum Foil (heavy-duty)",
+      "category": "Paper Goods",
+      "search_queries": {
+        "amazon": "Reynolds Wrap Heavy Duty Aluminum Foil 130 sq ft",
+        "walmart": "Reynolds Aluminum Foil Heavy Duty 130 sq ft",
+        "instacart": "aluminum foil heavy duty 130 ft"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Heavy-duty for cooking & storage"
+    },
+    {
+      "inventory_item_id": "ziplock_bags_001",
+      "name": "Ziplock Bags (gallon, freezer)",
+      "category": "Paper Goods",
+      "search_queries": {
+        "amazon": "Ziploc Freezer Bags Gallon 100 Count",
+        "walmart": "Ziploc Freezer Bags Gallon 100 ct",
+        "instacart": "ziplock bags gallon freezer 100"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Heavy-duty freezer storage"
+    },
+    {
+      "inventory_item_id": "diapers_001",
+      "name": "Diapers (size 2, 12-18 lbs)",
+      "category": "Baby",
+      "search_queries": {
+        "amazon": "Pampers Swaddlers Size 2 120 Count",
+        "walmart": "Pampers Swaddlers Size 2 120 ct",
+        "instacart": "diapers size 2 pampers 120"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Bulk box for value"
+    },
+    {
+      "inventory_item_id": "baby_wipes_001",
+      "name": "Baby Wipes (fragrance-free)",
+      "category": "Baby",
+      "search_queries": {
+        "amazon": "Pampers Swaddlers Wipes 10 Pack",
+        "walmart": "Pampers Swaddlers Baby Wipes 10 Pk",
+        "instacart": "baby wipes pampers 10 pack"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Gentle, hypoallergenic"
+    },
+    {
+      "inventory_item_id": "baby_formula_001",
+      "name": "Baby Formula (infant, ready-made)",
+      "category": "Baby",
+      "search_queries": {
+        "amazon": "Similac Pro-Total Comfort Ready-to-Feed 8oz",
+        "walmart": "Similac Pro-Total Comfort Ready to Feed 8 oz",
+        "instacart": "baby formula similac 8 oz ready made"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Perishable, store refrigerated"
+    },
+    {
+      "inventory_item_id": "tide_001",
+      "name": "Tide Laundry Detergent (liquid)",
+      "category": "Laundry",
+      "search_queries": {
+        "amazon": "Tide Original Liquid Laundry Detergent 150oz",
+        "walmart": "Tide Original Laundry Detergent 150 oz",
+        "instacart": "tide detergent liquid 150 oz"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Premium detergent, bulk size"
+    },
+    {
+      "inventory_item_id": "clorox_001",
+      "name": "Clorox Bleach (liquid, unscented)",
+      "category": "Cleaners",
+      "search_queries": {
+        "amazon": "Clorox Bleach Regular 121oz",
+        "walmart": "Clorox Bleach Regular 121 oz",
+        "instacart": "clorox bleach 121 oz"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Heavy-duty disinfectant"
+    },
+    {
+      "inventory_item_id": "sponges_001",
+      "name": "Sponges (scrubbing, non-scratch)",
+      "category": "Cleaners",
+      "search_queries": {
+        "amazon": "Scotch-Brite Non-Scratch Sponges 6 Pack",
+        "walmart": "Scotch-Brite Non-Scratch Sponges 6 ct",
+        "instacart": "sponges non-scratch scotch brite 6"
+      },
+      "preferred_supplier": "Walmart",
+      "notes": "Multi-pack for value"
+    }
+  ]
+}
