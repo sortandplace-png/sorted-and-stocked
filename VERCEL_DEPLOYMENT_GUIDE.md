@@ -76,12 +76,17 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_DH-u_GySA0YejAP1vkcDpg_gkYE1KFT
 This key is **NOT** included in Vercel deployment for client-side use:
 
 ```
-SUPABASE_SERVICE_ROLE_KEY=sb_secret_es2MCkBnt-F780W3zs2OvA_-9vzf23N
+SUPABASE_SERVICE_ROLE_KEY=<copy the current value from Supabase dashboard → API Keys → secret key>
 ```
 
 ⚠️ DO NOT set this as NEXT_PUBLIC_
 ⚠️ Only needed if backend routes call Supabase with elevated privileges
 ⚠️ Should only exist in server-side environment (Edge Functions, API routes)
+⚠️ Never paste the literal value into this file (or any committed file) —
+   a previous version of this doc had the real key hardcoded here since
+   2026-07-05 (commit 9c57aa7), which is how it ended up needing rotation.
+   Copy it directly from the Supabase dashboard into Vercel's environment
+   variable UI and into your local .env.local — never through a doc.
 
 ---
 
