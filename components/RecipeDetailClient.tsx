@@ -9,6 +9,9 @@ import SubstitutionCallout from '@/components/SubstitutionCallout';
 import SubstitutionEditor from '@/components/SubstitutionEditor';
 import IngredientShoppingLink from '@/components/IngredientShoppingLink';
 import { fetchRecipeWithIngredients } from '@/lib/recipe-actions';
+import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
+import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
+import { useToast } from '@/components/Toast';
 
 interface Ingredient {
   id: string;
@@ -80,11 +83,17 @@ export default function RecipeDetailClient({
   substitutionUpdatedAt?: string;
   substitutionUpdatedBy?: string;
 }) {
+  const role = usePropertyRole();
+  const supabase = createClient();
+  const showToast = useToast();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [targetServings, setTargetServings] = useState<number | null>(null);
+  const [view, setView] = useState<'owner' | 'staff'>(role === 'staff' ? 'staff' : 'owner');
+  const [checkedIds, setCheckedIds] = useState<Record<string, boolean>>({});
+  const [addingToListIds, setAddingToListIds] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     (async () => {
@@ -113,6 +122,26 @@ export default function RecipeDetailClient({
     }
     const scaledQty = i.quantity * scaleFactor;
     return [formatScaledNumber(scaledQty), i.unit, i.name].filter(Boolean).join(' ');
+  }
+
+  async function addToShoppingList(i: Ingredient) {
+    setAddingToListIds((prev) => ({ ...prev, [i.id]: true }));
+    const result = await addIngredientsToShoppingList(supabase, propertyId, [
+      {
+        name: i.name,
+        category: i.category,
+        quantity: i.quantity,
+        unit: i.unit,
+        recipe_id: recipeId,
+      },
+    ]);
+    setAddingToListIds((prev) => ({ ...prev, [i.id]: false }));
+
+    if (!result.ok) {
+      showToast(result.error, { variant: 'error' });
+      return;
+    }
+    showToast(`Added ${i.name} to shopping list.`, { variant: 'success' });
   }
 
   if (loading) {
@@ -159,6 +188,19 @@ export default function RecipeDetailClient({
           >
             🖨️ Print
           </button>
+          <button
+            onClick={async () => {
+              const url = `${window.location.origin}/properties/${propertyId}/recipes/${recipeId}`;
+              if (navigator.share) {
+                await navigator.share({ title: recipe.name, url });
+              } else {
+                await navigator.clipboard.writeText(url);
+              }
+            }}
+            className="text-sm font-medium border border-gold text-gold px-4 py-2 rounded-full hover:bg-gold/5 transition"
+          >
+            🔗 Share
+          </button>
         </div>
       </div>
 
@@ -180,6 +222,25 @@ export default function RecipeDetailClient({
           {kosherIcon(recipe.kosher_type)} {recipe.kosher_type}
         </span>
       )}
+
+      <div className="print:hidden mb-4 inline-flex rounded-full border border-gold-light/60 bg-white p-0.5 text-sm">
+        <button
+          onClick={() => setView('owner')}
+          className={`rounded-full px-4 py-1.5 transition-colors ${
+            view === 'owner' ? 'bg-gold text-white' : 'text-ink/60'
+          }`}
+        >
+          Owner view
+        </button>
+        <button
+          onClick={() => setView('staff')}
+          className={`rounded-full px-4 py-1.5 transition-colors ${
+            view === 'staff' ? 'bg-gold text-white' : 'text-ink/60'
+          }`}
+        >
+          Staff cook view
+        </button>
+      </div>
 
       <SubstitutionCallout
         recipeName={recipeName || recipe.name}
@@ -226,10 +287,29 @@ export default function RecipeDetailClient({
           <ul className="space-y-2">
             {ingredients.map((i) => (
               <li key={i.id} className="text-sm text-ink">
-                <div className="flex gap-2 print:hidden">
-                  <span className="text-gold shrink-0">•</span>
-                  <div className="flex-1">
-                    <div>{formatQty(i)}</div>
+                <div className="flex gap-2 print:hidden items-start">
+                  <input
+                    type="checkbox"
+                    checked={!!checkedIds[i.id]}
+                    onChange={(e) => setCheckedIds((c) => ({ ...c, [i.id]: e.target.checked }))}
+                    className={`shrink-0 mt-0.5 accent-gold ${view === 'staff' ? 'h-6 w-6' : 'h-4 w-4'}`}
+                    aria-label={`Check off ${i.name}`}
+                  />
+                  <div className={`flex-1 ${checkedIds[i.id] ? 'opacity-40 line-through' : ''}`}>
+                    <div className={`flex items-center gap-2 ${view === 'staff' ? 'text-xl' : ''}`}>
+                      <span>{formatQty(i)}</span>
+                      {canManage(role) && (
+                        <button
+                          onClick={() => addToShoppingList(i)}
+                          disabled={!!addingToListIds[i.id]}
+                          className="shrink-0 text-xs text-gold hover:text-aubergine transition-colors disabled:opacity-40"
+                          title="Add to shopping list"
+                          aria-label={`Add ${i.name} to shopping list`}
+                        >
+                          🛒
+                        </button>
+                      )}
+                    </div>
                     <IngredientShoppingLink
                       ingredient={i}
                       recipeNames={[recipe.name]}

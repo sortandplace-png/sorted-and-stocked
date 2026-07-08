@@ -9,17 +9,19 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import type { PropertyRole } from '@/components/PropertyRoleContext';
 
 const ITEMS = [
-  { segment: 'inventory', label: 'Inventory', icon: '📦', managerOnly: false },
-  { segment: 'meal-plan', label: 'Meal plan', icon: '🍽️', managerOnly: false },
-  { segment: 'shopping-list', label: 'Shopping', icon: '🛒', managerOnly: false },
-  { segment: 'scan', label: 'Scan', icon: '📷', managerOnly: false },
-  { segment: 'shift-handover', label: 'Handover', icon: '📝', managerOnly: false },
-  { segment: 'tools', label: 'Tools', icon: '🧰', managerOnly: false },
-  { segment: 'print-labels', label: 'Labels', icon: '🏷️', managerOnly: false },
-  { segment: 'staff', label: 'Staff', icon: '👥', managerOnly: true },
+  { segment: 'inventory', labelKey: 'inventory', icon: '📦', managerOnly: false },
+  { segment: 'recipes', labelKey: 'recipes', icon: '📖', managerOnly: false },
+  { segment: 'meal-plan', labelKey: 'mealPlan', icon: '🍽️', managerOnly: false },
+  { segment: 'shopping-list', labelKey: 'shopping', icon: '🛒', managerOnly: false },
+  { segment: 'scan', labelKey: 'scan', icon: '📷', managerOnly: false },
+  { segment: 'shift-handover', labelKey: 'handover', icon: '📝', managerOnly: false },
+  { segment: 'tools', labelKey: 'tools', icon: '🧰', managerOnly: false },
+  { segment: 'print-labels', labelKey: 'labels', icon: '🏷️', managerOnly: false },
+  { segment: 'staff', labelKey: 'staff', icon: '👥', managerOnly: true },
 ] as const;
 
 export default function PropertyIconNav({
@@ -30,6 +32,7 @@ export default function PropertyIconNav({
   role: PropertyRole;
 }) {
   const pathname = usePathname();
+  const t = useTranslations('nav');
   const items = ITEMS.filter((i) => !i.managerOnly || role === 'owner' || role === 'manager');
 
   return (
@@ -49,7 +52,7 @@ export default function PropertyIconNav({
             }
           >
             <span className="text-lg leading-none">{item.icon}</span>
-            <span className="text-[10px] font-medium leading-none whitespace-nowrap">{item.label}</span>
+            <span className="text-[10px] font-medium leading-none whitespace-nowrap">{t(item.labelKey)}</span>
           </Link>
         );
       })}

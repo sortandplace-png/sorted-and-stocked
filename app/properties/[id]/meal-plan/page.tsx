@@ -1,6 +1,6 @@
 // app/properties/[id]/meal-plan/page.tsx
 import { createClient } from '@/lib/supabase/server';
-import MealPlanTabs from '@/components/MealPlanTabs';
+import MealPlanView from '@/components/meal-plan/MealPlanView';
 
 export default async function MealPlanPage({
   params,
@@ -10,21 +10,11 @@ export default async function MealPlanPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  // Fetch meal plan entries for the calendar viewer
-  const todayStr = new Date().toISOString().split('T')[0];
-  const { data: entries } = await supabase
-    .from('meal_plan_entries')
-    .select(`
-      id,
-      plan_date,
-      meal_slot,
-      course,
-      custom_name,
-      recipes(id, name, kosher_type)
-    `)
+  const { data: recipes } = await supabase
+    .from('recipes')
+    .select('id, name, name_es, photo_url, course, kosher_type, is_shabbos_only')
     .eq('property_id', id)
-    .gte('plan_date', todayStr)
-    .order('plan_date');
+    .order('name');
 
-  return <MealPlanTabs propertyId={id} initialEntries={entries || []} />;
+  return <MealPlanView propertyId={id} recipes={recipes || []} />;
 }

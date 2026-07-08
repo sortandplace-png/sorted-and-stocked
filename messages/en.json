@@ -1,0 +1,82 @@
+{
+  "nav": {
+    "inventory": "Inventory",
+    "recipes": "Recipes",
+    "mealPlan": "Meal Plan",
+    "shopping": "Shopping",
+    "scan": "Scan",
+    "staff": "Staff",
+    "tools": "Tools",
+    "labels": "Labels",
+    "handover": "Handover"
+  },
+  "common": {
+    "print": "Print",
+    "share": "Share",
+    "whatsapp": "WhatsApp",
+    "add": "+ add",
+    "edit": "Edit"
+  },
+  "recipesGrid": {
+    "title": "Recipes",
+    "newRecipe": "New Recipe",
+    "searchPlaceholder": "Search recipes...",
+    "noResults": "No recipes found."
+  },
+  "recipe": {
+    "ingredients": "Ingredients",
+    "method": "Method",
+    "servings": "Servings",
+    "ownerView": "Owner view",
+    "staffView": "Staff cook view",
+    "whatsapp": "WhatsApp",
+    "print": "Print",
+    "share": "Share",
+    "edit": "Edit recipe",
+    "addToList": "Add to list",
+    "usedInRecipes": "Used in recipes",
+    "createInventoryItem": "Create inventory item",
+    "noInventoryLink": "Not linked to inventory yet"
+  },
+  "course": {
+    "soup": "Soup",
+    "protein": "Protein",
+    "starch": "Starch",
+    "vege": "Vege",
+    "salad": "Salad",
+    "dessert": "Dessert",
+    "kids_platter": "Kids Platter",
+    "dip": "Dip"
+  },
+  "mealSlot": {
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "dinner": "Dinner"
+  },
+  "calendar": {
+    "week": "Week",
+    "month": "Month",
+    "fast": "Fast",
+    "yomTov": "Yom Tov",
+    "shabbos": "Shabbos",
+    "erevShabbos": "Erev Shabbos",
+    "sameDayWarning": "Same day meat/dairy — add buffer?",
+    "generateShoppingList": "Generate shopping list for week",
+    "printWeek": "Print week",
+    "printMonth": "Print month"
+  },
+  "shopping": {
+    "byRecipe": "By Recipe",
+    "byAisle": "By Aisle",
+    "whatsappShare": "Share on WhatsApp",
+    "print": "Print",
+    "moreRecipes": "+{count} more",
+    "weekOf": "Week of {date}"
+  },
+  "labels": {
+    "title": "Print Item Labels",
+    "selectItems": "Select items",
+    "printLabels": "Print Labels",
+    "usedInRecipes": "Used in recipes"
+  }
+}

@@ -64,6 +64,49 @@ export async function updateShoppingItemStatus(
   }
 }
 
+export interface ShoppingItemSource {
+  shopping_list_item_id: string;
+  recipe_id: string;
+  recipe_name: string;
+  recipe_name_es: string | null;
+  quantity: number | null;
+  unit: string | null;
+}
+
+/**
+ * Fetch which recipe(s) each shopping list item came from — powers the
+ * "By Recipe" grouping and the "used in N recipes" pills. Items added by
+ * hand (addCustomItem) or from Staples have no rows here, which is
+ * expected — they just render with no attribution.
+ *
+ * Filters by shopping_list_id through a join rather than passing every
+ * item's UUID in an .in() list — a list with hundreds of items (this app
+ * regularly has 300+) turns that into a multi-kilobyte query string that
+ * can fail silently, which is exactly what happened during testing.
+ */
+export async function fetchItemSources(shoppingListId: string): Promise<ShoppingItemSource[]> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from('shopping_list_item_sources')
+    .select('shopping_list_item_id, recipe_id, quantity, unit, recipes(name, name_es), shopping_list_items!inner(shopping_list_id)')
+    .eq('shopping_list_items.shopping_list_id', shoppingListId);
+
+  if (error) {
+    console.error('Error fetching item sources:', error.message);
+    return [];
+  }
+
+  return (data ?? []).map((row: any) => ({
+    shopping_list_item_id: row.shopping_list_item_id,
+    recipe_id: row.recipe_id,
+    recipe_name: row.recipes?.name ?? 'Unknown recipe',
+    recipe_name_es: row.recipes?.name_es ?? null,
+    quantity: row.quantity,
+    unit: row.unit,
+  }));
+}
+
 /**
  * Delete/remove item from shopping list
  */

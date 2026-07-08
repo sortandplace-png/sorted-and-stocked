@@ -3,8 +3,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchEnhancedShoppingList, updateShoppingItemStatus, removeShoppingItem } from '@/lib/api/shoppingList';
-import { ExternalLink, Trash2, CheckCircle2, Circle } from 'lucide-react';
+import { useLocale } from 'next-intl';
+import {
+  fetchEnhancedShoppingList,
+  fetchItemSources,
+  updateShoppingItemStatus,
+  removeShoppingItem,
+  type ShoppingItemSource,
+} from '@/lib/api/shoppingList';
+import { ExternalLink, Trash2, CheckCircle2, Circle, MessageCircle, Printer } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 
 type ShoppingListItem = {
@@ -26,17 +33,29 @@ type ShoppingListItem = {
   is_staple_origin: boolean;
 };
 
+type GroupBy = 'staples-first' | 'category' | 'by-recipe';
+
 export default function ShoppingListViewEnhanced({ shoppingListId }: { shoppingListId: string }) {
   const [items, setItems] = useState<ShoppingListItem[]>([]);
+  const [sources, setSources] = useState<Record<string, ShoppingItemSource[]>>({});
   const [loading, setLoading] = useState(true);
-  const [groupBy, setGroupBy] = useState<'category' | 'staples-first'>('staples-first');
+  const [groupBy, setGroupBy] = useState<GroupBy>('staples-first');
+  const [expandedPills, setExpandedPills] = useState<Record<string, boolean>>({});
   const showToast = useToast();
+  const locale = useLocale();
 
   const loadItems = async () => {
     setLoading(true);
     try {
       const data = await fetchEnhancedShoppingList(shoppingListId);
       setItems(data);
+
+      const sourceRows = await fetchItemSources(shoppingListId);
+      const byItem: Record<string, ShoppingItemSource[]> = {};
+      for (const row of sourceRows) {
+        (byItem[row.shopping_list_item_id] ??= []).push(row);
+      }
+      setSources(byItem);
     } catch (error) {
       console.error('Error loading shopping list:', error);
       showToast('Failed to load shopping list.', { variant: 'error' });
@@ -73,6 +92,56 @@ export default function ShoppingListViewEnhanced({ shoppingListId }: { shoppingL
     }
   };
 
+  function sourceTitle(s: ShoppingItemSource) {
+    return locale === 'es' && s.recipe_name_es ? s.recipe_name_es : s.recipe_name;
+  }
+
+  function recipePills(itemId: string) {
+    const itemSources = sources[itemId];
+    if (!itemSources || itemSources.length === 0) return null;
+    const [first, ...rest] = itemSources;
+    return (
+      <div className="relative flex items-center gap-1 mt-1">
+        <span className="rounded-full bg-gold-light/20 px-2 py-0.5 text-[10px] text-aubergine">
+          {sourceTitle(first)}
+        </span>
+        {rest.length > 0 && (
+          <button
+            onClick={() => setExpandedPills((e) => ({ ...e, [itemId]: !e[itemId] }))}
+            className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-medium text-gold"
+          >
+            +{rest.length} more
+          </button>
+        )}
+        {expandedPills[itemId] && rest.length > 0 && (
+          <div className="absolute left-0 top-6 z-10 w-56 rounded-lg border border-gold-light/40 bg-white p-2 shadow-lg">
+            {itemSources.map((s) => (
+              <div key={s.recipe_id} className="flex justify-between py-0.5 text-xs">
+                <span>{sourceTitle(s)}</span>
+                <span className="text-ink/50">
+                  {s.quantity ?? ''} {s.unit ?? ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function shareWhatsApp() {
+    const weekOf = new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+    let text = `*Shopping List – Week of ${weekOf}*\n`;
+    for (const group of groupItems()) {
+      if (group.items.length === 0) continue;
+      text += `\n*${group.title}:*\n`;
+      for (const item of group.items) {
+        text += `- ${item.name}\n`;
+      }
+    }
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  }
+
   const groupItems = () => {
     if (groupBy === 'staples-first') {
       const staples = items.filter(i => i.is_staple_origin);
@@ -81,18 +150,43 @@ export default function ShoppingListViewEnhanced({ shoppingListId }: { shoppingL
         { title: 'Staples', items: staples },
         { title: 'Recipe Ingredients', items: recipes }
       ];
-    } else {
-      const byCategory = items.reduce(
-        (acc, item) => {
-          const cat = item.category || 'Other';
-          if (!acc[cat]) acc[cat] = [];
-          acc[cat].push(item);
-          return acc;
-        },
-        {} as Record<string, ShoppingListItem[]>
-      );
-      return Object.entries(byCategory).map(([title, items]) => ({ title, items }));
     }
+    if (groupBy === 'by-recipe') {
+      const groupsMap: Record<string, { title: string; items: ShoppingListItem[] }> = {};
+      for (const item of items) {
+        const itemSources = sources[item.item_id];
+        const primary = itemSources?.[0];
+        const key = primary?.recipe_id ?? 'unassigned';
+        const title = primary ? sourceTitle(primary) : 'Other';
+        (groupsMap[key] ??= { title, items: [] }).items.push(item);
+      }
+      // "Other" (items with no recipe attribution — old items from before
+      // this feature existed, or hand-added ones) is pushed to the end
+      // rather than wherever it happened to be encountered first, so a big
+      // leftover bucket doesn't bury the groups that actually answer "what
+      // recipe is this for."
+      return Object.values(groupsMap).sort((a, b) => {
+        if (a.title === 'Other') return 1;
+        if (b.title === 'Other') return -1;
+        return a.title.localeCompare(b.title);
+      });
+    }
+    const byCategory = items.reduce(
+      (acc, item) => {
+        const cat = item.category || 'Other';
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(item);
+        return acc;
+      },
+      {} as Record<string, ShoppingListItem[]>
+    );
+    return Object.entries(byCategory)
+      .map(([title, items]) => ({ title, items }))
+      .sort((a, b) => {
+        if (a.title === 'Other') return 1;
+        if (b.title === 'Other') return -1;
+        return a.title.localeCompare(b.title);
+      });
   };
 
   if (loading) {
@@ -103,9 +197,21 @@ export default function ShoppingListViewEnhanced({ shoppingListId }: { shoppingL
 
   return (
     <div className="space-y-4">
+      <style>{`@media print { .print\\:hidden { display: none !important; } }`}</style>
+
+      {/* Share / Print */}
+      <div className="print:hidden flex items-center justify-end gap-3 text-ink/60">
+        <button onClick={shareWhatsApp} aria-label="Share on WhatsApp" title="Share on WhatsApp">
+          <MessageCircle className="h-4 w-4" />
+        </button>
+        <button onClick={() => window.print()} aria-label="Print" title="Print">
+          <Printer className="h-4 w-4" />
+        </button>
+      </div>
+
       {/* View Options */}
-      <div className="flex gap-2">
-        {(['staples-first', 'category'] as const).map(option => (
+      <div className="print:hidden flex gap-2 flex-wrap">
+        {(['staples-first', 'category', 'by-recipe'] as const).map(option => (
           <button
             key={option}
             onClick={() => setGroupBy(option)}
@@ -115,7 +221,7 @@ export default function ShoppingListViewEnhanced({ shoppingListId }: { shoppingL
                 : 'bg-gold-light/20 text-aubergine hover:bg-gold-light/30'
             }`}
           >
-            {option === 'staples-first' ? 'Staples First' : 'By Category'}
+            {option === 'staples-first' ? 'Staples First' : option === 'category' ? 'By Aisle' : 'By Recipe'}
           </button>
         ))}
       </div>
@@ -171,10 +277,11 @@ export default function ShoppingListViewEnhanced({ shoppingListId }: { shoppingL
                               {item.supplier && <span>{item.supplier} · </span>}
                               {item.category}
                             </p>
+                            {recipePills(item.item_id)}
                           </div>
                           <button
                             onClick={() => toggleStatus(item.item_id, item.status)}
-                            className="flex-shrink-0 text-aubergine hover:text-emerald-700 transition-colors"
+                            className="print:hidden flex-shrink-0 text-aubergine hover:text-emerald-700 transition-colors"
                           >
                             {item.status === 'purchased' ? (
                               <CheckCircle2 className="h-5 w-5" />
@@ -199,7 +306,7 @@ export default function ShoppingListViewEnhanced({ shoppingListId }: { shoppingL
                         </div>
 
                         {/* Reorder Link + Delete */}
-                        <div className="flex items-center gap-2">
+                        <div className="print:hidden flex items-center gap-2">
                           {item.reorder_link ? (
                             <a
                               href={item.reorder_link}
@@ -233,9 +340,10 @@ export default function ShoppingListViewEnhanced({ shoppingListId }: { shoppingL
                           {item.name}
                         </h4>
                         <p className="text-xs text-ink/60 mt-0.5">{item.category}</p>
+                        {recipePills(item.item_id)}
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="print:hidden flex items-center gap-2">
                         <button
                           onClick={() => toggleStatus(item.item_id, item.status)}
                           className="text-aubergine hover:text-emerald-700 transition-colors"

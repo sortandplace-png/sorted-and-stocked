@@ -4,8 +4,6 @@
 // disappearing (e.g. Unsplash Source's shutdown broke every hotlinked URL).
 import { SupabaseClient } from '@supabase/supabase-js';
 
-const BUCKET = 'ingredient-photos';
-
 function slugify(name: string): string {
   return name
     .toLowerCase()
@@ -17,7 +15,8 @@ function slugify(name: string): string {
 
 async function persistOne(
   supabase: SupabaseClient,
-  ingredientName: string,
+  bucket: string,
+  itemName: string,
   sourceUrl: string
 ): Promise<string | null> {
   try {
@@ -27,21 +26,21 @@ async function persistOne(
     const contentType = response.headers.get('content-type') || 'image/jpeg';
     const ext = contentType.includes('png') ? 'png' : 'jpg';
     const buffer = Buffer.from(await response.arrayBuffer());
-    const path = `${slugify(ingredientName)}.${ext}`;
+    const path = `${slugify(itemName)}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
-      .from(BUCKET)
+      .from(bucket)
       .upload(path, buffer, { contentType, upsert: true });
 
     if (uploadError) {
-      console.error(`[STORAGE ERROR] ${ingredientName}:`, uploadError);
+      console.error(`[STORAGE ERROR] ${itemName}:`, uploadError);
       return null;
     }
 
-    const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     return data.publicUrl;
   } catch (err) {
-    console.error(`[STORAGE FETCH ERROR] ${ingredientName}:`, err);
+    console.error(`[STORAGE FETCH ERROR] ${itemName}:`, err);
     return null;
   }
 }
@@ -51,13 +50,14 @@ async function persistOne(
 // original third-party host no longer serves the image).
 export async function persistPhoto(
   supabase: SupabaseClient,
-  ingredientName: string,
-  sourceUrls: string | string[]
+  itemName: string,
+  sourceUrls: string | string[],
+  bucket: string = 'ingredient-photos'
 ): Promise<string | null> {
   const candidates = Array.isArray(sourceUrls) ? sourceUrls : [sourceUrls];
 
   for (const url of candidates) {
-    const result = await persistOne(supabase, ingredientName, url);
+    const result = await persistOne(supabase, bucket, itemName, url);
     if (result) return result;
   }
 

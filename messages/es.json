@@ -1,0 +1,82 @@
+{
+  "nav": {
+    "inventory": "Inventario",
+    "recipes": "Recetas",
+    "mealPlan": "Plan de comidas",
+    "shopping": "Compras",
+    "scan": "Escanear",
+    "staff": "Personal",
+    "tools": "Herramientas",
+    "labels": "Etiquetas",
+    "handover": "Traspaso de turno"
+  },
+  "common": {
+    "print": "Imprimir",
+    "share": "Compartir",
+    "whatsapp": "WhatsApp",
+    "add": "+ agregar",
+    "edit": "Editar"
+  },
+  "recipesGrid": {
+    "title": "Recetas",
+    "newRecipe": "Nueva Receta",
+    "searchPlaceholder": "Buscar recetas...",
+    "noResults": "No se encontraron recetas."
+  },
+  "recipe": {
+    "ingredients": "Ingredientes",
+    "method": "Preparación",
+    "servings": "Porciones",
+    "ownerView": "Vista dueño",
+    "staffView": "Vista cocina",
+    "whatsapp": "WhatsApp",
+    "print": "Imprimir",
+    "share": "Compartir",
+    "edit": "Editar receta",
+    "addToList": "Agregar a la lista",
+    "usedInRecipes": "Usado en recetas",
+    "createInventoryItem": "Crear artículo de inventario",
+    "noInventoryLink": "Aún no vinculado al inventario"
+  },
+  "course": {
+    "soup": "Sopa",
+    "protein": "Proteína",
+    "starch": "Almidón",
+    "vege": "Vegetales",
+    "salad": "Ensalada",
+    "dessert": "Postre",
+    "kids_platter": "Niños",
+    "dip": "Dip"
+  },
+  "mealSlot": {
+    "breakfast": "Desayuno",
+    "lunch": "Almuerzo",
+    "dinner": "Cena"
+  },
+  "calendar": {
+    "week": "Semana",
+    "month": "Mes",
+    "fast": "Ayuno",
+    "yomTov": "Yom Tov",
+    "shabbos": "Shabat",
+    "erevShabbos": "Víspera de Shabat",
+    "sameDayWarning": "Mismo día carne/lácteo — ¿agregar separación?",
+    "generateShoppingList": "Generar lista de compras de la semana",
+    "printWeek": "Imprimir semana",
+    "printMonth": "Imprimir mes"
+  },
+  "shopping": {
+    "byRecipe": "Por Receta",
+    "byAisle": "Por Pasillo",
+    "whatsappShare": "Compartir en WhatsApp",
+    "print": "Imprimir",
+    "moreRecipes": "+{count} más",
+    "weekOf": "Semana del {date}"
+  },
+  "labels": {
+    "title": "Imprimir Etiquetas",
+    "selectItems": "Seleccionar artículos",
+    "printLabels": "Imprimir Etiquetas",
+    "usedInRecipes": "Usado en recetas"
+  }
+}

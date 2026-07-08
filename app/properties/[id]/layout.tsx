@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import PropertyIconNav from '@/components/PropertyIconNav';
 import LogoutButton from '@/components/LogoutButton';
+import LocaleToggle from '@/components/LocaleToggle';
 import { PropertyRoleProvider, type PropertyRole } from '@/components/PropertyRoleContext';
 
 export default async function PropertyLayout({
@@ -50,7 +51,10 @@ export default async function PropertyLayout({
               <span className="block text-[11px] text-cream/70 truncate">{propertyName}</span>
             </div>
           </div>
-          <LogoutButton />
+          <div className="flex items-center gap-3">
+            <LocaleToggle />
+            <LogoutButton />
+          </div>
         </header>
         <div className="sticky top-[60px] z-20">
           <PropertyIconNav propertyId={id} role={membership.role as PropertyRole} />

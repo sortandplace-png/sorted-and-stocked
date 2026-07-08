@@ -1,6 +1,8 @@
 // app/layout.tsx
 import type { Metadata } from 'next';
 import { Cormorant_Garamond, Nunito_Sans, Playfair_Display, Inter } from 'next/font/google';
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
 import OfflineSyncProvider from '@/components/OfflineSyncProvider';
 import { ToastProvider } from '@/components/Toast';
 import './globals.css';
@@ -31,13 +33,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const messages = await getMessages();
+
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${playfair.variable} ${inter.variable}`}>
       <body>
-        <OfflineSyncProvider>
-          <ToastProvider>{children}</ToastProvider>
-        </OfflineSyncProvider>
+        <NextIntlClientProvider messages={messages}>
+          <OfflineSyncProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </OfflineSyncProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
