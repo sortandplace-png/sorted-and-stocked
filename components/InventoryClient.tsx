@@ -103,6 +103,11 @@ export default function InventoryClient({
   const [showNewRoom, setShowNewRoom] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
   const [savingRoom, setSavingRoom] = useState(false);
+  // Tracks item IDs whose photo failed to actually load (dead link, 404,
+  // etc.) — isDirectImageUrl only checks the URL *shape*, not whether the
+  // image is reachable, so a broken link would otherwise render as the
+  // browser's broken-image icon instead of falling back to the category icon.
+  const [brokenPhotoIds, setBrokenPhotoIds] = useState<Set<string>>(new Set());
 
   const supabase = createClient();
   const role = usePropertyRole();
@@ -448,7 +453,8 @@ export default function InventoryClient({
           <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
             {visibleItems.map((item) => {
               const low = item.current_qty < item.min_qty;
-              const hasThumb = !!item.photo_url && isDirectImageUrl(item.photo_url);
+              const hasThumb =
+                !!item.photo_url && isDirectImageUrl(item.photo_url) && !brokenPhotoIds.has(item.id);
               const isFav = favoriteIds.has(item.id);
               return (
                 <div
@@ -462,6 +468,9 @@ export default function InventoryClient({
                       src={item.photo_url!}
                       alt=""
                       className="w-14 h-14 rounded-xl object-cover shrink-0 bg-gold-light/20"
+                      onError={() =>
+                        setBrokenPhotoIds((prev) => new Set(prev).add(item.id))
+                      }
                     />
                   ) : (
                     <div className="w-14 h-14 rounded-xl bg-gold-light/20 shrink-0 flex items-center justify-center text-2xl">

@@ -41,6 +41,9 @@ export default function ShoppingListViewEnhanced({ shoppingListId }: { shoppingL
   const [loading, setLoading] = useState(true);
   const [groupBy, setGroupBy] = useState<GroupBy>('staples-first');
   const [expandedPills, setExpandedPills] = useState<Record<string, boolean>>({});
+  // Same broken-link concern as InventoryClient — photo_url existing isn't
+  // the same as the image actually loading.
+  const [brokenPhotoIds, setBrokenPhotoIds] = useState<Set<string>>(new Set());
   const showToast = useToast();
   const locale = useLocale();
 
@@ -248,12 +251,15 @@ export default function ShoppingListViewEnhanced({ shoppingListId }: { shoppingL
                   {item.is_rich_item ? (
                     <div className="flex gap-3">
                       {/* Photo */}
-                      {item.photo_url ? (
+                      {item.photo_url && !brokenPhotoIds.has(item.item_id) ? (
                         <div className="flex-shrink-0">
                           <img
                             src={item.photo_url}
                             alt={item.name}
                             className="h-16 w-16 rounded object-cover bg-gold-light/10"
+                            onError={() =>
+                              setBrokenPhotoIds((prev) => new Set(prev).add(item.item_id))
+                            }
                           />
                         </div>
                       ) : (
