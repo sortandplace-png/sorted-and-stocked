@@ -16,7 +16,7 @@ export default function FloatingKitchenTimerButton() {
       <button
         onClick={() => setShowTimer(true)}
         aria-label="Kitchen Timer"
-        className="fixed bottom-6 left-6 z-40 flex flex-col items-center gap-1 print:hidden"
+        className="fixed bottom-20 left-6 md:bottom-6 z-40 flex flex-col items-center gap-1 print:hidden"
       >
         <span className="w-14 h-14 rounded-full bg-gold-dark text-white shadow-lg shadow-charcoal/20 flex items-center justify-center hover:opacity-90 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal">
           <TimerIcon size={24} strokeWidth={1.75} aria-hidden="true" />
