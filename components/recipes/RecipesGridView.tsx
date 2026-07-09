@@ -390,16 +390,6 @@ export default function RecipesGridView({
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Course</p>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
-            <button onClick={() => setCourseFilter(null)} className="min-h-11 flex items-center">
-              <span
-                className={`flex items-center gap-1.5 leading-tight text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${
-                  !courseFilter ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
-                }`}
-              >
-                <LayoutGrid className={`w-3.5 h-3.5 ${!courseFilter ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                All <span className={!courseFilter ? 'text-charcoal/60' : 'text-charcoal/40'}>({recipes.length})</span>
-              </span>
-            </button>
             {COURSES.map((c) => {
               const active = courseFilter === c.key;
               const Icon = COURSE_PILL_ICONS[c.key];
@@ -503,7 +493,24 @@ export default function RecipesGridView({
 
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Prep</p>
-          <div className="flex flex-wrap gap-x-4 gap-y-2">
+          <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
+            <button
+              onClick={() => setCourseFilter(null)}
+              className="min-h-11 flex items-center"
+              title="Clear the Course filter (shows every recipe)"
+            >
+              <span
+                className={`flex items-center gap-1.5 leading-tight text-sm font-medium px-3 py-1.5 rounded-full border border-dashed transition-colors ${
+                  !courseFilter
+                    ? 'bg-gold text-charcoal border-gold'
+                    : 'bg-white border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                }`}
+              >
+                <LayoutGrid className={`w-3.5 h-3.5 ${!courseFilter ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                All <span className={!courseFilter ? 'text-charcoal/60' : 'text-charcoal/40'}>({recipes.length})</span>
+              </span>
+            </button>
+            <span className="w-px h-6 bg-gold-light/60 shrink-0" aria-hidden="true" />
             {PREP_FILTERS.map((p) => {
               const active = prepFilter === p.key;
               const Icon = PREP_PILL_ICONS[p.key];
