@@ -252,10 +252,21 @@ export default function MealPlanView({
   function openPicker(dateStr: string, course: Course, isSwap = false) {
     if (!canEdit) return;
     const recipesForCourse = recipes.filter((r) => r.course === course);
+    const existing = entryFor(dateStr, course);
     setEditing({ date: dateStr, course });
-    setPickerMode(recipesForCourse.length > 0 ? 'existing' : 'custom');
-    setPickedRecipeId(recipesForCourse[0]?.id ?? '');
-    setCustomName('');
+    if (existing?.recipe_id) {
+      setPickerMode('existing');
+      setPickedRecipeId(existing.recipe_id);
+      setCustomName('');
+    } else if (existing?.custom_name) {
+      setPickerMode('custom');
+      setPickedRecipeId(recipesForCourse[0]?.id ?? '');
+      setCustomName(existing.custom_name);
+    } else {
+      setPickerMode(recipesForCourse.length > 0 ? 'existing' : 'custom');
+      setPickedRecipeId(recipesForCourse[0]?.id ?? '');
+      setCustomName('');
+    }
     setRecipeSearch('');
     setKosherFilter(null);
     setSwapIntent(null);
