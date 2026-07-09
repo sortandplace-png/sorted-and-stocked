@@ -53,6 +53,7 @@ interface Recipe {
   is_yom_tov: boolean | null;
   is_shabbos_only: boolean | null;
   approx_total_minutes: number | null;
+  created_at: string;
 }
 
 // Weekday isn't a stored value — it's the default state where none of the
@@ -364,6 +365,10 @@ export default function RecipesGridView({
     const counts: Record<string, number> = {};
     for (const r of recipes) if (r.course) counts[r.course] = (counts[r.course] ?? 0) + 1;
     return counts;
+  }, [recipes]);
+
+  const recentlyAdded = useMemo(() => {
+    return [...recipes].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 6);
   }, [recipes]);
 
   const kosherCounts = useMemo(() => {
@@ -869,77 +874,117 @@ export default function RecipesGridView({
         </div>
       </div>
 
-      {expiringSoon.length > 0 && (
-        <div className={`bg-rust/5 border border-rust/20 rounded-2xl mb-5 ${hasActiveFilters ? 'p-2.5' : 'p-4'}`}>
-          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-            <h2 className={`font-display text-charcoal flex items-center gap-1.5 ${hasActiveFilters ? 'text-sm' : 'text-lg'}`}>
-              <Timer className="w-4 h-4 text-rust" strokeWidth={1.75} /> Use it up soon
-            </h2>
-            {!hasActiveFilters && (
-              <select
-                value={expiringWindow}
-                onChange={(e) => setExpiringWindow(Number(e.target.value))}
-                className="text-xs border border-gold-light/60 rounded-full px-2 py-1 bg-white text-charcoal/70"
-              >
-                {EXPIRING_WINDOW_OPTIONS.map((d) => (
-                  <option key={d} value={d}>
-                    Next {d} days
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-          {hasActiveFilters ? (
-            // Compact single-row ribbon while a filter is active, so the
-            // filtered results below don't get pushed far down the page —
-            // just a thumbnail + name, no ingredient-count subtitle or
-            // window picker.
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {expiringSoon.map((r) => (
-                <Link
-                  key={r.recipe_id}
-                  href={`/properties/${propertyId}/recipes/${r.recipe_id}`}
-                  className="shrink-0 w-28 flex items-center gap-1.5 bg-white rounded-lg border border-gold-light/40 shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors p-1.5"
-                >
-                  <div className="w-8 h-8 rounded bg-cream flex items-center justify-center shrink-0">
-                    {r.photo_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={r.photo_url} alt="" className="w-full h-full object-cover rounded" />
-                    ) : (
-                      <span className="text-sm text-charcoal/20">🍽️</span>
-                    )}
-                  </div>
-                  <p className="text-xs font-medium text-charcoal leading-snug truncate">{r.recipe_name}</p>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="flex gap-3 overflow-x-auto pb-1">
-              {expiringSoon.map((r) => (
-                <Link
-                  key={r.recipe_id}
-                  href={`/properties/${propertyId}/recipes/${r.recipe_id}`}
-                  className="shrink-0 w-40 bg-white rounded-xl border border-gold-light/40 shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors"
-                >
-                  <div className="w-full h-20 bg-cream flex items-center justify-center">
-                    {r.photo_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={r.photo_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-2xl text-charcoal/20">🍽️</span>
-                    )}
-                  </div>
-                  <div className="p-2.5">
-                    <p className="text-sm font-medium text-charcoal leading-snug line-clamp-2">{r.recipe_name}</p>
-                    <p
-                      className="text-xs text-rust mt-1"
-                      title={r.expiring_ingredient_names.join(', ')}
+      {(expiringSoon.length > 0 || recentlyAdded.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
+          {expiringSoon.length > 0 && (
+            <div
+              className={`bg-rust/5 border border-rust/20 rounded-2xl ${recentlyAdded.length > 0 ? 'lg:col-span-2' : 'lg:col-span-3'} ${
+                hasActiveFilters ? 'p-2.5' : 'p-4'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                <h2 className={`font-display text-charcoal flex items-center gap-1.5 ${hasActiveFilters ? 'text-sm' : 'text-lg'}`}>
+                  <Timer className="w-4 h-4 text-rust" strokeWidth={1.75} /> Use it up soon
+                </h2>
+                {!hasActiveFilters && (
+                  <select
+                    value={expiringWindow}
+                    onChange={(e) => setExpiringWindow(Number(e.target.value))}
+                    className="text-xs border border-gold-light/60 rounded-full px-2 py-1 bg-white text-charcoal/70"
+                  >
+                    {EXPIRING_WINDOW_OPTIONS.map((d) => (
+                      <option key={d} value={d}>
+                        Next {d} days
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              {hasActiveFilters ? (
+                // Compact single-row ribbon while a filter is active, so the
+                // filtered results below don't get pushed far down the page —
+                // just a thumbnail + name, no ingredient-count subtitle or
+                // window picker.
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {expiringSoon.map((r) => (
+                    <Link
+                      key={r.recipe_id}
+                      href={`/properties/${propertyId}/recipes/${r.recipe_id}`}
+                      className="shrink-0 w-28 flex items-center gap-1.5 bg-white rounded-lg border border-gold-light/40 shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors p-1.5"
                     >
-                      {r.expiring_count} expiring ingredient{r.expiring_count === 1 ? '' : 's'}
-                    </p>
-                  </div>
-                </Link>
-              ))}
+                      <div className="w-8 h-8 rounded bg-cream flex items-center justify-center shrink-0">
+                        {r.photo_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={r.photo_url} alt="" className="w-full h-full object-cover rounded" />
+                        ) : (
+                          <span className="text-sm text-charcoal/20">🍽️</span>
+                        )}
+                      </div>
+                      <p className="text-xs font-medium text-charcoal leading-snug truncate">{r.recipe_name}</p>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex gap-3 overflow-x-auto pb-1">
+                  {expiringSoon.map((r) => (
+                    <Link
+                      key={r.recipe_id}
+                      href={`/properties/${propertyId}/recipes/${r.recipe_id}`}
+                      className="shrink-0 w-40 bg-white rounded-xl border border-gold-light/40 shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors"
+                    >
+                      <div className="w-full h-20 bg-cream flex items-center justify-center">
+                        {r.photo_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={r.photo_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-2xl text-charcoal/20">🍽️</span>
+                        )}
+                      </div>
+                      <div className="p-2.5">
+                        <p className="text-sm font-medium text-charcoal leading-snug line-clamp-2">{r.recipe_name}</p>
+                        <p
+                          className="text-xs text-rust mt-1"
+                          title={r.expiring_ingredient_names.join(', ')}
+                        >
+                          {r.expiring_count} expiring ingredient{r.expiring_count === 1 ? '' : 's'}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {recentlyAdded.length > 0 && (
+            <div className={`bg-gold-light/10 border border-gold-light/40 rounded-2xl p-4 ${expiringSoon.length > 0 ? 'lg:col-span-1' : 'lg:col-span-3'}`}>
+              <h2 className="font-display text-lg text-charcoal flex items-center gap-1.5 mb-2">
+                <Clock className="w-4 h-4 text-gold-dark" strokeWidth={1.75} /> Recently Added
+              </h2>
+              <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-visible pb-1">
+                {recentlyAdded.map((r) => (
+                  <Link
+                    key={r.id}
+                    href={`/properties/${propertyId}/recipes/${r.id}`}
+                    className="shrink-0 lg:shrink lg:flex lg:items-center lg:gap-2 w-32 lg:w-full bg-white rounded-xl border border-gold-light/40 shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors"
+                  >
+                    <div className="w-full lg:w-12 h-20 lg:h-12 bg-cream flex items-center justify-center shrink-0">
+                      {r.photo_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={r.photo_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-xl text-charcoal/20">🍽️</span>
+                      )}
+                    </div>
+                    <div className="p-2 lg:py-1.5 lg:pl-0 min-w-0">
+                      <p className="text-xs font-medium text-charcoal leading-snug line-clamp-2 lg:truncate">{r.name}</p>
+                      <p className="text-[10px] text-charcoal/40 mt-0.5">
+                        {new Date(r.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </div>
