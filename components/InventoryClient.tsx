@@ -286,7 +286,12 @@ export default function InventoryClient({
   }, []);
 
   function openNewItemForm() {
-    setForm({ ...EMPTY_FORM, location_id: locations[0]?.id ?? '' });
+    // Respect whatever room/location is currently being viewed instead of
+    // always defaulting to the first location in the list — but Favorites
+    // is a pseudo-filter, not a real location, so it doesn't count here.
+    const defaultLocationId =
+      locationFilter && locationFilter !== FAVORITES ? locationFilter : locations[0]?.id ?? '';
+    setForm({ ...EMPTY_FORM, location_id: defaultLocationId });
   }
 
   function openEditForm(item: InventoryItem) {
