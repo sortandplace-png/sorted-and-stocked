@@ -375,121 +375,123 @@ export default function RecipesGridView({
         </div>
       )}
 
-      <div className="mb-6">
-        <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Course</p>
-        <div className="flex flex-wrap gap-4">
-          {COURSES.map((c) => {
-            const active = courseFilter === c.key;
-            const Icon = COURSE_PILL_ICONS[c.key];
-            return (
-              <button
-                key={c.key}
-                onClick={() => setCourseFilter(active ? null : c.key)}
-                className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-full transition-colors ${
-                  active ? 'bg-gold-dark text-white' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                {c.label} ({courseCounts[c.key] ?? 0})
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="mb-6">
-        <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Dietary</p>
-        <div className="flex flex-wrap gap-4">
-          {KOSHER_TYPES.map((k) => {
-            const active = kosherFilter === k;
-            const Icon = KOSHER_PILL_ICONS[k];
-            return (
-              <button
-                key={k}
-                onClick={() => setKosherFilter(active ? null : k)}
-                className={`flex flex-col items-center px-3 py-2 rounded-full transition-colors ${
-                  active ? 'bg-gold-dark text-white' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
-                }`}
-              >
-                <span className="flex items-center gap-1.5 text-xs font-medium">
+      <div className="space-y-4 mb-6">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Course</p>
+          <div className="flex flex-wrap gap-4">
+            {COURSES.map((c) => {
+              const active = courseFilter === c.key;
+              const Icon = COURSE_PILL_ICONS[c.key];
+              return (
+                <button
+                  key={c.key}
+                  onClick={() => setCourseFilter(active ? null : c.key)}
+                  className={`flex items-center gap-1.5 min-h-11 text-xs font-medium px-3 py-2 rounded-full transition-colors ${
+                    active ? 'bg-gold-dark text-white' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                  }`}
+                >
                   <Icon className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                  {k} ({kosherCounts[k] ?? 0})
-                </span>
-                {KOSHER_HEBREW[k] && (
-                  <span
-                    lang="he"
-                    dir="rtl"
-                    className={`text-[8px] leading-tight ${active ? 'text-white/60' : 'text-charcoal/40'}`}
-                  >
-                    {KOSHER_HEBREW[k]}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+                  {c.label} <span className={active ? 'text-white/60' : 'text-charcoal/40'}>({courseCounts[c.key] ?? 0})</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      <div className="mb-6">
-        <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Occasion</p>
-        <div className="flex flex-wrap gap-4">
-          {(
-            [
-              ['shabbos', 'Shabbos'],
-              ['yomtov', 'Yom Tov'],
-              ['pesach', 'Pesach'],
-              ['weekday', 'Weekday'],
-            ] as [Occasion, string][]
-          ).map(([key, label]) => {
-            const active = occasionFilter === key;
-            const hebrew = OCCASION_HEBREW[key];
-            const Icon = OCCASION_PILL_ICONS[key];
-            return (
-              <button
-                key={key}
-                onClick={() => setOccasionFilter(active ? null : key)}
-                className={`flex flex-col items-center px-3 py-2 rounded-full transition-colors ${
-                  active ? 'bg-gold-dark text-white' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
-                }`}
-              >
-                <span className="flex items-center gap-1.5 text-xs font-medium">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Dietary</p>
+          <div className="flex flex-wrap gap-4">
+            {KOSHER_TYPES.map((k) => {
+              const active = kosherFilter === k;
+              const Icon = KOSHER_PILL_ICONS[k];
+              return (
+                <button
+                  key={k}
+                  onClick={() => setKosherFilter(active ? null : k)}
+                  className={`flex flex-col items-center justify-center min-h-11 px-3 py-2 rounded-full transition-colors ${
+                    active ? 'bg-gold-dark text-white' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 text-xs font-medium">
+                    <Icon className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                    {k} <span className={active ? 'text-white/60' : 'text-charcoal/40'}>({kosherCounts[k] ?? 0})</span>
+                  </span>
+                  {KOSHER_HEBREW[k] && (
+                    <span
+                      lang="he"
+                      dir="rtl"
+                      className={`text-[8px] leading-tight ${active ? 'text-white/60' : 'text-charcoal/40'}`}
+                    >
+                      {KOSHER_HEBREW[k]}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Occasion</p>
+          <div className="flex flex-wrap gap-4">
+            {(
+              [
+                ['shabbos', 'Shabbos'],
+                ['yomtov', 'Yom Tov'],
+                ['pesach', 'Pesach'],
+                ['weekday', 'Weekday'],
+              ] as [Occasion, string][]
+            ).map(([key, label]) => {
+              const active = occasionFilter === key;
+              const hebrew = OCCASION_HEBREW[key];
+              const Icon = OCCASION_PILL_ICONS[key];
+              return (
+                <button
+                  key={key}
+                  onClick={() => setOccasionFilter(active ? null : key)}
+                  className={`flex flex-col items-center justify-center min-h-11 px-3 py-2 rounded-full transition-colors ${
+                    active ? 'bg-gold-dark text-white' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 text-xs font-medium">
+                    <Icon className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                    {label} <span className={active ? 'text-white/60' : 'text-charcoal/40'}>({occasionCounts[key] ?? 0})</span>
+                  </span>
+                  {hebrew && (
+                    <span
+                      lang="he"
+                      dir="rtl"
+                      className={`text-[8px] leading-tight ${active ? 'text-white/60' : 'text-charcoal/40'}`}
+                    >
+                      {hebrew}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Prep</p>
+          <div className="flex flex-wrap gap-4">
+            {PREP_FILTERS.map((p) => {
+              const active = prepFilter === p.key;
+              const Icon = PREP_PILL_ICONS[p.key];
+              return (
+                <button
+                  key={p.key}
+                  onClick={() => setPrepFilter(active ? null : p.key)}
+                  className={`flex items-center gap-1.5 min-h-11 text-xs font-medium px-3 py-2 rounded-full transition-colors ${
+                    active ? 'bg-gold-dark text-white' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                  }`}
+                >
                   <Icon className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                  {label} ({occasionCounts[key] ?? 0})
-                </span>
-                {hebrew && (
-                  <span
-                    lang="he"
-                    dir="rtl"
-                    className={`text-[8px] leading-tight ${active ? 'text-white/60' : 'text-charcoal/40'}`}
-                  >
-                    {hebrew}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="mb-6">
-        <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Prep</p>
-        <div className="flex flex-wrap gap-4">
-          {PREP_FILTERS.map((p) => {
-            const active = prepFilter === p.key;
-            const Icon = PREP_PILL_ICONS[p.key];
-            return (
-              <button
-                key={p.key}
-                onClick={() => setPrepFilter(active ? null : p.key)}
-                className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-full transition-colors ${
-                  active ? 'bg-gold-dark text-white' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                {p.label} ({prepCounts[p.key] ?? 0})
-              </button>
-            );
-          })}
+                  {p.label} <span className={active ? 'text-white/60' : 'text-charcoal/40'}>({prepCounts[p.key] ?? 0})</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
