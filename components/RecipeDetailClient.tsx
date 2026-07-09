@@ -18,6 +18,18 @@ import IngredientShoppingLink from '@/components/IngredientShoppingLink';
 import { fetchRecipeWithIngredients } from '@/lib/recipe-actions';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
+
+// Confirmed each of these has a real page + component before linking to it
+// (checked directly against the file system, not assumed) — Kitchen Timer,
+// Simcha Guest Scaler, and Reset Checklists were already known-real from
+// tonight's Tools Hub work; Prep Timeline specifically was re-verified here
+// since it hadn't been checked before.
+const KITCHEN_OPS_LINKS = [
+  { slug: 'kitchen-timer', icon: '⏱️', title: 'Kitchen Timer' },
+  { slug: 'guest-scaler', icon: '🎉', title: 'Simcha Guest Scaler' },
+  { slug: 'reset-checklist', icon: '🧹', title: 'Reset Checklists' },
+  { slug: 'prep-timeline', icon: '⏳', title: 'Prep Timeline' },
+];
 import { formatScaledNumber } from '@/lib/scale-quantity';
 import { useToast } from '@/components/Toast';
 
@@ -502,6 +514,22 @@ export default function RecipeDetailClient({
           lastUpdatedBy={substitutionUpdatedBy}
           lastUpdatedAt={substitutionUpdatedAt ? new Date(substitutionUpdatedAt) : undefined}
         />
+      </div>
+
+      <div className="mt-8 print:hidden">
+        <h2 className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-2">Kitchen Ops</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {KITCHEN_OPS_LINKS.map((tool) => (
+            <Link
+              key={tool.slug}
+              href={`/properties/${propertyId}/tools/${tool.slug}`}
+              className="flex items-center gap-1.5 bg-white rounded-xl border border-gold-light/40 px-3 py-2 text-xs text-charcoal hover:border-gold transition-colors"
+            >
+              <span aria-hidden="true">{tool.icon}</span>
+              <span className="truncate">{tool.title}</span>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );

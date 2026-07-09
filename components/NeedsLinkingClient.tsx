@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { resilientUpdate } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
+import { findAutoLinkMatch, AUTO_LINK_CONFIDENCE_THRESHOLD } from '@/lib/inventory-matching';
 
 type UnlinkedGroup = {
   name: string;
@@ -39,6 +40,7 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
   const [bulkLinkTarget, setBulkLinkTarget] = useState<'water' | 'selected' | null>(null);
   const [bulkSearch, setBulkSearch] = useState('');
   const [bulkOptions, setBulkOptions] = useState<InventoryOption[]>([]);
+  const [autoLinkResult, setAutoLinkResult] = useState<{ linked: number; remaining: number } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -57,7 +59,8 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
       .from('recipe_ingredients')
       .select('name, recipe_id, is_food')
       .in('recipe_id', recipeIds)
-      .is('inventory_item_id', null);
+      .is('inventory_item_id', null)
+      .eq('ignored_from_inventory', false);
 
     const byName = new Map<string, UnlinkedGroup>();
     for (const row of data ?? []) {
@@ -73,9 +76,41 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
       }
     }
 
-    setGroups([...byName.values()].sort((a, b) => b.count - a.count));
+    const allGroups = [...byName.values()].sort((a, b) => b.count - a.count);
+
+    // Auto-link pass: only genuinely confident, unambiguous matches (see
+    // lib/inventory-matching.ts) get linked without a human looking at
+    // them — everything else still lands in the manual-review list below,
+    // same as before this existed. The existing `loading` state already
+    // covers this phase (it runs before setLoading(false) below).
+    const stillUnlinked: UnlinkedGroup[] = [];
+    let linkedCount = 0;
+    for (const group of allGroups) {
+      const match = await findAutoLinkMatch(supabase, propertyId, group.name);
+      if (match) {
+        const result = await resilientUpdate(supabase, 'recipe_ingredients', { name: group.name }, { inventory_item_id: match.id });
+        if (result.ok) {
+          linkedCount++;
+          continue;
+        }
+      }
+      stillUnlinked.push(group);
+    }
+    if (linkedCount > 0) {
+      setAutoLinkResult({ linked: linkedCount, remaining: stillUnlinked.length });
+      showToast(
+        `Auto-linked ${linkedCount} ingredient${linkedCount === 1 ? '' : 's'} at ${Math.round(
+          AUTO_LINK_CONFIDENCE_THRESHOLD * 100
+        )}%+ confidence. ${stillUnlinked.length} still need review.`,
+        { variant: 'success' }
+      );
+    } else {
+      setAutoLinkResult({ linked: 0, remaining: stillUnlinked.length });
+    }
+
+    setGroups(stillUnlinked);
     setLoading(false);
-  }, [propertyId, supabase]);
+  }, [propertyId, supabase, showToast]);
 
   useEffect(() => {
     load();
@@ -175,6 +210,30 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
     setSelectedNames(new Set());
   }
 
+  // Distinct from markNamesNotFood: this is for genuinely real ingredients
+  // (water, salt) a household just doesn't want inventory-tracked — not for
+  // text that isn't a real ingredient at all. Using is_food for this would
+  // have meant claiming water "isn't food," which isn't true.
+  async function markNamesIgnored(names: string[]) {
+    setWorking(true);
+    let failed = 0;
+    for (const name of names) {
+      const result = await resilientUpdate(supabase, 'recipe_ingredients', { name }, { ignored_from_inventory: true });
+      if (!result.ok) failed++;
+    }
+    setWorking(false);
+
+    if (failed > 0) {
+      showToast(`Ignored ${names.length - failed} of ${names.length} — ${failed} failed.`, { variant: 'error' });
+    } else {
+      showToast(`${names.length} ingredient${names.length === 1 ? '' : 's'} won't be tracked in inventory.`, {
+        variant: 'success',
+      });
+    }
+    setGroups((prev) => prev.filter((g) => !names.includes(g.name)));
+    setSelectedNames(new Set());
+  }
+
   function toggleSelected(name: string) {
     setSelectedNames((prev) => {
       const next = new Set(prev);
@@ -190,9 +249,15 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
   return (
     <div className="max-w-md mx-auto p-4">
       <h1 className="text-2xl font-display text-charcoal mb-1">Needs Linking</h1>
-      <p className="text-sm text-charcoal/50 mb-4">
+      <p className={`text-sm text-charcoal/50 ${autoLinkResult && autoLinkResult.linked > 0 ? 'mb-1' : 'mb-4'}`}>
         {groups.length} ingredient{groups.length === 1 ? '' : 's'} still need a real inventory link.
       </p>
+      {autoLinkResult && autoLinkResult.linked > 0 && (
+        <p className="text-xs text-sage mb-4">
+          Auto-linked {autoLinkResult.linked} at {Math.round(AUTO_LINK_CONFIDENCE_THRESHOLD * 100)}%+ confidence this
+          load.
+        </p>
+      )}
 
       {groups.length === 0 && (
         <p className="text-sm text-sage text-center py-8">Everything's linked. 🎉</p>
@@ -232,13 +297,22 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
             </div>
           )}
 
-          <button
-            onClick={() => markNamesNotFood([active.name])}
-            disabled={working}
-            className="w-full text-sm text-charcoal/50 hover:text-charcoal underline disabled:opacity-40"
-          >
-            Not actually a purchasable ingredient (mark not-food)
-          </button>
+          <div className="flex flex-col gap-1.5">
+            <button
+              onClick={() => markNamesIgnored([active.name])}
+              disabled={working}
+              className="w-full text-sm text-charcoal/50 hover:text-charcoal underline disabled:opacity-40"
+            >
+              Ignore — real ingredient, just not inventory-tracked
+            </button>
+            <button
+              onClick={() => markNamesNotFood([active.name])}
+              disabled={working}
+              className="w-full text-sm text-charcoal/50 hover:text-charcoal underline disabled:opacity-40"
+            >
+              Not actually a purchasable ingredient (mark not-food)
+            </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-5">
@@ -299,7 +373,7 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
                     Link All to Inventory Item…
                   </button>
                   <button
-                    onClick={() => markNamesNotFood(waterGroups.map((g) => g.name))}
+                    onClick={() => markNamesIgnored(waterGroups.map((g) => g.name))}
                     disabled={working}
                     className="text-xs font-medium border border-gold-light/60 text-charcoal px-3 py-1.5 rounded-full disabled:opacity-40"
                   >
@@ -387,7 +461,7 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
                   Link selected to…
                 </button>
                 <button
-                  onClick={() => markNamesNotFood([...selectedNames])}
+                  onClick={() => markNamesIgnored([...selectedNames])}
                   disabled={working}
                   className="text-xs font-medium border border-gold-light/60 text-charcoal px-3 py-1.5 rounded-full disabled:opacity-40"
                 >

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { COURSES, type Course } from '@/lib/course-constants';
 import { useDraftAutosave } from '@/hooks/useDraftAutosave';
+import { findAutoLinkMatch } from '@/lib/inventory-matching';
 
 type IngredientRow = { name: string; quantity: string; unit: string; category: string };
 
@@ -86,8 +87,15 @@ export default function NewRecipeModal({
 
     const validRows = ingredientRows.filter((r) => r.name.trim());
     if (validRows.length > 0) {
+      // Same confidence bar as the Needs Linking auto-link pass
+      // (lib/inventory-matching.ts) — a genuinely confident, unambiguous
+      // match links immediately instead of joining the manual-review
+      // backlog. Anything less certain is left unlinked, same as before.
+      const matches = await Promise.all(
+        validRows.map((r) => findAutoLinkMatch(supabase, propertyId, r.name.trim()))
+      );
       await supabase.from('recipe_ingredients').insert(
-        validRows.map((r) => {
+        validRows.map((r, i) => {
           const parsed = r.quantity ? parseFloat(r.quantity) : NaN;
           return {
             recipe_id: recipe.id,
@@ -95,6 +103,7 @@ export default function NewRecipeModal({
             quantity: Number.isFinite(parsed) ? parsed : null,
             unit: r.unit.trim() || null,
             category: r.category.trim() || null,
+            inventory_item_id: matches[i]?.id ?? null,
           };
         })
       );

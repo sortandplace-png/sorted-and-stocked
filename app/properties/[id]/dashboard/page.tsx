@@ -2,7 +2,8 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { format, isFriday, isSaturday, parseISO } from 'date-fns'
-import { Calendar, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square, Circle, Triangle } from 'lucide-react'
+import { Calendar, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square, Circle, Triangle, BookOpen } from 'lucide-react'
+import FloatingScanButton from '@/components/FloatingScanButton'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -17,11 +18,18 @@ async function getHebcal() {
     const data = await res.json()
     const candle = data.items?.find((i: any) => i.category === 'candles')
     const havdalah = data.items?.find((i: any) => i.category === 'havdalah')
+    // Was stripping the English string "Candle lighting: " out of candle.title
+    // — but with lg=he, candle.title is Hebrew, so that .replace() was always
+    // a silent no-op and this was actually rendering the candle-lighting
+    // item's raw Hebrew text as if it were the parsha name. The real parsha
+    // name lives on its own item, category === 'parashat' (confirmed live
+    // against the real Hebcal response).
+    const parashat = data.items?.find((i: any) => i.category === 'parashat')
     return {
       candleTime: candle ? new Date(candle.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '8:12pm',
       candleDate: candle?.date,
       havdalahDate: havdalah?.date,
-      parsha: candle?.title?.replace('Candle lighting: ', '') || ''
+      parsha: parashat?.hebrew || ''
     }
   } catch {
     return { candleTime: '8:12pm', candleDate: null, havdalahDate: null, parsha: '' }
@@ -81,6 +89,7 @@ async function getMissingIngredientCount(propertyId: string, recipeIds: string[]
     .from('recipe_ingredients')
     .select('name, inventory_item_id, inventory_items(current_qty)')
     .in('recipe_id', recipeIds)
+    .eq('ignored_from_inventory', false)
 
   const missing = new Set<string>()
   for (const ing of data || []) {
@@ -133,6 +142,26 @@ function getKashrut(name: string): keyof typeof KASHRUT_INFO {
   return 'Parve'
 }
 
+// Same value the property layout's header subtitle already shows — that
+// fetch happens in app/properties/[id]/layout.tsx, which doesn't pass data
+// down to this page, so it needs its own (tiny) lookup here.
+async function getPropertyName(propertyId: string): Promise<string | null> {
+  const supabase = await createClient()
+  const { data } = await supabase.from('properties').select('name').eq('id', propertyId).single()
+  return data?.name ?? null
+}
+
+// recipes has no active/archived concept in the schema (confirmed directly
+// against information_schema before assuming one) — every recipe counts.
+async function getRecipeCount(propertyId: string): Promise<number> {
+  const supabase = await createClient()
+  const { count } = await supabase
+    .from('recipes')
+    .select('id', { count: 'exact', head: true })
+    .eq('property_id', propertyId)
+  return count ?? 0
+}
+
 async function getTehillim(hebrewDay: number | null) {
   if (!hebrewDay) return null
   const supabase = await createClient()
@@ -146,11 +175,13 @@ async function getTehillim(hebrewDay: number | null) {
 
 export default async function Dashboard({ params }: { params: Promise<{ id: string }> }) {
   const { id: propertyId } = await params
-  const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders] = await Promise.all([
+  const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount] = await Promise.all([
     getData(propertyId),
     getHebcal(),
     getHebrewInfo(),
     getPrepReminders(propertyId),
+    getPropertyName(propertyId),
+    getRecipeCount(propertyId),
   ])
   const tehillim = await getTehillim(hebrewInfo.day)
   const missingIngredientCount = await getMissingIngredientCount(
@@ -184,23 +215,44 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
 
   return (
     <div className={`min-h-screen p-6 font-sans transition-all ${isShabbos ? 'bg-amber-50' : 'bg-cream'}`}>
-      <div className={`max-w-7xl mx-auto rounded-[2rem] shadow-xl p-8 transition-all ${isShabbos ? 'bg-amber-50/80 backdrop-blur-sm' : 'bg-white'}`}>
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+      <div className={`max-w-7xl mx-auto rounded-[2rem] shadow-xl p-6 transition-all ${isShabbos ? 'bg-amber-50/80 backdrop-blur-sm' : 'bg-white'}`}>
+        {/* Header — this page already sits under the property layout's own
+            header (logo/property name/avatar), so this local title row only
+            needs enough space to read clearly, not a second full header's
+            worth of padding. */}
+        <div className="flex justify-between items-center mb-4">
           <h1 className="text-4xl font-serif text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>Sorted & Stocked</h1>
           <div className="text-xs uppercase tracking-[0.2em] text-charcoal/50">Kosher Household Management</div>
         </div>
 
-        {/* Hebrew Bar - LIVE */}
-        <div className={`rounded-2xl p-4 text-center mb-8 border ${isShabbos ? 'bg-amber-100 border-amber-200' : 'bg-gold-light/25 border-gold-light/40'}`}>
+        {/* Hebrew Bar - LIVE. This is a single centered stack (date+parsha,
+            then candle lighting, then Tehillim), not a left/right split —
+            with no width constraint of its own it was stretching to the
+            full max-w-7xl dashboard width, leaving short centered text
+            swimming in a lot of empty side margin at desktop sizes.
+            Constrained instead of adding content just to fill space that
+            only exists because the card was wider than it needed to be. */}
+        <div className={`max-w-2xl mx-auto rounded-2xl p-4 text-center mb-8 border ${isShabbos ? 'bg-amber-100 border-amber-200' : 'bg-gold-light/25 border-gold-light/40'}`}>
+          {propertyName && (
+            <p className="font-serif text-lg text-charcoal mb-2" style={{ fontFamily: 'Playfair Display, serif' }}>
+              Welcome to the {propertyName} Residence
+            </p>
+          )}
           <div className="inline-flex items-center gap-3">
             <span className="bg-white px-4 py-1 rounded-full text-sm font-medium text-charcoal">
               <span lang="he" dir="rtl">{hebrewInfo.hebrewText}</span> • {format(now, 'EEEE, MMMM d, yyyy')}
             </span>
-            {hebcal.parsha && <span className="text-sm text-charcoal/60">Parashat {hebcal.parsha}</span>}
+            {/* hebcal.parsha (the item's "hebrew" field) already includes the
+                word for "Parashat" — no separate English prefix needed, and
+                adding one would duplicate it. */}
+            {hebcal.parsha && (
+              <span lang="he" dir="rtl" className="text-sm text-charcoal/60">
+                {hebcal.parsha}
+              </span>
+            )}
           </div>
           <div className="text-sm mt-2 flex items-center justify-center gap-2 text-charcoal/70">
-            <span aria-hidden="true">🕯️</span> Candle Lighting {hebcal.candleTime} • Lakewood, NJ
+            <span aria-hidden="true">🕯️</span> Candle Lighting <bdi dir="ltr">{hebcal.candleTime}</bdi> • Lakewood, NJ
             {isShabbos && <span className="ml-2 px-2 py-0.5 bg-amber-200 rounded-full text-xs">Shabbos Mode Active</span>}
           </div>
           {tehillim && (
@@ -217,10 +269,10 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             creation and meal planning both happen inline on their list pages
             (no dedicated "/new" route exists for either), Scan reuses the
             exact same route as the header/icon nav's Scan link. */}
-        <div className="flex flex-wrap gap-3 mb-8">
+        <div className="flex flex-wrap justify-center gap-2 mb-8">
           <Link
             href={`/properties/${propertyId}/meal-plan`}
-            className="inline-flex items-center gap-2 rounded-full bg-gold-dark text-white px-5 py-2.5 text-sm font-medium hover:opacity-90 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal"
+            className="inline-flex items-center gap-2 rounded-full bg-gold-dark text-white px-4 py-2.5 text-sm font-medium hover:opacity-90 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal"
           >
             <Calendar size={16} aria-hidden="true" /> Plan Meal
           </Link>
@@ -243,6 +295,31 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           >
             <ShoppingCart size={16} className="text-gold-dark" aria-hidden="true" /> Shopping List
           </Link>
+        </div>
+
+        {/* Quick-glance overview — real counts (inventory.length and
+            meals.length are already fetched above for this exact property/
+            week, no extra query needed; recipeCount is one lightweight
+            count-only query). Distinct from the "X meals planned this week"
+            sentence inside This Week's Meals below: this is a top-of-page
+            at-a-glance summary, that's a contextual detail with its own
+            "missing ingredients" link — not the same information twice. */}
+        <div className="grid grid-cols-3 gap-3 mb-8">
+          <div className="rounded-2xl p-4 bg-white border border-gold-light/40 text-center">
+            <Package size={18} strokeWidth={1.5} className="text-gold-dark mx-auto mb-1" aria-hidden="true" />
+            <div className="text-2xl font-serif text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>{inventory.length}</div>
+            <div className="text-xs text-charcoal/50">Total Inventory</div>
+          </div>
+          <div className="rounded-2xl p-4 bg-white border border-gold-light/40 text-center">
+            <BookOpen size={18} strokeWidth={1.5} className="text-gold-dark mx-auto mb-1" aria-hidden="true" />
+            <div className="text-2xl font-serif text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>{recipeCount}</div>
+            <div className="text-xs text-charcoal/50">Active Recipes</div>
+          </div>
+          <div className="rounded-2xl p-4 bg-white border border-gold-light/40 text-center">
+            <Calendar size={18} strokeWidth={1.5} className="text-gold-dark mx-auto mb-1" aria-hidden="true" />
+            <div className="text-2xl font-serif text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>{meals.length}</div>
+            <div className="text-xs text-charcoal/50">Meals Planned</div>
+          </div>
         </div>
 
         {prepReminders.length > 0 && (
@@ -427,11 +504,14 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         </div>
 
         {isShabbos && (
-          <div className="fixed bottom-4 right-4 bg-amber-900 text-amber-50 px-4 py-2 rounded-full text-sm shadow-lg">
+          // bottom-24 on md+ so this doesn't sit on top of the floating
+          // Scan button, which occupies bottom-6 right-6 on desktop only.
+          <div className="fixed bottom-4 right-4 md:bottom-24 bg-amber-900 text-amber-50 px-4 py-2 rounded-full text-sm shadow-lg">
             Shabbos Mode • Editing disabled
           </div>
         )}
       </div>
+      <FloatingScanButton propertyId={propertyId} />
     </div>
   )
 }

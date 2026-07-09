@@ -33,8 +33,8 @@ export function categoryIcon(category: string | null | undefined): string {
 
 export const KOSHER_ICONS: Record<string, string> = {
   Meat: '🥩',
-  Dairy: '🥛',
-  Parve: '🌱',
+  Dairy: '🧀',
+  Parve: '🌿',
   'Parve (Fish)': '🐟',
 };
 

@@ -97,6 +97,16 @@ function isDirectImageUrl(url: string) {
 const UNASSIGNED = 'Unassigned';
 const FAVORITES = '__favorites__';
 
+// Matches the real Inventory Ops group + icons already in the Tools Hub
+// (app/properties/[id]/tools/page.tsx) — same 4 tools, same slugs/icons,
+// so this footer and the Tools Hub never drift apart from each other.
+const INVENTORY_OPS_LINKS = [
+  { slug: 'pantry-zones', icon: '🗺️', title: 'Pantry Zone Map' },
+  { slug: 'borrowed-items', icon: '🔄', title: 'Borrowed & Lent' },
+  { slug: 'duplicate-ingredients', icon: '🧩', title: 'Duplicate Ingredients' },
+  { slug: 'needs-linking', icon: '🔗', title: 'Needs Linking' },
+];
+
 export default function InventoryClient({
   propertyId,
   initialLocationFilter = null,
@@ -130,6 +140,9 @@ export default function InventoryClient({
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [belowParOnly, setBelowParOnly] = useState(false);
+  // 'rooms' = existing location drill-down, unchanged. 'all' = new flat
+  // grid of every item regardless of room.
+  const [viewMode, setViewMode] = useState<'rooms' | 'all'>('rooms');
   const categoryDatalistId = useId();
   // Tracks item IDs whose photo failed to actually load (dead link, 404,
   // etc.) — isDirectImageUrl only checks the URL *shape*, not whether the
@@ -487,9 +500,25 @@ export default function InventoryClient({
   // not just whatever the room grid happened to be showing.
   const displayItems = (locationFilter ? visibleItems : items).filter(matchesFilters);
 
+  // All Items view ignores room selection entirely — it's the whole
+  // inventory, still respecting the search/category/below-par overlay.
+  const allItemsDisplay = items.filter(matchesFilters);
+
   const grouped = groupByLocation(visibleItems, locationName);
 
   if (loading) return <SkeletonList />;
+
+  // Stat cards — real counts from the real fetched data, not placeholders.
+  // Total Value is current_qty × unit_cost summed across items with both
+  // populated; right now current_qty is 0 for literally every item in this
+  // property (confirmed live — a pre-physical-count state, not a bug), so
+  // this will read $0.00 until that count happens regardless of unit_cost.
+  const totalItemsCount = items.length;
+  const lowStockCount = items.filter((i) => i.current_qty < i.min_qty).length;
+  const totalValue = items.reduce(
+    (sum, i) => (i.unit_cost !== null ? sum + i.current_qty * i.unit_cost : sum),
+    0
+  );
 
   // Room summaries for the grid view — count + low-stock count per location.
   const roomSummaries = grouped.map(([location, locationItems]) => ({
@@ -624,6 +653,40 @@ export default function InventoryClient({
         <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2 mb-3">{error}</p>
       )}
 
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="rounded-2xl p-3 bg-white border border-gold-light/40 text-center">
+          <div className="text-xl font-display text-charcoal">{totalItemsCount}</div>
+          <div className="text-[11px] text-charcoal/50">Total Items</div>
+        </div>
+        <div className="rounded-2xl p-3 bg-white border border-gold-light/40 text-center">
+          <div className={`text-xl font-display ${lowStockCount > 0 ? 'text-rust' : 'text-charcoal'}`}>
+            {lowStockCount}
+          </div>
+          <div className="text-[11px] text-charcoal/50">Low Stock</div>
+        </div>
+        <div className="rounded-2xl p-3 bg-white border border-gold-light/40 text-center">
+          <div className="text-xl font-display text-charcoal">
+            ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+          </div>
+          <div className="text-[11px] text-charcoal/50">Total Value</div>
+        </div>
+      </div>
+
+      <div className="inline-flex rounded-full border border-gold-light/60 bg-white p-0.5 text-sm mb-4">
+        <button
+          onClick={() => setViewMode('rooms')}
+          className={`rounded-full px-4 py-1.5 ${viewMode === 'rooms' ? 'bg-gold-dark text-white' : 'text-charcoal/60'}`}
+        >
+          Browse by Room
+        </button>
+        <button
+          onClick={() => setViewMode('all')}
+          className={`rounded-full px-4 py-1.5 ${viewMode === 'all' ? 'bg-gold-dark text-white' : 'text-charcoal/60'}`}
+        >
+          All Items
+        </button>
+      </div>
+
       <div className="mb-4 flex flex-wrap gap-2">
         <input
           value={searchQuery}
@@ -653,7 +716,12 @@ export default function InventoryClient({
         </button>
       </div>
 
-      {!locationFilter && !hasActiveFilter ? (
+      {viewMode === 'all' ? (
+        // ---- All Items: flat grid of the whole inventory, ignoring room selection ----
+        <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
+          {allItemsDisplay.map((item) => renderItemCard(item, true))}
+        </div>
+      ) : !locationFilter && !hasActiveFilter ? (
         // ---- Room grid: pick a room to see what's inside, grouped by real top-level room ----
         <div className="space-y-5">
           {favoriteIds.size > 0 && (
@@ -749,7 +817,7 @@ export default function InventoryClient({
         </>
       )}
 
-      {displayItems.length === 0 && (
+      {(viewMode === 'all' ? allItemsDisplay : displayItems).length === 0 && (
         <p className="text-sm text-charcoal/40 text-center mt-8">
           {hasActiveFilter
             ? 'No items match your search.'
@@ -760,6 +828,22 @@ export default function InventoryClient({
             : 'No items yet. Tap "Add item" to get started.'}
         </p>
       )}
+
+      <div className="mt-8 pt-4 border-t border-gold-light/30">
+        <h2 className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-2">Inventory Ops Tools</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {INVENTORY_OPS_LINKS.map((tool) => (
+            <a
+              key={tool.slug}
+              href={`/properties/${propertyId}/tools/${tool.slug}`}
+              className="flex items-center gap-1.5 bg-white rounded-xl border border-gold-light/40 px-3 py-2 text-xs text-charcoal hover:border-gold transition-colors"
+            >
+              <span aria-hidden="true">{tool.icon}</span>
+              <span className="truncate">{tool.title}</span>
+            </a>
+          ))}
+        </div>
+      </div>
 
       {form && (
         <ItemFormSheet
