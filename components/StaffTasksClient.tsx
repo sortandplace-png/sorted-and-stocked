@@ -157,13 +157,15 @@ export default function StaffTasksClient({ propertyId }: { propertyId: string })
           const overdue = !!task.due_date && task.due_date < today;
           return (
             <li key={task.id} className="bg-white rounded-xl shadow-sm shadow-charcoal/5 p-3 flex items-start gap-3">
-              <input
-                type="checkbox"
-                checked={false}
-                onChange={() => toggleComplete(task)}
-                className="mt-0.5 h-5 w-5 accent-gold shrink-0"
-                aria-label={`Mark "${task.title}" complete`}
-              />
+              <label className="flex items-center justify-center w-11 h-11 -m-3 shrink-0 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={false}
+                  onChange={() => toggleComplete(task)}
+                  className="h-5 w-5 accent-gold"
+                  aria-label={`Mark "${task.title}" complete`}
+                />
+              </label>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-charcoal">{task.title}</p>
                 <p className={`text-xs ${overdue ? 'text-rust font-medium' : 'text-charcoal/50'}`}>
@@ -193,13 +195,15 @@ export default function StaffTasksClient({ propertyId }: { propertyId: string })
           <ul className="space-y-2 opacity-60">
             {done.map((task) => (
               <li key={task.id} className="bg-white rounded-xl shadow-sm shadow-charcoal/5 p-3 flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  checked
-                  onChange={() => toggleComplete(task)}
-                  className="mt-0.5 h-5 w-5 accent-gold shrink-0"
-                  aria-label={`Reopen "${task.title}"`}
-                />
+                <label className="flex items-center justify-center w-11 h-11 -m-3 shrink-0 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked
+                    onChange={() => toggleComplete(task)}
+                    className="h-5 w-5 accent-gold"
+                    aria-label={`Reopen "${task.title}"`}
+                  />
+                </label>
                 <p className="flex-1 text-sm text-charcoal line-through">{task.title}</p>
                 {canManage(role) && (
                   <button

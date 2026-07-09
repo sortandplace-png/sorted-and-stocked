@@ -128,14 +128,16 @@ export default function ShoppingListView({ items, onToggle }: ShoppingListViewPr
                 key={item.id}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-gold-light/15 transition-colors print:py-1.5"
               >
-                <input
-                  type="checkbox"
-                  checked={item.status === 'purchased'}
-                  onChange={(e) =>
-                    onToggle(item.id, e.target.checked ? 'purchased' : 'pending')
-                  }
-                  className="h-5 w-5 shrink-0 accent-gold rounded print:hidden"
-                />
+                <label className="flex items-center justify-center w-11 h-11 -m-3 shrink-0 cursor-pointer print:hidden">
+                  <input
+                    type="checkbox"
+                    checked={item.status === 'purchased'}
+                    onChange={(e) =>
+                      onToggle(item.id, e.target.checked ? 'purchased' : 'pending')
+                    }
+                    className="h-5 w-5 accent-gold rounded"
+                  />
+                </label>
                 <span className="hidden print:inline text-charcoal/40 shrink-0">☐</span>
                 <span
                   className={

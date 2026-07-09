@@ -628,14 +628,14 @@ export default function InventoryClient({
         <div className="flex gap-2">
           <a
             href={`/properties/${propertyId}/scan`}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-cream border border-charcoal/30 text-charcoal text-lg"
+            className="w-11 h-11 flex items-center justify-center rounded-full bg-cream border border-charcoal/30 text-charcoal text-lg"
             aria-label="Scan a label"
           >
             📷
           </a>
           <a
             href={`/properties/${propertyId}/print-labels`}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-cream border border-charcoal/30 text-charcoal text-lg"
+            className="w-11 h-11 flex items-center justify-center rounded-full bg-cream border border-charcoal/30 text-charcoal text-lg"
             aria-label="Print item labels"
           >
             🏷️
@@ -1118,7 +1118,7 @@ function ItemFormSheet({
               {form.id && (
                 <a
                   href={`/properties/${propertyId}/scan`}
-                  className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-cream border border-charcoal/30 text-charcoal text-lg"
+                  className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-cream border border-charcoal/30 text-charcoal text-lg"
                   aria-label="Scan"
                 >
                   📷

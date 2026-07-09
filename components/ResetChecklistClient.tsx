@@ -233,12 +233,14 @@ function ChecklistCard({
                 const s = taskState(section.name, task);
                 return (
                   <li key={task} className="flex items-start gap-2.5">
-                    <input
-                      type="checkbox"
-                      checked={s.completed}
-                      onChange={() => onToggle(section.name, task)}
-                      className="mt-1 h-4 w-4 accent-gold-dark shrink-0"
-                    />
+                    <label className="flex items-center justify-center w-11 h-11 -m-3 -mt-3.5 shrink-0 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={s.completed}
+                        onChange={() => onToggle(section.name, task)}
+                        className="h-4 w-4 accent-gold-dark"
+                      />
+                    </label>
                     <div className="flex-1 min-w-0">
                       <span className={`block text-sm text-charcoal ${s.completed ? 'line-through opacity-40' : ''}`}>
                         {task}

@@ -427,13 +427,15 @@ export default function RecipeDetailClient({
                   {group.items.map((i) => (
                     <li key={i.id} className="text-sm text-charcoal pt-2 first:pt-0">
                       <div className="flex gap-2 print:hidden items-start">
-                        <input
-                          type="checkbox"
-                          checked={!!checkedIds[i.id]}
-                          onChange={(e) => setCheckedIds((c) => ({ ...c, [i.id]: e.target.checked }))}
-                          className={`shrink-0 mt-0.5 accent-gold ${view === 'staff' ? 'h-6 w-6' : 'h-4 w-4'}`}
-                          aria-label={`Check off ${i.name}`}
-                        />
+                        <label className="flex items-center justify-center w-11 h-11 -m-3 -mt-3.5 shrink-0 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!!checkedIds[i.id]}
+                            onChange={(e) => setCheckedIds((c) => ({ ...c, [i.id]: e.target.checked }))}
+                            className={`accent-gold ${view === 'staff' ? 'h-6 w-6' : 'h-4 w-4'}`}
+                            aria-label={`Check off ${i.name}`}
+                          />
+                        </label>
                         <div className={`flex-1 ${checkedIds[i.id] ? 'opacity-40 line-through' : ''}`}>
                           <div className={view === 'staff' ? 'text-xl' : ''}>{formatQty(i)}</div>
                           <IngredientShoppingLink
