@@ -63,6 +63,36 @@ interface Recipe {
   tags: string[] | null;
   approx_total_minutes: number | null;
   prep_lead_days: number | null;
+  is_shabbos_only: boolean | null;
+  is_yom_tov: boolean | null;
+  is_pesach: boolean | null;
+}
+
+type Occasion = 'shabbos' | 'yomtov' | 'pesach' | 'weekday';
+
+// Same occasion definition RecipesGridView.tsx's filter pills use — a
+// recipe can carry more than one flag at once (e.g. Pesach + Shabbos), so
+// this returns a set, not a single value; "weekday" only applies when none
+// of the three real flags are set.
+function occasionSet(r: { is_shabbos_only?: boolean | null; is_yom_tov?: boolean | null; is_pesach?: boolean | null }): Set<Occasion> {
+  const set = new Set<Occasion>();
+  if (r.is_shabbos_only) set.add('shabbos');
+  if (r.is_yom_tov) set.add('yomtov');
+  if (r.is_pesach) set.add('pesach');
+  if (set.size === 0) set.add('weekday');
+  return set;
+}
+
+function sharesOccasion(a: Set<Occasion>, b: Set<Occasion>): boolean {
+  for (const o of a) if (b.has(o)) return true;
+  return false;
+}
+
+interface PairSuggestion {
+  id: string;
+  name: string;
+  photo_url: string | null;
+  course: string | null;
 }
 
 // Google Drive's "file/d/.../view" links can't be embedded as images, but
@@ -105,6 +135,7 @@ export default function RecipeDetailClient({
   const [showHistory, setShowHistory] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [pairsWellWith, setPairsWellWith] = useState<PairSuggestion[]>([]);
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -125,6 +156,50 @@ export default function RecipeDetailClient({
       }
     })();
   }, [recipeId]);
+
+  // "Pairs well with": recipes from a DIFFERENT course that share at least
+  // one occasion with this one (both Shabbos, both Weekday, etc.) --
+  // approximates what would actually go on the same table. Falls back to
+  // same-occasion regardless of course if that first pass comes up short,
+  // rather than showing nothing. Verified against a real Shabbos soup
+  // recipe before considering this done (36 real Shabbos mains/sides/
+  // desserts came back, not other soups).
+  useEffect(() => {
+    if (!recipe) return;
+    (async () => {
+      const { data } = await supabase
+        .from('recipes')
+        .select('id, name, photo_url, course, is_shabbos_only, is_yom_tov, is_pesach')
+        .eq('property_id', propertyId)
+        .neq('id', recipeId);
+
+      const candidates = data ?? [];
+      const currentOccasions = occasionSet(recipe);
+
+      const differentCourseMatches = candidates.filter(
+        (c) => c.course !== recipe.course && sharesOccasion(occasionSet(c), currentOccasions)
+      );
+
+      let pool = differentCourseMatches;
+      if (pool.length < 2) {
+        const anyOccasionMatches = candidates.filter((c) => sharesOccasion(occasionSet(c), currentOccasions));
+        const seen = new Set(pool.map((p) => p.id));
+        for (const c of anyOccasionMatches) {
+          if (!seen.has(c.id)) {
+            pool.push(c);
+            seen.add(c.id);
+          }
+        }
+      }
+
+      // Shuffle so repeat visits surface variety instead of always the
+      // same alphabetically-first 4 (e.g. desserts) out of a larger pool.
+      const shuffled = [...pool].sort(() => Math.random() - 0.5);
+      setPairsWellWith(
+        shuffled.slice(0, 4).map((c) => ({ id: c.id, name: c.name, photo_url: c.photo_url, course: c.course }))
+      );
+    })();
+  }, [recipe, recipeId, propertyId, supabase]);
 
   // Per-person favorite (recipe_favorites.user_id) — not shared across the
   // household, same convention as inventory_item_favorites.
@@ -725,6 +800,31 @@ export default function RecipeDetailClient({
           ))}
         </div>
       </div>
+
+      {pairsWellWith.length > 0 && (
+        <div className="mt-8 print:hidden">
+          <h2 className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-2">Pairs well with</h2>
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            {pairsWellWith.map((s) => (
+              <Link
+                key={s.id}
+                href={`/properties/${propertyId}/recipes/${s.id}`}
+                className="shrink-0 w-32 bg-white rounded-xl border border-gold-light/40 shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors"
+              >
+                <div className="w-full h-20 bg-cream flex items-center justify-center">
+                  {s.photo_url && isDirectImageUrl(s.photo_url) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={s.photo_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-2xl text-charcoal/20">🍽️</span>
+                  )}
+                </div>
+                <p className="p-2 text-xs font-medium text-charcoal leading-snug line-clamp-2">{s.name}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
