@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Printer, Share2, History as HistoryIcon, Star } from 'lucide-react';
+import { Printer, Share2, History as HistoryIcon, Heart } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { kosherIcon } from '@/lib/icon-maps';
 import { getRecipeIcon } from '@/lib/recipe-icons';
@@ -252,7 +252,7 @@ export default function RecipeDetailClient({
               aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
             >
               <span className="w-9 h-9 flex items-center justify-center rounded-full border border-gold-light/60 hover:bg-gold-light/10 transition">
-                <Star
+                <Heart
                   className={isFavorite ? 'w-4 h-4 fill-gold text-gold' : 'w-4 h-4 text-charcoal/40'}
                   strokeWidth={1.75}
                 />

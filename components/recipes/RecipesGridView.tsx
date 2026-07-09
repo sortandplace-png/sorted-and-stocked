@@ -27,7 +27,7 @@ import {
   ChefHat,
   BookOpen,
   ChevronDown,
-  Star,
+  Heart,
   type LucideIcon,
 } from 'lucide-react';
 import { kosherIcon } from '@/lib/icon-maps';
@@ -910,7 +910,7 @@ export default function RecipesGridView({
                               aria-label={favoriteIds.has(recipe.id) ? 'Remove from favorites' : 'Add to favorites'}
                             >
                               <span className="w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center">
-                                <Star
+                                <Heart
                                   className={favoriteIds.has(recipe.id) ? 'w-4 h-4 fill-gold text-gold' : 'w-4 h-4 text-charcoal/40'}
                                   strokeWidth={1.75}
                                 />
