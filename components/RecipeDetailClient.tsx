@@ -230,12 +230,20 @@ export default function RecipeDetailClient({
   return (
     <div className="max-w-md lg:max-w-5xl mx-auto p-4 print:max-w-full">
       <div className="flex items-center justify-between mb-4 print:hidden gap-2 flex-wrap">
-        <Link
-          href={`/properties/${propertyId}/meal-plan`}
-          className="text-sm text-charcoal font-medium"
-        >
-          ← Meal plan
-        </Link>
+        {/* Recipes is always reachable regardless of entry point (recipe
+            grid, meal-plan substitution swap, or the global Command
+            Palette search, which can launch from any page) — Meal plan
+            stays as a second, always-visible shortcut alongside it rather
+            than something that only makes sense from one path in. */}
+        <div className="flex items-center gap-3">
+          <Link href={`/properties/${propertyId}/recipes`} className="text-sm text-charcoal font-medium">
+            ← Recipes
+          </Link>
+          <span className="text-charcoal/20" aria-hidden="true">•</span>
+          <Link href={`/properties/${propertyId}/meal-plan`} className="text-sm text-charcoal/60 font-medium">
+            Meal plan
+          </Link>
+        </div>
         <div className="flex gap-2">
           {currentUserId && (
             <button
