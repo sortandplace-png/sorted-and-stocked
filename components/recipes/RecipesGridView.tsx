@@ -25,6 +25,7 @@ import {
   Grid3x3,
   LayoutGrid,
   ChefHat,
+  BookOpen,
   type LucideIcon,
 } from 'lucide-react';
 import { kosherIcon } from '@/lib/icon-maps';
@@ -135,6 +136,7 @@ const PREP_PILL_ICONS: Record<PrepKey, LucideIcon> = {
   'slow-cooker': CookingPot,
   '9x13': Square,
   'one-pot': ChefHat,
+  basics: BookOpen,
 };
 
 // Only pills with a real, checkable backing field — confirmed live against
@@ -142,18 +144,20 @@ const PREP_PILL_ICONS: Record<PrepKey, LucideIcon> = {
 // use today (21 and 8 recipes respectively). "Quick & Easy" has no tag but
 // is computable from the existing approx_total_minutes field (already
 // partially populated and already used elsewhere on this page's cards).
-// "one-pot" is a real tag now too, applied to 6 recipes whose own
-// instructions confirm single-vessel cooking (seared/sautéed/braised in
-// the same pot, or a single sheet pan/9x13) — see the recipe-tagging
-// pass this was added in. "Basics" still has no backing data — it needs
-// Racquel's judgment on what counts as a foundational/staple recipe
-// before it gets tagged, so it's deliberately not built as a filter yet.
-type PrepKey = 'quick' | 'slow-cooker' | '9x13' | 'one-pot';
+// "one-pot" and "basics" are real tags too now. "one-pot" covers 6 recipes
+// whose own instructions confirm single-vessel cooking (seared/sautéed/
+// braised in the same pot, or a single sheet pan/9x13). "basics" covers 9
+// foundational/staple recipes Racquel confirmed (broths, rice sides,
+// simple dressings) — "Simple and Delicious Corned Beef" was deliberately
+// excluded despite matching the name search, since it's a full dish, not
+// a staple building block.
+type PrepKey = 'quick' | 'slow-cooker' | '9x13' | 'one-pot' | 'basics';
 const PREP_FILTERS: { key: PrepKey; label: string }[] = [
   { key: 'quick', label: 'Quick & Easy' },
   { key: 'slow-cooker', label: 'Slow Cooker' },
   { key: '9x13', label: '9x13 Pan' },
   { key: 'one-pot', label: 'One-Pot' },
+  { key: 'basics', label: 'Basics' },
 ];
 
 function matchesPrep(r: Recipe, key: PrepKey): boolean {
@@ -297,9 +301,9 @@ export default function RecipesGridView({
   }, [recipes]);
 
   const prepCounts = useMemo(() => {
-    const counts: Record<PrepKey, number> = { quick: 0, 'slow-cooker': 0, '9x13': 0, 'one-pot': 0 };
+    const counts: Record<PrepKey, number> = { quick: 0, 'slow-cooker': 0, '9x13': 0, 'one-pot': 0, basics: 0 };
     for (const r of recipes) {
-      (['quick', 'slow-cooker', '9x13', 'one-pot'] as PrepKey[]).forEach((p) => {
+      (['quick', 'slow-cooker', '9x13', 'one-pot', 'basics'] as PrepKey[]).forEach((p) => {
         if (matchesPrep(r, p)) counts[p]++;
       });
     }
