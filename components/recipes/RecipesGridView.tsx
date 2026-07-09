@@ -378,7 +378,7 @@ export default function RecipesGridView({
       <div className="space-y-4 mb-6">
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Course</p>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
             {COURSES.map((c) => {
               const active = courseFilter === c.key;
               const Icon = COURSE_PILL_ICONS[c.key];
@@ -400,7 +400,7 @@ export default function RecipesGridView({
 
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Dietary</p>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
             {KOSHER_TYPES.map((k) => {
               const active = kosherFilter === k;
               const Icon = KOSHER_PILL_ICONS[k];
@@ -437,7 +437,7 @@ export default function RecipesGridView({
 
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Occasion</p>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
             {(
               [
                 ['shabbos', 'Shabbos'],
@@ -482,7 +482,7 @@ export default function RecipesGridView({
 
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Prep</p>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
             {PREP_FILTERS.map((p) => {
               const active = prepFilter === p.key;
               const Icon = PREP_PILL_ICONS[p.key];
