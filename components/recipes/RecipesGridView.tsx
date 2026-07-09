@@ -26,6 +26,7 @@ import {
   LayoutGrid,
   ChefHat,
   BookOpen,
+  ChevronDown,
   type LucideIcon,
 } from 'lucide-react';
 import { kosherIcon } from '@/lib/icon-maps';
@@ -310,6 +311,60 @@ export default function RecipesGridView({
     return counts;
   }, [recipes]);
 
+  // Mobile-only staged filter state — pills on mobile edit these instead of
+  // the real applied filters above, so nothing on the recipe list changes
+  // until "Apply Filters" is tapped. Desktop keeps applying instantly via
+  // the setters above; this block is invisible to desktop entirely (the
+  // markup that uses it is CSS-hidden on md+ via the same md:hidden /
+  // hidden md:block split MobileBottomNav/DesktopNav already use).
+  const [stagedCourseFilter, setStagedCourseFilter] = useState<string | null>(null);
+  const [stagedKosherFilter, setStagedKosherFilter] = useState<string | null>(null);
+  const [stagedOccasionFilter, setStagedOccasionFilter] = useState<Occasion | null>(null);
+  const [stagedPrepFilter, setStagedPrepFilter] = useState<PrepKey | null>(null);
+  const [mobileOpen, setMobileOpen] = useState({ course: true, dietary: false, occasion: false, prep: false });
+
+  function toggleMobileSection(key: keyof typeof mobileOpen) {
+    setMobileOpen((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  const hasPendingChanges =
+    stagedCourseFilter !== courseFilter ||
+    stagedKosherFilter !== kosherFilter ||
+    stagedOccasionFilter !== occasionFilter ||
+    stagedPrepFilter !== prepFilter;
+
+  // Live "would match" count for the staged selection — same matching
+  // logic as `filtered` above, just against staged instead of applied.
+  const stagedMatchCount = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return recipes.filter((r) => {
+      if (q && !r.name.toLowerCase().includes(q)) return false;
+      if (stagedCourseFilter && r.course !== stagedCourseFilter) return false;
+      if (stagedKosherFilter && !matchesKosherFilter(r, stagedKosherFilter)) return false;
+      if (stagedOccasionFilter && !matchesOccasion(r, stagedOccasionFilter)) return false;
+      if (stagedPrepFilter && !matchesPrep(r, stagedPrepFilter)) return false;
+      return true;
+    }).length;
+  }, [search, recipes, stagedCourseFilter, stagedKosherFilter, stagedOccasionFilter, stagedPrepFilter]);
+
+  function applyStagedFilters() {
+    setCourseFilter(stagedCourseFilter);
+    setKosherFilter(stagedKosherFilter);
+    setOccasionFilter(stagedOccasionFilter);
+    setPrepFilter(stagedPrepFilter);
+  }
+
+  function clearStagedFilters() {
+    setStagedCourseFilter(null);
+    setStagedKosherFilter(null);
+    setStagedOccasionFilter(null);
+    setStagedPrepFilter(null);
+  }
+
+  const courseLabel = (key: string | null) => (key ? COURSES.find((c) => c.key === key)?.label ?? key : 'All');
+  const occasionLabels: Record<Occasion, string> = { shabbos: 'Shabbos', yomtov: 'Yom Tov', pesach: 'Pesach', weekday: 'Weekday' };
+  const prepLabel = (key: PrepKey | null) => (key ? PREP_FILTERS.find((p) => p.key === key)?.label ?? key : 'Any');
+
   // Group alphabetically by first letter — non-letter-leading names (numbers,
   // punctuation, emoji) fall into a trailing "#" bucket rather than being
   // dropped or crashing the sort.
@@ -378,6 +433,7 @@ export default function RecipesGridView({
               setKosherFilter(null);
               setOccasionFilter(null);
               setPrepFilter(null);
+              clearStagedFilters();
             }}
             className="text-xs text-charcoal/40 hover:text-charcoal px-3 py-1.5 underline"
           >
@@ -386,7 +442,7 @@ export default function RecipesGridView({
         </div>
       )}
 
-      <div className="space-y-4 mb-6">
+      <div className="hidden md:block space-y-4 mb-6">
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Course</p>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
@@ -528,6 +584,203 @@ export default function RecipesGridView({
               );
             })}
           </div>
+        </div>
+      </div>
+
+      {/* Mobile: staged filters, accordion sections, sticky Apply bar --
+          nothing here touches the real filters until Apply is tapped. */}
+      <div className="md:hidden mb-6">
+        <div className="border-b border-gold-light/40 pb-2">
+          <button
+            onClick={() => toggleMobileSection('course')}
+            className="w-full min-h-11 flex items-center justify-between"
+          >
+            <span className="text-xs font-medium uppercase tracking-wider text-charcoal/40">Course</span>
+            <span className="flex items-center gap-2 text-xs text-charcoal/60">
+              {!mobileOpen.course && courseLabel(stagedCourseFilter)}
+              <ChevronDown className={`w-4 h-4 transition-transform ${mobileOpen.course ? 'rotate-180' : ''}`} strokeWidth={1.75} />
+            </span>
+          </button>
+          {mobileOpen.course && (
+            <div className="flex flex-wrap gap-x-4 gap-y-2 pt-2">
+              <button onClick={() => setStagedCourseFilter(null)} className="min-h-11 flex items-center">
+                <span
+                  className={`flex items-center gap-1.5 leading-tight text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${
+                    !stagedCourseFilter ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                  }`}
+                >
+                  <LayoutGrid className={`w-3.5 h-3.5 ${!stagedCourseFilter ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                  All <span className={!stagedCourseFilter ? 'text-charcoal/60' : 'text-charcoal/40'}>({recipes.length})</span>
+                </span>
+              </button>
+              {COURSES.map((c) => {
+                const active = stagedCourseFilter === c.key;
+                const Icon = COURSE_PILL_ICONS[c.key];
+                return (
+                  <button key={c.key} onClick={() => setStagedCourseFilter(active ? null : c.key)} className="min-h-11 flex items-center">
+                    <span
+                      className={`flex items-center gap-1.5 leading-tight text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${
+                        active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                      }`}
+                    >
+                      <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                      {c.label} <span className={active ? 'text-charcoal/60' : 'text-charcoal/40'}>({courseCounts[c.key] ?? 0})</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="border-b border-gold-light/40 py-2">
+          <button
+            onClick={() => toggleMobileSection('dietary')}
+            className="w-full min-h-11 flex items-center justify-between"
+          >
+            <span className="text-xs font-medium uppercase tracking-wider text-charcoal/40">Dietary</span>
+            <span className="flex items-center gap-2 text-xs text-charcoal/60">
+              {!mobileOpen.dietary && (stagedKosherFilter ?? 'Any')}
+              <ChevronDown className={`w-4 h-4 transition-transform ${mobileOpen.dietary ? 'rotate-180' : ''}`} strokeWidth={1.75} />
+            </span>
+          </button>
+          {mobileOpen.dietary && (
+            <div className="flex flex-wrap gap-x-4 gap-y-2 pt-2">
+              {KOSHER_TYPES.map((k) => {
+                const active = stagedKosherFilter === k;
+                const Icon = KOSHER_PILL_ICONS[k];
+                return (
+                  <button
+                    key={k}
+                    onClick={() => setStagedKosherFilter(active ? null : k)}
+                    className="min-h-11 flex items-center justify-center"
+                  >
+                    <span
+                      className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-colors ${
+                        active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5 leading-tight text-sm font-medium">
+                        <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                        {k}
+                      </span>
+                      <span className={`flex items-center gap-1 text-[10px] leading-tight ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>
+                        <span>({kosherCounts[k] ?? 0})</span>
+                        {KOSHER_HEBREW[k] && (
+                          <span lang="he" dir="rtl">
+                            {KOSHER_HEBREW[k]}
+                          </span>
+                        )}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="border-b border-gold-light/40 py-2">
+          <button
+            onClick={() => toggleMobileSection('occasion')}
+            className="w-full min-h-11 flex items-center justify-between"
+          >
+            <span className="text-xs font-medium uppercase tracking-wider text-charcoal/40">Occasion</span>
+            <span className="flex items-center gap-2 text-xs text-charcoal/60">
+              {!mobileOpen.occasion && (stagedOccasionFilter ? occasionLabels[stagedOccasionFilter] : 'Any')}
+              <ChevronDown className={`w-4 h-4 transition-transform ${mobileOpen.occasion ? 'rotate-180' : ''}`} strokeWidth={1.75} />
+            </span>
+          </button>
+          {mobileOpen.occasion && (
+            <div className="flex flex-wrap gap-x-4 gap-y-2 pt-2">
+              {(
+                [
+                  ['shabbos', 'Shabbos'],
+                  ['yomtov', 'Yom Tov'],
+                  ['pesach', 'Pesach'],
+                  ['weekday', 'Weekday'],
+                ] as [Occasion, string][]
+              ).map(([key, label]) => {
+                const active = stagedOccasionFilter === key;
+                const hebrew = OCCASION_HEBREW[key];
+                const Icon = OCCASION_PILL_ICONS[key];
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setStagedOccasionFilter(active ? null : key)}
+                    className="min-h-11 flex items-center justify-center"
+                  >
+                    <span
+                      className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-colors ${
+                        active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5 leading-tight text-sm font-medium">
+                        <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                        {label}
+                      </span>
+                      <span className={`flex items-center gap-1 text-[10px] leading-tight ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>
+                        <span>({occasionCounts[key] ?? 0})</span>
+                        {hebrew && (
+                          <span lang="he" dir="rtl">
+                            {hebrew}
+                          </span>
+                        )}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="pt-2 pb-1">
+          <button
+            onClick={() => toggleMobileSection('prep')}
+            className="w-full min-h-11 flex items-center justify-between"
+          >
+            <span className="text-xs font-medium uppercase tracking-wider text-charcoal/40">Prep</span>
+            <span className="flex items-center gap-2 text-xs text-charcoal/60">
+              {!mobileOpen.prep && prepLabel(stagedPrepFilter)}
+              <ChevronDown className={`w-4 h-4 transition-transform ${mobileOpen.prep ? 'rotate-180' : ''}`} strokeWidth={1.75} />
+            </span>
+          </button>
+          {mobileOpen.prep && (
+            <div className="flex flex-wrap gap-x-4 gap-y-2 pt-2">
+              {PREP_FILTERS.map((p) => {
+                const active = stagedPrepFilter === p.key;
+                const Icon = PREP_PILL_ICONS[p.key];
+                return (
+                  <button key={p.key} onClick={() => setStagedPrepFilter(active ? null : p.key)} className="min-h-11 flex items-center">
+                    <span
+                      className={`flex items-center gap-1.5 leading-tight text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${
+                        active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                      }`}
+                    >
+                      <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                      {p.label} <span className={active ? 'text-charcoal/60' : 'text-charcoal/40'}>({prepCounts[p.key] ?? 0})</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="sticky bottom-16 inset-x-0 z-20 bg-cream/95 backdrop-blur border-t border-gold-light/40 -mx-4 px-4 pt-3 mt-3 flex items-center gap-3">
+          <button onClick={clearStagedFilters} className="min-h-11 px-3 text-xs text-charcoal/40 hover:text-charcoal underline shrink-0">
+            Clear all
+          </button>
+          <button
+            onClick={applyStagedFilters}
+            disabled={!hasPendingChanges}
+            className={`flex-1 min-h-11 rounded-full text-sm font-medium transition-colors ${
+              hasPendingChanges ? 'bg-gold text-charcoal' : 'bg-charcoal/10 text-charcoal/30 cursor-not-allowed'
+            }`}
+          >
+            Apply Filters ({stagedMatchCount})
+          </button>
         </div>
       </div>
 
