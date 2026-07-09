@@ -220,7 +220,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             header (logo/property name/avatar), so this local title row only
             needs enough space to read clearly, not a second full header's
             worth of padding. */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col gap-1 md:flex-row md:justify-between md:items-center md:gap-0 mb-4">
           <h1 className="text-4xl font-serif text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>Sorted & Stocked</h1>
           <div className="text-xs uppercase tracking-[0.2em] text-charcoal/50">Kosher Household Management</div>
         </div>
@@ -251,9 +251,14 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               </span>
             )}
           </div>
-          <div className="text-sm mt-2 flex items-center justify-center gap-2 text-charcoal/70">
-            <span aria-hidden="true">🕯️</span> Candle Lighting <bdi dir="ltr">{hebcal.candleTime}</bdi> • Lakewood, NJ
-            {isShabbos && <span className="ml-2 px-2 py-0.5 bg-amber-200 rounded-full text-xs">Shabbos Mode Active</span>}
+          <div className="text-sm mt-2 flex flex-col md:flex-row items-center justify-center gap-0.5 md:gap-2 text-charcoal/70">
+            <span className="flex items-center gap-1">
+              <span aria-hidden="true">🕯️</span> Candle Lighting
+            </span>
+            <span>
+              <bdi dir="ltr">{hebcal.candleTime}</bdi> • Lakewood, NJ
+            </span>
+            {isShabbos && <span className="px-2 py-0.5 bg-amber-200 rounded-full text-xs">Shabbos Mode Active</span>}
           </div>
           {tehillim && (
             <div className="text-sm mt-2 inline-flex items-center gap-2 bg-white px-3 py-1 rounded-full text-charcoal">
