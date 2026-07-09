@@ -143,7 +143,7 @@ export default function HouseholdKnowledgeClient({ propertyId }: { propertyId: s
             </button>
             <button
               onClick={() => discardDraft()}
-              className="flex-1 py-2 rounded-full border border-charcoal/30 text-charcoal text-xs"
+              className="flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-xs"
             >
               Discard
             </button>

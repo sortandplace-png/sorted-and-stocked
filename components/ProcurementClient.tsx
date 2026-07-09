@@ -212,7 +212,7 @@ export default function ProcurementClient({
                 className={
                   selectedIds.has(p.id)
                     ? 'px-3 py-1.5 rounded-full text-sm bg-charcoal text-cream'
-                    : 'px-3 py-1.5 rounded-full text-sm border border-charcoal/30 text-charcoal'
+                    : 'px-3 py-1.5 rounded-full text-sm bg-cream border border-charcoal/30 text-charcoal'
                 }
               >
                 {p.name}

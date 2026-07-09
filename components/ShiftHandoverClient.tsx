@@ -275,7 +275,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
         )}
 
         <div className="flex gap-2">
-          <label className="flex-1 text-center py-2 rounded-full border border-charcoal/30 text-charcoal text-sm font-medium cursor-pointer">
+          <label className="flex-1 text-center py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm font-medium cursor-pointer">
             <input
               ref={fileInputRef}
               type="file"
@@ -291,7 +291,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
           {!recording ? (
             <button
               onClick={startRecording}
-              className="flex-1 py-2 rounded-full border border-charcoal/30 text-charcoal text-sm font-medium"
+              className="flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm font-medium"
             >
               🎙️ {audioDataUrl ? 'Re-record' : 'Record'}
             </button>

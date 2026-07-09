@@ -101,7 +101,7 @@ export default function PhotoToolClient({
               className={
                 mode === 'photo'
                   ? 'flex-1 py-2 rounded-full bg-charcoal text-cream text-sm'
-                  : 'flex-1 py-2 rounded-full border border-charcoal/30 text-charcoal text-sm'
+                  : 'flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm'
               }
             >
               📷 Photo
@@ -111,7 +111,7 @@ export default function PhotoToolClient({
               className={
                 mode === 'text'
                   ? 'flex-1 py-2 rounded-full bg-charcoal text-cream text-sm'
-                  : 'flex-1 py-2 rounded-full border border-charcoal/30 text-charcoal text-sm'
+                  : 'flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm'
               }
             >
               ⌨️ Type it in
@@ -176,7 +176,7 @@ export default function PhotoToolClient({
       {(preview || result) && !loading && (
         <button
           onClick={reset}
-          className="w-full mt-4 py-2.5 rounded-full border border-charcoal/30 text-charcoal text-sm font-medium"
+          className="w-full mt-4 py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm font-medium"
         >
           Try another
         </button>

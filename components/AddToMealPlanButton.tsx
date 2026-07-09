@@ -101,7 +101,7 @@ export default function AddToMealPlanButton({
             <div className="flex gap-2">
               <button
                 onClick={() => setOpen(false)}
-                className="flex-1 py-2 rounded-full border border-charcoal/30 text-charcoal text-sm"
+                className="flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm"
               >
                 Cancel
               </button>

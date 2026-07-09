@@ -212,7 +212,7 @@ export default function ScanClient({
           <div className="flex gap-2">
             <button
               onClick={() => setState({ status: 'scanning' })}
-              className="flex-1 py-2.5 rounded-full border border-charcoal/30 text-charcoal"
+              className="flex-1 py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal"
             >
               Cancel
             </button>

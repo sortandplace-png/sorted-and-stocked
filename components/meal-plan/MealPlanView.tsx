@@ -614,7 +614,7 @@ export default function MealPlanView({
               onClick={() => extendMealPlan(4)}
               disabled={extending}
               title="Repeat the last planned week forward 4 more weeks, wherever the plan currently ends"
-              className="rounded-full border border-charcoal/30 px-4 py-1.5 text-xs font-medium text-charcoal disabled:opacity-40"
+              className="rounded-full bg-cream border border-charcoal/30 px-4 py-1.5 text-xs font-medium text-charcoal disabled:opacity-40"
             >
               {extending ? '…' : 'Extend plan +4 weeks'}
             </button>
@@ -936,7 +936,7 @@ export default function MealPlanView({
                 className={
                   pickerMode === 'existing'
                     ? 'flex-1 py-2 rounded-full bg-charcoal text-cream text-sm'
-                    : 'flex-1 py-2 rounded-full border border-charcoal/30 text-charcoal text-sm'
+                    : 'flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm'
                 }
               >
                 Pick a recipe
@@ -946,7 +946,7 @@ export default function MealPlanView({
                 className={
                   pickerMode === 'custom'
                     ? 'flex-1 py-2 rounded-full bg-charcoal text-cream text-sm'
-                    : 'flex-1 py-2 rounded-full border border-charcoal/30 text-charcoal text-sm'
+                    : 'flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm'
                 }
               >
                 Quick entry
@@ -1025,7 +1025,7 @@ export default function MealPlanView({
             <div className="flex gap-2">
               <button
                 onClick={() => setEditing(null)}
-                className="flex-1 py-2.5 rounded-full border border-charcoal/30 text-charcoal"
+                className="flex-1 py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal"
               >
                 Cancel
               </button>

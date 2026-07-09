@@ -138,7 +138,7 @@ export default function NewRecipeModal({
               </button>
               <button
                 onClick={() => discardDraft()}
-                className="flex-1 py-2 rounded-full border border-charcoal/30 text-charcoal text-xs"
+                className="flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-xs"
               >
                 Discard
               </button>
@@ -212,7 +212,7 @@ export default function NewRecipeModal({
         <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-full border border-charcoal/30 text-charcoal"
+            className="flex-1 py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal"
           >
             Cancel
           </button>
