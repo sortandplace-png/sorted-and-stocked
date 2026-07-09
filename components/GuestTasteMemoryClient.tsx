@@ -265,7 +265,11 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
       )}
 
       {people.length === 0 && (
-        <p className="text-sm text-charcoal/40 text-center py-8">No one added yet.</p>
+        <p className="text-sm text-charcoal/40 text-center py-8">
+          {canManage(role)
+            ? 'No one added yet — use the form above to add a family member or guest.'
+            : 'No one added yet. Ask a manager to add someone.'}
+        </p>
       )}
 
       <ul className="space-y-3">

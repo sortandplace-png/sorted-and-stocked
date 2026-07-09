@@ -144,7 +144,11 @@ export default function PantryZonesClient({ propertyId }: { propertyId: string }
       )}
 
       {Object.keys(grouped).length === 0 && (
-        <p className="text-sm text-charcoal/40 text-center py-8">No zones mapped yet.</p>
+        <p className="text-sm text-charcoal/40 text-center py-8">
+          {canManage(role)
+            ? 'No zones mapped yet — use the form above to add one, e.g. "Top shelf, left side."'
+            : 'No zones mapped yet. Ask a manager to map one.'}
+        </p>
       )}
 
       <div className="space-y-6">

@@ -135,7 +135,7 @@ export default function PropertyUserManagement({ propertyId }: { propertyId: str
       {/* Current Users */}
       <div className="space-y-2">
         {users.length === 0 ? (
-          <p className="text-sm text-charcoal/40">No team members yet</p>
+          <p className="text-sm text-charcoal/40">No team members yet — invite one above.</p>
         ) : (
           users.map((user) => (
             <div

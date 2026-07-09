@@ -258,7 +258,13 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
       </div>
 
       {visible.length === 0 && (
-        <p className="text-sm text-charcoal/40 text-center py-8">Nothing here yet.</p>
+        <p className="text-sm text-charcoal/40 text-center py-8">
+          {memories.length > 0
+            ? 'No matches for this filter.'
+            : canManage(role)
+              ? 'Nothing here yet — use the form above to add your first memory.'
+              : 'Nothing here yet. Ask a manager to add one.'}
+        </p>
       )}
 
       <ul className="space-y-3">

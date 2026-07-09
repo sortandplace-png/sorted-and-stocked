@@ -190,7 +190,11 @@ export default function HouseholdKnowledgeClient({ propertyId }: { propertyId: s
 
       {Object.keys(grouped).length === 0 && (
         <p className="text-sm text-charcoal/40 text-center py-8">
-          {entries.length === 0 ? 'No entries yet.' : 'No matches.'}
+          {entries.length === 0
+            ? canManage(role)
+              ? 'No entries yet — use the form above to add your first Q&A.'
+              : 'No entries yet. Ask a manager to add one.'
+            : 'No matches.'}
         </p>
       )}
 
