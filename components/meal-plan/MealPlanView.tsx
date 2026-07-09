@@ -57,15 +57,19 @@ type FastDay = {
   note: string;
 };
 
+// Each combo is now backed by a real `recipes` row (course = kids_platter,
+// name = recipeName) with its own recipe_ingredients — see MealPlanPage's
+// query. recipeName is used to look up that row in the `recipes` prop at
+// click time; label is just the display text.
 const KIDS_PLATTERS = [
-  'Platter A — carrots, apples, grapes',
-  'Platter B — berries, cheese cubes',
-  'Platter C — melon, crackers',
-  'Platter D — cucumbers, pretzels, hummus',
-  'Platter E — clementines, string cheese, crackers',
-  'Platter F — cherry tomatoes, pita, olives',
-  'Platter G — apple slices, peanut butter, raisins',
-  'Platter H — grapes, cheese sticks, mini muffins',
+  { recipeName: 'Platter A', label: 'Platter A — carrots, apples, grapes' },
+  { recipeName: 'Platter B', label: 'Platter B — berries, orange segments, cucumber slices' },
+  { recipeName: 'Platter C', label: 'Platter C — melon, cucumber, grapes' },
+  { recipeName: 'Platter D', label: 'Platter D — cucumbers, carrots, cherry tomatoes' },
+  { recipeName: 'Platter E', label: 'Platter E — clementines, grapes, bell pepper strips' },
+  { recipeName: 'Platter F', label: 'Platter F — cherry tomatoes, cucumber, bell peppers' },
+  { recipeName: 'Platter G', label: 'Platter G — apple slices, orange slices, grapes' },
+  { recipeName: 'Platter H', label: 'Platter H — grapes, strawberries, cucumber' },
 ];
 
 // Zmanim-Aware Prep Guard: warns when a day's total recorded prep time
@@ -891,22 +895,37 @@ export default function MealPlanView({
                   Quick entry for something else.
                 </p>
                 <div className="flex flex-col gap-2">
-                  {KIDS_PLATTERS.map((platter) => (
-                    <button
-                      key={platter}
-                      onClick={() => {
-                        setPickerMode('custom');
-                        setCustomName(platter);
-                      }}
-                      className={
-                        customName === platter && pickerMode === 'custom'
-                          ? 'text-left px-4 py-2.5 rounded-2xl bg-gold-light/30 text-charcoal font-medium text-sm border border-gold'
-                          : 'text-left px-4 py-2.5 rounded-2xl bg-cream/60 text-charcoal text-sm border border-gold-light/40'
-                      }
-                    >
-                      {platter}
-                    </button>
-                  ))}
+                  {KIDS_PLATTERS.map((platter) => {
+                    const match = recipes.find(
+                      (r) => r.course === 'kids_platter' && r.name === platter.recipeName
+                    );
+                    const isActive = match
+                      ? pickerMode === 'existing' && pickedRecipeId === match.id
+                      : pickerMode === 'custom' && customName === platter.label;
+                    return (
+                      <button
+                        key={platter.recipeName}
+                        onClick={() => {
+                          if (match) {
+                            setPickerMode('existing');
+                            setPickedRecipeId(match.id);
+                          } else {
+                            // Fallback if the recipe row is missing for some reason —
+                            // still lets the slot get filled with the plain text label.
+                            setPickerMode('custom');
+                            setCustomName(platter.label);
+                          }
+                        }}
+                        className={
+                          isActive
+                            ? 'text-left px-4 py-2.5 rounded-2xl bg-gold-light/30 text-charcoal font-medium text-sm border border-gold'
+                            : 'text-left px-4 py-2.5 rounded-2xl bg-cream/60 text-charcoal text-sm border border-gold-light/40'
+                        }
+                      >
+                        {platter.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
