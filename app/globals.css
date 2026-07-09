@@ -50,6 +50,18 @@ h1, h2, h3 {
   letter-spacing: 0.01em;
 }
 
+/* No placeholder color was ever set, so every input fell back to the
+   browser's own default gray — inconsistent across browsers and, in
+   several, too light to pass WCAG AA against the app's white/cream
+   input backgrounds. charcoal (#2B2B2B) at 70% opacity measures ~5.3:1
+   against white, comfortably clearing the 4.5:1 AA minimum for text.
+   Firefox also dims placeholders via its own UA opacity — override it
+   so the color above isn't further diluted there. */
+::placeholder {
+  color: rgb(43 43 43 / 0.7);
+  opacity: 1;
+}
+
 /* Respect safe areas on notched/rounded-corner phones, used by PropertyNav's
    fixed bottom bar (pb-[env(safe-area-inset-bottom)] alone isn't enough on
    some older iOS Safari versions without this being declared at the root). */
