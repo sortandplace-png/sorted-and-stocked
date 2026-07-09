@@ -27,6 +27,7 @@ export default function DuplicateIngredientsClient({ propertyId }: { propertyId:
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [loading, setLoading] = useState(true);
   const [merging, setMerging] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -101,6 +102,11 @@ export default function DuplicateIngredientsClient({ propertyId }: { propertyId:
 
   if (loading) return <SkeletonList />;
 
+  const q = search.trim().toLowerCase();
+  const filteredClusters = q
+    ? clusters.filter((c) => c.variants.some((v) => v.name.toLowerCase().includes(q)))
+    : clusters;
+
   return (
     <div className="max-w-md mx-auto p-4">
       <h1 className="text-2xl font-display text-charcoal mb-1">Duplicate Ingredients</h1>
@@ -108,10 +114,22 @@ export default function DuplicateIngredientsClient({ propertyId }: { propertyId:
         Likely the same ingredient, spelled differently across recipes. Pick which spelling to keep.
       </p>
 
+      {clusters.length > 0 && (
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search ingredient…"
+          className="w-full border border-gold-light/60 rounded-full px-4 py-2.5 bg-white mb-4 text-sm"
+        />
+      )}
+
       {clusters.length === 0 && <p className="text-sm text-sage text-center py-8">No likely duplicates found.</p>}
+      {clusters.length > 0 && filteredClusters.length === 0 && (
+        <p className="text-sm text-charcoal/40 text-center py-8">No duplicates match your search.</p>
+      )}
 
       <div className="space-y-3">
-        {clusters.map((cluster) => (
+        {filteredClusters.map((cluster) => (
           <div key={cluster.key} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
             <div className="flex flex-wrap gap-2 mb-3">
               {cluster.variants.map((v) => (

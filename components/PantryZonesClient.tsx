@@ -35,6 +35,7 @@ export default function PantryZonesClient({ propertyId }: { propertyId: string }
   const [locationId, setLocationId] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,7 +94,16 @@ export default function PantryZonesClient({ propertyId }: { propertyId: string }
 
   if (loading) return <SkeletonList />;
 
-  const grouped = zones.reduce<Record<string, Zone[]>>((acc, z) => {
+  const q = search.trim().toLowerCase();
+  const filteredZones = zones.filter((z) => {
+    if (!q) return true;
+    if (z.zone_name.toLowerCase().includes(q)) return true;
+    if (z.description?.toLowerCase().includes(q)) return true;
+    if (locationPath(locations, z.location_id).toLowerCase().includes(q)) return true;
+    return false;
+  });
+
+  const grouped = filteredZones.reduce<Record<string, Zone[]>>((acc, z) => {
     const key = locationPath(locations, z.location_id);
     (acc[key] ??= []).push(z);
     return acc;
@@ -103,6 +113,13 @@ export default function PantryZonesClient({ propertyId }: { propertyId: string }
     <div className="max-w-md mx-auto p-4">
       <h1 className="text-2xl font-display text-charcoal mb-1">Pantry Zone Map</h1>
       <p className="text-sm text-charcoal/50 mb-4">Where things live within each storage location.</p>
+
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search zones…"
+        className="w-full border border-gold-light/60 rounded-full px-4 py-2.5 bg-white mb-4 text-sm"
+      />
 
       {canManage(role) && (
         <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-2">
@@ -155,7 +172,9 @@ export default function PantryZonesClient({ propertyId }: { propertyId: string }
 
       {Object.keys(grouped).length === 0 && (
         <p className="text-sm text-charcoal/40 text-center py-8">
-          {canManage(role)
+          {q
+            ? 'No zones match your search.'
+            : canManage(role)
             ? 'No zones mapped yet — use the form above to add one, e.g. "Top shelf, left side."'
             : 'No zones mapped yet. Ask a manager to map one.'}
         </p>

@@ -35,6 +35,7 @@ export default function BorrowedItemsClient({ propertyId }: { propertyId: string
   const [otherParty, setOtherParty] = useState('');
   const [expectedReturn, setExpectedReturn] = useState('');
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -102,13 +103,23 @@ export default function BorrowedItemsClient({ propertyId }: { propertyId: string
 
   if (loading) return <SkeletonList />;
 
-  const active = items.filter((i) => !i.returned);
-  const returned = items.filter((i) => i.returned);
+  const q = search.trim().toLowerCase();
+  const matchesSearch = (i: Item) =>
+    !q || i.item_name.toLowerCase().includes(q) || i.other_party.toLowerCase().includes(q);
+  const active = items.filter((i) => !i.returned && matchesSearch(i));
+  const returned = items.filter((i) => i.returned && matchesSearch(i));
 
   return (
     <div className="max-w-md mx-auto p-4">
       <h1 className="text-2xl font-display text-charcoal mb-1">Borrowed &amp; Lent</h1>
       <p className="text-sm text-charcoal/50 mb-4">Keep track of what's out and who has it.</p>
+
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search item or name…"
+        className="w-full border border-gold-light/60 rounded-full px-4 py-2.5 bg-white mb-4 text-sm"
+      />
 
       {canManage(role) && (
         <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-2">
