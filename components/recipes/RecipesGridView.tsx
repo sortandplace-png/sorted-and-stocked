@@ -15,7 +15,6 @@ import {
   Apple,
   Droplet,
   Milk,
-  Fish,
   Leaf,
   Flame,
   Wine,
@@ -67,7 +66,20 @@ interface ExpiringSoonRecipe {
 
 const EXPIRING_WINDOW_OPTIONS = [3, 4, 5];
 
-const KOSHER_TYPES = ['Meat', 'Dairy', 'Parve', 'Parve (Fish)'];
+// One "Parve" filter pill covers both the "Parve" and "Parve (Fish)" real
+// kosher_type values — fish is halachically parve, and both already showed
+// the same פרווה Hebrew subtitle before this merge. The underlying data
+// still distinguishes them (kosher_type keeps its real specific value on
+// each recipe, e.g. for its own card badge) — this only merges the filter
+// pill and its matching logic, not the data. Matches the same
+// kt.startsWith('Parve') convention already used in
+// lib/shopping-link-builder.ts for the same "any kind of parve" grouping.
+const KOSHER_TYPES = ['Meat', 'Dairy', 'Parve'];
+
+function matchesKosherFilter(r: Recipe, filter: string): boolean {
+  if (filter === 'Parve') return !!r.kosher_type?.startsWith('Parve');
+  return r.kosher_type === filter;
+}
 
 // Matches the Hebrew-alongside-English convention already used for calendar
 // content (e.g. MealPlanView.tsx's month-grid Hebrew dates) — always shown,
@@ -83,7 +95,6 @@ const KOSHER_HEBREW: Record<string, string> = {
   Meat: 'בשרי',
   Dairy: 'חלבי',
   Parve: 'פרווה',
-  'Parve (Fish)': 'פרווה', // fish is halachically parve — same term as plain Parve
 };
 
 // Monochrome line-icon set for this page's filter pills specifically —
@@ -108,7 +119,6 @@ const KOSHER_PILL_ICONS: Record<string, LucideIcon> = {
   Meat: Beef,
   Dairy: Milk,
   Parve: Leaf,
-  'Parve (Fish)': Fish,
 };
 
 const OCCASION_PILL_ICONS: Record<Occasion, LucideIcon> = {
@@ -241,7 +251,7 @@ export default function RecipesGridView({
     return recipes.filter((r) => {
       if (q && !r.name.toLowerCase().includes(q)) return false;
       if (courseFilter && r.course !== courseFilter) return false;
-      if (kosherFilter && r.kosher_type !== kosherFilter) return false;
+      if (kosherFilter && !matchesKosherFilter(r, kosherFilter)) return false;
       if (occasionFilter && !matchesOccasion(r, occasionFilter)) return false;
       if (prepFilter && !matchesPrep(r, prepFilter)) return false;
       return true;
@@ -261,7 +271,11 @@ export default function RecipesGridView({
 
   const kosherCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const r of recipes) if (r.kosher_type) counts[r.kosher_type] = (counts[r.kosher_type] ?? 0) + 1;
+    // Parve counts every recipe whose kosher_type starts with "Parve" (that
+    // includes "Parve (Fish)") — kosher_type is a single-value column, not
+    // a tag array, so a recipe can only ever match one bucket here, no
+    // double-counting possible.
+    for (const k of KOSHER_TYPES) counts[k] = recipes.filter((r) => matchesKosherFilter(r, k)).length;
     return counts;
   }, [recipes]);
 
@@ -361,9 +375,9 @@ export default function RecipesGridView({
         </div>
       )}
 
-      <div className="mb-8">
+      <div className="mb-6">
         <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Course</p>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-4">
           {COURSES.map((c) => {
             const active = courseFilter === c.key;
             const Icon = COURSE_PILL_ICONS[c.key];
@@ -383,9 +397,9 @@ export default function RecipesGridView({
         </div>
       </div>
 
-      <div className="mb-8">
+      <div className="mb-6">
         <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Dietary</p>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-4">
           {KOSHER_TYPES.map((k) => {
             const active = kosherFilter === k;
             const Icon = KOSHER_PILL_ICONS[k];
@@ -416,9 +430,9 @@ export default function RecipesGridView({
         </div>
       </div>
 
-      <div className="mb-8">
+      <div className="mb-6">
         <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Occasion</p>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-4">
           {(
             [
               ['shabbos', 'Shabbos'],
@@ -457,9 +471,9 @@ export default function RecipesGridView({
         </div>
       </div>
 
-      <div className="mb-8">
+      <div className="mb-6">
         <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Prep</p>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-4">
           {PREP_FILTERS.map((p) => {
             const active = prepFilter === p.key;
             const Icon = PREP_PILL_ICONS[p.key];
