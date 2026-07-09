@@ -368,7 +368,7 @@ export default function RecipesGridView({
   }, [recipes]);
 
   const recentlyAdded = useMemo(() => {
-    return [...recipes].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 4);
+    return [...recipes].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 3);
   }, [recipes]);
 
   const kosherCounts = useMemo(() => {
