@@ -24,6 +24,7 @@ import {
   Square,
   Grid3x3,
   LayoutGrid,
+  ChefHat,
   type LucideIcon,
 } from 'lucide-react';
 import { kosherIcon } from '@/lib/icon-maps';
@@ -133,6 +134,7 @@ const PREP_PILL_ICONS: Record<PrepKey, LucideIcon> = {
   quick: Clock,
   'slow-cooker': CookingPot,
   '9x13': Square,
+  'one-pot': ChefHat,
 };
 
 // Only pills with a real, checkable backing field — confirmed live against
@@ -140,14 +142,18 @@ const PREP_PILL_ICONS: Record<PrepKey, LucideIcon> = {
 // use today (21 and 8 recipes respectively). "Quick & Easy" has no tag but
 // is computable from the existing approx_total_minutes field (already
 // partially populated and already used elsewhere on this page's cards).
-// "Basics" and "One-Pot" have no backing data anywhere — tag, field, or
-// otherwise — so they're deliberately not built as filters with nothing to
-// filter; they'd need real recipe tagging first.
-type PrepKey = 'quick' | 'slow-cooker' | '9x13';
+// "one-pot" is a real tag now too, applied to 6 recipes whose own
+// instructions confirm single-vessel cooking (seared/sautéed/braised in
+// the same pot, or a single sheet pan/9x13) — see the recipe-tagging
+// pass this was added in. "Basics" still has no backing data — it needs
+// Racquel's judgment on what counts as a foundational/staple recipe
+// before it gets tagged, so it's deliberately not built as a filter yet.
+type PrepKey = 'quick' | 'slow-cooker' | '9x13' | 'one-pot';
 const PREP_FILTERS: { key: PrepKey; label: string }[] = [
   { key: 'quick', label: 'Quick & Easy' },
   { key: 'slow-cooker', label: 'Slow Cooker' },
   { key: '9x13', label: '9x13 Pan' },
+  { key: 'one-pot', label: 'One-Pot' },
 ];
 
 function matchesPrep(r: Recipe, key: PrepKey): boolean {
@@ -291,9 +297,9 @@ export default function RecipesGridView({
   }, [recipes]);
 
   const prepCounts = useMemo(() => {
-    const counts: Record<PrepKey, number> = { quick: 0, 'slow-cooker': 0, '9x13': 0 };
+    const counts: Record<PrepKey, number> = { quick: 0, 'slow-cooker': 0, '9x13': 0, 'one-pot': 0 };
     for (const r of recipes) {
-      (['quick', 'slow-cooker', '9x13'] as PrepKey[]).forEach((p) => {
+      (['quick', 'slow-cooker', '9x13', 'one-pot'] as PrepKey[]).forEach((p) => {
         if (matchesPrep(r, p)) counts[p]++;
       });
     }
@@ -382,15 +388,12 @@ export default function RecipesGridView({
           <div className="flex flex-wrap gap-x-4 gap-y-2">
             <button onClick={() => setCourseFilter(null)} className="min-h-11 flex items-center">
               <span
-                className={`flex flex-col items-center gap-0.5 leading-tight px-3 py-1.5 rounded-full transition-colors ${
+                className={`flex items-center gap-1.5 leading-tight text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${
                   !courseFilter ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
                 }`}
               >
-                <span className="flex items-center gap-1.5 text-sm font-medium">
-                  <LayoutGrid className={`w-3.5 h-3.5 ${!courseFilter ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                  All
-                </span>
-                <span className={`text-[10px] ${!courseFilter ? 'text-charcoal/60' : 'text-charcoal/40'}`}>({recipes.length})</span>
+                <LayoutGrid className={`w-3.5 h-3.5 ${!courseFilter ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                All <span className={!courseFilter ? 'text-charcoal/60' : 'text-charcoal/40'}>({recipes.length})</span>
               </span>
             </button>
             {COURSES.map((c) => {
@@ -399,15 +402,12 @@ export default function RecipesGridView({
               return (
                 <button key={c.key} onClick={() => setCourseFilter(active ? null : c.key)} className="min-h-11 flex items-center">
                   <span
-                    className={`flex flex-col items-center gap-0.5 leading-tight px-3 py-1.5 rounded-full transition-colors ${
+                    className={`flex items-center gap-1.5 leading-tight text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${
                       active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
                     }`}
                   >
-                    <span className="flex items-center gap-1.5 text-sm font-medium">
-                      <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                      {c.label}
-                    </span>
-                    <span className={`text-[10px] ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>({courseCounts[c.key] ?? 0})</span>
+                    <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                    {c.label} <span className={active ? 'text-charcoal/60' : 'text-charcoal/40'}>({courseCounts[c.key] ?? 0})</span>
                   </span>
                 </button>
               );
@@ -415,83 +415,85 @@ export default function RecipesGridView({
           </div>
         </div>
 
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Dietary</p>
-          <div className="flex flex-wrap gap-x-4 gap-y-2">
-            {KOSHER_TYPES.map((k) => {
-              const active = kosherFilter === k;
-              const Icon = KOSHER_PILL_ICONS[k];
-              return (
-                <button
-                  key={k}
-                  onClick={() => setKosherFilter(active ? null : k)}
-                  className="min-h-11 flex items-center justify-center"
-                >
-                  <span
-                    className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-colors ${
-                      active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
-                    }`}
+        <div className="flex gap-6">
+          <div className="flex-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Dietary</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {KOSHER_TYPES.map((k) => {
+                const active = kosherFilter === k;
+                const Icon = KOSHER_PILL_ICONS[k];
+                return (
+                  <button
+                    key={k}
+                    onClick={() => setKosherFilter(active ? null : k)}
+                    className="min-h-11 flex items-center justify-center"
                   >
-                    <span className="flex items-center gap-1.5 leading-tight text-sm font-medium">
-                      <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                      {k}
+                    <span
+                      className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-colors ${
+                        active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5 leading-tight text-sm font-medium">
+                        <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                        {k}
+                      </span>
+                      <span className={`flex items-center gap-1 text-[10px] leading-tight ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>
+                        <span>({kosherCounts[k] ?? 0})</span>
+                        {KOSHER_HEBREW[k] && (
+                          <span lang="he" dir="rtl">
+                            {KOSHER_HEBREW[k]}
+                          </span>
+                        )}
+                      </span>
                     </span>
-                    <span className={`flex items-center gap-1 text-[10px] leading-tight ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>
-                      <span>({kosherCounts[k] ?? 0})</span>
-                      {KOSHER_HEBREW[k] && (
-                        <span lang="he" dir="rtl">
-                          {KOSHER_HEBREW[k]}
-                        </span>
-                      )}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Occasion</p>
-          <div className="flex flex-wrap gap-x-4 gap-y-2">
-            {(
-              [
-                ['shabbos', 'Shabbos'],
-                ['yomtov', 'Yom Tov'],
-                ['pesach', 'Pesach'],
-                ['weekday', 'Weekday'],
-              ] as [Occasion, string][]
-            ).map(([key, label]) => {
-              const active = occasionFilter === key;
-              const hebrew = OCCASION_HEBREW[key];
-              const Icon = OCCASION_PILL_ICONS[key];
-              return (
-                <button
-                  key={key}
-                  onClick={() => setOccasionFilter(active ? null : key)}
-                  className="min-h-11 flex items-center justify-center"
-                >
-                  <span
-                    className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-colors ${
-                      active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
-                    }`}
+          <div className="flex-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Occasion</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {(
+                [
+                  ['shabbos', 'Shabbos'],
+                  ['yomtov', 'Yom Tov'],
+                  ['pesach', 'Pesach'],
+                  ['weekday', 'Weekday'],
+                ] as [Occasion, string][]
+              ).map(([key, label]) => {
+                const active = occasionFilter === key;
+                const hebrew = OCCASION_HEBREW[key];
+                const Icon = OCCASION_PILL_ICONS[key];
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setOccasionFilter(active ? null : key)}
+                    className="min-h-11 flex items-center justify-center"
                   >
-                    <span className="flex items-center gap-1.5 leading-tight text-sm font-medium">
-                      <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                      {label}
+                    <span
+                      className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-colors ${
+                        active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5 leading-tight text-sm font-medium">
+                        <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                        {label}
+                      </span>
+                      <span className={`flex items-center gap-1 text-[10px] leading-tight ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>
+                        <span>({occasionCounts[key] ?? 0})</span>
+                        {hebrew && (
+                          <span lang="he" dir="rtl">
+                            {hebrew}
+                          </span>
+                        )}
+                      </span>
                     </span>
-                    <span className={`flex items-center gap-1 text-[10px] leading-tight ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>
-                      <span>({occasionCounts[key] ?? 0})</span>
-                      {hebrew && (
-                        <span lang="he" dir="rtl">
-                          {hebrew}
-                        </span>
-                      )}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -504,15 +506,12 @@ export default function RecipesGridView({
               return (
                 <button key={p.key} onClick={() => setPrepFilter(active ? null : p.key)} className="min-h-11 flex items-center">
                   <span
-                    className={`flex flex-col items-center gap-0.5 leading-tight px-3 py-1.5 rounded-full transition-colors ${
+                    className={`flex items-center gap-1.5 leading-tight text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${
                       active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
                     }`}
                   >
-                    <span className="flex items-center gap-1.5 text-sm font-medium">
-                      <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                      {p.label}
-                    </span>
-                    <span className={`text-[10px] ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>({prepCounts[p.key] ?? 0})</span>
+                    <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                    {p.label} <span className={active ? 'text-charcoal/60' : 'text-charcoal/40'}>({prepCounts[p.key] ?? 0})</span>
                   </span>
                 </button>
               );
