@@ -62,6 +62,9 @@ export default function ShoppingListViewEnhanced({
   // the same as the image actually loading.
   const [brokenPhotoIds, setBrokenPhotoIds] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
+  // Guards against overlapping toggle requests when a checkbox is tapped
+  // again before the previous request for the same item(s) has resolved.
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   const showToast = useToast();
   const locale = useLocale();
   const t = useTranslations('shopping');
@@ -107,19 +110,34 @@ export default function ShoppingListViewEnhanced({
   // Aggregated display rows carry _mergedIds — these two wrap the real
   // single-id actions above so toggling/deleting a merged row still acts
   // on every real underlying row, not just the display row's own id.
+  const isItemProcessing = (item: DisplayItem) => {
+    const ids = item._mergedIds ?? [item.item_id];
+    return ids.some((id) => processingIds.has(id));
+  };
+
   const toggleStatusForDisplayItem = async (item: DisplayItem) => {
     const ids = item._mergedIds ?? [item.item_id];
-    if (ids.length === 1) {
-      await toggleStatus(item.item_id, item.status);
-      return;
-    }
-    const newStatus = item.status === 'purchased' ? 'pending' : 'purchased';
+    if (ids.some((id) => processingIds.has(id))) return;
+    setProcessingIds((prev) => new Set([...prev, ...ids]));
     try {
-      await Promise.all(ids.map((id) => updateShoppingItemStatus(id, newStatus)));
-      setItems((prev) => prev.map((i) => (ids.includes(i.item_id) ? { ...i, status: newStatus } : i)));
-    } catch (error) {
-      console.error('Error updating merged item:', error);
-      showToast('Failed to update item.', { variant: 'error' });
+      if (ids.length === 1) {
+        await toggleStatus(item.item_id, item.status);
+        return;
+      }
+      const newStatus = item.status === 'purchased' ? 'pending' : 'purchased';
+      try {
+        await Promise.all(ids.map((id) => updateShoppingItemStatus(id, newStatus)));
+        setItems((prev) => prev.map((i) => (ids.includes(i.item_id) ? { ...i, status: newStatus } : i)));
+      } catch (error) {
+        console.error('Error updating merged item:', error);
+        showToast('Failed to update item.', { variant: 'error' });
+      }
+    } finally {
+      setProcessingIds((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
     }
   };
 
@@ -381,7 +399,8 @@ export default function ShoppingListViewEnhanced({
                 </div>
                 <button
                   onClick={() => toggleStatusForDisplayItem(item)}
-                  className="print:hidden flex-shrink-0 text-charcoal hover:text-sage transition-colors"
+                  disabled={isItemProcessing(item)}
+                  className={`print:hidden flex-shrink-0 text-charcoal hover:text-sage transition-colors ${isItemProcessing(item) ? 'opacity-40 cursor-wait' : ''}`}
                 >
                   {item.status === 'purchased' ? (
                     <CheckCircle2 className="h-5 w-5" />
@@ -447,7 +466,8 @@ export default function ShoppingListViewEnhanced({
             <div className="print:hidden flex items-center gap-2">
               <button
                 onClick={() => toggleStatusForDisplayItem(item)}
-                className="text-charcoal hover:text-sage transition-colors"
+                disabled={isItemProcessing(item)}
+                className={`text-charcoal hover:text-sage transition-colors ${isItemProcessing(item) ? 'opacity-40 cursor-wait' : ''}`}
               >
                 {item.status === 'purchased' ? (
                   <CheckCircle2 className="h-5 w-5" />
