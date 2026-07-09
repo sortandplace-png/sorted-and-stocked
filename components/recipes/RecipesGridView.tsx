@@ -28,6 +28,9 @@ import {
   BookOpen,
   ChevronDown,
   Heart,
+  MoreVertical,
+  Copy,
+  Trash2,
   type LucideIcon,
 } from 'lucide-react';
 import { kosherIcon } from '@/lib/icon-maps';
@@ -37,6 +40,7 @@ import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { createClient } from '@/lib/supabase/client';
 import NewRecipeModal from '@/components/NewRecipeModal';
 import FloatingKitchenTimerButton from '@/components/FloatingKitchenTimerButton';
+import { useToast } from '@/components/Toast';
 
 interface Recipe {
   id: string;
@@ -191,6 +195,7 @@ export default function RecipesGridView({
   const t = useTranslations('recipesGrid');
   const router = useRouter();
   const supabase = createClient();
+  const showToast = useToast();
   const [search, setSearch] = useState('');
   const [showNewRecipe, setShowNewRecipe] = useState(false);
   const [collapsedLetters, setCollapsedLetters] = useState<Set<string>>(new Set());
@@ -202,6 +207,9 @@ export default function RecipesGridView({
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [expiringSoon, setExpiringSoon] = useState<ExpiringSoonRecipe[]>([]);
   const [expiringWindow, setExpiringWindow] = useState(4);
+  const [cardMenuOpenId, setCardMenuOpenId] = useState<string | null>(null);
+  const [cardActionBusy, setCardActionBusy] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Per-person favorites (recipe_favorites.user_id) — not shared across the
   // household, same convention as inventory_item_favorites.
@@ -258,6 +266,81 @@ export default function RecipesGridView({
       // A duplicate (already favorited from another tab) just no-ops via
       // the unique constraint — no need to handle that error specially.
     }
+  }
+
+  // Scoped to Duplicate + Delete only — Edit and Print don't translate well
+  // to a card-click context without opening the full recipe page first, so
+  // those two stay exclusive to the detail page's kebab menu.
+  async function duplicateRecipeFromCard(recipeId: string, e: React.MouseEvent) {
+    e.preventDefault(); // card is a Link — don't navigate
+    e.stopPropagation();
+    setCardMenuOpenId(null);
+    setCardActionBusy(recipeId);
+
+    const [{ data: source }, { data: sourceIngredients }] = await Promise.all([
+      supabase.from('recipes').select('*').eq('id', recipeId).single(),
+      supabase
+        .from('recipe_ingredients')
+        .select('name, quantity, unit, category, section_label')
+        .eq('recipe_id', recipeId),
+    ]);
+
+    if (!source) {
+      setCardActionBusy(null);
+      showToast('Failed to duplicate recipe.', { variant: 'error' });
+      return;
+    }
+
+    const { data: newRecipe, error: recipeError } = await supabase
+      .from('recipes')
+      .insert({
+        property_id: propertyId,
+        name: `${source.name} (Copy)`,
+        name_es: source.name_es,
+        servings: source.servings,
+        course: source.course,
+        kosher_type: source.kosher_type,
+        instructions_en: source.instructions_en,
+        instructions_es: source.instructions_es,
+        tags: source.tags,
+        approx_total_minutes: source.approx_total_minutes,
+        is_pesach: source.is_pesach,
+        is_yom_tov: source.is_yom_tov,
+        is_shabbos_only: source.is_shabbos_only,
+      })
+      .select('id')
+      .single();
+
+    if (recipeError || !newRecipe) {
+      setCardActionBusy(null);
+      showToast('Failed to duplicate recipe.', { variant: 'error' });
+      return;
+    }
+
+    if (sourceIngredients && sourceIngredients.length > 0) {
+      await supabase
+        .from('recipe_ingredients')
+        .insert(sourceIngredients.map((i) => ({ ...i, recipe_id: newRecipe.id })));
+    }
+
+    setCardActionBusy(null);
+    showToast('Recipe duplicated.', { variant: 'success' });
+    router.push(`/properties/${propertyId}/recipes/${newRecipe.id}`);
+  }
+
+  async function deleteRecipeFromCard(recipeId: string) {
+    setCardActionBusy(recipeId);
+    await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId);
+    const { error } = await supabase.from('recipes').delete().eq('id', recipeId);
+    setCardActionBusy(null);
+    setConfirmDeleteId(null);
+
+    if (error) {
+      showToast('Failed to delete recipe.', { variant: 'error' });
+      return;
+    }
+    showToast('Recipe deleted.', { variant: 'success' });
+    router.refresh();
   }
 
   const filtered = useMemo(() => {
@@ -917,6 +1000,56 @@ export default function RecipesGridView({
                               </span>
                             </button>
                           )}
+                          {canManage(role) && (
+                            <div className="absolute top-0 left-0">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setCardMenuOpenId((prev) => (prev === recipe.id ? null : recipe.id));
+                                }}
+                                aria-label="More actions"
+                                className="w-11 h-11 flex items-center justify-center"
+                              >
+                                <span className="w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center">
+                                  <MoreVertical className="w-4 h-4 text-charcoal/60" strokeWidth={1.75} />
+                                </span>
+                              </button>
+                              {cardMenuOpenId === recipe.id && (
+                                <>
+                                  <div
+                                    className="fixed inset-0 z-10"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setCardMenuOpenId(null);
+                                    }}
+                                  />
+                                  <div className="absolute left-0 top-11 z-20 bg-white rounded-2xl shadow-lg shadow-charcoal/10 border border-gold-light/40 w-40 overflow-hidden">
+                                    <button
+                                      onClick={(e) => duplicateRecipeFromCard(recipe.id, e)}
+                                      disabled={cardActionBusy === recipe.id}
+                                      className="w-full min-h-11 flex items-center gap-2 px-3 text-sm text-charcoal hover:bg-gold-light/10 transition disabled:opacity-40"
+                                    >
+                                      <Copy size={14} strokeWidth={1.75} />
+                                      {cardActionBusy === recipe.id ? 'Duplicating…' : 'Duplicate'}
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setCardMenuOpenId(null);
+                                        setConfirmDeleteId(recipe.id);
+                                      }}
+                                      className="w-full min-h-11 flex items-center gap-2 px-3 text-sm text-rust hover:bg-rust/5 transition border-t border-gold-light/40"
+                                    >
+                                      <Trash2 size={14} strokeWidth={1.75} /> Delete
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <div className="p-3">
                           <h2 className="font-display text-lg text-charcoal leading-snug mb-1.5">
@@ -966,6 +1099,38 @@ export default function RecipesGridView({
             router.refresh();
           }}
         />
+      )}
+
+      {confirmDeleteId && (
+        <div
+          className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4"
+          onClick={() => setConfirmDeleteId(null)}
+        >
+          <div
+            className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-sm mx-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="font-display text-xl text-charcoal mb-1">Delete this recipe?</h2>
+            <p className="text-sm text-charcoal/60 mb-4">
+              This recipe and its ingredient list will be permanently deleted. This can't be undone.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="flex-1 py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteRecipeFromCard(confirmDeleteId)}
+                disabled={cardActionBusy === confirmDeleteId}
+                className="flex-1 py-2.5 rounded-full bg-rust text-white disabled:opacity-40"
+              >
+                {cardActionBusy === confirmDeleteId ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <FloatingKitchenTimerButton />

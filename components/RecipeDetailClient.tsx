@@ -3,7 +3,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Printer, Share2, History as HistoryIcon, Heart } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Printer, Share2, History as HistoryIcon, Heart, MoreVertical, Pencil, Copy, Trash2 } from 'lucide-react';
+import NewRecipeModal from '@/components/NewRecipeModal';
 import { createClient } from '@/lib/supabase/client';
 import { kosherIcon } from '@/lib/icon-maps';
 import { getRecipeIcon } from '@/lib/recipe-icons';
@@ -89,6 +91,7 @@ export default function RecipeDetailClient({
 }) {
   const role = usePropertyRole();
   const supabase = createClient();
+  const router = useRouter();
   const showToast = useToast();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -102,6 +105,11 @@ export default function RecipeDetailClient({
   const [showHistory, setShowHistory] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -155,6 +163,66 @@ export default function RecipeDetailClient({
         .eq('recipe_id', recipeId)
         .eq('user_id', currentUserId);
     }
+  }
+
+  async function duplicateRecipe() {
+    if (!recipe) return;
+    setDuplicating(true);
+
+    const { data: newRecipe, error: recipeError } = await supabase
+      .from('recipes')
+      .insert({
+        property_id: propertyId,
+        name: `${recipe.name} (Copy)`,
+        name_es: recipe.name_es,
+        servings: recipe.servings,
+        course: recipe.course,
+        kosher_type: recipe.kosher_type,
+        instructions_en: recipe.instructions_en,
+        instructions_es: recipe.instructions_es,
+        tags: recipe.tags,
+        approx_total_minutes: recipe.approx_total_minutes,
+      })
+      .select('id')
+      .single();
+
+    if (recipeError || !newRecipe) {
+      setDuplicating(false);
+      showToast('Failed to duplicate recipe.', { variant: 'error' });
+      return;
+    }
+
+    if (ingredients.length > 0) {
+      await supabase.from('recipe_ingredients').insert(
+        ingredients.map((i) => ({
+          recipe_id: newRecipe.id,
+          name: i.name,
+          quantity: i.quantity,
+          unit: i.unit,
+          category: i.category,
+          section_label: i.section_label ?? null,
+        }))
+      );
+    }
+
+    setDuplicating(false);
+    showToast('Recipe duplicated.', { variant: 'success' });
+    router.push(`/properties/${propertyId}/recipes/${newRecipe.id}`);
+  }
+
+  async function deleteRecipeConfirmed() {
+    setDeleting(true);
+    await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId);
+    const { error: deleteError } = await supabase.from('recipes').delete().eq('id', recipeId);
+
+    if (deleteError) {
+      setDeleting(false);
+      showToast('Failed to delete recipe.', { variant: 'error' });
+      return;
+    }
+
+    showToast('Recipe deleted.', { variant: 'success' });
+    router.push(`/properties/${propertyId}/recipes`);
   }
 
   // Ingredients arrive pre-sorted with unlabeled rows first, then grouped by
@@ -260,12 +328,6 @@ export default function RecipeDetailClient({
             </button>
           )}
           <button
-            onClick={() => window.print()}
-            className="text-sm font-medium bg-charcoal text-cream px-4 py-2 rounded-full hover:opacity-90 transition flex items-center gap-1.5"
-          >
-            <Printer size={14} strokeWidth={1.75} /> Print
-          </button>
-          <button
             onClick={async () => {
               const url = `${window.location.origin}/properties/${propertyId}/recipes/${recipeId}`;
               if (navigator.share) {
@@ -293,8 +355,125 @@ export default function RecipeDetailClient({
               defaultCourse={(recipe.course as Course) ?? null}
             />
           )}
+
+          <div className="relative">
+            <button
+              onClick={() => setShowMenu((v) => !v)}
+              aria-label="More actions"
+              aria-expanded={showMenu}
+              className="w-11 h-11 flex items-center justify-center rounded-full border border-gold-light/60 hover:bg-gold-light/10 transition"
+            >
+              <MoreVertical size={16} strokeWidth={1.75} />
+            </button>
+
+            {showMenu && (
+              <>
+                {/* Click-outside catcher */}
+                <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                <div className="absolute right-0 top-12 z-20 bg-white rounded-2xl shadow-lg shadow-charcoal/10 border border-gold-light/40 w-48 overflow-hidden">
+                  {canManage(role) && (
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        setShowEditModal(true);
+                      }}
+                      className="w-full min-h-11 flex items-center gap-2 px-4 text-sm text-charcoal hover:bg-gold-light/10 transition"
+                    >
+                      <Pencil size={14} strokeWidth={1.75} /> Edit
+                    </button>
+                  )}
+                  {canManage(role) && (
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        duplicateRecipe();
+                      }}
+                      disabled={duplicating}
+                      className="w-full min-h-11 flex items-center gap-2 px-4 text-sm text-charcoal hover:bg-gold-light/10 transition disabled:opacity-40"
+                    >
+                      <Copy size={14} strokeWidth={1.75} /> {duplicating ? 'Duplicating…' : 'Duplicate'}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      window.print();
+                    }}
+                    className="w-full min-h-11 flex items-center gap-2 px-4 text-sm text-charcoal hover:bg-gold-light/10 transition"
+                  >
+                    <Printer size={14} strokeWidth={1.75} /> Print
+                  </button>
+                  {canManage(role) && (
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        setConfirmingDelete(true);
+                      }}
+                      className="w-full min-h-11 flex items-center gap-2 px-4 text-sm text-rust hover:bg-rust/5 transition border-t border-gold-light/40"
+                    >
+                      <Trash2 size={14} strokeWidth={1.75} /> Delete
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
+
+      {confirmingDelete && (
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4" onClick={() => setConfirmingDelete(false)}>
+          <div className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-sm mx-auto" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-display text-xl text-charcoal mb-1">Delete this recipe?</h2>
+            <p className="text-sm text-charcoal/60 mb-4">
+              "{recipe.name}" and its ingredient list will be permanently deleted. This can't be undone.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmingDelete(false)}
+                className="flex-1 py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={deleteRecipeConfirmed}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-full bg-rust text-white disabled:opacity-40"
+              >
+                {deleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && (
+        <NewRecipeModal
+          propertyId={propertyId}
+          editRecipeId={recipeId}
+          initialName={recipe.name}
+          initialServings={recipe.servings}
+          initialCourse={(recipe.course as Course) ?? undefined}
+          initialIngredients={ingredients.map((i) => ({
+            name: i.name,
+            quantity: i.quantity != null ? String(i.quantity) : '',
+            unit: i.unit ?? '',
+            category: i.category ?? '',
+          }))}
+          onClose={() => setShowEditModal(false)}
+          onSaved={() => {
+            setShowEditModal(false);
+            router.refresh();
+            // Re-fetch so the on-page ingredient list/details reflect edits
+            // immediately instead of waiting on the next full navigation.
+            (async () => {
+              const { recipe: recipeData, ingredients: ingredientData } = await fetchRecipeWithIngredients(recipeId);
+              setRecipe(recipeData);
+              setIngredients(ingredientData);
+            })();
+          }}
+        />
+      )}
 
       {showHistory && <RecipeHistoryModal recipeId={recipeId} onClose={() => setShowHistory(false)} />}
 

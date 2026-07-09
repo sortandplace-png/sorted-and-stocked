@@ -22,23 +22,42 @@ export default function NewRecipeModal({
   onClose,
   onSaved,
   defaultCourse = 'protein',
+  editRecipeId,
+  initialName,
+  initialServings,
+  initialCourse,
+  initialIngredients,
 }: {
   propertyId: string;
   onClose: () => void;
   onSaved: () => void;
   defaultCourse?: Course;
+  // When set, the modal edits this existing recipe instead of creating a
+  // new one — same form, reused rather than building a second editor.
+  editRecipeId?: string;
+  initialName?: string;
+  initialServings?: number | null;
+  initialCourse?: Course;
+  initialIngredients?: IngredientRow[];
 }) {
-  const [name, setName] = useState('');
-  const [servings, setServings] = useState('4');
-  const [course, setCourse] = useState<Course>(defaultCourse);
-  const [ingredientRows, setIngredientRows] = useState<IngredientRow[]>([
-    { name: '', quantity: '', unit: '', category: '' },
-  ]);
+  const isEditing = !!editRecipeId;
+  const [name, setName] = useState(initialName ?? '');
+  const [servings, setServings] = useState(initialServings ? String(initialServings) : '4');
+  const [course, setCourse] = useState<Course>(initialCourse ?? defaultCourse);
+  const [ingredientRows, setIngredientRows] = useState<IngredientRow[]>(
+    initialIngredients && initialIngredients.length > 0
+      ? initialIngredients
+      : [{ name: '', quantity: '', unit: '', category: '' }]
+  );
   const [saving, setSaving] = useState(false);
 
   const supabase = createClient();
   const showToast = useToast();
 
+  // Draft autosave only makes sense for the create flow — editing an
+  // existing recipe already has a persisted row, there's nothing to
+  // "resume" if the tab closes mid-edit the way there is for a brand new,
+  // not-yet-saved recipe.
   const { existingDraft, resumeDraft, discardDraft, clearDraft, queueSave } = useDraftAutosave<RecipeDraft>({
     propertyId,
     formType: 'new_recipe',
@@ -46,9 +65,10 @@ export default function NewRecipeModal({
   });
 
   useEffect(() => {
+    if (isEditing) return;
     queueSave({ name, servings, course, ingredientRows });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, servings, course, ingredientRows]);
+  }, [name, servings, course, ingredientRows, isEditing]);
 
   function applyDraft(draft: RecipeDraft) {
     setName(draft.name);
@@ -69,21 +89,42 @@ export default function NewRecipeModal({
     if (!name.trim()) return;
     setSaving(true);
 
-    const { data: recipe, error: recipeError } = await supabase
-      .from('recipes')
-      .insert({
-        property_id: propertyId,
-        name: name.trim(),
-        servings: Number(servings) || 4,
-        course,
-      })
-      .select('id')
-      .single();
+    let recipeId: string;
 
-    if (recipeError || !recipe) {
-      setSaving(false);
-      showToast('Failed to save recipe.', { variant: 'error' });
-      return;
+    if (isEditing) {
+      const { error: updateError } = await supabase
+        .from('recipes')
+        .update({ name: name.trim(), servings: Number(servings) || 4, course })
+        .eq('id', editRecipeId);
+
+      if (updateError) {
+        setSaving(false);
+        showToast('Failed to save recipe.', { variant: 'error' });
+        return;
+      }
+      recipeId = editRecipeId!;
+
+      // Simplest correct approach for edited ingredients: replace the full
+      // set rather than diffing row-by-row against what changed.
+      await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId);
+    } else {
+      const { data: recipe, error: recipeError } = await supabase
+        .from('recipes')
+        .insert({
+          property_id: propertyId,
+          name: name.trim(),
+          servings: Number(servings) || 4,
+          course,
+        })
+        .select('id')
+        .single();
+
+      if (recipeError || !recipe) {
+        setSaving(false);
+        showToast('Failed to save recipe.', { variant: 'error' });
+        return;
+      }
+      recipeId = recipe.id;
     }
 
     const validRows = ingredientRows.filter((r) => r.name.trim());
@@ -99,7 +140,7 @@ export default function NewRecipeModal({
         validRows.map((r, i) => {
           const parsed = r.quantity ? parseFloat(r.quantity) : NaN;
           return {
-            recipe_id: recipe.id,
+            recipe_id: recipeId,
             name: r.name.trim(),
             quantity: Number.isFinite(parsed) ? parsed : null,
             unit: r.unit.trim() || null,
@@ -111,8 +152,8 @@ export default function NewRecipeModal({
     }
 
     setSaving(false);
-    showToast('Recipe saved.', { variant: 'success' });
-    await clearDraft();
+    showToast(isEditing ? 'Recipe updated.' : 'Recipe saved.', { variant: 'success' });
+    if (!isEditing) await clearDraft();
     onSaved();
   }
 
@@ -125,9 +166,9 @@ export default function NewRecipeModal({
         className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="font-display text-xl text-charcoal mb-3">New recipe</h2>
+        <h2 className="font-display text-xl text-charcoal mb-3">{isEditing ? 'Edit recipe' : 'New recipe'}</h2>
 
-        {existingDraft && (
+        {!isEditing && existingDraft && (
           <div className="bg-gold-light/20 border border-gold-light rounded-2xl p-3 mb-3 text-sm">
             <p className="text-charcoal mb-2">You have an unsaved draft of a recipe.</p>
             <div className="flex gap-2">
@@ -241,7 +282,7 @@ export default function NewRecipeModal({
             disabled={saving || !name.trim()}
             className="flex-1 py-2.5 rounded-full bg-charcoal text-cream disabled:opacity-40"
           >
-            {saving ? 'Saving…' : 'Save recipe'}
+            {saving ? 'Saving…' : isEditing ? 'Save changes' : 'Save recipe'}
           </button>
         </div>
       </div>
