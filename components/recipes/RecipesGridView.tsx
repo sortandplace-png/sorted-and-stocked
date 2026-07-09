@@ -23,6 +23,7 @@ import {
   CookingPot,
   Square,
   Grid3x3,
+  LayoutGrid,
   type LucideIcon,
 } from 'lucide-react';
 import { kosherIcon } from '@/lib/icon-maps';
@@ -379,18 +380,34 @@ export default function RecipesGridView({
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Course</p>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
+            <button onClick={() => setCourseFilter(null)} className="min-h-11 flex items-center">
+              <span
+                className={`flex flex-col items-center gap-0.5 leading-tight px-3 py-1.5 rounded-full transition-colors ${
+                  !courseFilter ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                }`}
+              >
+                <span className="flex items-center gap-1.5 text-sm font-medium">
+                  <LayoutGrid className={`w-3.5 h-3.5 ${!courseFilter ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                  All
+                </span>
+                <span className={`text-[10px] ${!courseFilter ? 'text-charcoal/60' : 'text-charcoal/40'}`}>({recipes.length})</span>
+              </span>
+            </button>
             {COURSES.map((c) => {
               const active = courseFilter === c.key;
               const Icon = COURSE_PILL_ICONS[c.key];
               return (
                 <button key={c.key} onClick={() => setCourseFilter(active ? null : c.key)} className="min-h-11 flex items-center">
                   <span
-                    className={`flex items-center gap-1.5 leading-tight text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-                      active ? 'bg-gold-dark text-white' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                    className={`flex flex-col items-center gap-0.5 leading-tight px-3 py-1.5 rounded-full transition-colors ${
+                      active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
                     }`}
                   >
-                    <Icon className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                    {c.label} <span className={active ? 'text-white/60' : 'text-charcoal/40'}>({courseCounts[c.key] ?? 0})</span>
+                    <span className="flex items-center gap-1.5 text-sm font-medium">
+                      <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                      {c.label}
+                    </span>
+                    <span className={`text-[10px] ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>({courseCounts[c.key] ?? 0})</span>
                   </span>
                 </button>
               );
@@ -411,23 +428,22 @@ export default function RecipesGridView({
                   className="min-h-11 flex items-center justify-center"
                 >
                   <span
-                    className={`flex flex-col items-center px-3 py-1.5 rounded-full transition-colors ${
-                      active ? 'bg-gold-dark text-white' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                    className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-colors ${
+                      active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
                     }`}
                   >
-                    <span className="flex items-center gap-1.5 leading-tight text-xs font-medium">
-                      <Icon className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                      {k} <span className={active ? 'text-white/60' : 'text-charcoal/40'}>({kosherCounts[k] ?? 0})</span>
+                    <span className="flex items-center gap-1.5 leading-tight text-sm font-medium">
+                      <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                      {k}
                     </span>
-                    {KOSHER_HEBREW[k] && (
-                      <span
-                        lang="he"
-                        dir="rtl"
-                        className={`text-[8px] leading-tight ${active ? 'text-white/60' : 'text-charcoal/40'}`}
-                      >
-                        {KOSHER_HEBREW[k]}
-                      </span>
-                    )}
+                    <span className={`flex items-center gap-1 text-[10px] leading-tight ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>
+                      <span>({kosherCounts[k] ?? 0})</span>
+                      {KOSHER_HEBREW[k] && (
+                        <span lang="he" dir="rtl">
+                          {KOSHER_HEBREW[k]}
+                        </span>
+                      )}
+                    </span>
                   </span>
                 </button>
               );
@@ -456,23 +472,22 @@ export default function RecipesGridView({
                   className="min-h-11 flex items-center justify-center"
                 >
                   <span
-                    className={`flex flex-col items-center px-3 py-1.5 rounded-full transition-colors ${
-                      active ? 'bg-gold-dark text-white' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                    className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-colors ${
+                      active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
                     }`}
                   >
-                    <span className="flex items-center gap-1.5 leading-tight text-xs font-medium">
-                      <Icon className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                      {label} <span className={active ? 'text-white/60' : 'text-charcoal/40'}>({occasionCounts[key] ?? 0})</span>
+                    <span className="flex items-center gap-1.5 leading-tight text-sm font-medium">
+                      <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                      {label}
                     </span>
-                    {hebrew && (
-                      <span
-                        lang="he"
-                        dir="rtl"
-                        className={`text-[8px] leading-tight ${active ? 'text-white/60' : 'text-charcoal/40'}`}
-                      >
-                        {hebrew}
-                      </span>
-                    )}
+                    <span className={`flex items-center gap-1 text-[10px] leading-tight ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>
+                      <span>({occasionCounts[key] ?? 0})</span>
+                      {hebrew && (
+                        <span lang="he" dir="rtl">
+                          {hebrew}
+                        </span>
+                      )}
+                    </span>
                   </span>
                 </button>
               );
@@ -489,12 +504,15 @@ export default function RecipesGridView({
               return (
                 <button key={p.key} onClick={() => setPrepFilter(active ? null : p.key)} className="min-h-11 flex items-center">
                   <span
-                    className={`flex items-center gap-1.5 leading-tight text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-                      active ? 'bg-gold-dark text-white' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                    className={`flex flex-col items-center gap-0.5 leading-tight px-3 py-1.5 rounded-full transition-colors ${
+                      active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
                     }`}
                   >
-                    <Icon className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                    {p.label} <span className={active ? 'text-white/60' : 'text-charcoal/40'}>({prepCounts[p.key] ?? 0})</span>
+                    <span className="flex items-center gap-1.5 text-sm font-medium">
+                      <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+                      {p.label}
+                    </span>
+                    <span className={`text-[10px] ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>({prepCounts[p.key] ?? 0})</span>
                   </span>
                 </button>
               );
