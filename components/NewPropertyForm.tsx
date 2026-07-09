@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import FieldLabel from '@/components/FieldLabel';
 
 export default function NewPropertyForm() {
   const [name, setName] = useState('');
@@ -83,15 +84,18 @@ export default function NewPropertyForm() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            type="text"
-            placeholder="Property name (e.g. Strauss Residence)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2.5 bg-white"
-            autoFocus
-            required
-          />
+          <div>
+            <FieldLabel>Property name</FieldLabel>
+            <input
+              type="text"
+              placeholder="e.g. Strauss Residence"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2.5 bg-white"
+              autoFocus
+              required
+            />
+          </div>
           {error && <p className="text-sm text-rust">{error}</p>}
           <button
             type="submit"

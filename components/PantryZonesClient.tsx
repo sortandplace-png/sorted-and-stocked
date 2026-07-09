@@ -8,6 +8,7 @@ import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import { flattenLocationTree, locationPath } from '@/lib/location-tree';
+import FieldLabel from '@/components/FieldLabel';
 
 type Location = { id: string; name: string; parent_location_id: string | null };
 type Zone = {
@@ -106,33 +107,42 @@ export default function PantryZonesClient({ propertyId }: { propertyId: string }
       {canManage(role) && (
         <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-2">
           <h2 className="font-display text-lg text-charcoal mb-1">Add a zone</h2>
-          <input
-            value={zoneName}
-            onChange={(e) => setZoneName(e.target.value)}
-            placeholder="Zone name (e.g. Top shelf, left side)"
-            className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-          />
-          <select
-            value={locationId}
-            onChange={(e) => setLocationId(e.target.value)}
-            className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm bg-white"
-          >
-            {locations.length === 0 && <option value="">No locations yet</option>}
-            {flattenLocationTree(locations).map((l) => (
-              <option key={l.id} value={l.id}>
-                {'  '.repeat(l.depth)}
-                {l.depth > 0 ? '↳ ' : ''}
-                {l.name}
-              </option>
-            ))}
-          </select>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="What's kept here (optional)"
-            rows={2}
-            className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-          />
+          <div>
+            <FieldLabel>Zone name</FieldLabel>
+            <input
+              value={zoneName}
+              onChange={(e) => setZoneName(e.target.value)}
+              placeholder="e.g. Top shelf, left side"
+              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <FieldLabel>Location</FieldLabel>
+            <select
+              value={locationId}
+              onChange={(e) => setLocationId(e.target.value)}
+              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm bg-white"
+            >
+              {locations.length === 0 && <option value="">No locations yet</option>}
+              {flattenLocationTree(locations).map((l) => (
+                <option key={l.id} value={l.id}>
+                  {'  '.repeat(l.depth)}
+                  {l.depth > 0 ? '↳ ' : ''}
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <FieldLabel>Description (optional)</FieldLabel>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What's kept here (optional)"
+              rows={2}
+              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+            />
+          </div>
           <button
             onClick={addZone}
             disabled={saving || !zoneName.trim() || !locationId}

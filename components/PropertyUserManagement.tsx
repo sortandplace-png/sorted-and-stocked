@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { UserPlus, Trash2, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
+import FieldLabel from '@/components/FieldLabel';
 
 type PropertyUser = {
   id: string;
@@ -104,13 +105,16 @@ export default function PropertyUserManagement({ propertyId }: { propertyId: str
       {/* Invite Section */}
       <div className="bg-gold-light/10 rounded-2xl p-4 border border-gold-light/20">
         <div className="space-y-3">
-          <input
-            type="email"
-            placeholder="Email to invite"
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            className="w-full border border-gold-light/40 rounded-lg px-3 py-2 text-sm bg-white"
-          />
+          <div>
+            <FieldLabel>Email to invite</FieldLabel>
+            <input
+              type="email"
+              placeholder="Email to invite"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              className="w-full border border-gold-light/40 rounded-lg px-3 py-2 text-sm bg-white"
+            />
+          </div>
           <div className="flex gap-2">
             <select
               value={inviteRole}

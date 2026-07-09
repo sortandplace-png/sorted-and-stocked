@@ -8,6 +8,7 @@ import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import { useDraftAutosave } from '@/hooks/useDraftAutosave';
+import FieldLabel from '@/components/FieldLabel';
 
 type Entry = {
   id: string;
@@ -154,19 +155,25 @@ export default function HouseholdKnowledgeClient({ propertyId }: { propertyId: s
       {canManage(role) && (
         <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-2">
           <h2 className="font-display text-lg text-charcoal mb-1">Add an entry</h2>
-          <input
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Question (e.g. Where are the extra folding chairs?)"
-            className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-          />
-          <textarea
-            value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
-            placeholder="Answer"
-            rows={2}
-            className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-          />
+          <div>
+            <FieldLabel>Question</FieldLabel>
+            <input
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="e.g. Where are the extra folding chairs?"
+              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <FieldLabel>Answer</FieldLabel>
+            <textarea
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              placeholder="Answer"
+              rows={2}
+              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+            />
+          </div>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}

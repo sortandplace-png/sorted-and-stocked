@@ -7,6 +7,7 @@ import { resilientInsert, resilientDelete } from '@/lib/resilient-write';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
+import FieldLabel from '@/components/FieldLabel';
 
 type Contact = {
   id: string;
@@ -116,38 +117,53 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
       {canManage(role) && (
         <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-2">
           <h2 className="font-display text-lg text-charcoal mb-1">Add a contact</h2>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Name"
-            className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-          />
-          <input
-            value={contactRole}
-            onChange={(e) => setContactRole(e.target.value)}
-            placeholder="Role (e.g. Plumber, Cleaning, Handyman)"
-            className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-          />
-          <div className="flex gap-2">
+          <div>
+            <FieldLabel>Name</FieldLabel>
             <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Phone"
-              className="flex-1 border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-            />
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              className="flex-1 border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Name"
+              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
             />
           </div>
-          <input
-            value={tagsInput}
-            onChange={(e) => setTagsInput(e.target.value)}
-            placeholder="Tags, comma separated (e.g. plumbing, urgent)"
-            className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-          />
+          <div>
+            <FieldLabel>Role</FieldLabel>
+            <input
+              value={contactRole}
+              onChange={(e) => setContactRole(e.target.value)}
+              placeholder="e.g. Plumber, Cleaning, Handyman"
+              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <FieldLabel>Phone</FieldLabel>
+              <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Phone"
+                className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="flex-1">
+              <FieldLabel>Email</FieldLabel>
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email"
+                className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <FieldLabel>Tags</FieldLabel>
+            <input
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              placeholder="Comma separated (e.g. plumbing, urgent)"
+              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+            />
+          </div>
           <button
             onClick={addContact}
             disabled={saving || !name.trim()}

@@ -8,6 +8,7 @@ import { resilientInsert, resilientDelete } from '@/lib/resilient-write';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
+import FieldLabel from '@/components/FieldLabel';
 
 type MemoryType = 'photo' | 'milestone' | 'event';
 
@@ -162,30 +163,39 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
           </div>
 
           {type === 'milestone' && (
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Milestone title (e.g. First Shabbos in the new house)"
-              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-            />
+            <div>
+              <FieldLabel>Milestone title</FieldLabel>
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. First Shabbos in the new house"
+                className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+              />
+            </div>
           )}
 
           {type === 'event' && (
-            <input
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder="What happened (e.g. Grandma visited for lunch)"
-              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-            />
+            <div>
+              <FieldLabel>What happened</FieldLabel>
+              <input
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                placeholder="e.g. Grandma visited for lunch"
+                className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+              />
+            </div>
           )}
 
           {type === 'photo' && (
-            <input
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder="Caption (optional)"
-              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-            />
+            <div>
+              <FieldLabel>Caption (optional)</FieldLabel>
+              <input
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                placeholder="Caption (optional)"
+                className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+              />
+            </div>
           )}
 
           {(type === 'photo' || type === 'milestone') && (

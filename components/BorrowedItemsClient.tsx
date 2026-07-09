@@ -7,6 +7,7 @@ import { resilientInsert, resilientUpdate, resilientDelete } from '@/lib/resilie
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
+import FieldLabel from '@/components/FieldLabel';
 
 type Direction = 'borrowed_from' | 'lent_to';
 
@@ -130,18 +131,24 @@ export default function BorrowedItemsClient({ propertyId }: { propertyId: string
               We lent
             </button>
           </div>
-          <input
-            value={itemName}
-            onChange={(e) => setItemName(e.target.value)}
-            placeholder="Item (e.g. Folding chairs, chafing dish)"
-            className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-          />
-          <input
-            value={otherParty}
-            onChange={(e) => setOtherParty(e.target.value)}
-            placeholder={direction === 'borrowed_from' ? 'Borrowed from…' : 'Lent to…'}
-            className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-          />
+          <div>
+            <FieldLabel>Item</FieldLabel>
+            <input
+              value={itemName}
+              onChange={(e) => setItemName(e.target.value)}
+              placeholder="e.g. Folding chairs, chafing dish"
+              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <FieldLabel>{direction === 'borrowed_from' ? 'Borrowed from' : 'Lent to'}</FieldLabel>
+            <input
+              value={otherParty}
+              onChange={(e) => setOtherParty(e.target.value)}
+              placeholder={direction === 'borrowed_from' ? 'Who from?' : 'Who to?'}
+              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+            />
+          </div>
           <div>
             <label className="text-xs text-charcoal/50 block mb-1">Expected return (optional)</label>
             <input

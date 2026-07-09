@@ -7,6 +7,7 @@ import { resilientInsert, resilientUpdate, resilientDelete } from '@/lib/resilie
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
+import FieldLabel from '@/components/FieldLabel';
 
 type Task = {
   id: string;
@@ -111,25 +112,34 @@ export default function StaffTasksClient({ propertyId }: { propertyId: string })
 
       <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-2">
         <h2 className="font-display text-lg text-charcoal mb-1">Add a task</h2>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Task (e.g. Restock paper goods)"
-          className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-        />
+        <div>
+          <FieldLabel>Task</FieldLabel>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Restock paper goods"
+            className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+          />
+        </div>
         <div className="flex gap-2">
-          <input
-            value={assignedTo}
-            onChange={(e) => setAssignedTo(e.target.value)}
-            placeholder="Assigned to (optional)"
-            className="flex-1 border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-          />
-          <input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className="flex-1 border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-          />
+          <div className="flex-1">
+            <FieldLabel>Assigned to (optional)</FieldLabel>
+            <input
+              value={assignedTo}
+              onChange={(e) => setAssignedTo(e.target.value)}
+              placeholder="Assigned to (optional)"
+              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="flex-1">
+            <FieldLabel>Due date</FieldLabel>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+            />
+          </div>
         </div>
         <button
           onClick={addTask}

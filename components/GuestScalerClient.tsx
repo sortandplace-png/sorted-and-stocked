@@ -8,6 +8,7 @@ import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { formatScaledNumber } from '@/lib/scale-quantity';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
+import FieldLabel from '@/components/FieldLabel';
 
 type Event = {
   id: string;
@@ -175,35 +176,47 @@ export default function GuestScalerClient({ propertyId }: { propertyId: string }
       {canManage(role) && (
         <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-2 print:hidden">
           <h2 className="font-display text-lg text-charcoal mb-1">New event</h2>
-          <input
-            value={eventType}
-            onChange={(e) => setEventType(e.target.value)}
-            placeholder="Event (e.g. Bar Mitzvah Kiddush)"
-            className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-          />
-          <div className="flex gap-2">
+          <div>
+            <FieldLabel>Event</FieldLabel>
             <input
-              type="date"
-              value={eventDate}
-              onChange={(e) => setEventDate(e.target.value)}
-              className="flex-1 border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-            />
-            <input
-              type="number"
-              min={1}
-              value={guestCount}
-              onChange={(e) => setGuestCount(e.target.value)}
-              placeholder="Guests"
-              className="w-28 border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+              value={eventType}
+              onChange={(e) => setEventType(e.target.value)}
+              placeholder="e.g. Bar Mitzvah Kiddush"
+              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
             />
           </div>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Notes (optional)"
-            rows={2}
-            className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-          />
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <FieldLabel>Date</FieldLabel>
+              <input
+                type="date"
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+                className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="w-28">
+              <FieldLabel>Guests</FieldLabel>
+              <input
+                type="number"
+                min={1}
+                value={guestCount}
+                onChange={(e) => setGuestCount(e.target.value)}
+                placeholder="Guests"
+                className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <FieldLabel>Notes (optional)</FieldLabel>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Notes (optional)"
+              rows={2}
+              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+            />
+          </div>
           <button
             onClick={addEvent}
             disabled={saving || !eventType.trim() || !guestCount}

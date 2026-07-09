@@ -7,6 +7,7 @@ import { canManage, usePropertyRole, type PropertyRole } from '@/components/Prop
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import Avatar from '@/components/Avatar';
+import FieldLabel from '@/components/FieldLabel';
 import ShiftHandoverClient from '@/components/ShiftHandoverClient';
 
 type Member = {
@@ -398,14 +399,17 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
         <>
       <h2 className="font-display text-lg text-charcoal mb-2">Invite someone</h2>
       <form onSubmit={handleInvite} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 space-y-3">
-        <input
-          type="email"
-          placeholder="Email address"
-          value={inviteEmail}
-          onChange={(e) => setInviteEmail(e.target.value)}
-          className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-cream/40"
-          required
-        />
+        <div>
+          <FieldLabel>Email address</FieldLabel>
+          <input
+            type="email"
+            placeholder="Email address"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-cream/40"
+            required
+          />
+        </div>
         <select
           value={inviteRole}
           onChange={(e) => setInviteRole(e.target.value as PropertyRole)}

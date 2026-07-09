@@ -7,6 +7,7 @@ import { resilientInsert, resilientDelete } from '@/lib/resilient-write';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
+import FieldLabel from '@/components/FieldLabel';
 
 type PersonType = 'family' | 'guest';
 type PreferenceType = 'like' | 'dislike' | 'allergy' | 'sensitivity';
@@ -214,12 +215,15 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
       {canManage(role) && (
         <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-2">
           <h2 className="font-display text-lg text-charcoal mb-1">Add a person</h2>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Name"
-            className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-          />
+          <div>
+            <FieldLabel>Name</FieldLabel>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Name"
+              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+            />
+          </div>
           <div className="flex bg-cream rounded-full border border-gold-light/60 p-0.5 text-sm">
             <button
               onClick={() => setPersonType('family')}
@@ -247,13 +251,16 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
             />
             Active
           </label>
-          <textarea
-            value={personNotes}
-            onChange={(e) => setPersonNotes(e.target.value)}
-            placeholder="Notes (optional)"
-            rows={2}
-            className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-          />
+          <div>
+            <FieldLabel>Notes (optional)</FieldLabel>
+            <textarea
+              value={personNotes}
+              onChange={(e) => setPersonNotes(e.target.value)}
+              placeholder="Notes (optional)"
+              rows={2}
+              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+            />
+          </div>
           <button
             onClick={addPerson}
             disabled={savingPerson || !name.trim()}
@@ -346,13 +353,16 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
                         </button>
                       ))}
                     </div>
-                    <input
-                      value={subject}
-                      onChange={(e) => setSubject(e.target.value)}
-                      placeholder="Subject (e.g. peanuts, cilantro)"
-                      className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-                      autoFocus
-                    />
+                    <div>
+                      <FieldLabel>Subject</FieldLabel>
+                      <input
+                        value={subject}
+                        onChange={(e) => setSubject(e.target.value)}
+                        placeholder="e.g. peanuts, cilantro"
+                        className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+                        autoFocus
+                      />
+                    </div>
                     <div className="flex gap-1.5 text-xs">
                       {(['none', 'recipe', 'inventory_item'] as LinkType[]).map((t) => (
                         <button
@@ -409,13 +419,16 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
                         )}
                       </div>
                     )}
-                    <textarea
-                      value={prefNotes}
-                      onChange={(e) => setPrefNotes(e.target.value)}
-                      placeholder="Notes (optional)"
-                      rows={2}
-                      className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
-                    />
+                    <div>
+                      <FieldLabel>Notes (optional)</FieldLabel>
+                      <textarea
+                        value={prefNotes}
+                        onChange={(e) => setPrefNotes(e.target.value)}
+                        placeholder="Notes (optional)"
+                        rows={2}
+                        className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+                      />
+                    </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setOpenPrefFor(null)}

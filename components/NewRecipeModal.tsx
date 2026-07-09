@@ -6,6 +6,7 @@ import { useToast } from '@/components/Toast';
 import { COURSES, type Course } from '@/lib/course-constants';
 import { useDraftAutosave } from '@/hooks/useDraftAutosave';
 import { findAutoLinkMatch } from '@/lib/inventory-matching';
+import FieldLabel from '@/components/FieldLabel';
 
 type IngredientRow = { name: string; quantity: string; unit: string; category: string };
 
@@ -147,34 +148,49 @@ export default function NewRecipeModal({
         )}
 
         <div className="space-y-3 mb-3">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Recipe name"
-            className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
-            autoFocus
-          />
-          <select
-            value={course}
-            onChange={(e) => setCourse(e.target.value as Course)}
-            className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
-          >
-            {COURSES.map((c) => (
-              <option key={c.key} value={c.key}>
-                {c.icon} {c.label}
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            value={servings}
-            onChange={(e) => setServings(e.target.value)}
-            placeholder="Servings"
-            className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
-          />
+          <div>
+            <FieldLabel>Recipe name</FieldLabel>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Recipe name"
+              className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
+              autoFocus
+            />
+          </div>
+          <div>
+            <FieldLabel>Course</FieldLabel>
+            <select
+              value={course}
+              onChange={(e) => setCourse(e.target.value as Course)}
+              className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
+            >
+              {COURSES.map((c) => (
+                <option key={c.key} value={c.key}>
+                  {c.icon} {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <FieldLabel>Servings</FieldLabel>
+            <input
+              type="number"
+              value={servings}
+              onChange={(e) => setServings(e.target.value)}
+              placeholder="Servings"
+              className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
+            />
+          </div>
         </div>
 
         <p className="text-sm font-medium text-charcoal mb-2">Ingredients</p>
+        <div className="flex gap-2 mb-1 px-1">
+          <span className="w-2/5 text-xs font-medium text-charcoal/60">Ingredient</span>
+          <span className="w-1/5 text-xs font-medium text-charcoal/60">Qty</span>
+          <span className="w-1/5 text-xs font-medium text-charcoal/60">Unit</span>
+          <span className="w-1/5 text-xs font-medium text-charcoal/60">Aisle</span>
+        </div>
         <div className="space-y-2 mb-2">
           {ingredientRows.map((row, i) => (
             <div key={i} className="flex gap-2">
@@ -182,24 +198,28 @@ export default function NewRecipeModal({
                 value={row.name}
                 onChange={(e) => updateIngredientRow(i, 'name', e.target.value)}
                 placeholder="Ingredient"
+                aria-label="Ingredient"
                 className="w-2/5 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
               />
               <input
                 value={row.quantity}
                 onChange={(e) => updateIngredientRow(i, 'quantity', e.target.value)}
                 placeholder="Qty"
+                aria-label="Quantity"
                 className="w-1/5 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
               />
               <input
                 value={row.unit}
                 onChange={(e) => updateIngredientRow(i, 'unit', e.target.value)}
                 placeholder="Unit"
+                aria-label="Unit"
                 className="w-1/5 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
               />
               <input
                 value={row.category}
                 onChange={(e) => updateIngredientRow(i, 'category', e.target.value)}
                 placeholder="Aisle"
+                aria-label="Aisle"
                 className="w-1/5 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
               />
             </div>
