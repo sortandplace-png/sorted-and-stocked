@@ -117,8 +117,21 @@ const PERSONAL_CARE_KEYWORDS: [string, LucideIcon][] = [
   ['tampon', Droplet],
 ];
 
+// The keyword list was written when everything lived under one "Personal
+// Care" category. Real inventory data has since split into more granular
+// categories (Shaving, Health, Cotton & Swabs, Hair Accessories, Eye / Lens
+// Care) — confirmed live via a direct query against inventory_items. Items
+// under those newer categories never matched KEYWORD_SETS['Personal Care']
+// and silently fell through to the generic category icon. Registering the
+// same keyword list under each real category fixes that without touching
+// the (still-correct) keyword-matching logic itself.
 const KEYWORD_SETS: Record<string, [string, LucideIcon][]> = {
   'Personal Care': PERSONAL_CARE_KEYWORDS,
+  Shaving: PERSONAL_CARE_KEYWORDS,
+  Health: PERSONAL_CARE_KEYWORDS,
+  'Cotton & Swabs': PERSONAL_CARE_KEYWORDS,
+  'Hair Accessories': PERSONAL_CARE_KEYWORDS,
+  'Eye / Lens Care': PERSONAL_CARE_KEYWORDS,
 };
 
 export function getItemIcon(

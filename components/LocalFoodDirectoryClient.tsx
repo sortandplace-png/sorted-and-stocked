@@ -16,6 +16,9 @@ type Restaurant = {
   hashgacha: string | null;
   hashgacha_confirmed: boolean | null;
   website: string | null;
+  hours: string | null;
+  delivery_available: boolean | null;
+  rating: number | null;
 };
 
 export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: string }) {
@@ -28,7 +31,9 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
   useEffect(() => {
     supabase
       .from('local_food_directory')
-      .select('id, name, phone, whatsapp, address, city, category, hashgacha, hashgacha_confirmed, website')
+      .select(
+        'id, name, phone, whatsapp, address, city, category, hashgacha, hashgacha_confirmed, website, hours, delivery_available, rating'
+      )
       .eq('property_id', propertyId)
       .order('name')
       .then(({ data }) => {
@@ -99,6 +104,23 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
               )}
             </div>
             {r.address && <p className="text-xs text-charcoal/50 mt-1">{r.address}</p>}
+            {(r.hours || r.rating != null || r.delivery_available != null) && (
+              <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                {r.rating != null && (
+                  <span className="text-xs text-charcoal/60">⭐ {r.rating.toFixed(1)}</span>
+                )}
+                {r.delivery_available != null && (
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full ${
+                      r.delivery_available ? 'bg-sage/10 text-sage' : 'bg-charcoal/5 text-charcoal/40'
+                    }`}
+                  >
+                    {r.delivery_available ? 'Delivery available' : 'No delivery'}
+                  </span>
+                )}
+                {r.hours && <span className="text-xs text-charcoal/50">{r.hours}</span>}
+              </div>
+            )}
             <div className="flex flex-wrap gap-3 mt-2 text-sm">
               {r.phone && (
                 <a href={`tel:${r.phone}`} className="text-charcoal/70 hover:text-charcoal">

@@ -3,9 +3,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { PropertyRole } from '@/components/PropertyRoleContext';
+import { canManage, usePropertyRole, type PropertyRole } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
+import Avatar from '@/components/Avatar';
+import ShiftHandoverClient from '@/components/ShiftHandoverClient';
 
 type Member = {
   id: string; // property_members row id
@@ -14,7 +16,51 @@ type Member = {
   full_name: string | null;
 };
 
+type PendingInvite = { userId: string; email: string; role: string; invitedAt: string };
+
+type ActivityEntry = {
+  id: string;
+  member_name_snapshot: string | null;
+  action_type: 'invited' | 'role_changed' | 'removed';
+  actor_name: string | null;
+  old_role: string | null;
+  new_role: string | null;
+  created_at: string;
+};
+
+// Grounded in the real access-control code (canManage() and the last-owner
+// trigger), not invented — every line here is something the app actually
+// enforces, not a marketing description of what the role "should" do.
+const ROLE_PERMISSIONS: Record<PropertyRole, string[]> = {
+  owner: [
+    'Full access to inventory, recipes, meal plans, and shopping lists',
+    "Can invite people and change anyone's role",
+    'Can remove members',
+    "Protected — can't be demoted or removed as the property's last owner",
+  ],
+  manager: [
+    'Can manage inventory, recipes, meal plans, and shopping lists',
+    'Can invite new staff or managers',
+    "Cannot change an existing member's role (owner-only)",
+  ],
+  staff: [
+    'Can view inventory, recipes, meal plans, and shopping lists',
+    'Can update quantities and check off shopping list items',
+    'Cannot invite others or change roles',
+  ],
+};
+
+function describeActivity(a: ActivityEntry): string {
+  const who = a.member_name_snapshot ?? 'Someone';
+  const by = a.actor_name ? ` by ${a.actor_name}` : '';
+  if (a.action_type === 'invited') return `${who} invited as ${a.new_role}${by}`;
+  if (a.action_type === 'role_changed') return `${who} changed from ${a.old_role} to ${a.new_role}${by}`;
+  return `${who} removed${by}`;
+}
+
 export default function StaffClient({ propertyId }: { propertyId: string }) {
+  const [activeTab, setActiveTab] = useState<'team' | 'handover'>('team');
+  const [unreadHandovers, setUnreadHandovers] = useState(0);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,9 +73,14 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
   // email-a-signup-link fallback instead of a dead end.
   const [noAccountFor, setNoAccountFor] = useState<string | null>(null);
   const [sendingInviteEmail, setSendingInviteEmail] = useState(false);
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
+  const [resendingUserId, setResendingUserId] = useState<string | null>(null);
+  const [activity, setActivity] = useState<ActivityEntry[]>([]);
 
   const supabase = createClient();
   const showToast = useToast();
+  const viewerRole = usePropertyRole();
+  const viewerIsOwner = viewerRole === 'owner';
 
   const loadMembers = useCallback(async () => {
     setLoading(true);
@@ -58,9 +109,72 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     setLoading(false);
   }, [propertyId, supabase]);
 
+  const loadUnreadHandoverCount = useCallback(async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data: readRow } = await supabase
+      .from('shift_handover_reads')
+      .select('last_read_at')
+      .eq('property_id', propertyId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    const since = readRow?.last_read_at ?? '1970-01-01T00:00:00Z';
+    const { count } = await supabase
+      .from('shift_handovers')
+      .select('id', { count: 'exact', head: true })
+      .eq('property_id', propertyId)
+      .gt('created_at', since)
+      .neq('created_by', user.id);
+    setUnreadHandovers(count ?? 0);
+  }, [propertyId, supabase]);
+
+  useEffect(() => {
+    loadUnreadHandoverCount();
+  }, [loadUnreadHandoverCount]);
+
   useEffect(() => {
     loadMembers();
   }, [loadMembers]);
+
+  const loadPendingInvites = useCallback(async () => {
+    if (!canManage(viewerRole)) return;
+    const res = await fetch(`/api/staff/pending-invites?propertyId=${propertyId}`);
+    const body = await res.json();
+    if (res.ok) setPendingInvites(body.pending ?? []);
+  }, [propertyId, viewerRole]);
+
+  const loadActivity = useCallback(async () => {
+    const { data } = await supabase
+      .from('property_member_activity')
+      .select('id, member_name_snapshot, action_type, actor_name, old_role, new_role, created_at')
+      .eq('property_id', propertyId)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    setActivity((data as ActivityEntry[]) ?? []);
+  }, [propertyId, supabase]);
+
+  useEffect(() => {
+    loadPendingInvites();
+    loadActivity();
+  }, [loadPendingInvites, loadActivity]);
+
+  async function resendInvite(userId: string, email: string) {
+    setResendingUserId(userId);
+    const res = await fetch('/api/invite/resend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ propertyId, userId }),
+    });
+    const body = await res.json();
+    setResendingUserId(null);
+    if (!res.ok) {
+      showToast(body.error ?? 'Failed to resend invite.', { variant: 'error' });
+      return;
+    }
+    showToast(`Invite resent to ${email}.`, { variant: 'success' });
+  }
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
@@ -116,6 +230,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     setInviteMessage(`Added ${email} as ${inviteRole}.`);
     showToast(`${email} added as ${inviteRole}.`, { variant: 'success' });
     loadMembers();
+    loadActivity();
   }
 
   async function sendInviteEmail() {
@@ -142,6 +257,8 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     setNoAccountFor(null);
     setInviteEmail('');
     loadMembers();
+    loadPendingInvites();
+    loadActivity();
   }
 
   async function changeRole(memberId: string, role: PropertyRole) {
@@ -166,6 +283,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     }
 
     showToast('Role updated.', { variant: 'success' });
+    loadActivity();
   }
 
   async function removeMember(memberId: string, name: string | null) {
@@ -187,6 +305,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     }
 
     showToast(`Removed ${name ?? 'member'}.`);
+    loadActivity();
   }
 
   if (loading) return <SkeletonList rows={3} />;
@@ -195,36 +314,88 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     <div className="max-w-md mx-auto p-4">
       <h1 className="text-2xl font-display text-charcoal mb-4">Staff</h1>
 
+      <div className="inline-flex rounded-full border border-gold-light/60 bg-white p-0.5 text-sm mb-4">
+        <button
+          onClick={() => setActiveTab('team')}
+          className={`rounded-full px-4 py-1.5 ${activeTab === 'team' ? 'bg-gold-dark text-white' : 'text-charcoal/60'}`}
+        >
+          Team
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('handover');
+            setUnreadHandovers(0); // ShiftHandoverClient persists the real read-marker on mount
+          }}
+          className={`relative rounded-full px-4 py-1.5 ${activeTab === 'handover' ? 'bg-gold-dark text-white' : 'text-charcoal/60'}`}
+        >
+          Handover
+          {unreadHandovers > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center rounded-full bg-rust text-white text-[10px] font-medium">
+              {unreadHandovers}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {activeTab === 'handover' ? (
+        <div className="-mx-4">
+          <ShiftHandoverClient propertyId={propertyId} />
+        </div>
+      ) : (
+        <>
       {error && (
         <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2 mb-3">{error}</p>
       )}
 
-      <ul className="divide-y divide-gold-light/30 rounded-2xl bg-white shadow-sm shadow-charcoal/5 mb-6 overflow-hidden">
+      <div className="space-y-3 mb-6">
         {members.map((member) => (
-          <li key={member.id} className="flex items-center gap-3 px-4 py-3">
-            <span className="flex-1 truncate text-charcoal">{member.full_name ?? 'Unnamed user'}</span>
-            <select
-              value={member.role}
-              onChange={(e) => changeRole(member.id, e.target.value as PropertyRole)}
-              className="text-sm border border-gold-light/60 rounded-full px-3 py-1 bg-cream/40"
-              disabled={member.role === 'owner'}
-            >
-              <option value="owner">Owner</option>
-              <option value="manager">Manager</option>
-              <option value="staff">Staff</option>
-            </select>
-            {member.role !== 'owner' && (
-              <button
-                onClick={() => removeMember(member.id, member.full_name)}
-                className="text-rust text-sm"
+          <div key={member.id} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <Avatar fullName={member.full_name} size="md" />
+              <span className="flex-1 truncate text-charcoal font-medium">{member.full_name ?? 'Unnamed user'}</span>
+              <span
+                className={`text-[10px] font-medium px-2.5 py-1 rounded-full shrink-0 ${
+                  member.role === 'owner'
+                    ? 'bg-gold-dark text-white'
+                    : member.role === 'manager'
+                    ? 'bg-gold-light/60 text-gold-dark'
+                    : 'bg-charcoal/5 text-charcoal/60'
+                }`}
               >
-                Remove
-              </button>
-            )}
-          </li>
+                {member.role}
+              </span>
+            </div>
+            <ul className="text-xs text-charcoal/50 space-y-0.5 mb-3 pl-1">
+              {ROLE_PERMISSIONS[member.role].map((perm) => (
+                <li key={perm}>· {perm}</li>
+              ))}
+            </ul>
+            <div className="flex items-center gap-2">
+              <select
+                value={member.role}
+                onChange={(e) => changeRole(member.id, e.target.value as PropertyRole)}
+                className="text-sm border border-gold-light/60 rounded-full px-3 py-1 bg-cream/40"
+                disabled={!viewerIsOwner}
+              >
+                <option value="owner">Owner</option>
+                <option value="manager">Manager</option>
+                <option value="staff">Staff</option>
+              </select>
+              {member.role !== 'owner' && (
+                <button
+                  onClick={() => removeMember(member.id, member.full_name)}
+                  className="text-rust text-sm"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
         ))}
-      </ul>
+      </div>
 
+      {canManage(viewerRole) && (
+        <>
       <h2 className="font-display text-lg text-charcoal mb-2">Invite someone</h2>
       <form onSubmit={handleInvite} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 space-y-3">
         <input
@@ -243,6 +414,11 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
           <option value="staff">Staff</option>
           <option value="manager">Manager</option>
         </select>
+        <p className="text-xs text-charcoal/40 -mt-1">
+          {inviteRole === 'manager'
+            ? ROLE_PERMISSIONS.manager[0] + '; ' + ROLE_PERMISSIONS.manager[1].toLowerCase()
+            : ROLE_PERMISSIONS.staff[0] + '; ' + ROLE_PERMISSIONS.staff[1].toLowerCase()}
+        </p>
         {inviteMessage && <p className="text-sm text-charcoal/60">{inviteMessage}</p>}
 
         {noAccountFor && (
@@ -276,6 +452,49 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
       <p className="text-xs text-charcoal/40 mt-4">
         Owner role can only be granted from this list by promoting an existing member — invites max out at Manager.
       </p>
+
+      {pendingInvites.length > 0 && (
+        <div className="mt-6">
+          <h2 className="font-display text-lg text-charcoal mb-2">Pending Invites</h2>
+          <ul className="divide-y divide-gold-light/30 rounded-2xl bg-white shadow-sm shadow-charcoal/5 overflow-hidden">
+            {pendingInvites.map((inv) => (
+              <li key={inv.userId} className="flex items-center gap-3 px-4 py-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-charcoal truncate">{inv.email}</p>
+                  <p className="text-xs text-charcoal/40">
+                    {inv.role} · invited {new Date(inv.invitedAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => resendInvite(inv.userId, inv.email)}
+                  disabled={resendingUserId === inv.userId}
+                  className="text-xs font-medium text-gold-dark underline disabled:opacity-40 shrink-0"
+                >
+                  {resendingUserId === inv.userId ? 'Sending…' : 'Resend'}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {activity.length > 0 && (
+        <div className="mt-6">
+          <h2 className="font-display text-lg text-charcoal mb-2">Activity</h2>
+          <ul className="space-y-1.5">
+            {activity.map((a) => (
+              <li key={a.id} className="text-xs text-charcoal/50">
+                <span className="text-charcoal/30">{new Date(a.created_at).toLocaleDateString()}</span>{' '}
+                — {describeActivity(a)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+        </>
+      )}
+        </>
+      )}
     </div>
   );
 }

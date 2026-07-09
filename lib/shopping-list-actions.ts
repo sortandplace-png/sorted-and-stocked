@@ -58,12 +58,30 @@ export async function addIngredientsToShoppingList(
     }
   }
 
+  // Match against real inventory so checking off a recipe-sourced item
+  // actually updates stock counts (confirmed live: 15+ ingredient name
+  // variants on the Needs Linking screen had zero inventory connection
+  // because this was never set). Exact case-insensitive name match — the
+  // same tier find_similar_inventory_items uses for its top match, without
+  // pulling in its fuzzy-similarity scoring for what's meant to be a quiet
+  // background link.
+  const { data: inventoryItems } = await supabase
+    .from('inventory_items')
+    .select('id, name')
+    .eq('property_id', propertyId);
+  const inventoryIdByName = new Map((inventoryItems ?? []).map((i) => [i.name.trim().toLowerCase(), i.id]));
+
   const rows = ingredients.map((ing) => ({
     shopping_list_id: list!.id,
-    name: ing.quantity ? `${ing.name} (${ing.quantity}${ing.unit ? ' ' + ing.unit : ''})` : ing.name,
+    // Quantity/unit are recorded per-source below in shopping_list_item_sources
+    // already — baking them into the display name too broke de-duplication
+    // (two entries of "Milk" at different quantities never matched as the
+    // same item) for no benefit.
+    name: ing.name,
     category: ing.category,
     qty_needed: 1,
     status: 'pending' as const,
+    inventory_item_id: inventoryIdByName.get(ing.name.trim().toLowerCase()) ?? null,
   }));
 
   const { data: insertedItems, error: insertError } = await supabase

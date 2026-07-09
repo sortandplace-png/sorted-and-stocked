@@ -30,6 +30,11 @@ begin
     return new;
   end if;
 
+  -- Lock this property's membership rows before counting owners, so two
+  -- concurrent demotions/removals of different owners can't both read
+  -- "2 owners, safe to proceed" and both succeed, leaving zero owners.
+  perform 1 from public.property_members where property_id = v_property_id for update;
+
   select count(*) into v_owner_count
   from public.property_members
   where property_id = v_property_id and role = 'owner';

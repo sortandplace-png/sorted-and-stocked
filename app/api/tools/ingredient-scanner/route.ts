@@ -15,7 +15,13 @@ Rules:
 - End with a one-line honest summary: is this product mostly unremarkable, or does it have a small number of ingredients actually worth a second look?`;
 
 export async function POST(request: Request) {
-  const { propertyId, imageBase64, mediaType, textInput } = await request.json();
+  let body: { propertyId?: string; imageBase64?: string; mediaType?: string; textInput?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Malformed request body — expected JSON.' }, { status: 400 });
+  }
+  const { propertyId, imageBase64, mediaType, textInput } = body;
 
   if (!propertyId || (!imageBase64 && !textInput)) {
     return NextResponse.json({ error: 'Missing propertyId, and either a photo or typed ingredient list.' }, { status: 400 });
@@ -46,7 +52,7 @@ export async function POST(request: Request) {
           systemPrompt: SYSTEM_PROMPT,
           userText: 'Read this ingredient label and explain it to me — what each thing does, and whether any of it is actually worth worrying about.',
           imageBase64,
-          mediaType,
+          mediaType: mediaType ?? 'image/jpeg',
           useWebSearch: true,
         })
       : await callClaudeWithText({

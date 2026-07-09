@@ -1,7 +1,7 @@
 // components/InventoryClient.tsx
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientUpdate, resilientDelete } from '@/lib/resilient-write';
 import { usePropertyRole, canManage } from '@/components/PropertyRoleContext';
@@ -36,6 +36,9 @@ type InventoryItem = {
   unit_cost: number | null;
   reorder_link: string | null;
   photo_url: string | null;
+  expiration_date: string | null;
+  qr_code: string | null;
+  print_label: boolean;
 };
 
 type HistoryEntry = {
@@ -60,6 +63,9 @@ type ItemFormState = {
   unit_cost: string;
   reorder_link: string;
   photo_url: string;
+  expiration_date: string;
+  qr_code: string | null; // read-only, DB-generated — display only, never submitted
+  print_label: boolean;
 };
 
 const EMPTY_FORM: ItemFormState = {
@@ -74,6 +80,9 @@ const EMPTY_FORM: ItemFormState = {
   unit_cost: '',
   reorder_link: '',
   photo_url: '',
+  expiration_date: '',
+  qr_code: null,
+  print_label: true,
 };
 
 // Plain Drive "file/d/.../view" links aren't directly viewable as <img> src.
@@ -118,6 +127,10 @@ export default function InventoryClient({
   >(null);
   const [newRoomName, setNewRoomName] = useState('');
   const [savingRoom, setSavingRoom] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [belowParOnly, setBelowParOnly] = useState(false);
+  const categoryDatalistId = useId();
   // Tracks item IDs whose photo failed to actually load (dead link, 404,
   // etc.) — isDirectImageUrl only checks the URL *shape*, not whether the
   // image is reachable, so a broken link would otherwise render as the
@@ -141,7 +154,9 @@ export default function InventoryClient({
     const [itemsRes, locationsRes, categoriesRes, favoritesRes] = await Promise.all([
       supabase
         .from('inventory_items')
-        .select('id, name, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, category')
+        .select(
+          'id, name, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, category, expiration_date, qr_code, print_label'
+        )
         .eq('property_id', propertyId)
         .order('name'),
       supabase
@@ -163,7 +178,8 @@ export default function InventoryClient({
         : Promise.resolve({ data: [] as { inventory_item_id: string }[] }),
     ]);
 
-    if (itemsRes.error) setError(itemsRes.error.message);
+    const loadErrors = [itemsRes.error, locationsRes.error, categoriesRes.error].filter(Boolean);
+    if (loadErrors.length > 0) setError(loadErrors.map((e) => e!.message).join('; '));
     setItems(itemsRes.data ?? []);
     setLocations(locationsRes.data ?? []);
     setCategorySuggestions([...new Set((categoriesRes.data ?? []).map((c) => c.name))]);
@@ -248,7 +264,9 @@ export default function InventoryClient({
       // real delete immediately instead of dropping it.
       timers.forEach((timer, id) => {
         clearTimeout(timer);
-        resilientDelete(supabase, 'inventory_items', { id });
+        resilientDelete(supabase, 'inventory_items', { id }).catch((err) =>
+          console.error(`Failed to delete item ${id} on unmount:`, err)
+        );
       });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -271,6 +289,9 @@ export default function InventoryClient({
       unit_cost: item.unit_cost !== null ? String(item.unit_cost) : '',
       reorder_link: item.reorder_link ?? '',
       photo_url: item.photo_url ?? '',
+      expiration_date: item.expiration_date ?? '',
+      qr_code: item.qr_code,
+      print_label: item.print_label,
     });
     setHistory([]);
     loadHistory(item.id);
@@ -329,7 +350,7 @@ export default function InventoryClient({
     const { data: existing } = await supabase
       .from('inventory_items')
       .select(
-        'id, name, category, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url'
+        'id, name, category, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, expiration_date, qr_code, print_label'
       )
       .eq('id', matchId)
       .single();
@@ -358,6 +379,8 @@ export default function InventoryClient({
       unit_cost: form.unit_cost.trim() ? Number(form.unit_cost) : null,
       reorder_link: form.reorder_link.trim() || null,
       photo_url: form.photo_url.trim() || null,
+      expiration_date: form.expiration_date || null,
+      print_label: form.print_label,
     };
 
     if (form.id) {
@@ -375,35 +398,28 @@ export default function InventoryClient({
         variant: 'success',
       });
     } else {
-      const optimisticId = `pending-${crypto.randomUUID()}`;
-      const result = await resilientInsert(supabase, 'inventory_items', payload);
+      // Supplying the id ourselves (rather than letting the DB default
+      // generate one) means the local optimistic row and the real server
+      // row share the same id from the start — no separate id-reconciling
+      // re-fetch needed afterward, and no risk of that re-fetch matching
+      // the wrong row when another item shares the same name.
+      const newId = crypto.randomUUID();
+      const result = await resilientInsert(supabase, 'inventory_items', { ...payload, id: newId });
       setSaving(false);
       if (!result.ok) {
         setError(result.error);
         showToast('Failed to add item.', { variant: 'error' });
         return;
       }
-      setItems((prev) => [...prev, { ...payload, id: optimisticId }]);
+      // qr_code is DB-trigger-generated on insert — unknown here until the
+      // next reload; null is accurate, not a placeholder to fix later.
+      setItems((prev) => [...prev, { ...payload, id: newId, qr_code: null }]);
       showToast(result.queued ? 'Added — will sync when back online.' : 'Item added.', {
         variant: 'success',
       });
 
-      // resilientInsert intentionally doesn't return the inserted row (it
-      // has to behave the same whether the write went through or got
-      // queued offline), so the real id has to be re-fetched here — only
-      // when we know the write actually went through live.
       if (!result.queued && !payload.photo_url) {
-        const { data: inserted } = await supabase
-          .from('inventory_items')
-          .select('id')
-          .eq('property_id', propertyId)
-          .eq('name', payload.name)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (inserted) {
-          setPhotoPromptItem({ id: inserted.id, name: payload.name });
-        }
+        setPhotoPromptItem({ id: newId, name: payload.name });
       }
     }
 
@@ -425,7 +441,7 @@ export default function InventoryClient({
       if (!result.ok) {
         setError(result.error);
         showToast('Failed to delete item — it has been restored.', { variant: 'error' });
-        setItems((prev) => [...prev, item]);
+        setItems((prev) => [...prev, item].sort((a, b) => a.name.localeCompare(b.name)));
       }
     }, 5000);
 
@@ -441,7 +457,7 @@ export default function InventoryClient({
             clearTimeout(pending);
             pendingDeleteTimers.current.delete(id);
           }
-          setItems((prev) => [...prev, item]);
+          setItems((prev) => [...prev, item].sort((a, b) => a.name.localeCompare(b.name)));
         },
       },
     });
@@ -457,6 +473,19 @@ export default function InventoryClient({
       ? items.filter((i) => favoriteIds.has(i.id))
       : items.filter((i) => i.location_id === locationFilter)
     : items;
+
+  const hasActiveFilter = searchQuery.trim() !== '' || categoryFilter !== null || belowParOnly;
+
+  function matchesFilters(item: InventoryItem) {
+    if (searchQuery.trim() && !item.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) return false;
+    if (categoryFilter && item.category !== categoryFilter) return false;
+    if (belowParOnly && !(item.current_qty < item.min_qty)) return false;
+    return true;
+  }
+
+  // Searching/filtering with no room selected searches across every room,
+  // not just whatever the room grid happened to be showing.
+  const displayItems = (locationFilter ? visibleItems : items).filter(matchesFilters);
 
   const grouped = groupByLocation(visibleItems, locationName);
 
@@ -484,6 +513,77 @@ export default function InventoryClient({
     return a.localeCompare(b);
   });
 
+  function renderItemCard(item: InventoryItem, showLocation: boolean) {
+    const low = item.current_qty < item.min_qty;
+    const hasThumb = !!item.photo_url && isDirectImageUrl(item.photo_url) && !brokenPhotoIds.has(item.id);
+    const isFav = favoriteIds.has(item.id);
+    return (
+      <div
+        key={item.id}
+        className="flex items-center gap-3 bg-white rounded-2xl shadow-sm shadow-charcoal/5 px-4 py-3.5 cursor-pointer hover:shadow-md hover:shadow-charcoal/10 transition-shadow"
+        onClick={() => openEditForm(item)}
+      >
+        {hasThumb ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={item.photo_url!}
+            alt=""
+            className="w-14 h-14 rounded-xl object-cover shrink-0 bg-gold-light/20"
+            onError={() => setBrokenPhotoIds((prev) => new Set(prev).add(item.id))}
+          />
+        ) : (
+          <div className="w-14 h-14 rounded-xl bg-gold-light/20 shrink-0 flex items-center justify-center">
+            {(() => {
+              const Icon = getItemIcon(item.name, item.category, categoryIconNames[item.category ?? '']);
+              return <Icon className="w-6 h-6 text-gold-dark" strokeWidth={1.75} />;
+            })()}
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-charcoal truncate">{item.name}</p>
+          <p className="text-xs text-charcoal/50 truncate mt-0.5">
+            {[
+              item.category ? `${categoryIcon(item.category)} ${item.category}` : null,
+              showLocation ? locationName(item.location_id) : item.supplier,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+          <div className="mt-1.5">
+            {low ? (
+              <span className="text-xs font-medium text-rust bg-rust/10 px-2.5 py-1 rounded-full">
+                {item.current_qty} / {item.min_qty} {item.unit} — low
+              </span>
+            ) : (
+              <span className="text-xs text-charcoal/40">
+                {item.current_qty} / {item.min_qty} {item.unit}
+              </span>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={(e) => toggleFavorite(item.id, e)}
+          className="text-xl shrink-0 self-start"
+          aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          {isFav ? '⭐' : '☆'}
+        </button>
+        {item.reorder_link && (
+          <a
+            href={item.reorder_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-xl shrink-0 self-start"
+            aria-label="Open reorder link"
+          >
+            🛒
+          </a>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-md lg:max-w-6xl mx-auto p-4">
       {(pullDistance > 0 || refreshing) && (
@@ -504,6 +604,13 @@ export default function InventoryClient({
           >
             📷
           </a>
+          <a
+            href={`/properties/${propertyId}/print-labels`}
+            className="w-10 h-10 flex items-center justify-center rounded-full border border-charcoal/30 text-charcoal text-lg"
+            aria-label="Print item labels"
+          >
+            🏷️
+          </a>
           <button
             onClick={openNewItemForm}
             className="text-sm font-medium bg-charcoal text-cream px-4 py-2 rounded-full"
@@ -517,7 +624,36 @@ export default function InventoryClient({
         <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2 mb-3">{error}</p>
       )}
 
-      {!locationFilter ? (
+      <div className="mb-4 flex flex-wrap gap-2">
+        <input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search items…"
+          className="flex-1 min-w-[140px] border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-white text-sm"
+        />
+        <select
+          value={categoryFilter ?? ''}
+          onChange={(e) => setCategoryFilter(e.target.value || null)}
+          className="border border-gold-light/60 rounded-full px-3 py-2 bg-white text-sm"
+        >
+          <option value="">All categories</option>
+          {categorySuggestions.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={() => setBelowParOnly((v) => !v)}
+          className={`text-sm px-4 py-2 rounded-full border shrink-0 ${
+            belowParOnly ? 'bg-rust text-white border-rust' : 'border-gold-light/60 text-charcoal'
+          }`}
+        >
+          Below par only
+        </button>
+      </div>
+
+      {!locationFilter && !hasActiveFilter ? (
         // ---- Room grid: pick a room to see what's inside, grouped by real top-level room ----
         <div className="space-y-5">
           {favoriteIds.size > 0 && (
@@ -590,6 +726,11 @@ export default function InventoryClient({
             <p className="font-display text-lg">+ Add room</p>
           </button>
         </div>
+      ) : !locationFilter && hasActiveFilter ? (
+        // ---- Search/filter results across every room ----
+        <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
+          {displayItems.map((item) => renderItemCard(item, true))}
+        </div>
       ) : (
         // ---- Single room's item list ----
         <>
@@ -603,83 +744,16 @@ export default function InventoryClient({
             {locationFilter === FAVORITES ? '⭐ Favorites' : locationPath(locations, locationFilter)}
           </h2>
           <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
-            {visibleItems.map((item) => {
-              const low = item.current_qty < item.min_qty;
-              const hasThumb =
-                !!item.photo_url && isDirectImageUrl(item.photo_url) && !brokenPhotoIds.has(item.id);
-              const isFav = favoriteIds.has(item.id);
-              return (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-3 bg-white rounded-2xl shadow-sm shadow-charcoal/5 px-4 py-3.5 cursor-pointer hover:shadow-md hover:shadow-charcoal/10 transition-shadow"
-                  onClick={() => openEditForm(item)}
-                >
-                  {hasThumb ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={item.photo_url!}
-                      alt=""
-                      className="w-14 h-14 rounded-xl object-cover shrink-0 bg-gold-light/20"
-                      onError={() =>
-                        setBrokenPhotoIds((prev) => new Set(prev).add(item.id))
-                      }
-                    />
-                  ) : (
-                    <div className="w-14 h-14 rounded-xl bg-gold-light/20 shrink-0 flex items-center justify-center">
-                      {(() => {
-                        const Icon = getItemIcon(item.name, item.category, categoryIconNames[item.category ?? '']);
-                        return <Icon className="w-6 h-6 text-gold-dark" strokeWidth={1.75} />;
-                      })()}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-charcoal truncate">{item.name}</p>
-                    <p className="text-xs text-charcoal/50 truncate mt-0.5">
-                      {[item.category ? `${categoryIcon(item.category)} ${item.category}` : null, item.supplier]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </p>
-                    <div className="mt-1.5">
-                      {low ? (
-                        <span className="text-xs font-medium text-rust bg-rust/10 px-2.5 py-1 rounded-full">
-                          {item.current_qty} / {item.min_qty} {item.unit} — low
-                        </span>
-                      ) : (
-                        <span className="text-xs text-charcoal/40">
-                          {item.current_qty} / {item.min_qty} {item.unit}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => toggleFavorite(item.id, e)}
-                    className="text-xl shrink-0 self-start"
-                    aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
-                  >
-                    {isFav ? '⭐' : '☆'}
-                  </button>
-                  {item.reorder_link && (
-                    <a
-                      href={item.reorder_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-xl shrink-0 self-start"
-                      aria-label="Open reorder link"
-                    >
-                      🛒
-                    </a>
-                  )}
-                </div>
-              );
-            })}
+            {displayItems.map((item) => renderItemCard(item, false))}
           </div>
         </>
       )}
 
-      {visibleItems.length === 0 && (
+      {displayItems.length === 0 && (
         <p className="text-sm text-charcoal/40 text-center mt-8">
-          {locationFilter === FAVORITES
+          {hasActiveFilter
+            ? 'No items match your search.'
+            : locationFilter === FAVORITES
             ? 'No favorites yet — tap the star on any item.'
             : locationFilter
             ? 'No items in this area yet.'
@@ -699,6 +773,8 @@ export default function InventoryClient({
           onDelete={form.id && canManage(role) ? () => deleteItem(form.id!) : undefined}
           history={history}
           historyLoading={historyLoading}
+          categoryDatalistId={categoryDatalistId}
+          propertyId={propertyId}
         />
       )}
 
@@ -790,6 +866,13 @@ function groupByLocation(
   });
 }
 
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return <label className="block text-xs font-medium text-charcoal/60 mb-1">{children}</label>;
+}
+
+const fieldClass =
+  'w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-2.5 bg-cream/40';
+
 function ItemFormSheet({
   form,
   locations,
@@ -801,6 +884,8 @@ function ItemFormSheet({
   onDelete,
   history,
   historyLoading,
+  categoryDatalistId,
+  propertyId,
 }: {
   form: ItemFormState;
   locations: StorageLocation[];
@@ -812,6 +897,8 @@ function ItemFormSheet({
   onDelete?: () => void;
   history: HistoryEntry[];
   historyLoading: boolean;
+  categoryDatalistId: string;
+  propertyId: string;
 }) {
   const restockInterval = restockIntervalDays(history);
 
@@ -823,28 +910,35 @@ function ItemFormSheet({
       >
         <h2 className="font-display text-xl text-charcoal mb-3">{form.id ? 'Edit item' : 'New item'}</h2>
 
-        <div className="space-y-3">
-          <input
-            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-2.5 bg-cream/40"
-            placeholder="Item name"
-            value={form.name}
-            onChange={(e) => onChange({ ...form, name: e.target.value })}
-            autoFocus
-          />
-          <input
-            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-2.5 bg-cream/40"
-            placeholder="Category (e.g. Cleaners)"
-            value={form.category}
-            onChange={(e) => onChange({ ...form, category: e.target.value })}
-            list="category-suggestions"
-          />
-          <datalist id="category-suggestions">
-            {categorySuggestions.map((c) => (
-              <option key={c} value={c} />
-            ))}
-          </datalist>
+        <div className="space-y-4">
+          <div>
+            <FieldLabel>Item Name</FieldLabel>
+            <input
+              className={fieldClass}
+              value={form.name}
+              onChange={(e) => onChange({ ...form, name: e.target.value })}
+              autoFocus
+            />
+          </div>
+          <div>
+            <FieldLabel>Category</FieldLabel>
+            <input
+              className={fieldClass}
+              placeholder="e.g. Cleaners"
+              value={form.category}
+              onChange={(e) => onChange({ ...form, category: e.target.value })}
+              list={categoryDatalistId}
+            />
+            <datalist id={categoryDatalistId}>
+              {categorySuggestions.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
+          </div>
+          <div>
+          <FieldLabel>Location</FieldLabel>
           <select
-            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-2.5 bg-cream/40"
+            className={fieldClass}
             value={form.location_id}
             onChange={(e) => onChange({ ...form, location_id: e.target.value })}
           >
@@ -857,57 +951,117 @@ function ItemFormSheet({
               </option>
             ))}
           </select>
-          <div className="flex gap-2">
+          </div>
+
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wider text-gold-dark mb-2">Quantity</p>
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <div>
+                <FieldLabel>On Hand</FieldLabel>
+                <input
+                  type="number"
+                  className={fieldClass}
+                  value={form.current_qty}
+                  onChange={(e) => onChange({ ...form, current_qty: e.target.value })}
+                />
+              </div>
+              <div>
+                <FieldLabel>Minimum / Par Level</FieldLabel>
+                <input
+                  type="number"
+                  className={fieldClass}
+                  value={form.min_qty}
+                  onChange={(e) => onChange({ ...form, min_qty: e.target.value })}
+                />
+              </div>
+            </div>
+            <div>
+              <FieldLabel>Unit</FieldLabel>
+              <input
+                className={fieldClass}
+                value={form.unit}
+                onChange={(e) => onChange({ ...form, unit: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <FieldLabel>Supplier</FieldLabel>
+              <input
+                className={fieldClass}
+                value={form.supplier}
+                onChange={(e) => onChange({ ...form, supplier: e.target.value })}
+              />
+            </div>
+            <div>
+              <FieldLabel>Price ($)</FieldLabel>
+              <input
+                type="number"
+                step="0.01"
+                className={fieldClass}
+                value={form.unit_cost}
+                onChange={(e) => onChange({ ...form, unit_cost: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Reorder Link</FieldLabel>
             <input
-              type="number"
-              className="w-1/3 border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-3 py-2.5 bg-cream/40"
-              placeholder="Qty"
-              value={form.current_qty}
-              onChange={(e) => onChange({ ...form, current_qty: e.target.value })}
-            />
-            <input
-              type="number"
-              className="w-1/3 border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-3 py-2.5 bg-cream/40"
-              placeholder="Min"
-              value={form.min_qty}
-              onChange={(e) => onChange({ ...form, min_qty: e.target.value })}
-            />
-            <input
-              className="w-1/3 border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-3 py-2.5 bg-cream/40"
-              placeholder="Unit"
-              value={form.unit}
-              onChange={(e) => onChange({ ...form, unit: e.target.value })}
+              className={fieldClass}
+              placeholder="URL"
+              value={form.reorder_link}
+              onChange={(e) => onChange({ ...form, reorder_link: e.target.value })}
             />
           </div>
 
-          <div className="flex gap-2">
+          <div>
+            <FieldLabel>Photo URL</FieldLabel>
             <input
-              className="w-1/2 border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-2.5 bg-cream/40"
-              placeholder="Supplier"
-              value={form.supplier}
-              onChange={(e) => onChange({ ...form, supplier: e.target.value })}
-            />
-            <input
-              type="number"
-              step="0.01"
-              className="w-1/2 border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-2.5 bg-cream/40"
-              placeholder="Price ($)"
-              value={form.unit_cost}
-              onChange={(e) => onChange({ ...form, unit_cost: e.target.value })}
+              className={fieldClass}
+              value={form.photo_url}
+              onChange={(e) => onChange({ ...form, photo_url: e.target.value })}
             />
           </div>
-          <input
-            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-2.5 bg-cream/40"
-            placeholder="Reorder link (URL)"
-            value={form.reorder_link}
-            onChange={(e) => onChange({ ...form, reorder_link: e.target.value })}
-          />
-          <input
-            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-2.5 bg-cream/40"
-            placeholder="Photo URL"
-            value={form.photo_url}
-            onChange={(e) => onChange({ ...form, photo_url: e.target.value })}
-          />
+
+          <div>
+            <FieldLabel>Barcode</FieldLabel>
+            <div className="flex items-center gap-2">
+              <span className="flex-1 text-sm text-charcoal/60 font-mono border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40 truncate">
+                {form.qr_code ?? 'Generated on save'}
+              </span>
+              {form.id && (
+                <a
+                  href={`/properties/${propertyId}/scan`}
+                  className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full border border-charcoal/30 text-charcoal text-lg"
+                  aria-label="Scan"
+                >
+                  📷
+                </a>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Expiration Date</FieldLabel>
+            <input
+              type="date"
+              className={fieldClass}
+              value={form.expiration_date}
+              onChange={(e) => onChange({ ...form, expiration_date: e.target.value })}
+            />
+          </div>
+
+          <label className="flex items-center justify-between bg-cream/40 border border-gold-light/60 rounded-2xl px-4 py-2.5 cursor-pointer">
+            <span className="text-sm text-charcoal">Print Label</span>
+            <input
+              type="checkbox"
+              checked={form.print_label}
+              onChange={(e) => onChange({ ...form, print_label: e.target.checked })}
+              className="h-5 w-5 accent-gold-dark rounded"
+            />
+          </label>
         </div>
 
         <div className="flex gap-2 mt-4">

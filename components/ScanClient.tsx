@@ -52,15 +52,22 @@ export default function ScanClient({
 
       // Locations first — scanning a bin/shelf label is the more common
       // action (checking what's in an area), items second.
-      const { data: location } = await supabase
+      const { data: location, error: locationError } = await supabase
         .from('locations')
         .select('id')
         .eq('property_id', propertyId)
         .eq('qr_code', code)
         .maybeSingle();
 
+      if (locationError) {
+        triggerFeedback('error');
+        setState({ status: 'error', message: locationError.message });
+        return;
+      }
+
       if (location) {
         triggerFeedback('success');
+        setState({ status: 'scanning' });
         router.push(`/properties/${propertyId}/inventory?location=${location.id}`);
         return;
       }

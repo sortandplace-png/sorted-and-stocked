@@ -87,13 +87,16 @@ export default function NewRecipeModal({
     const validRows = ingredientRows.filter((r) => r.name.trim());
     if (validRows.length > 0) {
       await supabase.from('recipe_ingredients').insert(
-        validRows.map((r) => ({
-          recipe_id: recipe.id,
-          name: r.name.trim(),
-          quantity: r.quantity ? Number(r.quantity) : null,
-          unit: r.unit.trim() || null,
-          category: r.category.trim() || null,
-        }))
+        validRows.map((r) => {
+          const parsed = r.quantity ? parseFloat(r.quantity) : NaN;
+          return {
+            recipe_id: recipe.id,
+            name: r.name.trim(),
+            quantity: Number.isFinite(parsed) ? parsed : null,
+            unit: r.unit.trim() || null,
+            category: r.category.trim() || null,
+          };
+        })
       );
     }
 

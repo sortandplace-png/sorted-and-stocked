@@ -26,44 +26,56 @@ export async function enqueueWrite(write: Omit<QueuedWrite, 'id' | 'createdAt'>)
   await set(QUEUE_KEY, queue);
 }
 
+// registerOfflineSync calls flushQueue both at boot and on the browser's
+// 'online' event — those can fire close together (e.g. reconnecting while
+// the app is still loading) and race without this lock, each racing copy
+// reading and re-writing QUEUE_KEY out from under the other.
+let isFlushing = false;
+
 export async function flushQueue(supabase: SupabaseClient) {
-  const queue: QueuedWrite[] = (await get(QUEUE_KEY)) ?? [];
-  if (queue.length === 0) return { flushed: 0, failed: 0 };
+  if (isFlushing) return { flushed: 0, failed: 0 };
+  isFlushing = true;
+  try {
+    const queue: QueuedWrite[] = (await get(QUEUE_KEY)) ?? [];
+    if (queue.length === 0) return { flushed: 0, failed: 0 };
 
-  const remaining: QueuedWrite[] = [];
-  let flushed = 0;
+    const remaining: QueuedWrite[] = [];
+    let flushed = 0;
 
-  for (const item of queue) {
-    try {
-      let query = supabase.from(item.table);
-      if (item.operation === 'insert') {
-        const { error } = await query.insert(item.values);
-        if (error) throw error;
-      } else if (item.operation === 'update') {
-        let q = query.update(item.values!);
-        for (const [k, v] of Object.entries(item.match ?? {})) q = q.eq(k, v);
-        const { error } = await q;
-        if (error) throw error;
-      } else if (item.operation === 'delete') {
-        let q = query.delete();
-        for (const [k, v] of Object.entries(item.match ?? {})) q = q.eq(k, v);
-        const { error } = await q;
-        if (error) throw error;
+    for (const item of queue) {
+      try {
+        let query = supabase.from(item.table);
+        if (item.operation === 'insert') {
+          const { error } = await query.insert(item.values);
+          if (error) throw error;
+        } else if (item.operation === 'update') {
+          let q = query.update(item.values!);
+          for (const [k, v] of Object.entries(item.match ?? {})) q = q.eq(k, v);
+          const { error } = await q;
+          if (error) throw error;
+        } else if (item.operation === 'delete') {
+          let q = query.delete();
+          for (const [k, v] of Object.entries(item.match ?? {})) q = q.eq(k, v);
+          const { error } = await q;
+          if (error) throw error;
+        }
+        flushed++;
+      } catch {
+        // Network still down or a real error — keep it queued and retry later.
+        remaining.push(item);
       }
-      flushed++;
-    } catch {
-      // Network still down or a real error — keep it queued and retry later.
-      remaining.push(item);
     }
-  }
 
-  if (remaining.length > 0) {
-    await set(QUEUE_KEY, remaining);
-  } else {
-    await del(QUEUE_KEY);
-  }
+    if (remaining.length > 0) {
+      await set(QUEUE_KEY, remaining);
+    } else {
+      await del(QUEUE_KEY);
+    }
 
-  return { flushed, failed: remaining.length };
+    return { flushed, failed: remaining.length };
+  } finally {
+    isFlushing = false;
+  }
 }
 
 // Call this once at app root: flushes on load and whenever the browser

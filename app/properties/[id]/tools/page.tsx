@@ -114,6 +114,21 @@ const TASTE_MEMORY_TOOL = {
   description: 'Likes, dislikes, allergies, and sensitivities — kept with the person.',
 };
 
+// Grouped per the approved Tools Hub redesign. The design brief named ~13
+// of the real 17 tools explicitly; the rest (tasks, halachic-calendar,
+// prep-timeline, memory-timeline, taste-memory) are placed into whichever
+// of the 4 named groups fits them best rather than left ungrouped.
+const GROUPS: { key: string; label: string; slugs: string[] }[] = [
+  { key: 'scanners', label: 'Scanners', slugs: ['price-scanner', 'ingredient-scanner', 'recipe-stealer'] },
+  { key: 'kitchen-ops', label: 'Kitchen Ops', slugs: ['kitchen-timer', 'guest-scaler', 'reset-checklist', 'prep-timeline'] },
+  { key: 'inventory-ops', label: 'Inventory Ops', slugs: ['pantry-zones', 'borrowed-items', 'duplicate-ingredients', 'needs-linking'] },
+  {
+    key: 'household',
+    label: 'Household',
+    slugs: ['knowledge-base', 'tasks', 'contacts', 'takeout-directory', 'halachic-calendar', 'memory-timeline', 'taste-memory'],
+  },
+];
+
 export default async function ToolsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
@@ -125,26 +140,38 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
   const flags = (property?.feature_flags ?? {}) as Record<string, boolean>;
 
   const tools = flags.guest_taste_memory ? [...TOOLS, TASTE_MEMORY_TOOL] : TOOLS;
+  const bySlug = new Map(tools.map((t) => [t.slug, t]));
 
   return (
-    <div className="max-w-md mx-auto p-4">
+    <div className="max-w-md lg:max-w-4xl mx-auto p-4">
       <h1 className="text-2xl font-display text-charcoal mb-4">Tools</h1>
-      <ul className="space-y-3">
-        {tools.map((tool) => (
-          <li key={tool.slug}>
-            <Link
-              href={`/properties/${id}/tools/${tool.slug}`}
-              className="flex items-center gap-3 bg-white rounded-2xl shadow-sm shadow-charcoal/5 px-4 py-3 hover:bg-gold-light/15 transition-colors"
-            >
-              <span className="text-2xl">{tool.icon}</span>
-              <span>
-                <span className="block font-display text-lg text-charcoal">{tool.title}</span>
-                <span className="block text-sm text-charcoal/50">{tool.description}</span>
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <div className="space-y-6">
+        {GROUPS.map((group) => {
+          const groupTools = group.slugs.map((slug) => bySlug.get(slug)).filter((t): t is (typeof TOOLS)[number] => !!t);
+          if (groupTools.length === 0) return null;
+          return (
+            <div key={group.key}>
+              <h2 className="text-xs font-medium uppercase tracking-wider text-gold-dark mb-2">{group.label}</h2>
+              <ul className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {groupTools.map((tool) => (
+                  <li key={tool.slug}>
+                    <Link
+                      href={`/properties/${id}/tools/${tool.slug}`}
+                      className="flex items-center gap-3 bg-white rounded-2xl shadow-sm shadow-charcoal/5 px-4 py-3 hover:bg-gold-light/15 transition-colors h-full"
+                    >
+                      <span className="text-2xl">{tool.icon}</span>
+                      <span>
+                        <span className="block font-display text-lg text-charcoal">{tool.title}</span>
+                        <span className="block text-sm text-charcoal/50">{tool.description}</span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

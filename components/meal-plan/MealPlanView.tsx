@@ -294,6 +294,32 @@ export default function MealPlanView({
       return;
     }
 
+    if (result.queued) {
+      // Offline — a fresh loadEntries() would hit the network, come back
+      // without the not-yet-synced row, and make the entry that was "just
+      // saved" appear to vanish. Update local state instead; the real
+      // fetch happens next time loadEntries() runs online.
+      const optimisticEntry: Entry = {
+        id: `pending-${crypto.randomUUID()}`,
+        plan_date: editing.date,
+        meal_slot: 'dinner',
+        course: editing.course,
+        recipe_id: pickerMode === 'existing' && pickedRecipeId ? pickedRecipeId : null,
+        custom_name: pickerMode === 'custom' ? customName.trim() : null,
+        recipes:
+          pickerMode === 'existing' && pickedRecipeId
+            ? recipes.find((r) => r.id === pickedRecipeId) ?? null
+            : null,
+      };
+      setDays((prev) => {
+        const day = prev[editing.date] ?? { date: editing.date, entries: [], hasMeatDairyBuffer: false };
+        const entries = [...day.entries.filter((e) => e.course !== editing.course), optimisticEntry];
+        return { ...prev, [editing.date]: { ...day, entries } };
+      });
+      setEditing(null);
+      return;
+    }
+
     setEditing(null);
     loadEntries();
   }
@@ -319,10 +345,17 @@ export default function MealPlanView({
       return;
     }
 
+    // Same recipe planned more than once this week (e.g. Chicken Soup on
+    // both Tuesday and Friday) needs its ingredients counted that many
+    // times — .in() below only fetches each ingredient row once regardless
+    // of how many times its recipe_id repeats in the array.
+    const recipeCounts: Record<string, number> = {};
+    for (const id of recipeIds) recipeCounts[id] = (recipeCounts[id] ?? 0) + 1;
+
     const { data: ingredients, error: ingredientsError } = await supabase
       .from('recipe_ingredients')
       .select('name, quantity, unit, category, recipe_id')
-      .in('recipe_id', recipeIds);
+      .in('recipe_id', [...new Set(recipeIds)]);
 
     if (ingredientsError || !ingredients) {
       setPushingToShopping(false);
@@ -330,7 +363,12 @@ export default function MealPlanView({
       return;
     }
 
-    const result = await addIngredientsToShoppingList(supabase, propertyId, ingredients);
+    const scaledIngredients = ingredients.map((ing) => ({
+      ...ing,
+      quantity: ing.quantity !== null ? ing.quantity * (recipeCounts[ing.recipe_id] ?? 1) : ing.quantity,
+    }));
+
+    const result = await addIngredientsToShoppingList(supabase, propertyId, scaledIngredients);
     setPushingToShopping(false);
 
     if (!result.ok) {

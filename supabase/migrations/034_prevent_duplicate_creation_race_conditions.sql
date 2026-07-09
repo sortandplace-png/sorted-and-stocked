@@ -1,6 +1,10 @@
 -- ============================================================================
--- 025: Prevent duplicate property and shopping list auto-creation
+-- 034: Prevent duplicate property and shopping list auto-creation
 -- ============================================================================
+-- Renamed from the root-level "025_prevent_duplicate_creation_race_conditions.sql"
+-- to resolve an ordering-ambiguous duplicate with 025_recipe_substitutions.sql —
+-- no functional change, content unchanged.
+--
 -- OVERVIEW
 -- Two race conditions were identified and fixed this session:
 -- 1. Duplicate properties being silently created when form submitted twice

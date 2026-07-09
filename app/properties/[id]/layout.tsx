@@ -5,6 +5,9 @@ import { createClient } from '@/lib/supabase/server';
 import DesktopNav from '@/components/nav/DesktopNav';
 import MobileBottomNav from '@/components/nav/MobileBottomNav';
 import LogoutButton from '@/components/LogoutButton';
+import Avatar from '@/components/Avatar';
+import CommandPalette from '@/components/CommandPalette';
+import CommandPaletteTrigger from '@/components/CommandPaletteTrigger';
 import { LogoMark } from '@/components/Logo';
 import LocaleToggle from '@/components/LocaleToggle';
 import { PropertyRoleProvider, type PropertyRole } from '@/components/PropertyRoleContext';
@@ -42,6 +45,8 @@ export default async function PropertyLayout({
 
   const propertyName = (membership.properties as unknown as { name: string } | null)?.name;
 
+  const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
+
   return (
     <PropertyRoleProvider role={membership.role as PropertyRole}>
       <div className="min-h-screen bg-cream">
@@ -54,7 +59,9 @@ export default async function PropertyLayout({
             </div>
           </Link>
           <div className="flex items-center gap-3">
+            <CommandPaletteTrigger />
             <LocaleToggle />
+            <Avatar fullName={profile?.full_name} email={user.email} size="sm" />
             <LogoutButton variant="light" />
           </div>
         </header>
@@ -63,6 +70,7 @@ export default async function PropertyLayout({
         </div>
         <main className="pb-20 md:pb-0">{children}</main>
         <MobileBottomNav propertyId={id} />
+        <CommandPalette propertyId={id} />
       </div>
     </PropertyRoleProvider>
   );

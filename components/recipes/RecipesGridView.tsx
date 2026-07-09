@@ -186,14 +186,23 @@ export default function RecipesGridView({
     <div className="max-w-md lg:max-w-6xl mx-auto p-4">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <h1 className="text-2xl font-display text-charcoal">{t('title')}</h1>
-        {canManage(role) && (
-          <button
-            onClick={() => setShowNewRecipe(true)}
-            className="text-sm font-medium bg-gold-dark text-white px-4 py-2 rounded-full hover:opacity-90 transition"
+        <div className="flex gap-2">
+          <a
+            href={`/properties/${propertyId}/scan`}
+            className="w-10 h-10 flex items-center justify-center rounded-full border border-charcoal/30 text-charcoal text-lg"
+            aria-label="Scan a label"
           >
-            + {t('newRecipe')}
-          </button>
-        )}
+            📷
+          </a>
+          {canManage(role) && (
+            <button
+              onClick={() => setShowNewRecipe(true)}
+              className="text-sm font-medium bg-gold-dark text-white px-4 py-2 rounded-full hover:opacity-90 transition"
+            >
+              + {t('newRecipe')}
+            </button>
+          )}
+        </div>
       </div>
 
       <input

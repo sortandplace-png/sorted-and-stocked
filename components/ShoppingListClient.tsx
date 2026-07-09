@@ -124,8 +124,12 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
     if (!name || !listId) return;
     setAdding(true);
 
-    const optimisticId = `pending-${crypto.randomUUID()}`;
+    // Supplying the id ourselves means the optimistic local row and the
+    // real server row share one id from the start, so a later toggle/update
+    // by id always finds the right row instead of the stale local-only one.
+    const newId = crypto.randomUUID();
     const payload = {
+      id: newId,
       shopping_list_id: listId,
       name,
       category: null,
@@ -133,7 +137,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
       status: 'pending' as const,
     };
 
-    setItems((prev) => [...prev, { ...payload, id: optimisticId }]);
+    setItems((prev) => [...prev, payload]);
     setNewItemName('');
 
     const result = await resilientInsert(supabase, 'shopping_list_items', payload);
@@ -141,7 +145,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
     if (!result.ok) {
       setError(result.error);
       showToast('Failed to add item.', { variant: 'error' });
-      setItems((prev) => prev.filter((i) => i.id !== optimisticId));
+      setItems((prev) => prev.filter((i) => i.id !== newId));
     }
   }
 

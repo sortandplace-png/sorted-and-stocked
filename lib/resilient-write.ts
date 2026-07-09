@@ -22,6 +22,19 @@ function isOffline() {
   return typeof navigator !== 'undefined' && navigator.onLine === false;
 }
 
+// Every error used to get queued for retry forever, including permanent
+// ones (RLS denial, a bad constraint, a validation failure) that will never
+// succeed no matter how many times the queue retries them — the caller
+// never learned the write actually failed. A genuine Postgrest/Postgres
+// error always carries a `code`; a network-level failure (dropped
+// connection, DNS hiccup — the actual case this queue exists for) doesn't,
+// and its message says so.
+function isTransientError(error: { message?: string; code?: string } | null | undefined): boolean {
+  if (!error) return false;
+  if (error.code) return false;
+  return /fetch|network|timeout|timed out|connection/i.test(error.message ?? '');
+}
+
 export async function resilientInsert(
   supabase: SupabaseClient,
   table: string,
@@ -33,8 +46,11 @@ export async function resilientInsert(
   }
   const { error } = await supabase.from(table).insert(values);
   if (error) {
-    await enqueueWrite({ table, operation: 'insert', values });
-    return { ok: true, queued: true };
+    if (isTransientError(error)) {
+      await enqueueWrite({ table, operation: 'insert', values });
+      return { ok: true, queued: true };
+    }
+    return { ok: false, queued: false, error: error.message };
   }
   return { ok: true, queued: false };
 }
@@ -53,8 +69,11 @@ export async function resilientUpdate(
   for (const [k, v] of Object.entries(match)) query = query.eq(k, v);
   const { error } = await query;
   if (error) {
-    await enqueueWrite({ table, operation: 'update', match, values });
-    return { ok: true, queued: true };
+    if (isTransientError(error)) {
+      await enqueueWrite({ table, operation: 'update', match, values });
+      return { ok: true, queued: true };
+    }
+    return { ok: false, queued: false, error: error.message };
   }
   return { ok: true, queued: false };
 }
@@ -72,8 +91,11 @@ export async function resilientDelete(
   for (const [k, v] of Object.entries(match)) query = query.eq(k, v);
   const { error } = await query;
   if (error) {
-    await enqueueWrite({ table, operation: 'delete', match });
-    return { ok: true, queued: true };
+    if (isTransientError(error)) {
+      await enqueueWrite({ table, operation: 'delete', match });
+      return { ok: true, queued: true };
+    }
+    return { ok: false, queued: false, error: error.message };
   }
   return { ok: true, queued: false };
 }

@@ -12,13 +12,17 @@ type Handover = {
   id: string;
   note_text: string | null;
   photo_data_url: string | null;
+  photo_data_urls: string[] | null;
   audio_data_url: string | null;
+  template_tag: string | null;
   created_at: string;
   created_by_name: string | null;
 };
 
 const MAX_RECORDING_SECONDS = 20;
 const PHOTO_MAX_DIMENSION = 900; // px — keeps the base64 payload reasonable
+
+const QUICK_TEMPLATES = ['Dinner staged', 'Fridge restocked', 'Issue reported'] as const;
 
 function resizeImageFile(file: File): Promise<string> {
   return compressImageToDataUrl(file, { maxDimension: PHOTO_MAX_DIMENSION });
@@ -38,7 +42,8 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
   const [loading, setLoading] = useState(true);
 
   const [noteText, setNoteText] = useState('');
-  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [templateTag, setTemplateTag] = useState<string | null>(null);
+  const [photoDataUrls, setPhotoDataUrls] = useState<string[]>([]);
   const [audioDataUrl, setAudioDataUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -56,7 +61,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
     setLoading(true);
     const { data, error } = await supabase
       .from('shift_handovers')
-      .select('id, note_text, photo_data_url, audio_data_url, created_at, profiles(full_name)')
+      .select('id, note_text, photo_data_url, photo_data_urls, audio_data_url, template_tag, created_at, profiles(full_name)')
       .eq('property_id', propertyId)
       .order('created_at', { ascending: false })
       .limit(10);
@@ -67,7 +72,9 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
           id: h.id,
           note_text: h.note_text,
           photo_data_url: h.photo_data_url,
+          photo_data_urls: h.photo_data_urls,
           audio_data_url: h.audio_data_url,
+          template_tag: h.template_tag,
           created_at: h.created_at,
           created_by_name:
             (h.profiles as unknown as { full_name: string | null } | null)?.full_name ?? null,
@@ -81,15 +88,43 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
     loadHandovers();
   }, [loadHandovers]);
 
+  // Viewing this tab marks handovers as read for this user — real
+  // persisted state (shift_handover_reads), not a decorative badge.
+  useEffect(() => {
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase
+        .from('shift_handover_reads')
+        .upsert(
+          { property_id: propertyId, user_id: user.id, last_read_at: new Date().toISOString() },
+          { onConflict: 'property_id,user_id' }
+        );
+    })();
+  }, [propertyId, supabase]);
+
+  function applyTemplate(template: string) {
+    setTemplateTag((prev) => (prev === template ? null : template));
+    if (!noteText.trim()) setNoteText(template);
+  }
+
   async function handlePhotoFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
     try {
-      const dataUrl = await resizeImageFile(file);
-      setPhotoDataUrl(dataUrl);
+      const dataUrls = await Promise.all(files.map(resizeImageFile));
+      setPhotoDataUrls((prev) => [...prev, ...dataUrls]);
     } catch {
       showToast('Could not read that photo.', { variant: 'error' });
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  }
+
+  function removePhoto(index: number) {
+    setPhotoDataUrls((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function startRecording() {
@@ -132,13 +167,14 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
 
   function resetForm() {
     setNoteText('');
-    setPhotoDataUrl(null);
+    setTemplateTag(null);
+    setPhotoDataUrls([]);
     setAudioDataUrl(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   async function submitHandover() {
-    if (!noteText.trim() && !photoDataUrl && !audioDataUrl) {
+    if (!noteText.trim() && photoDataUrls.length === 0 && !audioDataUrl) {
       showToast('Add a note, photo, or recording first.', { variant: 'error' });
       return;
     }
@@ -158,8 +194,10 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
       property_id: propertyId,
       created_by: user.id,
       note_text: noteText.trim() || null,
-      photo_data_url: photoDataUrl,
+      photo_data_url: photoDataUrls[0] ?? null, // kept for older readers of the single-photo column
+      photo_data_urls: photoDataUrls.length > 0 ? photoDataUrls : null,
       audio_data_url: audioDataUrl,
+      template_tag: templateTag,
     });
 
     setSubmitting(false);
@@ -194,6 +232,22 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
       </p>
 
       <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-3">
+        <div className="flex flex-wrap gap-1.5">
+          {QUICK_TEMPLATES.map((template) => (
+            <button
+              key={template}
+              onClick={() => applyTemplate(template)}
+              className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                templateTag === template
+                  ? 'bg-gold-dark text-white border-gold'
+                  : 'bg-cream/40 text-charcoal/70 border-gold-light/60'
+              }`}
+            >
+              {template}
+            </button>
+          ))}
+        </div>
+
         <textarea
           value={noteText}
           onChange={(e) => setNoteText(e.target.value)}
@@ -202,9 +256,22 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
           className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-3 bg-cream/40 text-sm"
         />
 
-        {photoDataUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={photoDataUrl} alt="" className="w-full rounded-xl max-h-48 object-cover" />
+        {photoDataUrls.length > 0 && (
+          <div className="grid grid-cols-3 gap-2">
+            {photoDataUrls.map((url, i) => (
+              <div key={i} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt="" className="w-full h-20 rounded-lg object-cover" />
+                <button
+                  onClick={() => removePhoto(i)}
+                  className="absolute top-1 right-1 bg-charcoal/70 text-cream text-xs rounded-full h-5 w-5"
+                  aria-label="Remove photo"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
         )}
 
         <div className="flex gap-2">
@@ -214,10 +281,11 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
               type="file"
               accept="image/*"
               capture="environment"
+              multiple
               onChange={handlePhotoFile}
               className="hidden"
             />
-            📷 {photoDataUrl ? 'Retake' : 'Photo'}
+            📷 {photoDataUrls.length > 0 ? `Add another (${photoDataUrls.length})` : 'Photo'}
           </label>
 
           {!recording ? (
@@ -257,28 +325,38 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
         <p className="text-sm text-charcoal/40 text-center mt-4">No handover notes yet.</p>
       ) : (
         <ul className="space-y-3">
-          {handovers.map((h) => (
-            <li key={h.id} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-charcoal">
-                  {h.created_by_name ?? 'Someone'}
-                </span>
-                <span className="text-xs text-charcoal/40">{timeAgo(h.created_at)}</span>
-              </div>
-              {h.note_text && <p className="text-sm text-charcoal mb-2">{h.note_text}</p>}
-              {h.photo_data_url && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={h.photo_data_url}
-                  alt=""
-                  className="w-full rounded-xl max-h-48 object-cover mb-2"
-                />
-              )}
-              {h.audio_data_url && (
-                <audio controls src={h.audio_data_url} className="w-full h-10" />
-              )}
-            </li>
-          ))}
+          {handovers.map((h) => {
+            const photos = h.photo_data_urls && h.photo_data_urls.length > 0 ? h.photo_data_urls : h.photo_data_url ? [h.photo_data_url] : [];
+            return (
+              <li key={h.id} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+                <div className="flex items-center justify-between mb-2 flex-wrap gap-1.5">
+                  <span className="text-sm font-medium text-charcoal">
+                    {h.created_by_name ?? 'Someone'}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {h.template_tag && (
+                      <span className="text-[10px] font-medium bg-gold-light/40 text-gold-dark px-2 py-0.5 rounded-full">
+                        {h.template_tag}
+                      </span>
+                    )}
+                    <span className="text-xs text-charcoal/40">{timeAgo(h.created_at)}</span>
+                  </div>
+                </div>
+                {h.note_text && <p className="text-sm text-charcoal mb-2">{h.note_text}</p>}
+                {photos.length > 0 && (
+                  <div className={`grid gap-2 mb-2 ${photos.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                    {photos.map((url, i) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={i} src={url} alt="" className="w-full rounded-xl max-h-48 object-cover" />
+                    ))}
+                  </div>
+                )}
+                {h.audio_data_url && (
+                  <audio controls src={h.audio_data_url} className="w-full h-10" />
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

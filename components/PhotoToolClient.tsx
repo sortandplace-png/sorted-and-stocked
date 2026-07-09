@@ -18,7 +18,7 @@ type PhotoToolClientProps = {
 // 12MP phone photo adds real latency and cost for no analysis benefit.
 async function fileToBase64(file: File): Promise<{ data: string; mediaType: string }> {
   const dataUrl = await compressImageToDataUrl(file, { maxDimension: 1200 });
-  const [, base64] = dataUrl.split(',');
+  const base64 = dataUrl.replace(/^data:[^,]*,/, '');
   return { data: base64, mediaType: 'image/jpeg' };
 }
 
@@ -66,6 +66,7 @@ export default function PhotoToolClient({
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (preview) URL.revokeObjectURL(preview);
     setPreview(URL.createObjectURL(file));
     const { data, mediaType } = await fileToBase64(file);
     runAnalysis({ imageBase64: data, mediaType });
@@ -77,6 +78,7 @@ export default function PhotoToolClient({
   }
 
   function reset() {
+    if (preview) URL.revokeObjectURL(preview);
     setPreview(null);
     setTextInput('');
     setResult(null);

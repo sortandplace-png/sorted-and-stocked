@@ -11,7 +11,7 @@ import {
   removeShoppingItem,
   type ShoppingItemSource,
 } from '@/lib/api/shoppingList';
-import { ExternalLink, Trash2, CheckCircle2, Circle, MessageCircle, Printer, Sparkles } from 'lucide-react';
+import { ExternalLink, Trash2, CheckCircle2, Circle, MessageCircle, Printer, Sparkles, MoreVertical } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import { createClient } from '@/lib/supabase/client';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
@@ -37,6 +37,11 @@ type ShoppingListItem = {
 
 type GroupBy = 'staples-first' | 'category' | 'by-recipe';
 
+// Present only on display rows produced by aggregateDuplicates — carries
+// the real underlying row ids so toggling/deleting an aggregated row still
+// acts on every real row it represents, not just the first one.
+type DisplayItem = ShoppingListItem & { _mergedIds?: string[] };
+
 export default function ShoppingListViewEnhanced({
   propertyId,
   shoppingListId,
@@ -50,6 +55,9 @@ export default function ShoppingListViewEnhanced({
   const [groupBy, setGroupBy] = useState<GroupBy>('staples-first');
   const [showCompleted, setShowCompleted] = useState(false);
   const [expandedPills, setExpandedPills] = useState<Record<string, boolean>>({});
+  const [aggregateDuplicates, setAggregateDuplicates] = useState(true);
+  const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   // Same broken-link concern as InventoryClient — photo_url existing isn't
   // the same as the image actually loading.
   const [brokenPhotoIds, setBrokenPhotoIds] = useState<Set<string>>(new Set());
@@ -95,6 +103,70 @@ export default function ShoppingListViewEnhanced({
       showToast('Failed to update item.', { variant: 'error' });
     }
   };
+
+  // Aggregated display rows carry _mergedIds — these two wrap the real
+  // single-id actions above so toggling/deleting a merged row still acts
+  // on every real underlying row, not just the display row's own id.
+  const toggleStatusForDisplayItem = async (item: DisplayItem) => {
+    const ids = item._mergedIds ?? [item.item_id];
+    if (ids.length === 1) {
+      await toggleStatus(item.item_id, item.status);
+      return;
+    }
+    const newStatus = item.status === 'purchased' ? 'pending' : 'purchased';
+    try {
+      await Promise.all(ids.map((id) => updateShoppingItemStatus(id, newStatus)));
+      setItems((prev) => prev.map((i) => (ids.includes(i.item_id) ? { ...i, status: newStatus } : i)));
+    } catch (error) {
+      console.error('Error updating merged item:', error);
+      showToast('Failed to update item.', { variant: 'error' });
+    }
+  };
+
+  const deleteDisplayItem = async (item: DisplayItem) => {
+    const ids = item._mergedIds ?? [item.item_id];
+    if (ids.length === 1) {
+      await deleteItem(item.item_id);
+      return;
+    }
+    try {
+      await Promise.all(ids.map((id) => removeShoppingItem(id)));
+      setItems((prev) => prev.filter((i) => !ids.includes(i.item_id)));
+      showToast('Items removed.', { variant: 'success' });
+    } catch (error) {
+      console.error('Error deleting merged item:', error);
+      showToast('Failed to delete item.', { variant: 'error' });
+    }
+  };
+
+  async function clearChecked() {
+    const ids = items.filter((i) => i.status === 'purchased').map((i) => i.item_id);
+    if (ids.length === 0) return;
+    try {
+      await Promise.all(ids.map((id) => removeShoppingItem(id)));
+      setItems((prev) => prev.filter((i) => i.status !== 'purchased'));
+      showToast(`Cleared ${ids.length} checked item${ids.length === 1 ? '' : 's'}.`, { variant: 'success' });
+    } catch (error) {
+      console.error('Error clearing checked items:', error);
+      showToast('Failed to clear checked items.', { variant: 'error' });
+    }
+  }
+
+  function aggregateItems(rawItems: ShoppingListItem[]): DisplayItem[] {
+    if (!aggregateDuplicates) return rawItems;
+    const map = new Map<string, DisplayItem>();
+    for (const item of rawItems) {
+      const key = item.name.trim().toLowerCase();
+      const existing = map.get(key);
+      if (existing) {
+        existing.qty_needed = (existing.qty_needed || 0) + (item.qty_needed || 0);
+        existing._mergedIds = [...(existing._mergedIds ?? [existing.item_id]), item.item_id];
+      } else {
+        map.set(key, { ...item });
+      }
+    }
+    return [...map.values()];
+  }
 
   const deleteItem = async (itemId: string) => {
     try {
@@ -208,7 +280,12 @@ export default function ShoppingListViewEnhanced({
     // Purchased items get pulled into their own "Completed" section below,
     // regardless of view — an active shopping list shouldn't need scrolling
     // past everything already in the cart to see what's left.
-    const activeItems = items.filter((i) => i.status !== 'purchased');
+    const rawActiveItems = items.filter((i) => i.status !== 'purchased');
+    // Aggregating collapses same-name rows from different recipes into one
+    // display row, which would make "By Recipe" grouping lose its meaning
+    // (a merged row can't cleanly belong to a single recipe group) — so
+    // aggregation only applies outside that view.
+    const activeItems: DisplayItem[] = groupBy === 'by-recipe' ? rawActiveItems : aggregateItems(rawActiveItems);
 
     if (groupBy === 'staples-first') {
       const staples = activeItems.filter(i => i.is_staple_origin);
@@ -219,7 +296,7 @@ export default function ShoppingListViewEnhanced({
       ];
     }
     if (groupBy === 'by-recipe') {
-      const groupsMap: Record<string, { title: string; items: ShoppingListItem[] }> = {};
+      const groupsMap: Record<string, { title: string; items: DisplayItem[] }> = {};
       for (const item of activeItems) {
         const itemSources = sources[item.item_id];
         const primary = itemSources?.[0];
@@ -245,7 +322,7 @@ export default function ShoppingListViewEnhanced({
         acc[cat].push(item);
         return acc;
       },
-      {} as Record<string, ShoppingListItem[]>
+      {} as Record<string, DisplayItem[]>
     );
     return Object.entries(byCategory)
       .map(([title, items]) => ({ title, items }))
@@ -256,11 +333,14 @@ export default function ShoppingListViewEnhanced({
       });
   };
 
-  function renderItemCard(item: ShoppingListItem) {
+  function renderItemCard(item: DisplayItem) {
+    const mergedCount = item._mergedIds?.length ?? 1;
     return (
       <div
         key={item.item_id}
-        className="p-3 rounded-lg border bg-white border-gold-light/20 hover:border-gold-light/40 transition-colors"
+        className={`rounded-lg border bg-white border-gold-light/20 hover:border-gold-light/40 transition-colors ${
+          density === 'compact' ? 'p-2' : 'p-3'
+        }`}
       >
         {/* RICH ITEM: Full inventory card with photo, location, reorder link */}
         {item.is_rich_item ? (
@@ -291,15 +371,16 @@ export default function ShoppingListViewEnhanced({
                     }`}
                   >
                     {item.name}
+                    {mergedCount > 1 && <span className="text-charcoal/40 font-normal"> ×{mergedCount}</span>}
                   </h4>
                   <p className="text-xs text-charcoal/60 mt-0.5">
                     {item.supplier && <span>{item.supplier} · </span>}
                     {item.category}
                   </p>
-                  {recipePills(item.item_id)}
+                  {mergedCount === 1 && recipePills(item.item_id)}
                 </div>
                 <button
-                  onClick={() => toggleStatus(item.item_id, item.status)}
+                  onClick={() => toggleStatusForDisplayItem(item)}
                   className="print:hidden flex-shrink-0 text-charcoal hover:text-sage transition-colors"
                 >
                   {item.status === 'purchased' ? (
@@ -339,7 +420,7 @@ export default function ShoppingListViewEnhanced({
                   <span className="text-xs text-charcoal/30">No reorder link</span>
                 )}
                 <button
-                  onClick={() => deleteItem(item.item_id)}
+                  onClick={() => deleteDisplayItem(item)}
                   className="ml-auto text-charcoal/40 hover:text-rust transition-colors"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -357,14 +438,15 @@ export default function ShoppingListViewEnhanced({
                 }`}
               >
                 {item.name}
+                {mergedCount > 1 && <span className="text-charcoal/40 font-normal"> ×{mergedCount}</span>}
               </h4>
               <p className="text-xs text-charcoal/60 mt-0.5">{item.category}</p>
-              {recipePills(item.item_id)}
+              {mergedCount === 1 && recipePills(item.item_id)}
             </div>
 
             <div className="print:hidden flex items-center gap-2">
               <button
-                onClick={() => toggleStatus(item.item_id, item.status)}
+                onClick={() => toggleStatusForDisplayItem(item)}
                 className="text-charcoal hover:text-sage transition-colors"
               >
                 {item.status === 'purchased' ? (
@@ -374,7 +456,7 @@ export default function ShoppingListViewEnhanced({
                 )}
               </button>
               <button
-                onClick={() => deleteItem(item.item_id)}
+                onClick={() => deleteDisplayItem(item)}
                 className="text-charcoal/40 hover:text-rust transition-colors"
               >
                 <Trash2 className="h-4 w-4" />
@@ -397,14 +479,87 @@ export default function ShoppingListViewEnhanced({
     <div className="space-y-4">
       <style>{`@media print { .print\\:hidden { display: none !important; } }`}</style>
 
-      {/* Share / Print */}
-      <div className="print:hidden flex items-center justify-end gap-3 text-charcoal/60">
-        <button onClick={shareWhatsApp} aria-label="Share on WhatsApp" title="Share on WhatsApp">
-          <MessageCircle className="h-4 w-4" />
+      {/* More options */}
+      <div className="print:hidden relative flex items-center justify-end">
+        <button
+          onClick={() => setShowMoreMenu((v) => !v)}
+          aria-label="More options"
+          title="More options"
+          className="text-charcoal/60 hover:text-charcoal p-1"
+        >
+          <MoreVertical className="h-4 w-4" />
         </button>
-        <button onClick={() => window.print()} aria-label="Print" title="Print">
-          <Printer className="h-4 w-4" />
-        </button>
+        {showMoreMenu && (
+          <div
+            className="absolute right-0 top-8 z-20 w-64 rounded-2xl border border-gold-light/40 bg-white shadow-lg p-3 space-y-3"
+            onMouseLeave={() => setShowMoreMenu(false)}
+          >
+            <label className="flex items-center justify-between text-sm text-charcoal">
+              <span>Aggregate duplicates</span>
+              <input
+                type="checkbox"
+                checked={aggregateDuplicates}
+                onChange={(e) => setAggregateDuplicates(e.target.checked)}
+                className="h-4 w-4 accent-gold-dark rounded"
+              />
+            </label>
+            <label className="flex items-center justify-between text-sm text-charcoal">
+              <span>Hide checked items</span>
+              <input
+                type="checkbox"
+                checked={!showCompleted}
+                onChange={(e) => setShowCompleted(!e.target.checked)}
+                className="h-4 w-4 accent-gold-dark rounded"
+              />
+            </label>
+            <button
+              onClick={() => {
+                clearChecked();
+                setShowMoreMenu(false);
+              }}
+              disabled={completedItems.length === 0}
+              className="w-full text-left text-sm text-rust disabled:opacity-40"
+            >
+              Clear checked ({completedItems.length})
+            </button>
+            <div className="border-t border-gold-light/30 pt-3">
+              <p className="text-xs text-charcoal/40 mb-1.5">Density</p>
+              <div className="inline-flex rounded-full border border-gold-light/60 p-0.5 text-xs">
+                {(['comfortable', 'compact'] as const).map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setDensity(d)}
+                    className={`rounded-full px-3 py-1 capitalize ${
+                      density === d ? 'bg-gold-dark text-white' : 'text-charcoal/60'
+                    }`}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="border-t border-gold-light/30 pt-3 flex items-center gap-4">
+              <button
+                onClick={() => {
+                  shareWhatsApp();
+                  setShowMoreMenu(false);
+                }}
+                className="flex items-center gap-1.5 text-sm text-charcoal/70 hover:text-charcoal"
+              >
+                <MessageCircle className="h-4 w-4" /> Share
+              </button>
+              <button
+                onClick={() => {
+                  window.print();
+                  setShowMoreMenu(false);
+                }}
+                className="flex items-center gap-1.5 text-sm text-charcoal/70 hover:text-charcoal"
+              >
+                <Printer className="h-4 w-4" /> Print
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* View Options */}

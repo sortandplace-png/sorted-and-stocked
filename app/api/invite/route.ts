@@ -51,7 +51,13 @@ export async function POST(request: Request) {
   // Step 2: create the auth user + send the invite email. This requires the
   // service-role key, hence the separate admin client.
   const admin = createAdminClient();
-  const origin = new URL(request.url).origin;
+  // request.url reflects the internal host when running behind a reverse
+  // proxy, not the public-facing domain — prefer the standard forwarded
+  // headers when present, falling back to request.url's own origin for
+  // local dev / hosts that don't set them.
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const forwardedProto = request.headers.get('x-forwarded-proto');
+  const origin = forwardedHost ? `${forwardedProto ?? 'https'}://${forwardedHost}` : new URL(request.url).origin;
 
   const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${origin}/auth/callback?redirectTo=/properties`,
@@ -85,6 +91,11 @@ export async function POST(request: Request) {
   });
 
   if (memberError) {
+    // The auth user + profile row already exist at this point (created by
+    // inviteUserByEmail above) — without cleanup, a failed membership
+    // insert would leave a stranded account with no way to sign into any
+    // property. Best-effort: report the original error either way.
+    await admin.auth.admin.deleteUser(invited.user.id).catch(() => {});
     return NextResponse.json({ error: memberError.message }, { status: 400 });
   }
 

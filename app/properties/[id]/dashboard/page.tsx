@@ -412,21 +412,17 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         </div>
 
         {/* Mobile bottom nav only shows Home/Recipes/Scan/Shopping/Inventory
-            — Tools/Labels/Staff/Handover are reachable from here instead of
-            being crammed into the bottom bar. Desktop already has these in
-            the nav's "More" dropdown, so this block is mobile-only. */}
+            — Tools/Staff are reachable from here instead of being crammed
+            into the bottom bar. Labels now lives inside Inventory and
+            Handover inside Staff's Handover tab, so neither needs its own
+            entry point here anymore. Desktop already has Tools/Staff in the
+            nav's "More" dropdown, so this block is mobile-only. */}
         <div className="md:hidden mt-6 pt-4 border-t border-gold-light/30 flex flex-wrap gap-x-4 gap-y-2 text-sm">
           <Link href={`/properties/${propertyId}/tools`} className="text-charcoal/60 hover:text-charcoal underline underline-offset-2">
             Tools
           </Link>
-          <Link href={`/properties/${propertyId}/print-labels`} className="text-charcoal/60 hover:text-charcoal underline underline-offset-2">
-            Labels
-          </Link>
           <Link href={`/properties/${propertyId}/staff`} className="text-charcoal/60 hover:text-charcoal underline underline-offset-2">
             Staff
-          </Link>
-          <Link href={`/properties/${propertyId}/shift-handover`} className="text-charcoal/60 hover:text-charcoal underline underline-offset-2">
-            Handover
           </Link>
         </div>
 

@@ -37,9 +37,9 @@ const GROUPS: { key: GroupKey; labelKey: string; items: { segment: string; label
     labelKey: 'more',
     items: [
       { segment: 'tools', labelKey: 'tools' },
-      { segment: 'print-labels', labelKey: 'labels' },
+      // print-labels now lives inside Inventory, shift-handover inside
+      // Staff's Handover tab — no longer separate top-level entries here.
       { segment: 'staff', labelKey: 'staff', managerOnly: true },
-      { segment: 'shift-handover', labelKey: 'handover' },
     ],
   },
 ];
