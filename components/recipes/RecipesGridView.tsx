@@ -36,6 +36,7 @@ import { COURSES, type Course } from '@/lib/course-constants';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { createClient } from '@/lib/supabase/client';
 import NewRecipeModal from '@/components/NewRecipeModal';
+import FloatingKitchenTimerButton from '@/components/FloatingKitchenTimerButton';
 
 interface Recipe {
   id: string;
@@ -938,6 +939,8 @@ export default function RecipesGridView({
           }}
         />
       )}
+
+      <FloatingKitchenTimerButton />
     </div>
   );
 }

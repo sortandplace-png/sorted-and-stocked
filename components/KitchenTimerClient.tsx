@@ -2,117 +2,169 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 
-export default function KitchenTimer() {
-  const [secondsLeft, setSecondsLeft] = useState<number>(0);
-  const [isActive, setIsActive] = useState<boolean>(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+type Timer = {
+  id: string;
+  name: string;
+  secondsLeft: number;
+  isActive: boolean;
+};
+
+function formatTime(totalSeconds: number): string {
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function playAlarm() {
+  // Basic Web Audio API oscillator to bypass asset loading issues
+  try {
+    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const duration = 1.5;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, audioCtx.currentTime); // High clear beep
+
+    // Pulse effect
+    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch (e) {
+    console.error('AudioContext failed to clear:', e);
+  }
+}
+
+// Supports multiple simultaneous named timers (e.g. "Rice" + "Chicken"
+// running at once) — reused as-is on both its original standalone page
+// (/tools/kitchen-timer) and the new floating popup on the Recipes page,
+// rather than building a second, separate timer component.
+export default function KitchenTimerClient() {
+  const [timers, setTimers] = useState<Timer[]>([]);
+  const [newName, setNewName] = useState('');
+  const [newMinutes, setNewMinutes] = useState('5');
+  const tickRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (isActive && secondsLeft > 0) {
-      timerRef.current = setInterval(() => {
-        setSecondsLeft((prev) => prev - 1);
-      }, 1000);
-    } else if (secondsLeft === 0 && isActive) {
-      setIsActive(false);
-      if (timerRef.current) clearInterval(timerRef.current);
-      playAlarm();
+    const hasActive = timers.some((t) => t.isActive && t.secondsLeft > 0);
+    if (!hasActive) {
+      if (tickRef.current) clearInterval(tickRef.current);
+      return;
     }
+
+    tickRef.current = setInterval(() => {
+      setTimers((prev) => {
+        let anyFinished = false;
+        const next = prev.map((t) => {
+          if (!t.isActive || t.secondsLeft <= 0) return t;
+          const secondsLeft = t.secondsLeft - 1;
+          if (secondsLeft === 0) anyFinished = true;
+          return { ...t, secondsLeft, isActive: secondsLeft > 0 };
+        });
+        if (anyFinished) playAlarm();
+        return next;
+      });
+    }, 1000);
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (tickRef.current) clearInterval(tickRef.current);
     };
-  }, [isActive, secondsLeft]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timers.some((t) => t.isActive && t.secondsLeft > 0)]);
 
-  const playAlarm = () => {
-    // Basic Web Audio API oscillator to bypass asset loading issues
-    try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const duration = 1.5;
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
+  function addTimer() {
+    const minutes = parseFloat(newMinutes);
+    if (!minutes || minutes <= 0) return;
+    setTimers((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        name: newName.trim() || 'Timer',
+        secondsLeft: Math.round(minutes * 60),
+        isActive: true,
+      },
+    ]);
+    setNewName('');
+    setNewMinutes('5');
+  }
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, audioCtx.currentTime); // High clear beep
+  function toggleTimer(id: string) {
+    setTimers((prev) => prev.map((t) => (t.id === id && t.secondsLeft > 0 ? { ...t, isActive: !t.isActive } : t)));
+  }
 
-      // Pulse effect
-      gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + duration);
-    } catch (e) {
-      console.error("AudioContext failed to clear:", e);
-    }
-  };
-
-  const addTime = (minutes: number) => {
-    setSecondsLeft((prev) => prev + minutes * 60);
-  };
-
-  const toggleTimer = () => {
-    if (secondsLeft > 0) setIsActive(!isActive);
-  };
-
-  const resetTimer = () => {
-    setIsActive(false);
-    setSecondsLeft(0);
-    if (timerRef.current) clearInterval(timerRef.current);
-  };
-
-  const formatTime = (totalSeconds: number): string => {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+  function removeTimer(id: string) {
+    setTimers((prev) => prev.filter((t) => t.id !== id));
+  }
 
   return (
-    <div className="bg-charcoal border border-charcoal/40 rounded-2xl p-6 shadow-xl max-w-sm mx-auto text-cream">
+    <div className="bg-charcoal border border-charcoal/40 rounded-2xl p-5 shadow-xl max-w-sm mx-auto text-cream">
       <div className="text-center mb-4">
         <span className="text-xs uppercase tracking-widest text-cream/50 font-semibold">Kitchen Companion</span>
       </div>
 
-      {/* Huge Visibility Display */}
-      <div className="text-center text-6xl font-mono font-bold tracking-tight my-4 text-gold-light">
-        {formatTime(secondsLeft)}
+      <div className="flex gap-2 mb-4">
+        <input
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="Name (e.g. Rice)"
+          className="flex-1 min-w-0 bg-charcoal/60 border border-cream/10 rounded-xl px-3 py-2 text-sm text-cream placeholder:text-cream/30"
+        />
+        <input
+          value={newMinutes}
+          onChange={(e) => setNewMinutes(e.target.value)}
+          type="number"
+          min="0.5"
+          step="0.5"
+          placeholder="Min"
+          className="w-16 bg-charcoal/60 border border-cream/10 rounded-xl px-2 py-2 text-sm text-cream text-center"
+        />
+        <button
+          onClick={addTimer}
+          className="min-h-11 px-4 rounded-xl bg-gold text-charcoal font-medium text-sm shrink-0"
+        >
+          Add
+        </button>
       </div>
 
-      {/* Quick Interval Preset Buttons */}
-      <div className="grid grid-cols-4 gap-2 mb-6">
-        {[1, 5, 10, 15].map((mins) => (
-          <button
-            key={mins}
-            onClick={() => addTime(mins)}
-            className="bg-charcoal/60 hover:bg-charcoal/80 active:scale-95 transition text-sm font-medium py-3 px-2 rounded-xl border border-cream/10"
-          >
-            +{mins}m
-          </button>
+      {timers.length === 0 && (
+        <p className="text-center text-sm text-cream/40 py-4">No timers running. Add one above.</p>
+      )}
+
+      <div className="space-y-2">
+        {timers.map((t) => (
+          <div key={t.id} className="flex items-center gap-3 bg-charcoal/40 rounded-xl px-3 py-2.5">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{t.name}</p>
+              <p className={`text-2xl font-mono font-bold tracking-tight ${t.secondsLeft === 0 ? 'text-rust' : 'text-gold-light'}`}>
+                {formatTime(t.secondsLeft)}
+              </p>
+            </div>
+            <button
+              onClick={() => toggleTimer(t.id)}
+              disabled={t.secondsLeft === 0}
+              className={`min-h-11 min-w-[4.5rem] px-3 rounded-xl font-semibold text-sm transition active:scale-95 ${
+                t.secondsLeft === 0
+                  ? 'bg-charcoal/40 text-cream/30 cursor-not-allowed border border-cream/10'
+                  : t.isActive
+                  ? 'bg-gold text-charcoal hover:bg-gold-light'
+                  : 'bg-sage text-charcoal hover:opacity-90'
+              }`}
+            >
+              {t.secondsLeft === 0 ? 'Done' : t.isActive ? 'Pause' : 'Start'}
+            </button>
+            <button
+              onClick={() => removeTimer(t.id)}
+              aria-label={`Remove ${t.name} timer`}
+              className="min-h-11 min-w-11 flex items-center justify-center text-rust/70 hover:text-rust"
+            >
+              ✕
+            </button>
+          </div>
         ))}
-      </div>
-
-      {/* Primary Action Controls */}
-      <div className="flex gap-3">
-        <button
-          onClick={toggleTimer}
-          disabled={secondsLeft === 0}
-          className={`flex-1 py-4 rounded-xl font-bold text-lg transition active:scale-95 ${
-            secondsLeft === 0
-              ? 'bg-charcoal/40 text-cream/30 cursor-not-allowed border border-cream/10'
-              : isActive
-              ? 'bg-gold text-charcoal hover:bg-gold-light'
-              : 'bg-sage text-charcoal hover:opacity-90'
-          }`}
-        >
-          {isActive ? 'Pause' : 'Start'}
-        </button>
-
-        <button
-          onClick={resetTimer}
-          className="bg-rust/20 hover:bg-rust/30 border border-rust/40 text-rust px-6 rounded-xl font-medium transition active:scale-95"
-        >
-          Clear
-        </button>
       </div>
     </div>
   );
