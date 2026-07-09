@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert } from '@/lib/resilient-write';
+import { compressImageToDataUrl } from '@/lib/compress-image';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 
@@ -19,29 +20,8 @@ type Handover = {
 const MAX_RECORDING_SECONDS = 20;
 const PHOTO_MAX_DIMENSION = 900; // px — keeps the base64 payload reasonable
 
-// Downscales an image file client-side before it ever becomes base64, so a
-// 12MP phone photo doesn't turn into a multi-MB database row.
 function resizeImageFile(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const reader = new FileReader();
-    reader.onload = () => {
-      img.onload = () => {
-        const scale = Math.min(1, PHOTO_MAX_DIMENSION / Math.max(img.width, img.height));
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('Canvas not supported'));
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.8));
-      };
-      img.onerror = reject;
-      img.src = reader.result as string;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+  return compressImageToDataUrl(file, { maxDimension: PHOTO_MAX_DIMENSION });
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {
@@ -208,12 +188,12 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-aubergine mb-1">Shift Handover</h1>
-      <p className="text-sm text-ink/50 mb-4">
+      <h1 className="text-2xl font-display text-charcoal mb-1">Shift Handover</h1>
+      <p className="text-sm text-charcoal/50 mb-4">
         Leave a quick note for whoever's coming on next — no long write-up needed.
       </p>
 
-      <div className="bg-white rounded-2xl shadow-sm shadow-aubergine/5 p-4 mb-6 space-y-3">
+      <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-3">
         <textarea
           value={noteText}
           onChange={(e) => setNoteText(e.target.value)}
@@ -228,7 +208,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
         )}
 
         <div className="flex gap-2">
-          <label className="flex-1 text-center py-2 rounded-full border border-aubergine/30 text-aubergine text-sm font-medium cursor-pointer">
+          <label className="flex-1 text-center py-2 rounded-full border border-charcoal/30 text-charcoal text-sm font-medium cursor-pointer">
             <input
               ref={fileInputRef}
               type="file"
@@ -243,7 +223,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
           {!recording ? (
             <button
               onClick={startRecording}
-              className="flex-1 py-2 rounded-full border border-aubergine/30 text-aubergine text-sm font-medium"
+              className="flex-1 py-2 rounded-full border border-charcoal/30 text-charcoal text-sm font-medium"
             >
               🎙️ {audioDataUrl ? 'Re-record' : 'Record'}
             </button>
@@ -264,28 +244,28 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
         <button
           onClick={submitHandover}
           disabled={submitting}
-          className="w-full py-2.5 rounded-full bg-aubergine text-cream font-medium disabled:opacity-40"
+          className="w-full py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
         >
           {submitting ? 'Saving…' : 'Leave handover note'}
         </button>
       </div>
 
-      <h2 className="font-display text-lg text-aubergine mb-2">Recent handovers</h2>
+      <h2 className="font-display text-lg text-charcoal mb-2">Recent handovers</h2>
       {loading ? (
         <SkeletonList rows={3} />
       ) : handovers.length === 0 ? (
-        <p className="text-sm text-ink/40 text-center mt-4">No handover notes yet.</p>
+        <p className="text-sm text-charcoal/40 text-center mt-4">No handover notes yet.</p>
       ) : (
         <ul className="space-y-3">
           {handovers.map((h) => (
-            <li key={h.id} className="bg-white rounded-2xl shadow-sm shadow-aubergine/5 p-4">
+            <li key={h.id} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-aubergine">
+                <span className="text-sm font-medium text-charcoal">
                   {h.created_by_name ?? 'Someone'}
                 </span>
-                <span className="text-xs text-ink/40">{timeAgo(h.created_at)}</span>
+                <span className="text-xs text-charcoal/40">{timeAgo(h.created_at)}</span>
               </div>
-              {h.note_text && <p className="text-sm text-ink mb-2">{h.note_text}</p>}
+              {h.note_text && <p className="text-sm text-charcoal mb-2">{h.note_text}</p>}
               {h.photo_data_url && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img

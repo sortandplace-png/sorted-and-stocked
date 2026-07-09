@@ -1,0 +1,441 @@
+// app/properties/[id]/dashboard/page.tsx
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+import { format, isFriday, isSaturday, parseISO } from 'date-fns'
+import { Calendar, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square, Circle, Triangle } from 'lucide-react'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+async function getHebcal() {
+  // Lakewood, NJ - geonameid 5100280. Candle-lighting/parsha only change
+  // once a week and the Hebrew date only once a day — 1h revalidation was
+  // needlessly frequent for values this stable, confirmed nothing else on
+  // this page depends on sub-day freshness.
+  try {
+    const res = await fetch('https://www.hebcal.com/shabbat?cfg=json&geonameid=5100280&M=on&lg=he', { next: { revalidate: 86400 } })
+    const data = await res.json()
+    const candle = data.items?.find((i: any) => i.category === 'candles')
+    const havdalah = data.items?.find((i: any) => i.category === 'havdalah')
+    return {
+      candleTime: candle ? new Date(candle.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '8:12pm',
+      candleDate: candle?.date,
+      havdalahDate: havdalah?.date,
+      parsha: candle?.title?.replace('Candle lighting: ', '') || ''
+    }
+  } catch {
+    return { candleTime: '8:12pm', candleDate: null, havdalahDate: null, parsha: '' }
+  }
+}
+
+// The /shabbat feed's top-level "date" field is the response-generation
+// timestamp, NOT a Hebrew date (confirmed live — it's a raw ISO string) —
+// the real Hebrew date + numeric day both come from the date-converter
+// endpoint instead, one call doing both jobs.
+async function getHebrewInfo(): Promise<{ day: number | null; hebrewText: string }> {
+  try {
+    const today = format(new Date(), 'yyyy-MM-dd')
+    const res = await fetch(`https://www.hebcal.com/converter?cfg=json&date=${today}&g2h=1`, { next: { revalidate: 86400 } })
+    const data = await res.json()
+    return {
+      day: typeof data.hd === 'number' ? data.hd : null,
+      hebrewText: typeof data.hebrew === 'string' ? data.hebrew : '',
+    }
+  } catch {
+    return { day: null, hebrewText: '' }
+  }
+}
+
+function weekBounds(today: Date) {
+  const start = new Date(today)
+  start.setDate(start.getDate() - start.getDay())
+  const end = new Date(start)
+  end.setDate(start.getDate() + 6)
+  const fmt = (d: Date) => d.toISOString().slice(0, 10)
+  return { startStr: fmt(start), endStr: fmt(end) }
+}
+
+// Confirmed live (July 10): this previously fetched a hardcoded ~9-week
+// range (301 rows) on every dashboard load regardless of the current date.
+// Scoped to the real current week now — the full month/multi-week view
+// already exists on the real Meal Plan page, which fetches per-view rather
+// than all at once.
+async function getData(propertyId: string) {
+  const supabase = await createClient()
+  const { startStr, endStr } = weekBounds(new Date())
+  const [meals, inventory, shopping] = await Promise.all([
+    supabase.from('meal_plan_entries').select('plan_date, recipe_id, recipes(name)').eq('property_id', propertyId).gte('plan_date', startStr).lte('plan_date', endStr).order('plan_date'),
+    supabase.from('inventory_items').select('category, name, current_qty, min_qty, photo_url, reorder_link').eq('property_id', propertyId).order('category'),
+    supabase.from('shopping_list_items').select('name, category, qty_needed, status, inventory_items(photo_url, reorder_link)').eq('property_id', propertyId).eq('status', 'pending').order('category')
+  ])
+  return { meals: meals.data || [], inventory: inventory.data || [], shopping: shopping.data || [] }
+}
+
+// Actionable replacement for the old "301 meals planned" vanity count —
+// "missing" means an ingredient this week's linked recipes need that either
+// has no matching inventory item at all, or is linked but sitting at 0.
+async function getMissingIngredientCount(propertyId: string, recipeIds: string[]) {
+  if (recipeIds.length === 0) return 0
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('recipe_ingredients')
+    .select('name, inventory_item_id, inventory_items(current_qty)')
+    .in('recipe_id', recipeIds)
+
+  const missing = new Set<string>()
+  for (const ing of data || []) {
+    const qty = (ing as any).inventory_items?.current_qty
+    if (!ing.inventory_item_id || qty === 0 || qty == null) missing.add(ing.name)
+  }
+  return missing.size
+}
+
+// v1 prep timeline: a single prep_lead_days number per recipe rather than a
+// full backwards-scheduling engine — surfaces as a reminder once today falls
+// inside that recipe's lead window ahead of its planned date.
+async function getPrepReminders(propertyId: string) {
+  const supabase = await createClient()
+  const today = new Date()
+  const todayStr = format(today, 'yyyy-MM-dd')
+  const horizon = format(new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
+
+  const { data } = await supabase
+    .from('meal_plan_entries')
+    .select('plan_date, recipes(name, prep_lead_days)')
+    .eq('property_id', propertyId)
+    .gte('plan_date', todayStr)
+    .lte('plan_date', horizon)
+
+  return (data || [])
+    .map((e: any) => {
+      const prepLeadDays = e.recipes?.prep_lead_days
+      if (!prepLeadDays) return null
+      const daysUntil = Math.round((new Date(e.plan_date + 'T00:00:00').getTime() - new Date(todayStr + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24))
+      if (daysUntil < 0 || daysUntil > prepLeadDays) return null
+      return { recipeName: e.recipes.name as string, planDate: e.plan_date as string, daysUntil }
+    })
+    .filter((r): r is { recipeName: string; planDate: string; daysUntil: number } => r !== null)
+    .sort((a, b) => a.daysUntil - b.daysUntil)
+}
+
+// Meat/dairy/parve indicators pair color with a distinct shape and a label
+// wherever they appear — colorblind-safe, not color-alone.
+const KASHRUT_INFO = {
+  Fleishig: { color: 'text-rust', bg: 'bg-rust', Icon: Square },
+  Milchig: { color: 'text-dairy', bg: 'bg-dairy', Icon: Triangle },
+  Parve: { color: 'text-sage', bg: 'bg-sage', Icon: Circle },
+} as const
+
+function getKashrut(name: string): keyof typeof KASHRUT_INFO {
+  const n = name?.toLowerCase() || ''
+  if (n.includes('cheese') || n.includes('milk') || n.includes('yogurt') || n.includes('butter')) return 'Milchig'
+  if (n.includes('chicken') || n.includes('beef') || n.includes('steak') || n.includes('meat') || n.includes('brisket')) return 'Fleishig'
+  return 'Parve'
+}
+
+async function getTehillim(hebrewDay: number | null) {
+  if (!hebrewDay) return null
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('tehillim_daily_cycle')
+    .select('perek_start, perek_end, note')
+    .eq('hebrew_day', hebrewDay)
+    .single()
+  return data
+}
+
+export default async function Dashboard({ params }: { params: Promise<{ id: string }> }) {
+  const { id: propertyId } = await params
+  const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders] = await Promise.all([
+    getData(propertyId),
+    getHebcal(),
+    getHebrewInfo(),
+    getPrepReminders(propertyId),
+  ])
+  const tehillim = await getTehillim(hebrewInfo.day)
+  const missingIngredientCount = await getMissingIngredientCount(
+    propertyId,
+    meals.map((m: any) => m.recipe_id).filter(Boolean)
+  )
+
+  const now = new Date()
+  const isShabbos = (isFriday(now) && hebcal.candleDate && now > new Date(new Date(hebcal.candleDate).getTime() - 3600000)) ||
+                    (isSaturday(now) && hebcal.havdalahDate && now < new Date(hebcal.havdalahDate))
+
+  const categories = ['Produce', 'Meat', 'Dairy', 'Pantry', 'Bakery', 'Frozen']
+  const shoppingByCat = categories.map(cat => ({
+    cat,
+    items: shopping.filter(s => s.category?.toLowerCase().includes(cat.toLowerCase()))
+  })).filter(g => g.items.length > 0)
+
+  // Dashboard preview only — dedupe by name and drop zero-stock rows (most
+  // inventory rows are still zero pending a physical count pass; showing
+  // them here would make an "at a glance" tile mostly noise) rather than
+  // reflecting every per-location row like the real Inventory page does.
+  const seenNames = new Set<string>()
+  const inventoryPreview = inventory
+    .filter((item: any) => item.current_qty > 0)
+    .filter((item: any) => {
+      if (seenNames.has(item.name)) return false
+      seenNames.add(item.name)
+      return true
+    })
+    .slice(0, 5)
+
+  return (
+    <div className={`min-h-screen p-6 font-sans transition-all ${isShabbos ? 'bg-amber-50' : 'bg-cream'}`}>
+      <div className={`max-w-7xl mx-auto rounded-[2rem] shadow-xl p-8 transition-all ${isShabbos ? 'bg-amber-50/80 backdrop-blur-sm' : 'bg-white'}`}>
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-4xl font-serif text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>Sorted & Stocked</h1>
+          <div className="text-xs uppercase tracking-[0.2em] text-charcoal/50">Kosher Household Management</div>
+        </div>
+
+        {/* Hebrew Bar - LIVE */}
+        <div className={`rounded-2xl p-4 text-center mb-8 border ${isShabbos ? 'bg-amber-100 border-amber-200' : 'bg-gold-light/25 border-gold-light/40'}`}>
+          <div className="inline-flex items-center gap-3">
+            <span className="bg-white px-4 py-1 rounded-full text-sm font-medium text-charcoal">
+              <span lang="he" dir="rtl">{hebrewInfo.hebrewText}</span> • {format(now, 'EEEE, MMMM d, yyyy')}
+            </span>
+            {hebcal.parsha && <span className="text-sm text-charcoal/60">Parashat {hebcal.parsha}</span>}
+          </div>
+          <div className="text-sm mt-2 flex items-center justify-center gap-2 text-charcoal/70">
+            <span aria-hidden="true">🕯️</span> Candle Lighting {hebcal.candleTime} • Lakewood, NJ
+            {isShabbos && <span className="ml-2 px-2 py-0.5 bg-amber-200 rounded-full text-xs">Shabbos Mode Active</span>}
+          </div>
+          {tehillim && (
+            <div className="text-sm mt-2 inline-flex items-center gap-2 bg-white px-3 py-1 rounded-full text-charcoal">
+              <span aria-hidden="true">📖</span> Tehillim: Perek {tehillim.perek_start}
+              {tehillim.perek_end !== tehillim.perek_start ? `–${tehillim.perek_end}` : ''}
+              {tehillim.note && <span className="text-charcoal/50">({tehillim.note})</span>}
+            </div>
+          )}
+        </div>
+
+        {/* Quick Actions — Plan Meal is the single primary (filled) action;
+            planning drives the rest of the workflow, per IA review. Recipe
+            creation and meal planning both happen inline on their list pages
+            (no dedicated "/new" route exists for either), Scan reuses the
+            exact same route as the header/icon nav's Scan link. */}
+        <div className="flex flex-wrap gap-3 mb-8">
+          <Link
+            href={`/properties/${propertyId}/meal-plan`}
+            className="inline-flex items-center gap-2 rounded-full bg-gold-dark text-white px-5 py-2.5 text-sm font-medium hover:opacity-90 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal"
+          >
+            <Calendar size={16} aria-hidden="true" /> Plan Meal
+          </Link>
+          <Link
+            href={`/properties/${propertyId}/scan`}
+            className="inline-flex items-center gap-2 rounded-full bg-white border border-gold-light/60 text-charcoal px-4 py-2.5 text-sm font-medium hover:bg-gold-light/10 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal"
+            aria-label="Scan an item"
+          >
+            <Scan size={16} className="text-gold-dark" aria-hidden="true" /> Scan Item
+          </Link>
+          <Link
+            href={`/properties/${propertyId}/recipes`}
+            className="inline-flex items-center gap-2 rounded-full bg-white border border-gold-light/60 text-charcoal px-4 py-2.5 text-sm font-medium hover:bg-gold-light/10 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal"
+          >
+            <Plus size={16} className="text-gold-dark" aria-hidden="true" /> Add Recipe
+          </Link>
+          <Link
+            href={`/properties/${propertyId}/shopping-list`}
+            className="inline-flex items-center gap-2 rounded-full bg-white border border-gold-light/60 text-charcoal px-4 py-2.5 text-sm font-medium hover:bg-gold-light/10 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal"
+          >
+            <ShoppingCart size={16} className="text-gold-dark" aria-hidden="true" /> Shopping List
+          </Link>
+        </div>
+
+        {prepReminders.length > 0 && (
+          <div className="rounded-2xl p-4 mb-8 bg-gold-light/15 border border-gold-light/40">
+            <h2 className="text-sm font-display text-charcoal mb-2 flex items-center gap-1.5">
+              <Clock size={16} strokeWidth={1.75} className="text-gold-dark" aria-hidden="true" /> Prep reminders
+            </h2>
+            <ul className="space-y-1.5">
+              {prepReminders.map((r, i) => (
+                <li key={i} className="text-sm text-charcoal/80">
+                  <span className="font-medium">{r.recipeName}</span> — start prep{' '}
+                  {r.daysUntil === 0 ? 'today' : `by ${format(parseISO(r.planDate), 'EEEE')}`}, needed for{' '}
+                  {format(parseISO(r.planDate), 'EEEE, MMM d')}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* LEFT */}
+          <div className="lg:col-span-2">
+            <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+              <h2 className="text-2xl font-serif flex items-center gap-2 text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>
+                <Calendar size={20} strokeWidth={1.5} className="text-gold-dark" aria-hidden="true" /> This Week's Meals
+              </h2>
+              <Link href={`/properties/${propertyId}/meal-plan`} className="text-sm text-gold-dark hover:text-charcoal underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal">
+                View full meal plan →
+              </Link>
+            </div>
+            {/* Actionable stat, replacing the old raw "meals planned" count —
+                ties the number to something fixable (missing ingredients)
+                rather than just reporting volume. */}
+            <p className="text-charcoal/60 mb-4">
+              <span className="font-medium text-charcoal">{meals.length}</span> meal{meals.length === 1 ? '' : 's'} planned this week
+              {missingIngredientCount > 0 && (
+                <>
+                  {' '}·{' '}
+                  <Link href={`/properties/${propertyId}/shopping-list`} className="text-rust font-medium hover:underline">
+                    {missingIngredientCount} ingredient{missingIngredientCount === 1 ? '' : 's'} missing
+                  </Link>
+                </>
+              )}
+            </p>
+
+            {/* Legend — color paired with a distinct shape + label, not
+                color alone, so it holds up for colorblind users. */}
+            <div className="flex gap-2 mb-4 flex-wrap" role="list" aria-label="Kashrut color legend">
+              {(Object.entries(KASHRUT_INFO) as [keyof typeof KASHRUT_INFO, typeof KASHRUT_INFO[keyof typeof KASHRUT_INFO]][]).map(([k, info]) => (
+                <div key={k} role="listitem" className="flex items-center gap-1.5 px-3 py-1.5 border border-gold-light/40 rounded-full text-xs bg-white text-charcoal">
+                  <info.Icon className={`w-3 h-3 ${info.color}`} fill="currentColor" aria-hidden="true" />
+                  {k}
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2.5">
+              {meals.slice(0, 7).map((meal: any, i) => {
+                const k = getKashrut(meal.recipes?.name)
+                const info = KASHRUT_INFO[k]
+                return (
+                  <div key={i} className="flex items-center justify-between p-4 bg-white border border-gold-light/40 rounded-xl hover:bg-gold-light/10 transition">
+                    <div className="flex items-center gap-3">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs text-white rounded-md font-medium ${info.bg}`}>
+                        <info.Icon className="w-3 h-3" fill="currentColor" aria-hidden="true" />
+                        {k}
+                      </span>
+                      <div>
+                        <div className="font-medium text-charcoal">{format(parseISO(meal.plan_date), 'EEE • MMM d')} • {meal.recipes?.name || 'Meal'}</div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+              {meals.length === 0 && (
+                <p className="text-sm text-charcoal/40 italic py-4">Nothing planned yet this week.</p>
+              )}
+            </div>
+          </div>
+
+          {/* RIGHT */}
+          <div>
+            <h2 className="text-2xl font-serif mb-1 flex items-center gap-2 text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>
+              <ShoppingBag size={20} strokeWidth={1.5} className="text-gold-dark" aria-hidden="true" /> Shopping List
+            </h2>
+            <p className="text-sm text-charcoal/50 mb-4">{shopping.length} items</p>
+
+            <div className="space-y-4">
+              {shoppingByCat.map(group => (
+                <div key={group.cat}>
+                  <div className="flex items-center gap-2 font-medium mb-2 text-charcoal/80">
+                    <span className={`w-3 h-3 rounded-full ${group.cat === 'Meat' ? 'bg-rust' : group.cat === 'Dairy' ? 'bg-dairy' : 'bg-sage'}`}></span>
+                    {group.cat}
+                  </div>
+                  <div className="space-y-2 ml-5">
+                    {group.items.map((item: any, i) => (
+                      <div key={i} className="flex items-center gap-2.5 text-sm p-2 bg-white border border-gold-light/30 rounded-lg hover:bg-gold-light/10 transition">
+                        <input type="checkbox" className="rounded border-gold-light/60 text-gold-dark" aria-label={`Mark ${item.name} purchased`} />
+                        {item.inventory_items?.photo_url && <img src={item.inventory_items.photo_url} alt="" className="w-8 h-8 object-cover rounded" />}
+                        <div className="flex-1">
+                          <div className="font-medium text-charcoal">{item.name}</div>
+                          <div className="text-xs text-charcoal/50">{item.qty_needed}</div>
+                        </div>
+                        {item.inventory_items?.reorder_link && (
+                          <a href={item.inventory_items.reorder_link} target="_blank" rel="noopener noreferrer" className="text-gold-dark hover:text-charcoal text-xs font-medium px-2 py-1 bg-gold-light/20 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal">
+                            Order ↗
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {shopping.length === 0 && (
+                <div className="text-center py-6 border border-dashed border-gold-light/50 rounded-xl">
+                  <p className="text-sm text-charcoal/50 mb-3">No items yet — generate from this week's meals.</p>
+                  <Link
+                    href={`/properties/${propertyId}/shopping-list`}
+                    className="inline-block bg-gold-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition"
+                  >
+                    Go to Shopping List
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            <h3 className="text-xl font-serif mt-8 mb-3 flex items-center gap-2 text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>
+              <Package size={20} strokeWidth={1.5} className="text-gold-dark" aria-hidden="true" /> Inventory Items
+            </h3>
+            <div className="space-y-2">
+              {inventoryPreview.map((item: any, i) => {
+                const stockPct = item.current_qty > 0 ? Math.min(100, (item.current_qty / (item.min_qty + 2)) * 100) : 0
+                const isLow = item.current_qty < item.min_qty
+                return (
+                  <div key={i} className={`p-3 rounded-lg border ${isLow ? 'bg-rust/10 border-rust/30' : 'bg-white border-gold-light/30'}`}>
+                    <div className="flex items-start gap-3">
+                      {item.photo_url && <img src={item.photo_url} alt="" className="w-10 h-10 object-cover rounded" />}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-charcoal truncate">{item.name}</div>
+                        <div className="text-xs text-charcoal/50">{item.category}</div>
+                        <div className="w-full bg-gold-light/30 h-1 rounded-full mt-1.5 overflow-hidden">
+                          <div className={`${isLow ? 'bg-rust' : 'bg-sage'} h-1 transition-all`} style={{ width: `${stockPct}%` }}></div>
+                        </div>
+                        <div className="text-xs text-charcoal/60 mt-1">Qty: {item.current_qty} {isLow && <span className="text-rust font-medium">LOW</span>}</div>
+                      </div>
+                      {item.reorder_link && (
+                        <a href={item.reorder_link} target="_blank" rel="noopener noreferrer" className="text-gold-dark hover:text-charcoal text-xs font-medium px-2 py-1 bg-gold-light/20 rounded whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal">
+                          Order ↗
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+              {inventoryPreview.length === 0 && (
+                <p className="text-sm text-charcoal/50 text-center py-4">No items yet</p>
+              )}
+            </div>
+
+            <Link
+              href={`/properties/${propertyId}/inventory`}
+              className="block w-full mt-4 text-center bg-white border border-gold-light/60 text-charcoal py-3 rounded-xl font-medium hover:bg-gold-light/10 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal"
+            >
+              + Add Item
+            </Link>
+          </div>
+        </div>
+
+        {/* Mobile bottom nav only shows Home/Recipes/Scan/Shopping/Inventory
+            — Tools/Labels/Staff/Handover are reachable from here instead of
+            being crammed into the bottom bar. Desktop already has these in
+            the nav's "More" dropdown, so this block is mobile-only. */}
+        <div className="md:hidden mt-6 pt-4 border-t border-gold-light/30 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+          <Link href={`/properties/${propertyId}/tools`} className="text-charcoal/60 hover:text-charcoal underline underline-offset-2">
+            Tools
+          </Link>
+          <Link href={`/properties/${propertyId}/print-labels`} className="text-charcoal/60 hover:text-charcoal underline underline-offset-2">
+            Labels
+          </Link>
+          <Link href={`/properties/${propertyId}/staff`} className="text-charcoal/60 hover:text-charcoal underline underline-offset-2">
+            Staff
+          </Link>
+          <Link href={`/properties/${propertyId}/shift-handover`} className="text-charcoal/60 hover:text-charcoal underline underline-offset-2">
+            Handover
+          </Link>
+        </div>
+
+        {isShabbos && (
+          <div className="fixed bottom-4 right-4 bg-amber-900 text-amber-50 px-4 py-2 rounded-full text-sm shadow-lg">
+            Shabbos Mode • Editing disabled
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

@@ -2,6 +2,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { compressImageToDataUrl } from '@/lib/compress-image';
 import { useToast } from '@/components/Toast';
 
 type PhotoToolClientProps = {
@@ -13,17 +14,12 @@ type PhotoToolClientProps = {
   textPlaceholder: string;
 };
 
-function fileToBase64(file: File): Promise<{ data: string; mediaType: string }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      const [, base64] = result.split(',');
-      resolve({ data: base64, mediaType: file.type });
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+// Downscaling here also shrinks the payload sent to the vision API — a raw
+// 12MP phone photo adds real latency and cost for no analysis benefit.
+async function fileToBase64(file: File): Promise<{ data: string; mediaType: string }> {
+  const dataUrl = await compressImageToDataUrl(file, { maxDimension: 1200 });
+  const [, base64] = dataUrl.split(',');
+  return { data: base64, mediaType: 'image/jpeg' };
 }
 
 export default function PhotoToolClient({
@@ -92,8 +88,8 @@ export default function PhotoToolClient({
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-aubergine mb-1">{title}</h1>
-      <p className="text-sm text-ink/50 mb-4">{description}</p>
+      <h1 className="text-2xl font-display text-charcoal mb-1">{title}</h1>
+      <p className="text-sm text-charcoal/50 mb-4">{description}</p>
 
       {!hasInput && (
         <>
@@ -102,8 +98,8 @@ export default function PhotoToolClient({
               onClick={() => setMode('photo')}
               className={
                 mode === 'photo'
-                  ? 'flex-1 py-2 rounded-full bg-aubergine text-cream text-sm'
-                  : 'flex-1 py-2 rounded-full border border-aubergine/30 text-aubergine text-sm'
+                  ? 'flex-1 py-2 rounded-full bg-charcoal text-cream text-sm'
+                  : 'flex-1 py-2 rounded-full border border-charcoal/30 text-charcoal text-sm'
               }
             >
               📷 Photo
@@ -112,8 +108,8 @@ export default function PhotoToolClient({
               onClick={() => setMode('text')}
               className={
                 mode === 'text'
-                  ? 'flex-1 py-2 rounded-full bg-aubergine text-cream text-sm'
-                  : 'flex-1 py-2 rounded-full border border-aubergine/30 text-aubergine text-sm'
+                  ? 'flex-1 py-2 rounded-full bg-charcoal text-cream text-sm'
+                  : 'flex-1 py-2 rounded-full border border-charcoal/30 text-charcoal text-sm'
               }
             >
               ⌨️ Type it in
@@ -131,7 +127,7 @@ export default function PhotoToolClient({
                 className="hidden"
               />
               <span className="text-4xl block mb-2">📷</span>
-              <span className="text-sm text-aubergine font-medium">{actionLabel}</span>
+              <span className="text-sm text-charcoal font-medium">{actionLabel}</span>
             </label>
           ) : (
             <div>
@@ -145,7 +141,7 @@ export default function PhotoToolClient({
               <button
                 onClick={handleTextSubmit}
                 disabled={!textInput.trim()}
-                className="w-full mt-3 py-2.5 rounded-full bg-aubergine text-cream font-medium disabled:opacity-40"
+                className="w-full mt-3 py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
               >
                 Analyze
               </button>
@@ -161,7 +157,7 @@ export default function PhotoToolClient({
 
       {loading && (
         <div className="text-center py-8">
-          <p className="text-sm text-aubergine/60 animate-pulse font-display italic">Analyzing…</p>
+          <p className="text-sm text-charcoal/60 animate-pulse font-display italic">Analyzing…</p>
         </div>
       )}
 
@@ -170,7 +166,7 @@ export default function PhotoToolClient({
       )}
 
       {result && (
-        <div className="bg-white rounded-2xl shadow-sm shadow-aubergine/5 p-5 whitespace-pre-wrap text-sm leading-relaxed text-ink">
+        <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-5 whitespace-pre-wrap text-sm leading-relaxed text-charcoal">
           {result}
         </div>
       )}
@@ -178,7 +174,7 @@ export default function PhotoToolClient({
       {(preview || result) && !loading && (
         <button
           onClick={reset}
-          className="w-full mt-4 py-2.5 rounded-full border border-aubergine/30 text-aubergine text-sm font-medium"
+          className="w-full mt-4 py-2.5 rounded-full border border-charcoal/30 text-charcoal text-sm font-medium"
         >
           Try another
         </button>

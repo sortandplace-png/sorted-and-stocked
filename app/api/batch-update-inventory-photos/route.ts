@@ -7,7 +7,7 @@ export const maxDuration = 300;
 
 export async function POST(request: Request) {
   try {
-    const { propertyId, limit = 5, dryRun = false } = await request.json();
+    const { propertyId, limit = 5, dryRun = false, excludeInstacart = false } = await request.json();
 
     if (!propertyId) {
       return Response.json({ error: 'propertyId required' }, { status: 400 });
@@ -18,13 +18,29 @@ export async function POST(request: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    const { data: items, error: fetchError } = await supabase
-      .from('inventory_items')
-      .select('id, name, reorder_link')
-      .eq('property_id', propertyId)
-      .is('photo_url', null)
-      .not('reorder_link', 'is', null)
-      .limit(limit);
+    // Instacart links only ever resolve through a retailer search-page
+    // fallback, which has a near-0% hit rate (search pages are often
+    // JS-rendered SPAs with no static og:image) — skip them when the caller
+    // wants to spend time only on the direct-manufacturer-site path. Written
+    // as a ternary rather than reassigning a `let` query builder — the
+    // latter makes the Supabase filter-builder generic recurse until
+    // TypeScript gives up (TS2589).
+    const { data: items, error: fetchError } = await (excludeInstacart
+      ? supabase
+          .from('inventory_items')
+          .select('id, name, reorder_link')
+          .eq('property_id', propertyId)
+          .is('photo_url', null)
+          .not('reorder_link', 'is', null)
+          .not('reorder_link', 'ilike', '%instacart%')
+          .limit(limit)
+      : supabase
+          .from('inventory_items')
+          .select('id, name, reorder_link')
+          .eq('property_id', propertyId)
+          .is('photo_url', null)
+          .not('reorder_link', 'is', null)
+          .limit(limit));
 
     if (fetchError) {
       return Response.json({ error: fetchError.message }, { status: 500 });

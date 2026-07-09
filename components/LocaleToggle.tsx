@@ -20,7 +20,7 @@ export default function LocaleToggle() {
         onClick={() => setLocale('en')}
         aria-pressed={locale === 'en'}
         className={`rounded-full px-2.5 py-1 transition-colors ${
-          locale === 'en' ? 'bg-gold text-white' : 'text-ink/60'
+          locale === 'en' ? 'bg-gold-dark text-white' : 'text-charcoal/60'
         }`}
       >
         EN
@@ -29,7 +29,7 @@ export default function LocaleToggle() {
         onClick={() => setLocale('es')}
         aria-pressed={locale === 'es'}
         className={`rounded-full px-2.5 py-1 transition-colors ${
-          locale === 'es' ? 'bg-gold text-white' : 'text-ink/60'
+          locale === 'es' ? 'bg-gold-dark text-white' : 'text-charcoal/60'
         }`}
       >
         ES

@@ -113,7 +113,7 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-ink/50">Loading staples...</div>
+        <div className="text-sm text-charcoal/50">Loading staples...</div>
       </div>
     );
   }
@@ -123,7 +123,7 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
       {/* Search & Filter Bar */}
       <div className="space-y-3">
         <div className="relative">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-ink/40" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-charcoal/40" />
           <input
             type="text"
             placeholder="Search staples..."
@@ -140,8 +140,8 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
               onClick={() => handleSort(option)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 sortBy === option
-                  ? 'bg-aubergine text-cream'
-                  : 'bg-gold-light/20 text-aubergine hover:bg-gold-light/30'
+                  ? 'bg-charcoal text-cream'
+                  : 'bg-gold-light/20 text-charcoal hover:bg-gold-light/30'
               }`}
             >
               {option === 'category' && 'By Category'}
@@ -155,7 +155,7 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
       {/* Staples Grid */}
       {filteredStaples.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-sm text-ink/40">No staples found</p>
+          <p className="text-sm text-charcoal/40">No staples found</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -166,9 +166,9 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
             >
               {/* Item Info */}
               <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-sm text-ink truncate">{staple.staple_name}</h4>
-                <div className="flex items-center gap-2 mt-1 text-xs text-ink/60">
-                  <span className="bg-gold-light/20 px-2 py-0.5 rounded-full text-aubergine font-medium">
+                <h4 className="font-medium text-sm text-charcoal truncate">{staple.staple_name}</h4>
+                <div className="flex items-center gap-2 mt-1 text-xs text-charcoal/60">
+                  <span className="bg-gold-light/20 px-2 py-0.5 rounded-full text-charcoal font-medium">
                     {staple.staple_category}
                   </span>
                   <span>{staple.default_unit}</span>
@@ -193,7 +193,7 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
                       : `${staple.current_qty} in stock`}
                 </div>
                 {staple.is_low && (
-                  <span className="text-[11px] text-ink/40">
+                  <span className="text-[11px] text-charcoal/40">
                     Min: {staple.min_qty}
                   </span>
                 )}
@@ -207,14 +207,14 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
                   staple.already_on_list
                     ? 'bg-emerald-100 text-emerald-700 cursor-default'
                     : addingIds.has(staple.staple_id)
-                      ? 'bg-gold-light/40 text-aubergine'
-                      : 'bg-gold-light/60 text-aubergine hover:bg-gold-light/80'
+                      ? 'bg-gold-light/40 text-charcoal'
+                      : 'bg-gold-light/60 text-charcoal hover:bg-gold-light/80'
                 }`}
               >
                 {staple.already_on_list ? (
                   <Check className="h-4 w-4" />
                 ) : addingIds.has(staple.staple_id) ? (
-                  <div className="animate-spin h-4 w-4 border-2 border-aubergine border-t-transparent rounded-full" />
+                  <div className="animate-spin h-4 w-4 border-2 border-charcoal border-t-transparent rounded-full" />
                 ) : (
                   <Plus className="h-4 w-4" />
                 )}
@@ -224,7 +224,7 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
         </div>
       )}
 
-      <div className="text-xs text-ink/40 pt-2 border-t border-gold-light/20">
+      <div className="text-xs text-charcoal/40 pt-2 border-t border-gold-light/20">
         {filteredStaples.length} staples available
       </div>
     </div>

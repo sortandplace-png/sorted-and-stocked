@@ -9,10 +9,19 @@ import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import { usePullToRefresh } from '@/lib/use-pull-to-refresh';
 import { categoryIcon } from '@/lib/icon-maps';
+import { getItemIcon } from '@/lib/item-icons';
+import { flattenLocationTree, locationPath, rootGroupName } from '@/lib/location-tree';
+import { getLocationIcon } from '@/lib/location-icons';
+import RestockPhotoPrompt from '@/components/RestockPhotoPrompt';
+import LocationPhotoUpload from '@/components/LocationPhotoUpload';
+import DuplicateItemWarning from '@/components/DuplicateItemWarning';
+import { Camera } from 'lucide-react';
 
 type StorageLocation = {
   id: string;
   name: string;
+  parent_location_id: string | null;
+  photo_url: string | null;
 };
 
 type InventoryItem = {
@@ -89,10 +98,12 @@ export default function InventoryClient({
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [locations, setLocations] = useState<StorageLocation[]>([]);
   const [categorySuggestions, setCategorySuggestions] = useState<string[]>([]);
+  const [categoryIconNames, setCategoryIconNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<ItemFormState | null>(null); // null = form closed
   const [saving, setSaving] = useState(false);
+  const [photoPromptItem, setPhotoPromptItem] = useState<{ id: string; name: string } | null>(null);
   // Arrived here via a location QR scan — start filtered to that area, but
   // let the user clear it to see everything.
   const [locationFilter, setLocationFilter] = useState<string | null>(initialLocationFilter);
@@ -101,6 +112,10 @@ export default function InventoryClient({
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [showNewRoom, setShowNewRoom] = useState(false);
+  const [photoUploadLocation, setPhotoUploadLocation] = useState<StorageLocation | null>(null);
+  const [duplicateMatches, setDuplicateMatches] = useState<
+    { id: string; name: string; location_name: string | null; similarity: number }[] | null
+  >(null);
   const [newRoomName, setNewRoomName] = useState('');
   const [savingRoom, setSavingRoom] = useState(false);
   // Tracks item IDs whose photo failed to actually load (dead link, 404,
@@ -129,11 +144,15 @@ export default function InventoryClient({
         .select('id, name, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, category')
         .eq('property_id', propertyId)
         .order('name'),
-      supabase.from('locations').select('id, name').eq('property_id', propertyId).order('name'),
-      // Fetch all available categories for autocomplete suggestions
+      supabase
+        .from('locations')
+        .select('id, name, parent_location_id, photo_url')
+        .eq('property_id', propertyId)
+        .order('name'),
+      // Fetch all available categories for autocomplete suggestions + icon fallback
       supabase
         .from('categories')
-        .select('name')
+        .select('name, icon_name')
         .order('name'),
       user
         ? supabase
@@ -148,6 +167,9 @@ export default function InventoryClient({
     setItems(itemsRes.data ?? []);
     setLocations(locationsRes.data ?? []);
     setCategorySuggestions([...new Set((categoriesRes.data ?? []).map((c) => c.name))]);
+    setCategoryIconNames(
+      Object.fromEntries((categoriesRes.data ?? []).map((c) => [c.name, c.icon_name]).filter(([, icon]) => icon))
+    );
     setFavoriteIds(new Set((favoritesRes.data ?? []).map((f) => f.inventory_item_id)));
     setLoading(false);
   }, [propertyId, supabase]);
@@ -256,6 +278,71 @@ export default function InventoryClient({
 
   async function saveForm() {
     if (!form || !form.name.trim()) return;
+
+    // Duplicate check only applies to genuinely new items — editing an
+    // existing row can't create a duplicate of itself.
+    if (!form.id) {
+      const { data: matches } = await supabase.rpc('find_similar_inventory_items', {
+        p_property_id: propertyId,
+        p_name: form.name.trim(),
+      });
+      if (matches && matches.length > 0) {
+        setDuplicateMatches(matches);
+        return;
+      }
+    }
+
+    await performSave();
+  }
+
+  async function logDuplicateDecision(
+    action: 'added_anyway' | 'updated_existing' | 'dismissed',
+    match?: { id: string; name: string; similarity: number }
+  ) {
+    if (!form) return;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const top = match ?? duplicateMatches?.[0];
+    await supabase.from('duplicate_warning_log').insert({
+      property_id: propertyId,
+      entered_name: form.name.trim(),
+      matched_item_id: top?.id ?? null,
+      matched_name: top?.name ?? null,
+      similarity_score: top?.similarity ?? null,
+      action,
+      created_by: user?.id ?? null,
+    });
+  }
+
+  async function handleAddAnyway() {
+    await logDuplicateDecision('added_anyway');
+    setDuplicateMatches(null);
+    await performSave();
+  }
+
+  async function handleUpdateExisting(matchId: string) {
+    const match = duplicateMatches?.find((m) => m.id === matchId);
+    await logDuplicateDecision('updated_existing', match);
+    setDuplicateMatches(null);
+
+    const { data: existing } = await supabase
+      .from('inventory_items')
+      .select(
+        'id, name, category, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url'
+      )
+      .eq('id', matchId)
+      .single();
+    if (existing) openEditForm(existing);
+  }
+
+  function handleDismissDuplicateWarning() {
+    logDuplicateDecision('dismissed');
+    setDuplicateMatches(null);
+  }
+
+  async function performSave() {
+    if (!form || !form.name.trim()) return;
     setSaving(true);
     setError(null);
 
@@ -300,6 +387,24 @@ export default function InventoryClient({
       showToast(result.queued ? 'Added — will sync when back online.' : 'Item added.', {
         variant: 'success',
       });
+
+      // resilientInsert intentionally doesn't return the inserted row (it
+      // has to behave the same whether the write went through or got
+      // queued offline), so the real id has to be re-fetched here — only
+      // when we know the write actually went through live.
+      if (!result.queued && !payload.photo_url) {
+        const { data: inserted } = await supabase
+          .from('inventory_items')
+          .select('id')
+          .eq('property_id', propertyId)
+          .eq('name', payload.name)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (inserted) {
+          setPhotoPromptItem({ id: inserted.id, name: payload.name });
+        }
+      }
     }
 
     setForm(null);
@@ -364,29 +469,44 @@ export default function InventoryClient({
     lowCount: locationItems.filter((i) => i.current_qty < i.min_qty).length,
   }));
 
+  // Group room cards under their real top-level room (Basement / Main Floor
+  // / Upstairs) now that locations have a real hierarchy, instead of one
+  // flat grid — "Unassigned" (items with no location at all) goes last.
+  const roomsByGroup = new Map<string, typeof roomSummaries>();
+  for (const summary of roomSummaries) {
+    const loc = locations.find((l) => l.name === summary.location);
+    const group = loc ? rootGroupName(locations, loc.id) : 'Unassigned';
+    (roomsByGroup.get(group) ?? roomsByGroup.set(group, []).get(group)!).push(summary);
+  }
+  const roomGroupEntries = [...roomsByGroup.entries()].sort(([a], [b]) => {
+    if (a === 'Unassigned') return 1;
+    if (b === 'Unassigned') return -1;
+    return a.localeCompare(b);
+  });
+
   return (
     <div className="max-w-md lg:max-w-6xl mx-auto p-4">
       {(pullDistance > 0 || refreshing) && (
         <div
-          className="flex justify-center text-xs text-ink/40 overflow-hidden transition-all"
+          className="flex justify-center text-xs text-charcoal/40 overflow-hidden transition-all"
           style={{ height: refreshing ? 32 : pullDistance }}
         >
           {refreshing ? 'Refreshing…' : pullDistance > 50 ? 'Release to refresh' : 'Pull to refresh'}
         </div>
       )}
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-display text-aubergine">Inventory</h1>
+        <h1 className="text-2xl font-display text-charcoal">Inventory</h1>
         <div className="flex gap-2">
           <a
             href={`/properties/${propertyId}/scan`}
-            className="w-10 h-10 flex items-center justify-center rounded-full border border-aubergine/30 text-aubergine text-lg"
+            className="w-10 h-10 flex items-center justify-center rounded-full border border-charcoal/30 text-charcoal text-lg"
             aria-label="Scan a label"
           >
             📷
           </a>
           <button
             onClick={openNewItemForm}
-            className="text-sm font-medium bg-aubergine text-cream px-4 py-2 rounded-full"
+            className="text-sm font-medium bg-charcoal text-cream px-4 py-2 rounded-full"
           >
             + Add item
           </button>
@@ -398,42 +518,74 @@ export default function InventoryClient({
       )}
 
       {!locationFilter ? (
-        // ---- Room grid: pick a room to see what's inside ----
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        // ---- Room grid: pick a room to see what's inside, grouped by real top-level room ----
+        <div className="space-y-5">
           {favoriteIds.size > 0 && (
-            <button
-              onClick={() => setLocationFilter(FAVORITES)}
-              className="text-left bg-gold-light/25 rounded-2xl shadow-sm shadow-aubergine/5 p-4 hover:bg-gold-light/40 transition-colors"
-            >
-              <p className="font-display text-lg text-aubergine truncate">⭐ Favorites</p>
-              <p className="text-xs text-ink/50 mt-1">
-                {favoriteIds.size} item{favoriteIds.size === 1 ? '' : 's'}
-              </p>
-            </button>
-          )}
-          {roomSummaries.map(({ location, count, lowCount }) => {
-            const loc = locations.find((l) => l.name === location);
-            return (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               <button
-                key={location}
-                onClick={() => setLocationFilter(loc ? loc.id : UNASSIGNED)}
-                className="text-left bg-white rounded-2xl shadow-sm shadow-aubergine/5 p-4 hover:bg-gold-light/15 transition-colors"
+                onClick={() => setLocationFilter(FAVORITES)}
+                className="text-left bg-gold-light/25 rounded-2xl shadow-sm shadow-charcoal/5 p-4 hover:bg-gold-light/40 transition-colors"
               >
-                <p className="font-display text-lg text-aubergine truncate">{location}</p>
-                <p className="text-xs text-ink/50 mt-1">
-                  {count} item{count === 1 ? '' : 's'}
+                <p className="font-display text-lg text-charcoal truncate">⭐ Favorites</p>
+                <p className="text-xs text-charcoal/50 mt-1">
+                  {favoriteIds.size} item{favoriteIds.size === 1 ? '' : 's'}
                 </p>
-                {lowCount > 0 && (
-                  <span className="inline-block mt-2 text-xs font-medium text-rust bg-rust/10 px-2 py-0.5 rounded-full">
-                    {lowCount} low
-                  </span>
-                )}
               </button>
-            );
-          })}
+            </div>
+          )}
+          {roomGroupEntries.map(([groupName, summaries]) => (
+            <div key={groupName}>
+              {roomGroupEntries.length > 1 && (
+                <h2 className="text-xs font-medium uppercase tracking-wider text-gold-dark mb-2">{groupName}</h2>
+              )}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {summaries.map(({ location, count, lowCount }) => {
+                  const loc = locations.find((l) => l.name === location);
+                  const Icon = getLocationIcon(location);
+                  return (
+                    <button
+                      key={location}
+                      onClick={() => setLocationFilter(loc ? loc.id : UNASSIGNED)}
+                      className="relative text-left bg-white rounded-2xl shadow-sm shadow-charcoal/5 overflow-hidden hover:bg-gold-light/15 transition-colors"
+                    >
+                      {loc?.photo_url && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={loc.photo_url} alt="" className="w-full h-20 object-cover" />
+                      )}
+                      <div className="p-4">
+                        <Icon className="w-5 h-5 text-gold-dark mb-1.5" strokeWidth={1.75} />
+                        <p className="font-display text-lg text-charcoal truncate">{location}</p>
+                        <p className="text-xs text-charcoal/50 mt-1">
+                          {count} item{count === 1 ? '' : 's'}
+                        </p>
+                        {lowCount > 0 && (
+                          <span className="inline-block mt-2 text-xs font-medium text-rust bg-rust/10 px-2 py-0.5 rounded-full">
+                            {lowCount} low
+                          </span>
+                        )}
+                      </div>
+                      {loc && canManage(role) && (
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPhotoUploadLocation(loc);
+                          }}
+                          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-charcoal/60 hover:text-charcoal"
+                          role="button"
+                          aria-label={`Add photo of ${location}`}
+                        >
+                          <Camera className="w-3.5 h-3.5" strokeWidth={1.75} />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
           <button
             onClick={() => setShowNewRoom(true)}
-            className="text-left border-2 border-dashed border-gold-light rounded-2xl p-4 text-aubergine/60 hover:bg-gold-light/10 transition-colors"
+            className="text-left border-2 border-dashed border-gold-light rounded-2xl p-4 text-charcoal/60 hover:bg-gold-light/10 transition-colors w-full md:w-auto"
           >
             <p className="font-display text-lg">+ Add room</p>
           </button>
@@ -443,12 +595,12 @@ export default function InventoryClient({
         <>
           <button
             onClick={() => setLocationFilter(null)}
-            className="flex items-center gap-1 text-sm text-aubergine mb-3 font-medium"
+            className="flex items-center gap-1 text-sm text-charcoal mb-3 font-medium"
           >
             ← Rooms
           </button>
-          <h2 className="font-display text-lg text-aubergine mb-2">
-            {locationFilter === FAVORITES ? '⭐ Favorites' : locationName(locationFilter)}
+          <h2 className="font-display text-lg text-charcoal mb-2">
+            {locationFilter === FAVORITES ? '⭐ Favorites' : locationPath(locations, locationFilter)}
           </h2>
           <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
             {visibleItems.map((item) => {
@@ -459,7 +611,7 @@ export default function InventoryClient({
               return (
                 <div
                   key={item.id}
-                  className="flex items-center gap-3 bg-white rounded-2xl shadow-sm shadow-aubergine/5 px-4 py-3.5 cursor-pointer hover:shadow-md hover:shadow-aubergine/10 transition-shadow"
+                  className="flex items-center gap-3 bg-white rounded-2xl shadow-sm shadow-charcoal/5 px-4 py-3.5 cursor-pointer hover:shadow-md hover:shadow-charcoal/10 transition-shadow"
                   onClick={() => openEditForm(item)}
                 >
                   {hasThumb ? (
@@ -473,13 +625,16 @@ export default function InventoryClient({
                       }
                     />
                   ) : (
-                    <div className="w-14 h-14 rounded-xl bg-gold-light/20 shrink-0 flex items-center justify-center text-2xl">
-                      {categoryIcon(item.category)}
+                    <div className="w-14 h-14 rounded-xl bg-gold-light/20 shrink-0 flex items-center justify-center">
+                      {(() => {
+                        const Icon = getItemIcon(item.name, item.category, categoryIconNames[item.category ?? '']);
+                        return <Icon className="w-6 h-6 text-gold-dark" strokeWidth={1.75} />;
+                      })()}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-ink truncate">{item.name}</p>
-                    <p className="text-xs text-ink/50 truncate mt-0.5">
+                    <p className="font-medium text-charcoal truncate">{item.name}</p>
+                    <p className="text-xs text-charcoal/50 truncate mt-0.5">
                       {[item.category ? `${categoryIcon(item.category)} ${item.category}` : null, item.supplier]
                         .filter(Boolean)
                         .join(' · ')}
@@ -490,7 +645,7 @@ export default function InventoryClient({
                           {item.current_qty} / {item.min_qty} {item.unit} — low
                         </span>
                       ) : (
-                        <span className="text-xs text-ink/40">
+                        <span className="text-xs text-charcoal/40">
                           {item.current_qty} / {item.min_qty} {item.unit}
                         </span>
                       )}
@@ -523,7 +678,7 @@ export default function InventoryClient({
       )}
 
       {visibleItems.length === 0 && (
-        <p className="text-sm text-ink/40 text-center mt-8">
+        <p className="text-sm text-charcoal/40 text-center mt-8">
           {locationFilter === FAVORITES
             ? 'No favorites yet — tap the star on any item.'
             : locationFilter
@@ -547,13 +702,47 @@ export default function InventoryClient({
         />
       )}
 
+      {photoPromptItem && (
+        <RestockPhotoPrompt
+          itemId={photoPromptItem.id}
+          itemName={photoPromptItem.name}
+          propertyId={propertyId}
+          onDone={() => setPhotoPromptItem(null)}
+        />
+      )}
+
+      {duplicateMatches && form && (
+        <DuplicateItemWarning
+          enteredName={form.name.trim()}
+          matches={duplicateMatches}
+          onAddAnyway={handleAddAnyway}
+          onUpdateExisting={handleUpdateExisting}
+          onDismiss={handleDismissDuplicateWarning}
+        />
+      )}
+
+      {photoUploadLocation && (
+        <LocationPhotoUpload
+          locationId={photoUploadLocation.id}
+          locationName={photoUploadLocation.name}
+          onDone={(photoUrl) => {
+            if (photoUrl) {
+              setLocations((prev) =>
+                prev.map((l) => (l.id === photoUploadLocation.id ? { ...l, photo_url: photoUrl } : l))
+              );
+            }
+            setPhotoUploadLocation(null);
+          }}
+        />
+      )}
+
       {showNewRoom && (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4" onClick={() => setShowNewRoom(false)}>
           <div
             className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="font-display text-xl text-aubergine mb-3">New room</h2>
+            <h2 className="font-display text-xl text-charcoal mb-3">New room</h2>
             <input
               value={newRoomName}
               onChange={(e) => setNewRoomName(e.target.value)}
@@ -565,14 +754,14 @@ export default function InventoryClient({
             <div className="flex gap-2">
               <button
                 onClick={() => setShowNewRoom(false)}
-                className="flex-1 py-2.5 rounded-full border border-aubergine/30 text-aubergine"
+                className="flex-1 py-2.5 rounded-full border border-charcoal/30 text-charcoal"
               >
                 Cancel
               </button>
               <button
                 onClick={saveNewRoom}
                 disabled={savingRoom || !newRoomName.trim()}
-                className="flex-1 py-2.5 rounded-full bg-aubergine text-cream disabled:opacity-40"
+                className="flex-1 py-2.5 rounded-full bg-charcoal text-cream disabled:opacity-40"
               >
                 {savingRoom ? 'Saving…' : 'Save'}
               </button>
@@ -624,13 +813,15 @@ function ItemFormSheet({
   history: HistoryEntry[];
   historyLoading: boolean;
 }) {
+  const restockInterval = restockIntervalDays(history);
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4" onClick={onCancel}>
       <div
         className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="font-display text-xl text-aubergine mb-3">{form.id ? 'Edit item' : 'New item'}</h2>
+        <h2 className="font-display text-xl text-charcoal mb-3">{form.id ? 'Edit item' : 'New item'}</h2>
 
         <div className="space-y-3">
           <input
@@ -658,8 +849,10 @@ function ItemFormSheet({
             onChange={(e) => onChange({ ...form, location_id: e.target.value })}
           >
             <option value="">Unassigned</option>
-            {locations.map((loc) => (
+            {flattenLocationTree(locations).map((loc) => (
               <option key={loc.id} value={loc.id}>
+                {'  '.repeat(loc.depth)}
+                {loc.depth > 0 ? '↳ ' : ''}
                 {loc.name}
               </option>
             ))}
@@ -720,14 +913,14 @@ function ItemFormSheet({
         <div className="flex gap-2 mt-4">
           <button
             onClick={onCancel}
-            className="flex-1 py-2.5 rounded-full border border-aubergine/30 text-aubergine"
+            className="flex-1 py-2.5 rounded-full border border-charcoal/30 text-charcoal"
           >
             Cancel
           </button>
           <button
             onClick={onSave}
             disabled={saving || !form.name.trim()}
-            className="flex-1 py-2.5 rounded-full bg-aubergine text-cream disabled:opacity-40"
+            className="flex-1 py-2.5 rounded-full bg-charcoal text-cream disabled:opacity-40"
           >
             {saving ? 'Saving…' : 'Save'}
           </button>
@@ -737,7 +930,7 @@ function ItemFormSheet({
             href={form.reorder_link}
             target="_blank"
             rel="noreferrer"
-            className="block w-full text-center text-sm text-aubergine underline mt-3"
+            className="block w-full text-center text-sm text-charcoal underline mt-3"
           >
             Open reorder link ↗
           </a>
@@ -748,25 +941,33 @@ function ItemFormSheet({
           </button>
         )}
 
+        {form.id && restockInterval !== null && (
+          <div className="mt-5 pt-4 border-t border-gold-light/40">
+            <p className="text-xs text-charcoal/60 bg-gold-light/15 rounded-lg px-3 py-2 mb-3">
+              Usually restocked every ~{restockInterval} day{restockInterval === 1 ? '' : 's'}
+            </p>
+          </div>
+        )}
+
         {form.id && (
           <div className="mt-5 pt-4 border-t border-gold-light/40">
-            <p className="text-xs font-display italic text-aubergine/70 mb-2">History</p>
+            <p className="text-xs font-display italic text-charcoal/70 mb-2">History</p>
             {historyLoading ? (
-              <p className="text-xs text-ink/40">Loading…</p>
+              <p className="text-xs text-charcoal/40">Loading…</p>
             ) : history.length === 0 ? (
-              <p className="text-xs text-ink/40">No changes recorded yet.</p>
+              <p className="text-xs text-charcoal/40">No changes recorded yet.</p>
             ) : (
               <ul className="space-y-1.5 max-h-40 overflow-y-auto">
                 {history.map((h) => (
-                  <li key={h.id} className="text-xs text-ink/60">
-                    <span className="text-ink/40">
+                  <li key={h.id} className="text-xs text-charcoal/60">
+                    <span className="text-charcoal/40">
                       {new Date(h.created_at).toLocaleDateString(undefined, {
                         month: 'short',
                         day: 'numeric',
                       })}
                     </span>{' '}
                     — {describeHistoryEntry(h)}
-                    {h.actor_name && <span className="text-ink/40"> · {h.actor_name}</span>}
+                    {h.actor_name && <span className="text-charcoal/40"> · {h.actor_name}</span>}
                   </li>
                 ))}
               </ul>
@@ -776,6 +977,24 @@ function ItemFormSheet({
       </div>
     </div>
   );
+}
+
+// Informational only — averages the gaps between logged quantity changes.
+// Needs at least 3 such events (2 real gaps) to say anything; guessing off
+// 1-2 data points would just be noise, not a forecast.
+function restockIntervalDays(history: HistoryEntry[]): number | null {
+  const changeDates = history
+    .filter((h) => h.action_type === 'quantity_changed')
+    .map((h) => new Date(h.created_at).getTime())
+    .sort((a, b) => a - b);
+  if (changeDates.length < 3) return null;
+
+  const gapsDays: number[] = [];
+  for (let i = 1; i < changeDates.length; i++) {
+    gapsDays.push((changeDates[i] - changeDates[i - 1]) / (1000 * 60 * 60 * 24));
+  }
+  const avg = gapsDays.reduce((sum, g) => sum + g, 0) / gapsDays.length;
+  return Math.round(avg);
 }
 
 function describeHistoryEntry(h: HistoryEntry): string {

@@ -1,11 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { COURSES, type Course } from '@/lib/course-constants';
+import { useDraftAutosave } from '@/hooks/useDraftAutosave';
 
 type IngredientRow = { name: string; quantity: string; unit: string; category: string };
+
+type RecipeDraft = {
+  name: string;
+  servings: string;
+  course: Course;
+  ingredientRows: IngredientRow[];
+};
 
 export default function NewRecipeModal({
   propertyId,
@@ -28,6 +36,24 @@ export default function NewRecipeModal({
 
   const supabase = createClient();
   const showToast = useToast();
+
+  const { existingDraft, resumeDraft, discardDraft, clearDraft, queueSave } = useDraftAutosave<RecipeDraft>({
+    propertyId,
+    formType: 'new_recipe',
+    isEmpty: (d) => !d.name.trim() && d.ingredientRows.every((r) => !r.name.trim()),
+  });
+
+  useEffect(() => {
+    queueSave({ name, servings, course, ingredientRows });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, servings, course, ingredientRows]);
+
+  function applyDraft(draft: RecipeDraft) {
+    setName(draft.name);
+    setServings(draft.servings);
+    setCourse(draft.course);
+    setIngredientRows(draft.ingredientRows);
+  }
 
   function addIngredientRow() {
     setIngredientRows((prev) => [...prev, { name: '', quantity: '', unit: '', category: '' }]);
@@ -73,6 +99,7 @@ export default function NewRecipeModal({
 
     setSaving(false);
     showToast('Recipe saved.', { variant: 'success' });
+    await clearDraft();
     onSaved();
   }
 
@@ -85,7 +112,27 @@ export default function NewRecipeModal({
         className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="font-display text-xl text-aubergine mb-3">New recipe</h2>
+        <h2 className="font-display text-xl text-charcoal mb-3">New recipe</h2>
+
+        {existingDraft && (
+          <div className="bg-gold-light/20 border border-gold-light rounded-2xl p-3 mb-3 text-sm">
+            <p className="text-charcoal mb-2">You have an unsaved draft of a recipe.</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => applyDraft(resumeDraft() as RecipeDraft)}
+                className="flex-1 py-2 rounded-full bg-charcoal text-cream font-medium text-xs"
+              >
+                Resume draft
+              </button>
+              <button
+                onClick={() => discardDraft()}
+                className="flex-1 py-2 rounded-full border border-charcoal/30 text-charcoal text-xs"
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-3 mb-3">
           <input
@@ -115,7 +162,7 @@ export default function NewRecipeModal({
           />
         </div>
 
-        <p className="text-sm font-medium text-aubergine mb-2">Ingredients</p>
+        <p className="text-sm font-medium text-charcoal mb-2">Ingredients</p>
         <div className="space-y-2 mb-2">
           {ingredientRows.map((row, i) => (
             <div key={i} className="flex gap-2">
@@ -146,21 +193,21 @@ export default function NewRecipeModal({
             </div>
           ))}
         </div>
-        <button onClick={addIngredientRow} className="text-sm text-aubergine underline mb-4">
+        <button onClick={addIngredientRow} className="text-sm text-charcoal underline mb-4">
           + Add ingredient
         </button>
 
         <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-full border border-aubergine/30 text-aubergine"
+            className="flex-1 py-2.5 rounded-full border border-charcoal/30 text-charcoal"
           >
             Cancel
           </button>
           <button
             onClick={saveNewRecipe}
             disabled={saving || !name.trim()}
-            className="flex-1 py-2.5 rounded-full bg-aubergine text-cream disabled:opacity-40"
+            className="flex-1 py-2.5 rounded-full bg-charcoal text-cream disabled:opacity-40"
           >
             {saving ? 'Saving…' : 'Save recipe'}
           </button>

@@ -1,5 +1,6 @@
 {
   "nav": {
+    "dashboard": "Dashboard",
     "inventory": "Inventory",
     "recipes": "Recipes",
     "mealPlan": "Meal Plan",
@@ -8,7 +9,12 @@
     "staff": "Staff",
     "tools": "Tools",
     "labels": "Labels",
-    "handover": "Handover"
+    "handover": "Handover",
+    "plan": "Plan",
+    "shop": "Shop",
+    "more": "More",
+    "home": "Home",
+    "scanAriaLabel": "Scan item to inventory"
   },
   "common": {
     "print": "Print",
@@ -71,12 +77,21 @@
     "whatsappShare": "Share on WhatsApp",
     "print": "Print",
     "moreRecipes": "+{count} more",
-    "weekOf": "Week of {date}"
+    "weekOf": "Week of {date}",
+    "emptyTitle": "No items yet",
+    "emptySubtitle": "Generate a list from this week's planned meals.",
+    "generateFromWeek": "Generate from this week's meals",
+    "generating": "Generating…",
+    "generatedCount": "Added {count} ingredient(s) to the list.",
+    "noLinkedRecipesThisWeek": "No linked recipes planned this week — nothing to add."
   },
   "labels": {
     "title": "Print Item Labels",
     "selectItems": "Select items",
     "printLabels": "Print Labels",
     "usedInRecipes": "Used in recipes"
+  },
+  "scan": {
+    "reorder": "Reorder"
   }
 }

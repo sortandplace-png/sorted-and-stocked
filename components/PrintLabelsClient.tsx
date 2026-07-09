@@ -127,7 +127,15 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
         const x = t.marginLeft + col * (t.labelWidth + t.colGap);
         const y = t.marginTop + row * (t.labelHeight + t.rowGap);
 
-        const qrDataUrl = await QRCode.toDataURL(item.qr_code, { margin: 0 });
+        // Encode a full URL, not the bare code — a physical sticker is
+        // scanned with whatever camera app staff have open, not necessarily
+        // this app's own in-app scanner. /scan/[code] looks the code up and
+        // redirects straight into the item's Scan screen (reorder link one
+        // tap away). window.location.origin is the best available base until
+        // a fixed production domain exists (still localhost-only as of this
+        // build) — regenerate labels after deploying to a real domain.
+        const qrUrl = `${window.location.origin}/scan/${encodeURIComponent(item.qr_code)}`;
+        const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 0 });
         const qrSize = 0.6;
 
         // Square label layout: photo at top-center, QR at bottom-left, name at bottom-right
@@ -181,12 +189,12 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-aubergine mb-1">Print Item Labels</h1>
-      <p className="text-sm text-ink/50 mb-1">
+      <h1 className="text-2xl font-display text-charcoal mb-1">Print Item Labels</h1>
+      <p className="text-sm text-charcoal/50 mb-1">
         Avery 22807 (2"×2" squares) · 20 labels per sheet · one label per item, with photo where available.
       </p>
       {items.length > 0 && (
-        <p className="text-xs text-ink/40 mb-4">
+        <p className="text-xs text-charcoal/40 mb-4">
           {photoCount} of {items.length} items have a usable photo — the rest print QR + name only.
         </p>
       )}
@@ -196,24 +204,24 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
       )}
 
       <div className="flex justify-end gap-3 mb-2 text-xs">
-        <button onClick={() => selectAll(true)} className="text-aubergine underline">
+        <button onClick={() => selectAll(true)} className="text-charcoal underline">
           Select all
         </button>
-        <button onClick={() => selectAll(false)} className="text-aubergine underline">
+        <button onClick={() => selectAll(false)} className="text-charcoal underline">
           Clear
         </button>
       </div>
 
-      <ul className="divide-y divide-gold-light/30 rounded-2xl bg-white shadow-sm shadow-aubergine/5 mb-4 overflow-hidden max-h-[50vh] overflow-y-auto">
+      <ul className="divide-y divide-gold-light/30 rounded-2xl bg-white shadow-sm shadow-charcoal/5 mb-4 overflow-hidden max-h-[50vh] overflow-y-auto">
         {items.map((item) => (
           <li key={item.id} className="flex items-center gap-3 px-4 py-3">
             <input
               type="checkbox"
               checked={selected.has(item.id)}
               onChange={() => toggle(item.id)}
-              className="h-5 w-5 accent-aubergine rounded"
+              className="h-5 w-5 accent-gold rounded"
             />
-            <span className="flex-1 text-ink truncate">{item.name}</span>
+            <span className="flex-1 text-charcoal truncate">{item.name}</span>
             {item.photo_url && isDirectImageUrl(item.photo_url) && (
               <span className="text-xs text-sage">📷</span>
             )}
@@ -222,7 +230,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
       </ul>
 
       {items.length === 0 && (
-        <p className="text-sm text-ink/40 text-center mt-8">
+        <p className="text-sm text-charcoal/40 text-center mt-8">
           No items yet — add some in Inventory first.
         </p>
       )}
@@ -230,7 +238,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
       <button
         onClick={generatePdf}
         disabled={generating || selected.size === 0}
-        className="w-full py-3 rounded-full bg-aubergine text-cream font-medium disabled:opacity-40"
+        className="w-full py-3 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
       >
         {generating ? 'Generating…' : `Generate PDF (${selected.size} labels)`}
       </button>

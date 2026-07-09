@@ -79,21 +79,21 @@ export default function ShoppingListView({ items, onToggle }: ShoppingListViewPr
   return (
     <div className="max-w-md lg:max-w-4xl mx-auto print:max-w-full">
       <div className="hidden print:block mb-4">
-        <h1 className="font-display text-2xl text-aubergine">Shopping List</h1>
-        <p className="text-sm text-ink/50">{new Date().toLocaleDateString()}</p>
+        <h1 className="font-display text-2xl text-charcoal">Shopping List</h1>
+        <p className="text-sm text-charcoal/50">{new Date().toLocaleDateString()}</p>
       </div>
 
       <div className="flex items-center justify-between mb-3 px-1 print:hidden">
-        <span className="text-sm text-ink/50">
+        <span className="text-sm text-charcoal/50">
           {items.filter((i) => i.status === 'pending').length} items left
         </span>
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-ink/60">
+          <label className="flex items-center gap-2 text-sm text-charcoal/60">
             <input
               type="checkbox"
               checked={hidePurchased}
               onChange={(e) => setHidePurchased(e.target.checked)}
-              className="accent-aubergine"
+              className="accent-gold"
             />
             Hide checked off
           </label>
@@ -105,7 +105,7 @@ export default function ShoppingListView({ items, onToggle }: ShoppingListViewPr
           </button>
           <button
             onClick={() => window.print()}
-            className="text-sm font-medium bg-aubergine text-cream px-4 py-1.5 rounded-full"
+            className="text-sm font-medium bg-charcoal text-cream px-4 py-1.5 rounded-full"
           >
             🖨️ Print
           </button>
@@ -117,12 +117,12 @@ export default function ShoppingListView({ items, onToggle }: ShoppingListViewPr
         <section key={category} className="mb-4 break-inside-avoid print:break-inside-avoid">
           <div className="flex items-center gap-2 px-3 mb-2">
             <span className="h-px flex-1 bg-gold-light" />
-            <h3 className="text-xs font-display italic tracking-[0.1em] text-aubergine/70 whitespace-nowrap">
+            <h3 className="text-xs font-display italic tracking-[0.1em] text-charcoal/70 whitespace-nowrap">
               {category}
             </h3>
             <span className="h-px flex-1 bg-gold-light" />
           </div>
-          <ul className="divide-y divide-gold-light/30 rounded-2xl bg-white shadow-sm shadow-aubergine/5 overflow-hidden print:shadow-none print:border print:border-gold-light">
+          <ul className="divide-y divide-gold-light/30 rounded-2xl bg-white shadow-sm shadow-charcoal/5 overflow-hidden print:shadow-none print:border print:border-gold-light">
             {categoryItems.map((item) => (
               <li
                 key={item.id}
@@ -134,19 +134,19 @@ export default function ShoppingListView({ items, onToggle }: ShoppingListViewPr
                   onChange={(e) =>
                     onToggle(item.id, e.target.checked ? 'purchased' : 'pending')
                   }
-                  className="h-5 w-5 shrink-0 accent-aubergine rounded print:hidden"
+                  className="h-5 w-5 shrink-0 accent-gold rounded print:hidden"
                 />
-                <span className="hidden print:inline text-ink/40 shrink-0">☐</span>
+                <span className="hidden print:inline text-charcoal/40 shrink-0">☐</span>
                 <span
                   className={
                     item.status === 'purchased'
-                      ? 'line-through text-ink/30 flex-1'
-                      : 'text-ink flex-1'
+                      ? 'line-through text-charcoal/30 flex-1'
+                      : 'text-charcoal flex-1'
                   }
                 >
                   {item.name}
                 </span>
-                <span className="text-sm text-ink/40">×{item.qty_needed}</span>
+                <span className="text-sm text-charcoal/40">×{item.qty_needed}</span>
               </li>
             ))}
           </ul>

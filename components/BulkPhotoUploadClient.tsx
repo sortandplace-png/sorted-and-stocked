@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { compressImageToBlob } from '@/lib/compress-image';
 import { useToast } from '@/components/Toast';
 
 type Item = {
@@ -57,12 +58,17 @@ export default function BulkPhotoUploadClient({ propertyId }: { propertyId: stri
     setQueue((prev) => [...prev, ...newEntries]);
 
     for (const entry of newEntries) {
-      const ext = entry.file.name.split('.').pop() || 'jpg';
-      const path = `${propertyId}/${entry.key}.${ext}`;
+      const path = `${propertyId}/${entry.key}.jpg`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('item-photos')
-        .upload(path, entry.file, { contentType: entry.file.type || 'image/jpeg' });
+      let uploadError: { message: string } | null = null;
+      try {
+        const compressed = await compressImageToBlob(entry.file);
+        ({ error: uploadError } = await supabase.storage
+          .from('item-photos')
+          .upload(path, compressed, { contentType: 'image/jpeg' }));
+      } catch (err) {
+        uploadError = { message: err instanceof Error ? err.message : 'Compression failed' };
+      }
 
       setQueue((prev) =>
         prev.map((q) => {
@@ -121,8 +127,8 @@ export default function BulkPhotoUploadClient({ propertyId }: { propertyId: stri
 
   return (
     <div className="max-w-md lg:max-w-2xl mx-auto p-4">
-      <h1 className="text-2xl font-display text-aubergine mb-1">Bulk add photos</h1>
-      <p className="text-sm text-ink/50 mb-4">
+      <h1 className="text-2xl font-display text-charcoal mb-1">Bulk add photos</h1>
+      <p className="text-sm text-charcoal/50 mb-4">
         Take one photo per item — fill the frame with just that product — then match each
         photo to the right item below.
       </p>
@@ -140,34 +146,34 @@ export default function BulkPhotoUploadClient({ propertyId }: { propertyId: stri
       {queue.length === 0 ? (
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="w-full py-8 rounded-2xl border-2 border-dashed border-gold-light text-aubergine/70 hover:bg-gold-light/10 transition-colors"
+          className="w-full py-8 rounded-2xl border-2 border-dashed border-gold-light text-charcoal/70 hover:bg-gold-light/10 transition-colors"
         >
           📸 Tap to choose or take photos
         </button>
       ) : (
         <>
-          <div className="flex items-center justify-between mb-3 text-xs text-ink/50">
+          <div className="flex items-center justify-between mb-3 text-xs text-charcoal/50">
             <span>
               {assignedCount} matched · {skippedCount} skipped
               {uploadingCount > 0 ? ` · ${uploadingCount} uploading…` : ''}
             </span>
-            <button onClick={() => fileInputRef.current?.click()} className="text-aubergine underline">
+            <button onClick={() => fileInputRef.current?.click()} className="text-charcoal underline">
               + Add more photos
             </button>
           </div>
 
           {current ? (
             current.status === 'uploading' ? (
-              <div className="text-center py-10 text-sm text-ink/40">Uploading photo…</div>
+              <div className="text-center py-10 text-sm text-charcoal/40">Uploading photo…</div>
             ) : current.status === 'failed' ? (
               <div className="text-center py-10">
                 <p className="text-sm text-rust mb-3">This photo failed to upload.</p>
-                <button onClick={skipCurrent} className="text-sm text-aubergine underline">
+                <button onClick={skipCurrent} className="text-sm text-charcoal underline">
                   Skip and continue →
                 </button>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl shadow-sm shadow-aubergine/5 p-4">
+              <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={current.previewUrl}
@@ -188,17 +194,17 @@ export default function BulkPhotoUploadClient({ propertyId }: { propertyId: stri
                       onClick={() => assignTo(item.id)}
                       className="w-full flex items-center gap-2 text-left px-4 py-2.5 text-sm hover:bg-gold-light/10"
                     >
-                      <span className="flex-1 truncate text-ink">{item.name}</span>
+                      <span className="flex-1 truncate text-charcoal">{item.name}</span>
                       {item.photo_url && <span className="text-xs text-sage shrink-0">has photo</span>}
                     </button>
                   ))}
                   {filteredItems.length === 0 && (
-                    <p className="px-4 py-3 text-sm text-ink/40">No items match that search.</p>
+                    <p className="px-4 py-3 text-sm text-charcoal/40">No items match that search.</p>
                   )}
                 </div>
                 <button
                   onClick={skipCurrent}
-                  className="w-full text-center text-sm text-ink/40 mt-3 py-2"
+                  className="w-full text-center text-sm text-charcoal/40 mt-3 py-2"
                 >
                   Not a product photo — skip →
                 </button>
@@ -206,13 +212,13 @@ export default function BulkPhotoUploadClient({ propertyId }: { propertyId: stri
             )
           ) : (
             <div className="text-center py-10">
-              <p className="font-display text-lg text-aubergine mb-1">All done!</p>
-              <p className="text-sm text-ink/50">
+              <p className="font-display text-lg text-charcoal mb-1">All done!</p>
+              <p className="text-sm text-charcoal/50">
                 {assignedCount} photo{assignedCount === 1 ? '' : 's'} matched to items.
               </p>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="mt-4 text-sm font-medium bg-aubergine text-cream px-5 py-2.5 rounded-full"
+                className="mt-4 text-sm font-medium bg-charcoal text-cream px-5 py-2.5 rounded-full"
               >
                 Add more photos
               </button>

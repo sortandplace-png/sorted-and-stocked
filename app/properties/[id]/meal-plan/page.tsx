@@ -12,7 +12,7 @@ export default async function MealPlanPage({
 
   const { data: recipes } = await supabase
     .from('recipes')
-    .select('id, name, name_es, photo_url, course, kosher_type, is_shabbos_only')
+    .select('id, name, name_es, photo_url, course, kosher_type, is_shabbos_only, tags, approx_total_minutes')
     .eq('property_id', id)
     .order('name');
 

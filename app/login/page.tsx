@@ -4,6 +4,7 @@
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { LogoMark } from '@/components/Logo';
 
 export default function LoginPage() {
   return (
@@ -73,8 +74,8 @@ function LoginForm() {
     return (
       <div className="min-h-screen bg-cream flex items-center justify-center px-6">
         <div className="max-w-sm text-center">
-          <h1 className="font-display text-xl text-aubergine mb-2">Check your email</h1>
-          <p className="text-sm text-ink/60">
+          <h1 className="font-display text-xl text-charcoal mb-2">Check your email</h1>
+          <p className="text-sm text-charcoal/60">
             We sent a confirmation link to {email}. Follow it to finish signing up.
           </p>
         </div>
@@ -86,13 +87,12 @@ function LoginForm() {
     <div className="min-h-screen bg-cream flex items-center justify-center px-6">
       <div className="max-w-sm w-full">
         <div className="flex justify-center mb-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/icon-512.png" alt="Sorted & Stocked" className="w-24 h-24 object-contain" />
+          <LogoMark className="w-24 h-24" />
         </div>
-        <h1 className="font-display text-3xl text-aubergine mb-1 text-center">
+        <h1 className="font-display text-3xl text-charcoal mb-1 text-center">
           {mode === 'sign-in' ? 'Sign in' : 'Create account'}
         </h1>
-        <p className="text-sm text-aubergine/50 mb-6 tracking-wide text-center">Sorted &amp; Stocked · The Proactive Home Inventory System</p>
+        <p className="text-sm text-charcoal/50 mb-6 tracking-wide text-center">Sorted &amp; Stocked · The Proactive Home Inventory System</p>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           {mode === 'sign-up' && (
@@ -129,16 +129,16 @@ function LoginForm() {
 
           {mode === 'sign-in' && (
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-ink/60">
+              <label className="flex items-center gap-2 text-sm text-charcoal/60">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 accent-aubergine rounded"
+                  className="h-4 w-4 accent-gold rounded"
                 />
                 Remember me
               </label>
-              <a href="/forgot-password" className="text-sm text-aubergine/60">
+              <a href="/forgot-password" className="text-sm text-charcoal/60">
                 Forgot password?
               </a>
             </div>
@@ -147,7 +147,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-full bg-aubergine text-cream font-medium disabled:opacity-40"
+            className="w-full py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
           >
             {loading ? 'Please wait…' : mode === 'sign-in' ? 'Sign in' : 'Sign up'}
           </button>
@@ -158,7 +158,7 @@ function LoginForm() {
             setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in');
             setError(null);
           }}
-          className="w-full text-center text-sm text-aubergine/60 mt-4"
+          className="w-full text-center text-sm text-charcoal/60 mt-4"
         >
           {mode === 'sign-in' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
         </button>

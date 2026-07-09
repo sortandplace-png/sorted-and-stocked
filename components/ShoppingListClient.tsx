@@ -156,8 +156,8 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
             onClick={() => setActiveTab('recipes')}
             className={`flex-1 py-3 font-medium text-sm border-b-2 transition-colors ${
               activeTab === 'recipes'
-                ? 'border-aubergine text-aubergine'
-                : 'border-transparent text-ink/50 hover:text-ink'
+                ? 'border-charcoal text-charcoal'
+                : 'border-transparent text-charcoal/50 hover:text-charcoal'
             }`}
           >
             Recipe Ingredients
@@ -166,8 +166,8 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
             onClick={() => setActiveTab('staples')}
             className={`flex-1 py-3 font-medium text-sm border-b-2 transition-colors ${
               activeTab === 'staples'
-                ? 'border-aubergine text-aubergine'
-                : 'border-transparent text-ink/50 hover:text-ink'
+                ? 'border-charcoal text-charcoal'
+                : 'border-transparent text-charcoal/50 hover:text-charcoal'
             }`}
           >
             Household Staples
@@ -177,7 +177,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
 
       {(pullDistance > 0 || refreshing) && (
         <div
-          className="flex justify-center text-xs text-ink/40 overflow-hidden transition-all"
+          className="flex justify-center text-xs text-charcoal/40 overflow-hidden transition-all"
           style={{ height: refreshing ? 32 : pullDistance }}
         >
           {refreshing ? 'Refreshing…' : pullDistance > 50 ? 'Release to refresh' : 'Pull to refresh'}
@@ -203,7 +203,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
             <button
               onClick={addCustomItem}
               disabled={adding || !newItemName.trim()}
-              className="px-5 rounded-full bg-aubergine text-cream text-sm disabled:opacity-40 font-medium"
+              className="px-5 rounded-full bg-charcoal text-cream text-sm disabled:opacity-40 font-medium"
             >
               Add
             </button>
@@ -211,9 +211,9 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
 
           <div className="max-w-md mx-auto px-4">
             {listId ? (
-              <ShoppingListViewEnhanced shoppingListId={listId} />
+              <ShoppingListViewEnhanced propertyId={propertyId} shoppingListId={listId} />
             ) : (
-              <p className="text-sm text-ink/40 text-center mt-8">Loading list…</p>
+              <p className="text-sm text-charcoal/40 text-center mt-8">Loading list…</p>
             )}
           </div>
         </>
@@ -225,7 +225,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
           {listId ? (
             <StaplesTab propertyId={propertyId} shoppingListId={listId} />
           ) : (
-            <p className="text-sm text-ink/40 text-center mt-8">Loading staples…</p>
+            <p className="text-sm text-charcoal/40 text-center mt-8">Loading staples…</p>
           )}
         </div>
       )}

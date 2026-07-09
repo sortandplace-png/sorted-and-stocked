@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
-import { Printer, Flame } from 'lucide-react';
+import { Printer, Flame, AlertTriangle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientDelete } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
@@ -21,6 +21,8 @@ type Recipe = {
   course: Course | null;
   kosher_type: string | null;
   is_shabbos_only: boolean | null;
+  tags: string[] | null;
+  approx_total_minutes: number | null;
 };
 
 type MealSlot = 'breakfast' | 'lunch' | 'dinner';
@@ -46,6 +48,15 @@ type HebcalDay = {
   titles: string[];
 };
 
+// Distinct from Hebcal's generic isFast flag above — this is the curated
+// fast_days table, which carries the severity + meal-specific note text
+// that Hebcal's calendar API has no concept of.
+type FastDay = {
+  holiday_name: string;
+  severity: 'major' | 'minor';
+  note: string;
+};
+
 const KIDS_PLATTERS = [
   'Platter A — carrots, apples, grapes',
   'Platter B — berries, cheese cubes',
@@ -56,6 +67,31 @@ const KIDS_PLATTERS = [
   'Platter G — apple slices, peanut butter, raisins',
   'Platter H — grapes, cheese sticks, mini muffins',
 ];
+
+// Zmanim-Aware Prep Guard: warns when a day's total recorded prep time
+// wouldn't fit before candle-lighting. Confirmed with Racquel: uses
+// recipes.approx_total_minutes (only populated on ~60% of recipes — a day
+// with no timed recipes just isn't checked, never warns off missing data),
+// triggers on any day with a real candle-lighting time (covers both Erev
+// Shabbos and Erev Yom Tov since both fire Hebcal's "candles" category),
+// assumes a 9:00 AM prep start since no real "when do you start cooking"
+// data exists anywhere in the app to use instead.
+const ASSUMED_PREP_START_MINUTES = 9 * 60;
+
+function parseCandleLightingMinutes(candleLighting: string): number {
+  const [h, m] = candleLighting.split(':').map(Number);
+  // Candle lighting is always evening — the extracted "H:MM" has no AM/PM
+  // marker, so any hour read as under 12 is actually that many hours past noon.
+  const hour24 = h < 12 ? h + 12 : h;
+  return hour24 * 60 + m;
+}
+
+function getPrepWarning(entries: Entry[], candleLighting: string | undefined): boolean {
+  if (!candleLighting) return false;
+  const totalMinutes = entries.reduce((sum, e) => sum + (e.recipes?.approx_total_minutes ?? 0), 0);
+  if (totalMinutes === 0) return false;
+  return ASSUMED_PREP_START_MINUTES + totalMinutes > parseCandleLightingMinutes(candleLighting);
+}
 
 // Same check RecipesGridView uses — recipe photos come from varied hosts.
 function isDirectImageUrl(url: string) {
@@ -110,13 +146,20 @@ export default function MealPlanView({
   const [anchor, setAnchor] = useState(new Date());
   const [days, setDays] = useState<Record<string, DayData>>({});
   const [hebcal, setHebcal] = useState<Record<string, HebcalDay>>({});
+  const [fastDays, setFastDays] = useState<Record<string, FastDay>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pushingToShopping, setPushingToShopping] = useState(false);
   const [justGeneratedList, setJustGeneratedList] = useState(false);
+  const [repeatingWeek, setRepeatingWeek] = useState(false);
+  const [extending, setExtending] = useState(false);
 
   const [editing, setEditing] = useState<{ date: string; course: Course } | null>(null);
   const [pickerMode, setPickerMode] = useState<'existing' | 'custom'>('existing');
+  const [showIntentStep, setShowIntentStep] = useState(false);
+  const [swapIntent, setSwapIntent] = useState<
+    'too_much_work' | 'kids_wont_eat' | 'quicker' | 'different_protein' | null
+  >(null);
   const [pickedRecipeId, setPickedRecipeId] = useState('');
   const [recipeSearch, setRecipeSearch] = useState('');
   const [kosherFilter, setKosherFilter] = useState<string | null>(null);
@@ -134,7 +177,7 @@ export default function MealPlanView({
     const { data: entries, error: fetchError } = await supabase
       .from('meal_plan_entries')
       .select(
-        'id, plan_date, meal_slot, course, custom_name, recipe_id, recipes(id, name, name_es, photo_url, kosher_type, is_shabbos_only)'
+        'id, plan_date, meal_slot, course, custom_name, recipe_id, recipes(id, name, name_es, photo_url, kosher_type, is_shabbos_only, approx_total_minutes)'
       )
       .eq('property_id', propertyId)
       .gte('plan_date', start)
@@ -173,6 +216,22 @@ export default function MealPlanView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, anchor.getTime(), propertyId]);
 
+  // Reference table, not property-scoped — fetched once, not tied to the
+  // visible date range like hebcal above.
+  useEffect(() => {
+    supabase
+      .from('fast_days')
+      .select('date, holiday_name, severity, note')
+      .then(({ data }) => {
+        const byDate: Record<string, FastDay> = {};
+        for (const row of data ?? []) {
+          byDate[row.date] = { holiday_name: row.holiday_name, severity: row.severity, note: row.note };
+        }
+        setFastDays(byDate);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function recipeTitle(r: Recipe) {
     return locale === 'es' && r.name_es ? r.name_es : r.name;
   }
@@ -186,7 +245,7 @@ export default function MealPlanView({
     return entry.recipes ? recipeTitle(entry.recipes) : entry.custom_name;
   }
 
-  function openPicker(dateStr: string, course: Course) {
+  function openPicker(dateStr: string, course: Course, isSwap = false) {
     if (!canEdit) return;
     const recipesForCourse = recipes.filter((r) => r.course === course);
     setEditing({ date: dateStr, course });
@@ -195,6 +254,10 @@ export default function MealPlanView({
     setCustomName('');
     setRecipeSearch('');
     setKosherFilter(null);
+    setSwapIntent(null);
+    // Only a real swap (an already-filled slot) gets the "why" step —
+    // filling an empty slot for the first time has nothing to swap away from.
+    setShowIntentStep(isSwap && recipesForCourse.length > 0);
   }
 
   async function saveEntry() {
@@ -281,7 +344,163 @@ export default function MealPlanView({
     setJustGeneratedList(true);
   }
 
-  const recipesForEditingCourse = editing ? recipes.filter((r) => r.course === editing.course) : [];
+  async function repeatWeekForward() {
+    setRepeatingWeek(true);
+    const week = weekRange(anchor);
+    const thisWeekEntries = Object.values(days).flatMap((d) => d.entries);
+
+    if (thisWeekEntries.length === 0) {
+      setRepeatingWeek(false);
+      showToast('Nothing planned this week to copy.');
+      return;
+    }
+
+    const nextWeekStart = new Date(week.start);
+    nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+    const nextWeekEnd = new Date(nextWeekStart);
+    nextWeekEnd.setDate(nextWeekEnd.getDate() + 6);
+
+    // Don't overwrite anything already planned next week — only fill gaps.
+    const { data: existing } = await supabase
+      .from('meal_plan_entries')
+      .select('plan_date, course')
+      .eq('property_id', propertyId)
+      .gte('plan_date', fmt(nextWeekStart))
+      .lte('plan_date', fmt(nextWeekEnd));
+    const existingKeys = new Set((existing ?? []).map((e) => `${e.plan_date}:${e.course}`));
+
+    let inserted = 0;
+    for (const entry of thisWeekEntries) {
+      const dayOffset = Math.round(
+        (new Date(entry.plan_date).getTime() - week.start.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const newDate = new Date(nextWeekStart);
+      newDate.setDate(newDate.getDate() + dayOffset);
+      const newDateStr = fmt(newDate);
+
+      if (existingKeys.has(`${newDateStr}:${entry.course}`)) continue;
+
+      const payload = entry.recipe_id
+        ? {
+            property_id: propertyId,
+            plan_date: newDateStr,
+            course: entry.course,
+            recipe_id: entry.recipe_id,
+            meal_slot: entry.meal_slot,
+          }
+        : {
+            property_id: propertyId,
+            plan_date: newDateStr,
+            course: entry.course,
+            custom_name: entry.custom_name,
+            meal_slot: entry.meal_slot,
+          };
+
+      const result = await resilientInsert(supabase, 'meal_plan_entries', payload);
+      if (result.ok) inserted++;
+    }
+
+    setRepeatingWeek(false);
+    showToast(`Copied ${inserted} meal${inserted === 1 ? '' : 's'} to next week.`, { variant: 'success' });
+    loadEntries();
+  }
+
+  // Extends past wherever the plan currently ends — not tied to whatever
+  // week is on screen — by repeating the last populated week's pattern
+  // forward, same skip-if-already-planned rule as repeatWeekForward.
+  async function extendMealPlan(weeks: number) {
+    setExtending(true);
+
+    const { data: lastRow } = await supabase
+      .from('meal_plan_entries')
+      .select('plan_date')
+      .eq('property_id', propertyId)
+      .order('plan_date', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!lastRow) {
+      setExtending(false);
+      showToast('No existing meal plan to extend from.', { variant: 'error' });
+      return;
+    }
+
+    const lastDate = new Date(lastRow.plan_date);
+    const templateWeek = weekRange(lastDate);
+
+    const { data: templateEntries } = await supabase
+      .from('meal_plan_entries')
+      .select('plan_date, meal_slot, course, recipe_id, custom_name')
+      .eq('property_id', propertyId)
+      .gte('plan_date', fmt(templateWeek.start))
+      .lte('plan_date', fmt(templateWeek.end));
+
+    if (!templateEntries || templateEntries.length === 0) {
+      setExtending(false);
+      showToast('Could not find a template week to repeat.', { variant: 'error' });
+      return;
+    }
+
+    let inserted = 0;
+    for (let w = 1; w <= weeks; w++) {
+      for (const entry of templateEntries) {
+        const dayOffset = Math.round(
+          (new Date(entry.plan_date).getTime() - templateWeek.start.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        const newDate = new Date(templateWeek.start);
+        newDate.setDate(newDate.getDate() + 7 * w + dayOffset);
+
+        const payload = entry.recipe_id
+          ? {
+              property_id: propertyId,
+              plan_date: fmt(newDate),
+              course: entry.course,
+              recipe_id: entry.recipe_id,
+              meal_slot: entry.meal_slot,
+            }
+          : {
+              property_id: propertyId,
+              plan_date: fmt(newDate),
+              course: entry.course,
+              custom_name: entry.custom_name,
+              meal_slot: entry.meal_slot,
+            };
+
+        const result = await resilientInsert(supabase, 'meal_plan_entries', payload);
+        if (result.ok) inserted++;
+      }
+    }
+
+    setExtending(false);
+    showToast(`Extended the meal plan by ${weeks} week${weeks === 1 ? '' : 's'} (${inserted} meals added).`, {
+      variant: 'success',
+    });
+    loadEntries();
+  }
+
+  // Kids Platter has almost no recipes of its own course (it was always a
+  // fixed-combo slot) — surface fruit/veg recipes tagged "kids-friendly"
+  // alongside it too, without pulling them out of their real vege/salad
+  // course everywhere else in the app.
+  const recipesForEditingCourse = editing
+    ? recipes
+        .filter((r) =>
+          r.course === editing.course ||
+          (editing.course === 'kids_platter' && r.tags?.includes('kids-friendly'))
+        )
+        .filter(matchesSwapIntent)
+    : [];
+
+  // "Different protein" has no real backing field to filter on (no
+  // protein-type column exists anywhere) — it's offered as a reason but
+  // doesn't narrow the list beyond course, unlike the other three.
+  function matchesSwapIntent(r: Recipe): boolean {
+    if (!swapIntent) return true;
+    if (swapIntent === 'kids_wont_eat') return !!r.tags?.includes('kids-friendly');
+    if (swapIntent === 'too_much_work') return (r.approx_total_minutes ?? 999) <= 30;
+    if (swapIntent === 'quicker') return (r.approx_total_minutes ?? 999) <= 20;
+    return true;
+  }
   const weekDates = weekRange(anchor).days;
   const isCurrentOrFutureWeek = weekDates[0] >= new Date(fmt(new Date()));
 
@@ -290,11 +509,11 @@ export default function MealPlanView({
   return (
     <div className="max-w-md lg:max-w-6xl mx-auto p-4">
       <div className="hidden print:block mb-3">
-        <h1 className="font-display text-2xl text-aubergine">
+        <h1 className="font-display text-2xl text-charcoal">
           {viewMode === 'week' ? 'Meal Plan' : 'Meal Plan — ' + anchor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
         </h1>
         {viewMode === 'week' && (
-          <p className="text-sm text-ink/50">
+          <p className="text-sm text-charcoal/50">
             {weekDates[0].toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} –{' '}
             {weekDates[6].toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
           </p>
@@ -309,13 +528,13 @@ export default function MealPlanView({
         <div className="inline-flex rounded-full border border-gold-light/60 bg-white p-0.5 text-sm">
           <button
             onClick={() => setViewMode('week')}
-            className={`rounded-full px-4 py-1.5 ${viewMode === 'week' ? 'bg-gold text-white' : 'text-ink/60'}`}
+            className={`rounded-full px-4 py-1.5 ${viewMode === 'week' ? 'bg-gold-dark text-white' : 'text-charcoal/60'}`}
           >
             {t('week')}
           </button>
           <button
             onClick={() => setViewMode('month')}
-            className={`rounded-full px-4 py-1.5 ${viewMode === 'month' ? 'bg-gold text-white' : 'text-ink/60'}`}
+            className={`rounded-full px-4 py-1.5 ${viewMode === 'month' ? 'bg-gold-dark text-white' : 'text-charcoal/60'}`}
           >
             {t('month')}
           </button>
@@ -324,11 +543,21 @@ export default function MealPlanView({
         <div className="flex items-center gap-3">
           <button
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 rounded-full border border-gold px-3 py-1.5 text-xs font-medium text-gold"
+            className="inline-flex items-center gap-1.5 rounded-full border border-gold px-3 py-1.5 text-xs font-medium text-gold-dark"
           >
             <Printer className="h-3.5 w-3.5" />
             {viewMode === 'week' ? t('printWeek') : t('printMonth')}
           </button>
+          {canEdit && viewMode === 'week' && (
+            <button
+              onClick={repeatWeekForward}
+              disabled={repeatingWeek}
+              title="Copy this week's meals to next week (won't overwrite anything already planned)"
+              className="rounded-full border border-gold px-4 py-1.5 text-xs font-medium text-gold-dark disabled:opacity-40"
+            >
+              {repeatingWeek ? '…' : 'Repeat next week →'}
+            </button>
+          )}
           {canEdit && viewMode === 'week' && (
             <button
               onClick={generateShoppingList}
@@ -338,18 +567,28 @@ export default function MealPlanView({
               {pushingToShopping ? '…' : t('generateShoppingList')}
             </button>
           )}
+          {canEdit && viewMode === 'week' && (
+            <button
+              onClick={() => extendMealPlan(4)}
+              disabled={extending}
+              title="Repeat the last planned week forward 4 more weeks, wherever the plan currently ends"
+              className="rounded-full border border-charcoal/30 px-4 py-1.5 text-xs font-medium text-charcoal disabled:opacity-40"
+            >
+              {extending ? '…' : 'Extend plan +4 weeks'}
+            </button>
+          )}
         </div>
       </div>
 
       {canEdit && viewMode === 'week' && (
         <div className="print:hidden -mt-2 mb-4 flex items-center justify-between flex-wrap gap-1">
-          <p className="text-xs text-ink/40">
+          <p className="text-xs text-charcoal/40">
             Only courses linked to a saved recipe (not typed-in text) have ingredients to add.
           </p>
           {justGeneratedList && (
             <Link
               href={`/properties/${propertyId}/shopping-list`}
-              className="text-xs font-medium text-aubergine underline"
+              className="text-xs font-medium text-charcoal underline"
             >
               Go to shopping list →
             </Link>
@@ -364,25 +603,47 @@ export default function MealPlanView({
             const isToday = fmt(new Date()) === dateStr;
             const isShabbos = i === 5 || i === 6;
             const hcal = hebcal[dateStr];
+            const day = days[dateStr];
+            const fastDay = fastDays[dateStr];
+            const hasMajorFastConflict = fastDay?.severity === 'major' && (day?.entries.length ?? 0) > 0;
 
             return (
               <div
                 key={dateStr}
                 className={
-                  'rounded-2xl bg-white shadow-sm shadow-aubergine/5 overflow-hidden' +
+                  'rounded-2xl bg-white shadow-sm shadow-charcoal/5 overflow-hidden' +
                   (isToday ? ' ring-2 ring-gold' : '')
                 }
               >
                 <div
                   className={
-                    'flex items-center gap-2 px-4 py-2 ' + (isShabbos ? 'bg-aubergine/10' : 'bg-gold-light/15')
+                    'flex items-center gap-2 px-4 py-2 ' + (isShabbos ? 'bg-charcoal/10' : 'bg-gold-light/15')
                   }
                 >
-                  <span className="text-xs font-semibold text-aubergine">{DAY_LABELS[i]}</span>
-                  <span className="text-xs text-ink/50">
+                  <span className="text-xs font-semibold text-charcoal">{DAY_LABELS[i]}</span>
+                  <span className="text-xs text-charcoal/50">
                     {d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </span>
-                  {hcal?.isErevShabbos && <Flame className="h-3 w-3 text-gold" />}
+                  {hcal?.isErevShabbos && <Flame className="h-3 w-3 text-gold-dark" />}
+                  {day?.hasMeatDairyBuffer && (
+                    <span
+                      title={t('sameDayWarning')}
+                      className="h-2 w-2 rounded-full bg-gold shrink-0"
+                    />
+                  )}
+                  {getPrepWarning(day?.entries ?? [], hcal?.candleLighting) && (
+                    <span title="Recorded prep time for this day may not finish before candle-lighting">
+                      <AlertTriangle className="h-3.5 w-3.5 text-rust shrink-0" />
+                    </span>
+                  )}
+                  {fastDay?.severity === 'minor' && (
+                    <span
+                      title={fastDay.note}
+                      className="text-[10px] font-medium text-charcoal/60 bg-gold-light/40 px-2 py-0.5 rounded-full shrink-0"
+                    >
+                      {fastDay.holiday_name}
+                    </span>
+                  )}
                   {hcal && hcal.titles.length > 0 ? (
                     <span
                       className={
@@ -390,8 +651,8 @@ export default function MealPlanView({
                         (hcal.isFast
                           ? 'text-rust bg-rust/10'
                           : hcal.isYomTov
-                          ? 'text-cream bg-aubergine'
-                          : 'text-aubergine bg-gold-light/50')
+                          ? 'text-cream bg-charcoal'
+                          : 'text-charcoal bg-gold-light/50')
                       }
                       title={hcal.titles.join(' · ')}
                     >
@@ -399,11 +660,19 @@ export default function MealPlanView({
                       {hcal.titles.join(' · ')}
                     </span>
                   ) : isShabbos ? (
-                    <span className="ml-auto text-[10px] font-semibold text-aubergine bg-gold-light/50 px-2 py-0.5 rounded-full">
+                    <span className="ml-auto text-[10px] font-semibold text-charcoal bg-gold-light/50 px-2 py-0.5 rounded-full">
                       ✨ Shabbos
                     </span>
                   ) : null}
                 </div>
+                {hasMajorFastConflict && (
+                  <div className="flex items-start gap-2 px-4 py-2 bg-rust/10 border-b border-rust/20">
+                    <AlertTriangle className="h-4 w-4 text-rust shrink-0 mt-0.5" />
+                    <p className="text-xs text-rust font-medium">
+                      {fastDay!.holiday_name}: {fastDay!.note}
+                    </p>
+                  </div>
+                )}
                 <div className="divide-y divide-gold-light/20">
                   {COURSES.filter(({ key }) => key !== 'dessert' || isShabbos).map(({ key, label, icon }) => {
                     const entry = entryFor(dateStr, key);
@@ -420,11 +689,11 @@ export default function MealPlanView({
                             {icon}
                           </span>
                         )}
-                        <span className="text-[11px] text-ink/40 w-14 shrink-0">{tCourse(key)}</span>
+                        <span className="text-[11px] text-charcoal/40 w-14 shrink-0">{tCourse(key)}</span>
                         {linkedRecipeId ? (
                           <Link
                             href={`/properties/${propertyId}/recipes/${linkedRecipeId}`}
-                            className="flex-1 min-w-0 text-sm text-ink truncate underline decoration-gold-light decoration-2 underline-offset-2"
+                            className="flex-1 min-w-0 text-sm text-charcoal truncate underline decoration-gold-light decoration-2 underline-offset-2"
                           >
                             {name}
                           </Link>
@@ -435,16 +704,16 @@ export default function MealPlanView({
                             className="flex-1 text-left min-w-0 text-sm disabled:cursor-default"
                           >
                             {name ? (
-                              <span className="text-ink truncate block">{name}</span>
+                              <span className="text-charcoal truncate block">{name}</span>
                             ) : (
-                              <span className="text-ink/25">{canEdit ? '+ add' : ''}</span>
+                              <span className="text-charcoal/25">{canEdit ? '+ add' : ''}</span>
                             )}
                           </button>
                         )}
                         {canEdit && linkedRecipeId && (
                           <button
-                            onClick={() => openPicker(dateStr, key)}
-                            className="text-ink/30 text-xs shrink-0"
+                            onClick={() => openPicker(dateStr, key, true)}
+                            className="text-charcoal/30 text-xs shrink-0"
                             aria-label="Change"
                           >
                             ✏️
@@ -468,6 +737,7 @@ export default function MealPlanView({
           days={monthRange(anchor).days}
           data={days}
           hebcal={hebcal}
+          fastDays={fastDays}
           recipeTitle={recipeTitle}
           t={t}
           onDayClick={(date) => {
@@ -489,11 +759,11 @@ export default function MealPlanView({
           }
           disabled={viewMode === 'week' && !isCurrentOrFutureWeek}
           title={viewMode === 'week' && !isCurrentOrFutureWeek ? 'Cannot navigate before today' : undefined}
-          className="text-sm text-aubergine underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
+          className="text-sm text-charcoal underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
         >
           ← Prev
         </button>
-        <button onClick={() => setAnchor(new Date())} className="text-sm text-ink/50">
+        <button onClick={() => setAnchor(new Date())} className="text-sm text-charcoal/50">
           Today
         </button>
         <button
@@ -505,7 +775,7 @@ export default function MealPlanView({
               return next;
             })
           }
-          className="text-sm text-aubergine underline"
+          className="text-sm text-charcoal underline"
         >
           Next →
         </button>
@@ -520,11 +790,11 @@ export default function MealPlanView({
             className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="font-display text-xl text-aubergine mb-1">
+            <h2 className="font-display text-xl text-charcoal mb-1">
               {COURSES.find((c) => c.key === editing.course)?.icon}{' '}
               {tCourse(editing.course)}
             </h2>
-            <p className="text-xs text-ink/40 mb-3">
+            <p className="text-xs text-charcoal/40 mb-3">
               {new Date(editing.date).toLocaleDateString(undefined, {
                 weekday: 'long',
                 month: 'short',
@@ -532,9 +802,53 @@ export default function MealPlanView({
               })}
             </p>
 
+            {showIntentStep ? (
+              <div className="space-y-2">
+                <p className="text-sm text-charcoal/60 mb-1">What's the reason for the swap?</p>
+                {(
+                  [
+                    ['too_much_work', 'Too much work'],
+                    ['kids_wont_eat', "Kids won't eat it"],
+                    ['quicker', 'Need something quicker'],
+                    ['different_protein', 'Different protein'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setSwapIntent(key);
+                      setShowIntentStep(false);
+                    }}
+                    className="w-full text-left px-4 py-2.5 rounded-2xl bg-cream/60 text-charcoal text-sm border border-gold-light/40 hover:border-gold transition-colors"
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setShowIntentStep(false)}
+                  className="w-full text-center text-sm text-charcoal/40 mt-1 py-1"
+                >
+                  Show me everything →
+                </button>
+              </div>
+            ) : (
+              <>
+            {swapIntent && (
+              <div className="flex items-center justify-between bg-gold-light/15 rounded-xl px-3 py-2 mb-3 text-xs text-charcoal/60">
+                <span>
+                  Filtered for: {
+                    { too_much_work: 'Too much work', kids_wont_eat: "Kids won't eat it", quicker: 'Need something quicker', different_protein: 'Different protein' }[swapIntent]
+                  }
+                </span>
+                <button onClick={() => setSwapIntent(null)} className="text-charcoal/40 underline">
+                  Clear
+                </button>
+              </div>
+            )}
+
             {editing.course === 'kids_platter' && (
               <div className="mb-3">
-                <p className="text-xs text-ink/50 mb-2">
+                <p className="text-xs text-charcoal/50 mb-2">
                   Kids Platter was never really a recipe list — it's always been fixed combos. Tap one, or use
                   Quick entry for something else.
                 </p>
@@ -548,8 +862,8 @@ export default function MealPlanView({
                       }}
                       className={
                         customName === platter && pickerMode === 'custom'
-                          ? 'text-left px-4 py-2.5 rounded-2xl bg-gold-light/30 text-aubergine font-medium text-sm border border-gold'
-                          : 'text-left px-4 py-2.5 rounded-2xl bg-cream/60 text-ink text-sm border border-gold-light/40'
+                          ? 'text-left px-4 py-2.5 rounded-2xl bg-gold-light/30 text-charcoal font-medium text-sm border border-gold'
+                          : 'text-left px-4 py-2.5 rounded-2xl bg-cream/60 text-charcoal text-sm border border-gold-light/40'
                       }
                     >
                       {platter}
@@ -564,8 +878,8 @@ export default function MealPlanView({
                 onClick={() => setPickerMode('existing')}
                 className={
                   pickerMode === 'existing'
-                    ? 'flex-1 py-2 rounded-full bg-aubergine text-cream text-sm'
-                    : 'flex-1 py-2 rounded-full border border-aubergine/30 text-aubergine text-sm'
+                    ? 'flex-1 py-2 rounded-full bg-charcoal text-cream text-sm'
+                    : 'flex-1 py-2 rounded-full border border-charcoal/30 text-charcoal text-sm'
                 }
               >
                 Pick a recipe
@@ -574,8 +888,8 @@ export default function MealPlanView({
                 onClick={() => setPickerMode('custom')}
                 className={
                   pickerMode === 'custom'
-                    ? 'flex-1 py-2 rounded-full bg-aubergine text-cream text-sm'
-                    : 'flex-1 py-2 rounded-full border border-aubergine/30 text-aubergine text-sm'
+                    ? 'flex-1 py-2 rounded-full bg-charcoal text-cream text-sm'
+                    : 'flex-1 py-2 rounded-full border border-charcoal/30 text-charcoal text-sm'
                 }
               >
                 Quick entry
@@ -593,8 +907,8 @@ export default function MealPlanView({
                           onClick={() => setKosherFilter(kosherFilter === kt ? null : kt)}
                           className={
                             kosherFilter === kt
-                              ? 'text-xs px-3 py-1 rounded-full bg-aubergine text-cream'
-                              : 'text-xs px-3 py-1 rounded-full border border-gold-light text-aubergine'
+                              ? 'text-xs px-3 py-1 rounded-full bg-charcoal text-cream'
+                              : 'text-xs px-3 py-1 rounded-full border border-gold-light text-charcoal'
                           }
                         >
                           {kosherIcon(kt)} {kt}
@@ -619,8 +933,8 @@ export default function MealPlanView({
                           onClick={() => setPickedRecipeId(r.id)}
                           className={
                             r.id === pickedRecipeId
-                              ? 'w-full text-left px-4 py-2.5 bg-gold-light/30 text-aubergine font-medium text-sm'
-                              : 'w-full text-left px-4 py-2.5 text-ink text-sm hover:bg-gold-light/10'
+                              ? 'w-full text-left px-4 py-2.5 bg-gold-light/30 text-charcoal font-medium text-sm'
+                              : 'w-full text-left px-4 py-2.5 text-charcoal text-sm hover:bg-gold-light/10'
                           }
                         >
                           {recipeTitle(r)}
@@ -629,14 +943,14 @@ export default function MealPlanView({
                     {recipesForEditingCourse
                       .filter((r) => recipeTitle(r).toLowerCase().includes(recipeSearch.toLowerCase()))
                       .filter((r) => !kosherFilter || r.kosher_type === kosherFilter).length === 0 && (
-                      <p className="px-4 py-3 text-sm text-ink/40">
+                      <p className="px-4 py-3 text-sm text-charcoal/40">
                         No match — try Quick entry instead, or add one from the Recipes page.
                       </p>
                     )}
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-ink/50 mb-3">
+                <p className="text-sm text-charcoal/50 mb-3">
                   No {tCourse(editing.course).toLowerCase()} recipes saved yet — add one from the Recipes page, or
                   use a quick entry.
                 </p>
@@ -654,18 +968,20 @@ export default function MealPlanView({
             <div className="flex gap-2">
               <button
                 onClick={() => setEditing(null)}
-                className="flex-1 py-2.5 rounded-full border border-aubergine/30 text-aubergine"
+                className="flex-1 py-2.5 rounded-full border border-charcoal/30 text-charcoal"
               >
                 Cancel
               </button>
               <button
                 onClick={saveEntry}
                 disabled={saving || (pickerMode === 'custom' && !customName.trim())}
-                className="flex-1 py-2.5 rounded-full bg-aubergine text-cream disabled:opacity-40"
+                className="flex-1 py-2.5 rounded-full bg-charcoal text-cream disabled:opacity-40"
               >
                 {saving ? 'Saving…' : 'Save'}
               </button>
             </div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -677,6 +993,7 @@ function MonthGrid({
   days,
   data,
   hebcal,
+  fastDays,
   recipeTitle,
   t,
   onDayClick,
@@ -684,6 +1001,7 @@ function MonthGrid({
   days: Date[];
   data: Record<string, DayData>;
   hebcal: Record<string, HebcalDay>;
+  fastDays: Record<string, FastDay>;
   recipeTitle: (r: Recipe) => string;
   t: ReturnType<typeof useTranslations>;
   onDayClick: (date: string) => void;
@@ -693,29 +1011,55 @@ function MonthGrid({
       {days.map((d) => {
         const date = fmt(d);
         const day = data[date];
+        const fastDay = fastDays[date];
+        const hasMajorFastConflict = fastDay?.severity === 'major' && (day?.entries.length ?? 0) > 0;
         const hcal = hebcal[date];
         return (
           <button
             key={date}
             onClick={() => onDayClick(date)}
             className={`relative min-h-[90px] rounded-lg border p-1.5 text-[10px] text-left hover:border-gold transition-colors ${
-              hcal?.isFast ? 'border-gold-light/40 bg-cream/60 text-ink/50' : 'border-gold-light/40 bg-white'
+              hcal?.isFast ? 'border-gold-light/40 bg-cream/60 text-charcoal/50' : 'border-gold-light/40 bg-white'
             }`}
           >
             {hcal?.isYomTov && (
-              <div className="absolute inset-x-0 top-0 rounded-t-lg bg-gold-light/40 px-1 py-0.5 text-center text-[8px] font-medium text-aubergine">
+              <div className="absolute inset-x-0 top-0 rounded-t-lg bg-gold-light/40 px-1 py-0.5 text-center text-[8px] font-medium text-charcoal">
                 {t('yomTov')}
               </div>
             )}
             <div className={`flex items-center justify-between ${hcal?.isYomTov ? 'mt-4' : ''}`}>
               <span className="font-medium">{d.getDate()}</span>
-              {hcal?.isErevShabbos && <Flame className="h-3 w-3 text-gold" />}
+              {hcal?.isErevShabbos && <Flame className="h-3 w-3 text-gold-dark" />}
               {day?.hasMeatDairyBuffer && (
                 <span title={t('sameDayWarning')} className="h-2 w-2 rounded-full bg-gold" />
               )}
+              {getPrepWarning(day?.entries ?? [], hcal?.candleLighting) && (
+                <span title="Recorded prep time for this day may not finish before candle-lighting">
+                  <AlertTriangle className="h-3 w-3 text-rust" />
+                </span>
+              )}
+              {hasMajorFastConflict && (
+                <span title={fastDay!.note}>
+                  <AlertTriangle className="h-3 w-3 text-white bg-rust rounded-full p-0.5" />
+                </span>
+              )}
             </div>
             {hcal?.isFast && <p className="text-[8px]">{t('fast')}</p>}
-            {hcal?.hebrewDate && <p className="text-[8px] text-ink/40">{hcal.hebrewDate}</p>}
+            {fastDay?.severity === 'major' && (
+              <p className="text-[8px] font-semibold text-rust" title={fastDay.note}>
+                {fastDay.holiday_name}
+              </p>
+            )}
+            {fastDay?.severity === 'minor' && (
+              <p className="text-[8px] text-charcoal/50" title={fastDay.note}>
+                {fastDay.holiday_name} (fast)
+              </p>
+            )}
+            {hcal?.hebrewDate && (
+              <p className="text-[8px] text-charcoal/40" lang="he" dir="rtl">
+                {hcal.hebrewDate}
+              </p>
+            )}
             <div className="mt-1 space-y-0.5">
               {(day?.entries ?? []).slice(0, 4).map((e) =>
                 e.recipes ? (

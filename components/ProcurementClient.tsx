@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { resilientUpdate } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
+import { LogoMark } from '@/components/Logo';
 
 type Property = { id: string; name: string };
 
@@ -182,28 +183,27 @@ export default function ProcurementClient({
 
   return (
     <div className="min-h-screen bg-cream">
-      <header className="flex items-center justify-between px-4 py-3 bg-aubergine text-cream sticky top-0 z-30 print:hidden">
+      <header className="flex items-center justify-between px-4 py-3 bg-cream text-charcoal border-b border-gold-light/40 sticky top-0 z-30 print:hidden">
         <div className="flex items-center gap-2.5 min-w-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/icon-192.png" alt="" className="w-9 h-9 object-contain shrink-0" />
+          <LogoMark className="w-9 h-9" />
           <span className="font-display text-lg">Procurement</span>
         </div>
-        <Link href="/properties" className="text-sm text-cream/90">
+        <Link href="/properties" className="text-sm text-charcoal/60">
           ← Properties
         </Link>
       </header>
 
       <main className="max-w-md lg:max-w-4xl mx-auto p-4 print:max-w-full">
         <div className="hidden print:block mb-4">
-          <h1 className="font-display text-2xl text-aubergine">Combined Shopping Trip</h1>
-          <p className="text-sm text-ink/50">
+          <h1 className="font-display text-2xl text-charcoal">Combined Shopping Trip</h1>
+          <p className="text-sm text-charcoal/50">
             {properties.filter((p) => selectedIds.has(p.id)).map((p) => p.name).join(', ')} —{' '}
             {new Date().toLocaleDateString()}
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm shadow-aubergine/5 p-4 mb-4 print:hidden">
-          <h2 className="text-sm font-medium text-aubergine mb-2">Include properties</h2>
+        <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-4 print:hidden">
+          <h2 className="text-sm font-medium text-charcoal mb-2">Include properties</h2>
           <div className="flex flex-wrap gap-2">
             {properties.map((p) => (
               <button
@@ -211,8 +211,8 @@ export default function ProcurementClient({
                 onClick={() => toggleProperty(p.id)}
                 className={
                   selectedIds.has(p.id)
-                    ? 'px-3 py-1.5 rounded-full text-sm bg-aubergine text-cream'
-                    : 'px-3 py-1.5 rounded-full text-sm border border-aubergine/30 text-aubergine'
+                    ? 'px-3 py-1.5 rounded-full text-sm bg-charcoal text-cream'
+                    : 'px-3 py-1.5 rounded-full text-sm border border-charcoal/30 text-charcoal'
                 }
               >
                 {p.name}
@@ -226,23 +226,23 @@ export default function ProcurementClient({
         )}
 
         <div className="flex items-center justify-between mb-3 px-1 print:hidden">
-          <span className="text-sm text-ink/50">
+          <span className="text-sm text-charcoal/50">
             {stitched.filter((i) => !i.allPurchased).length} items left across{' '}
             {selectedIds.size} propert{selectedIds.size === 1 ? 'y' : 'ies'}
           </span>
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 text-sm text-ink/60">
+            <label className="flex items-center gap-2 text-sm text-charcoal/60">
               <input
                 type="checkbox"
                 checked={hidePurchased}
                 onChange={(e) => setHidePurchased(e.target.checked)}
-                className="accent-aubergine"
+                className="accent-gold"
               />
               Hide picked up
             </label>
             <button
               onClick={() => window.print()}
-              className="text-sm font-medium bg-aubergine text-cream px-4 py-1.5 rounded-full"
+              className="text-sm font-medium bg-charcoal text-cream px-4 py-1.5 rounded-full"
             >
               🖨️ Print
             </button>
@@ -252,7 +252,7 @@ export default function ProcurementClient({
         {loading ? (
           <SkeletonList />
         ) : stitched.length === 0 ? (
-          <p className="text-sm text-ink/40 text-center mt-8">
+          <p className="text-sm text-charcoal/40 text-center mt-8">
             Nothing on any selected property's list right now.
           </p>
         ) : (
@@ -261,31 +261,31 @@ export default function ProcurementClient({
               <section key={category} className="mb-4 break-inside-avoid print:break-inside-avoid">
                 <div className="flex items-center gap-2 px-3 mb-2">
                   <span className="h-px flex-1 bg-gold-light" />
-                  <h3 className="text-xs font-display italic tracking-[0.1em] text-aubergine/70 whitespace-nowrap">
+                  <h3 className="text-xs font-display italic tracking-[0.1em] text-charcoal/70 whitespace-nowrap">
                     {category}
                   </h3>
                   <span className="h-px flex-1 bg-gold-light" />
                 </div>
-                <ul className="divide-y divide-gold-light/30 rounded-2xl bg-white shadow-sm shadow-aubergine/5 overflow-hidden print:shadow-none print:border print:border-gold-light">
+                <ul className="divide-y divide-gold-light/30 rounded-2xl bg-white shadow-sm shadow-charcoal/5 overflow-hidden print:shadow-none print:border print:border-gold-light">
                   {items.map((item) => (
                     <li key={item.key} className="flex items-start gap-3 px-4 py-3 print:py-1.5">
                       <input
                         type="checkbox"
                         checked={item.allPurchased}
                         onChange={(e) => markGroupPurchased(item, e.target.checked)}
-                        className="h-5 w-5 shrink-0 accent-aubergine rounded mt-0.5 print:hidden"
+                        className="h-5 w-5 shrink-0 accent-gold rounded mt-0.5 print:hidden"
                       />
-                      <span className="hidden print:inline text-ink/40 shrink-0">☐</span>
+                      <span className="hidden print:inline text-charcoal/40 shrink-0">☐</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2">
                           <span
                             className={
-                              item.allPurchased ? 'line-through text-ink/30' : 'text-ink'
+                              item.allPurchased ? 'line-through text-charcoal/30' : 'text-charcoal'
                             }
                           >
                             {item.displayName}
                           </span>
-                          <span className="text-sm text-ink/40 shrink-0">
+                          <span className="text-sm text-charcoal/40 shrink-0">
                             Pick {item.totalQty}
                           </span>
                         </div>
@@ -294,7 +294,7 @@ export default function ProcurementClient({
                             {item.fromProperties.map((p) => (
                               <span
                                 key={p.propertyId}
-                                className="text-[11px] bg-gold-light/40 text-aubergine px-2 py-0.5 rounded-full"
+                                className="text-[11px] bg-gold-light/40 text-charcoal px-2 py-0.5 rounded-full"
                               >
                                 {p.propertyName}: {p.qty}
                               </span>

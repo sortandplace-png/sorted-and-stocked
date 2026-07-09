@@ -36,8 +36,8 @@ export default function ForgotPasswordPage() {
     return (
       <div className="min-h-screen bg-cream flex items-center justify-center px-6">
         <div className="max-w-sm text-center">
-          <h1 className="font-display text-2xl text-aubergine mb-2">Check your email</h1>
-          <p className="text-sm text-ink/60">
+          <h1 className="font-display text-2xl text-charcoal mb-2">Check your email</h1>
+          <p className="text-sm text-charcoal/60">
             If an account exists for {email}, a password reset link is on its way.
           </p>
         </div>
@@ -48,8 +48,8 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen bg-cream flex items-center justify-center px-6">
       <div className="max-w-sm w-full">
-        <h1 className="font-display text-2xl text-aubergine mb-1">Reset your password</h1>
-        <p className="text-sm text-ink/50 mb-6">
+        <h1 className="font-display text-2xl text-charcoal mb-1">Reset your password</h1>
+        <p className="text-sm text-charcoal/50 mb-6">
           Enter your email and we'll send you a reset link.
         </p>
 
@@ -66,13 +66,13 @@ export default function ForgotPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-full bg-aubergine text-cream font-medium disabled:opacity-40"
+            className="w-full py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
           >
             {loading ? 'Sending…' : 'Send reset link'}
           </button>
         </form>
 
-        <Link href="/login" className="block text-center text-sm text-aubergine/60 mt-4">
+        <Link href="/login" className="block text-center text-sm text-charcoal/60 mt-4">
           Back to sign in
         </Link>
       </div>

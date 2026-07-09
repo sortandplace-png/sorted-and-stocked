@@ -77,8 +77,8 @@ export default function NewPropertyForm() {
   return (
     <div className="min-h-screen bg-cream flex items-center justify-center px-6">
       <div className="max-w-sm w-full">
-        <h1 className="font-display text-2xl text-aubergine mb-1">Add a property</h1>
-        <p className="text-sm text-ink/50 mb-6">
+        <h1 className="font-display text-2xl text-charcoal mb-1">Add a property</h1>
+        <p className="text-sm text-charcoal/50 mb-6">
           You'll be set as the owner and can invite staff afterward.
         </p>
 
@@ -96,7 +96,7 @@ export default function NewPropertyForm() {
           <button
             type="submit"
             disabled={saving || !name.trim()}
-            className="w-full py-2.5 rounded-full bg-aubergine text-cream font-medium disabled:opacity-40"
+            className="w-full py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
           >
             {saving ? 'Creating…' : 'Create property'}
           </button>

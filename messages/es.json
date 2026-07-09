@@ -1,5 +1,6 @@
 {
   "nav": {
+    "dashboard": "Panel",
     "inventory": "Inventario",
     "recipes": "Recetas",
     "mealPlan": "Plan de comidas",
@@ -8,7 +9,12 @@
     "staff": "Personal",
     "tools": "Herramientas",
     "labels": "Etiquetas",
-    "handover": "Traspaso de turno"
+    "handover": "Traspaso de turno",
+    "plan": "Planificar",
+    "shop": "Comprar",
+    "more": "Más",
+    "home": "Inicio",
+    "scanAriaLabel": "Escanear artículo al inventario"
   },
   "common": {
     "print": "Imprimir",
@@ -71,12 +77,21 @@
     "whatsappShare": "Compartir en WhatsApp",
     "print": "Imprimir",
     "moreRecipes": "+{count} más",
-    "weekOf": "Semana del {date}"
+    "weekOf": "Semana del {date}",
+    "emptyTitle": "Aún no hay artículos",
+    "emptySubtitle": "Genera una lista a partir de las comidas planificadas esta semana.",
+    "generateFromWeek": "Generar de las comidas de esta semana",
+    "generating": "Generando…",
+    "generatedCount": "Se agregaron {count} ingrediente(s) a la lista.",
+    "noLinkedRecipesThisWeek": "No hay recetas vinculadas planificadas esta semana — nada que agregar."
   },
   "labels": {
     "title": "Imprimir Etiquetas",
     "selectItems": "Seleccionar artículos",
     "printLabels": "Imprimir Etiquetas",
     "usedInRecipes": "Usado en recetas"
+  },
+  "scan": {
+    "reorder": "Volver a pedir"
   }
 }

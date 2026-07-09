@@ -50,3 +50,58 @@ export async function updateRecipeSubstitution({
     return { success: false, error: 'Database transaction failed.' };
   }
 }
+
+interface UpdateFamilyNotesInput {
+  recipeId: string;
+  notes: string;
+}
+
+export async function updateRecipeFamilyNotes({
+  recipeId,
+  notes,
+}: UpdateFamilyNotesInput): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createClient();
+
+    const { error } = await supabase.from('recipes').update({ family_notes: notes }).eq('id', recipeId);
+
+    if (error) {
+      console.error('Family notes update failed:', error);
+      return { success: false, error: 'Failed to save family notes.' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Family notes update failed:', error);
+    return { success: false, error: 'Database transaction failed.' };
+  }
+}
+
+interface UpdatePrepLeadDaysInput {
+  recipeId: string;
+  prepLeadDays: number | null;
+}
+
+export async function updateRecipePrepLeadDays({
+  recipeId,
+  prepLeadDays,
+}: UpdatePrepLeadDaysInput): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createClient();
+
+    const { error } = await supabase
+      .from('recipes')
+      .update({ prep_lead_days: prepLeadDays })
+      .eq('id', recipeId);
+
+    if (error) {
+      console.error('Prep lead days update failed:', error);
+      return { success: false, error: 'Failed to save.' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Prep lead days update failed:', error);
+    return { success: false, error: 'Database transaction failed.' };
+  }
+}

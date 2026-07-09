@@ -12,7 +12,7 @@ export default async function RecipesPage({
 
   const { data: recipes } = await supabase
     .from('recipes')
-    .select('id, name, photo_url, kosher_type')
+    .select('id, name, photo_url, kosher_type, course, tags, is_pesach, is_yom_tov, is_shabbos_only, approx_total_minutes')
     .eq('property_id', id)
     .order('name');
 

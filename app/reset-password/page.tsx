@@ -37,8 +37,8 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen bg-cream flex items-center justify-center px-6">
       <div className="max-w-sm w-full">
-        <h1 className="font-display text-2xl text-aubergine mb-1">Set a new password</h1>
-        <p className="text-sm text-ink/50 mb-6">Choose something you haven't used before.</p>
+        <h1 className="font-display text-2xl text-charcoal mb-1">Set a new password</h1>
+        <p className="text-sm text-charcoal/50 mb-6">Choose something you haven't used before.</p>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
@@ -65,7 +65,7 @@ export default function ResetPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-full bg-aubergine text-cream font-medium disabled:opacity-40"
+            className="w-full py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
           >
             {loading ? 'Saving…' : 'Save password'}
           </button>

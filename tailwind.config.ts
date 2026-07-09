@@ -14,25 +14,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Feminine luxury direction: deep plum + rose-gold + ivory/blush,
-        // in place of the more utilitarian aubergine/gold pairing.
-        aubergine: {
-          DEFAULT: '#6B3550', // deep plum
-          dark: '#4A2338',
-        },
+        // True ivory/charcoal/gold direction — the earlier deep-plum +
+        // rose-gold pairing (aubergine/ink) is retired; every component that
+        // referenced it now points at charcoal or gold instead.
         gold: {
-          DEFAULT: '#C08D74', // rose-gold
-          light: '#F0D9CE',   // soft blush
+          DEFAULT: '#C5A46D', // true gold, not rose-gold — decorative use only (borders, fills behind dark text, icon accents): ~2.2:1 contrast on white, fails WCAG AA for text
+          light: '#EBDFCC',   // pale gold tint, for borders/dividers
+          dark: '#8A6E42',    // same gold family, darkened for text/interactive use — 4.79:1 on white, passes WCAG AA for normal text
+          active: '#B08952',  // nav active-state indicator only — 3.21:1 on white, passes the 3:1 UI-component/large-text threshold but NOT 4.5:1 normal text, so pair with charcoal text, never use as text color itself
         },
-        cream: '#FBF4EF',      // ivory
-        ink: '#3A2A33',        // warm plum-black
+        cream: '#FAF7F2',      // true ivory
+        charcoal: '#2B2B2B',   // neutral near-black — replaces aubergine (accent) and ink (body text)
         sage: '#8CA085',       // success — softened, not clinical green
         rust: '#B5636B',       // alerts/low-stock — dusty rose-red, not brown-rust
-        luxury: {
-          cream: '#FAF7F2',
-          tan: '#C4A484',
-          charcoal: '#3C2F2F',
-        },
+        dairy: '#4A6B8A',      // dusty blue — third kashrut-indicator color, same softened treatment as rust/sage
       },
       fontFamily: {
         display: ['var(--font-display)', 'serif'],

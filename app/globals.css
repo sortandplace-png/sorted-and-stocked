@@ -17,6 +17,25 @@ body {
     height: auto !important;
     overflow: visible !important;
   }
+
+  /* Without this, Chrome/Safari strip background colors on print by default —
+     which breaks meaning here (purchased-item highlighting, kosher badges,
+     category tints), not just decoration. */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  @page {
+    margin: 0.5in;
+  }
+
+  /* Keep a shopping-list row or recipe card from splitting across a page
+     break mid-item. */
+  li,
+  tr {
+    break-inside: avoid;
+  }
 }
 
 body {

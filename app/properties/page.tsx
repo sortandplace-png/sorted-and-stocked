@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import LogoutButton from '@/components/LogoutButton';
+import { LogoMark } from '@/components/Logo';
 
 export default async function PropertiesPage() {
   const supabase = await createClient();
@@ -30,9 +31,8 @@ export default async function PropertiesPage() {
       <div className="max-w-sm mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/icon-192.png" alt="" className="w-8 h-8 object-contain" />
-            <h1 className="font-display text-2xl text-aubergine">Your properties</h1>
+            <LogoMark className="w-8 h-8" />
+            <h1 className="font-display text-2xl text-charcoal">Your properties</h1>
           </div>
           <LogoutButton variant="light" />
         </div>
@@ -48,17 +48,17 @@ export default async function PropertiesPage() {
                 <li key={property.id}>
                   <Link
                     href={`/properties/${property.id}/inventory`}
-                    className="flex items-center justify-between bg-white rounded-2xl shadow-sm shadow-aubergine/5 px-4 py-3 hover:bg-gold-light/15 transition-colors"
+                    className="flex items-center justify-between bg-white rounded-2xl shadow-sm shadow-charcoal/5 px-4 py-3 hover:bg-gold-light/15 transition-colors"
                   >
-                    <span className="text-ink">{property.name}</span>
-                    <span className="text-xs text-aubergine/50 capitalize">{m.role}</span>
+                    <span className="text-charcoal">{property.name}</span>
+                    <span className="text-xs text-charcoal/50 capitalize">{m.role}</span>
                   </Link>
                 </li>
               );
             })}
           </ul>
         ) : (
-          <p className="text-sm text-ink/40 mb-6">
+          <p className="text-sm text-charcoal/40 mb-6">
             You're not part of any property yet.
           </p>
         )}
@@ -66,7 +66,7 @@ export default async function PropertiesPage() {
         {memberships && memberships.length > 1 && (
           <Link
             href="/procurement"
-            className="block text-center py-2.5 rounded-full bg-gold-light/40 text-aubergine text-sm font-medium mb-2"
+            className="block text-center py-2.5 rounded-full bg-gold-light/40 text-charcoal text-sm font-medium mb-2"
           >
             🛒 Shop for multiple properties at once
           </Link>
@@ -74,7 +74,7 @@ export default async function PropertiesPage() {
 
         <Link
           href="/properties/new"
-          className="block text-center py-2.5 rounded-full border border-aubergine/30 text-aubergine text-sm font-medium"
+          className="block text-center py-2.5 rounded-full border border-charcoal/30 text-charcoal text-sm font-medium"
         >
           + Add a property
         </Link>

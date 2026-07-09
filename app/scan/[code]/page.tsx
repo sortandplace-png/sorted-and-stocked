@@ -36,6 +36,10 @@ export default async function ScanPage({ params }: ScanPageProps) {
     );
   }
 
-  // Redirect to the inventory item detail page within its property context
-  redirect(`/properties/${item.property_id}/inventory/${item.id}`);
+  // No standalone inventory item detail route exists (confirmed — inventory
+  // is a single list page). Route into the real in-app Scan screen instead,
+  // pre-filled with this item's code so it looks itself up and lands
+  // straight on the item-found card (photo + reorder link + qty editor) —
+  // the same screen an in-app scan reaches, no separate page to build/maintain.
+  redirect(`/properties/${item.property_id}/scan?code=${encodeURIComponent(code)}`);
 }

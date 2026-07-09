@@ -68,7 +68,7 @@ export default function KitchenTimer() {
   };
 
   return (
-    <div className="bg-aubergine-dark border border-aubergine/40 rounded-2xl p-6 shadow-xl max-w-sm mx-auto text-cream">
+    <div className="bg-charcoal border border-charcoal/40 rounded-2xl p-6 shadow-xl max-w-sm mx-auto text-cream">
       <div className="text-center mb-4">
         <span className="text-xs uppercase tracking-widest text-cream/50 font-semibold">Kitchen Companion</span>
       </div>
@@ -84,7 +84,7 @@ export default function KitchenTimer() {
           <button
             key={mins}
             onClick={() => addTime(mins)}
-            className="bg-aubergine/60 hover:bg-aubergine/80 active:scale-95 transition text-sm font-medium py-3 px-2 rounded-xl border border-cream/10"
+            className="bg-charcoal/60 hover:bg-charcoal/80 active:scale-95 transition text-sm font-medium py-3 px-2 rounded-xl border border-cream/10"
           >
             +{mins}m
           </button>
@@ -98,10 +98,10 @@ export default function KitchenTimer() {
           disabled={secondsLeft === 0}
           className={`flex-1 py-4 rounded-xl font-bold text-lg transition active:scale-95 ${
             secondsLeft === 0
-              ? 'bg-aubergine/40 text-cream/30 cursor-not-allowed border border-cream/10'
+              ? 'bg-charcoal/40 text-cream/30 cursor-not-allowed border border-cream/10'
               : isActive
-              ? 'bg-gold text-aubergine-dark hover:bg-gold-light'
-              : 'bg-sage text-aubergine-dark hover:opacity-90'
+              ? 'bg-gold text-charcoal hover:bg-gold-light'
+              : 'bg-sage text-charcoal hover:opacity-90'
           }`}
         >
           {isActive ? 'Pause' : 'Start'}

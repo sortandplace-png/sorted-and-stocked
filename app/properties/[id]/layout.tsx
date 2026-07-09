@@ -1,8 +1,11 @@
 // app/properties/[id]/layout.tsx
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import PropertyIconNav from '@/components/PropertyIconNav';
+import DesktopNav from '@/components/nav/DesktopNav';
+import MobileBottomNav from '@/components/nav/MobileBottomNav';
 import LogoutButton from '@/components/LogoutButton';
+import { LogoMark } from '@/components/Logo';
 import LocaleToggle from '@/components/LocaleToggle';
 import { PropertyRoleProvider, type PropertyRole } from '@/components/PropertyRoleContext';
 
@@ -42,24 +45,24 @@ export default async function PropertyLayout({
   return (
     <PropertyRoleProvider role={membership.role as PropertyRole}>
       <div className="min-h-screen bg-cream">
-        <header className="flex items-center justify-between px-4 py-3 bg-aubergine text-cream sticky top-0 z-30 print:hidden">
-          <div className="flex items-center gap-2.5 min-w-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/icon-192.png" alt="Sorted & Stocked" className="w-9 h-9 object-contain shrink-0" />
+        <header className="flex items-center justify-between px-4 py-3 bg-cream text-charcoal border-b border-gold-light/40 sticky top-0 z-30 print:hidden">
+          <Link href={`/properties/${id}/dashboard`} className="flex items-center gap-2.5 min-w-0">
+            <LogoMark className="w-9 h-9" />
             <div className="min-w-0 leading-tight">
               <span className="block font-display text-lg">Sorted &amp; Stocked</span>
-              <span className="block text-[11px] text-cream/70 truncate">{propertyName}</span>
+              <span className="block text-[11px] text-charcoal/60 truncate">{propertyName}</span>
             </div>
-          </div>
+          </Link>
           <div className="flex items-center gap-3">
             <LocaleToggle />
-            <LogoutButton />
+            <LogoutButton variant="light" />
           </div>
         </header>
         <div className="sticky top-[60px] z-20">
-          <PropertyIconNav propertyId={id} role={membership.role as PropertyRole} />
+          <DesktopNav propertyId={id} role={membership.role as PropertyRole} />
         </div>
-        <main>{children}</main>
+        <main className="pb-20 md:pb-0">{children}</main>
+        <MobileBottomNav propertyId={id} />
       </div>
     </PropertyRoleProvider>
   );

@@ -193,16 +193,16 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-aubergine mb-4">Staff</h1>
+      <h1 className="text-2xl font-display text-charcoal mb-4">Staff</h1>
 
       {error && (
         <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2 mb-3">{error}</p>
       )}
 
-      <ul className="divide-y divide-gold-light/30 rounded-2xl bg-white shadow-sm shadow-aubergine/5 mb-6 overflow-hidden">
+      <ul className="divide-y divide-gold-light/30 rounded-2xl bg-white shadow-sm shadow-charcoal/5 mb-6 overflow-hidden">
         {members.map((member) => (
           <li key={member.id} className="flex items-center gap-3 px-4 py-3">
-            <span className="flex-1 truncate text-ink">{member.full_name ?? 'Unnamed user'}</span>
+            <span className="flex-1 truncate text-charcoal">{member.full_name ?? 'Unnamed user'}</span>
             <select
               value={member.role}
               onChange={(e) => changeRole(member.id, e.target.value as PropertyRole)}
@@ -225,8 +225,8 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
         ))}
       </ul>
 
-      <h2 className="font-display text-lg text-aubergine mb-2">Invite someone</h2>
-      <form onSubmit={handleInvite} className="bg-white rounded-2xl shadow-sm shadow-aubergine/5 p-4 space-y-3">
+      <h2 className="font-display text-lg text-charcoal mb-2">Invite someone</h2>
+      <form onSubmit={handleInvite} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 space-y-3">
         <input
           type="email"
           placeholder="Email address"
@@ -243,18 +243,18 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
           <option value="staff">Staff</option>
           <option value="manager">Manager</option>
         </select>
-        {inviteMessage && <p className="text-sm text-ink/60">{inviteMessage}</p>}
+        {inviteMessage && <p className="text-sm text-charcoal/60">{inviteMessage}</p>}
 
         {noAccountFor && (
           <div className="bg-gold-light/30 rounded-2xl p-3 text-sm">
-            <p className="text-aubergine mb-2">
+            <p className="text-charcoal mb-2">
               No account found for {noAccountFor}. Send them a signup invite email?
             </p>
             <button
               type="button"
               onClick={sendInviteEmail}
               disabled={sendingInviteEmail}
-              className="w-full py-2 rounded-full bg-aubergine text-cream font-medium disabled:opacity-40"
+              className="w-full py-2 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
             >
               {sendingInviteEmail ? 'Sending…' : `Send invite to ${noAccountFor}`}
             </button>
@@ -264,16 +264,16 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
         <button
           type="submit"
           disabled={inviting || !inviteEmail.trim()}
-          className="w-full py-2.5 rounded-full bg-aubergine text-cream font-medium disabled:opacity-40"
+          className="w-full py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
         >
           {inviting ? 'Adding…' : 'Add to property'}
         </button>
-        <p className="text-xs text-ink/40">
+        <p className="text-xs text-charcoal/40">
           If they don't have an account yet, you'll be offered the option to email them a signup invite.
         </p>
       </form>
 
-      <p className="text-xs text-ink/40 mt-4">
+      <p className="text-xs text-charcoal/40 mt-4">
         Owner role can only be granted from this list by promoting an existing member — invites max out at Manager.
       </p>
     </div>

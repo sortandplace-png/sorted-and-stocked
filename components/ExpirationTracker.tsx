@@ -35,7 +35,7 @@ export default function ExpirationTracker({ propertyId }: { propertyId: string }
   }, []);
 
   if (loading) {
-    return <div className="text-center py-8 text-ink/50">Loading expiration data...</div>;
+    return <div className="text-center py-8 text-charcoal/50">Loading expiration data...</div>;
   }
 
   if (items.length === 0) {
@@ -50,7 +50,7 @@ export default function ExpirationTracker({ propertyId }: { propertyId: string }
     <div className="space-y-3">
       <div className="flex items-center gap-2 mb-4">
         <AlertCircle className="h-5 w-5 text-rust" />
-        <h3 className="font-semibold text-ink">Items Nearing Expiration</h3>
+        <h3 className="font-semibold text-charcoal">Items Nearing Expiration</h3>
       </div>
 
       {items.map((item) => {

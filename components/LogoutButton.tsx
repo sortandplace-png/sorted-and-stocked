@@ -17,7 +17,7 @@ export default function LogoutButton({ variant = 'dark' }: { variant?: 'dark' | 
   return (
     <button
       onClick={handleLogout}
-      className={`text-sm underline ${variant === 'dark' ? 'text-cream/80' : 'text-aubergine/60'}`}
+      className={`text-sm underline ${variant === 'dark' ? 'text-cream/80' : 'text-charcoal/60'}`}
     >
       Sign out
     </button>

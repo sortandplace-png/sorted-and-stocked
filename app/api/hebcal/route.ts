@@ -1,6 +1,6 @@
 // GET /api/hebcal?year=2026&month=9
 //
-// Wraps the Hebcal API for Lakewood, NJ (geonameid=5101760) and reshapes it
+// Wraps the Hebcal API for Lakewood, NJ (geonameid=5100280) and reshapes it
 // into { "2026-09-11": { hebrewDate, isYomTov, isFast, isErevShabbos,
 // candleLighting } } so the month view can do a plain object lookup per day
 // instead of re-parsing Hebcal's event list on every render.

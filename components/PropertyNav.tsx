@@ -57,7 +57,7 @@ export default function PropertyNav({
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-lg shadow-aubergine/10 overflow-hidden z-50">
+        <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-lg shadow-charcoal/10 overflow-hidden z-50">
           {items.map((item) => (
             <Link
               key={item.segment}
@@ -65,8 +65,8 @@ export default function PropertyNav({
               onClick={() => setOpen(false)}
               className={
                 pathname.includes(`/${item.segment}`)
-                  ? 'flex items-center gap-3 px-4 py-3 bg-gold-light/20 text-aubergine font-medium'
-                  : 'flex items-center gap-3 px-4 py-3 text-ink hover:bg-gold-light/15 transition-colors'
+                  ? 'flex items-center gap-3 px-4 py-3 bg-gold-light/20 text-charcoal font-medium'
+                  : 'flex items-center gap-3 px-4 py-3 text-charcoal hover:bg-gold-light/15 transition-colors'
               }
             >
               <span className="text-lg">{item.icon}</span>
