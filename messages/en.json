@@ -50,6 +50,45 @@
     "createInventoryItem": "Create inventory item",
     "noInventoryLink": "Not linked to inventory yet"
   },
+  "recipeCards": {
+    "familyNotes": {
+      "title": "Family Notes",
+      "description": "Things only the family would know — who likes it a certain way, what to skip, why it's made this way.",
+      "placeholder": "e.g. Tatty likes this less sweet — halve the sugar when he's home.",
+      "savedToast": "Family notes saved.",
+      "errorToast": "Failed to save."
+    },
+    "substitutions": {
+      "title": "Substitutions",
+      "description": "Manual backup ingredient options when live inventory mapping falls short.",
+      "placeholder": "Example: If heavy cream is low, swap with whole milk + 1 tbsp unsalted butter from main pantry fridge...",
+      "clearAll": "Clear all",
+      "clearConfirm": "Are you sure you want to permanently clear all substitution notes for this recipe?",
+      "lastModified": "Last modified: {date}",
+      "by": "By: {name}",
+      "savedToast": "Substitutions saved successfully.",
+      "errorToast": "An unexpected error occurred."
+    },
+    "kitchenTools": {
+      "title": "Kitchen Tools",
+      "description": "Equipment this recipe needs on hand.",
+      "empty": "No equipment listed yet.",
+      "addButton": "Add",
+      "remove": "Remove {item}",
+      "placeholder": "e.g. 9x13 Pan",
+      "savedToast": "Kitchen tools saved.",
+      "errorToast": "Failed to save."
+    },
+    "bracha": {
+      "title": "Bracha",
+      "description": "Which bracha applies — a manual judgment call, never auto-assigned.",
+      "notSet": "Not set",
+      "before": "Before:",
+      "after": "After:",
+      "savedToast": "Bracha saved.",
+      "errorToast": "Failed to save."
+    }
+  },
   "course": {
     "soup": "Soup",
     "protein": "Protein",

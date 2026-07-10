@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { updateRecipeSubstitution } from '@/app/recipes/actions';
 import { createClient } from '@/lib/supabase/client';
 
@@ -21,6 +22,8 @@ export default function SubstitutionEditor({
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [currentUserName, setCurrentUserName] = useState('Someone');
+  const t = useTranslations('recipeCards.substitutions');
+  const tc = useTranslations('common');
 
   useEffect(() => {
     const supabase = createClient();
@@ -46,26 +49,24 @@ export default function SubstitutionEditor({
       });
 
       if (result.success) {
-        setStatus({ type: 'success', message: 'Substitutions saved successfully.' });
+        setStatus({ type: 'success', message: t('savedToast') });
         setTimeout(() => setStatus(null), 3000);
       } else {
-        setStatus({ type: 'error', message: result.error || 'An unexpected error occurred.' });
+        setStatus({ type: 'error', message: result.error || t('errorToast') });
       }
     });
   };
 
   const handleClear = () => {
-    if (confirm('Are you sure you want to permanently clear all substitution notes for this recipe?')) {
+    if (confirm(t('clearConfirm'))) {
       setNotes('');
     }
   };
 
   return (
     <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
-      <h3 className="font-display text-lg text-charcoal mb-1">Substitutions</h3>
-      <p className="text-xs text-charcoal/50 mb-2">
-        Manual backup ingredient options when live inventory mapping falls short.
-      </p>
+      <h3 className="font-display text-lg text-charcoal mb-1">{t('title')}</h3>
+      <p className="text-xs text-charcoal/50 mb-2">{t('description')}</p>
 
       <form onSubmit={handleSave} className="space-y-2">
         <div className="relative">
@@ -74,7 +75,7 @@ export default function SubstitutionEditor({
             onChange={(e) => setNotes(e.target.value.slice(0, CHARACTER_LIMIT))}
             disabled={isPending}
             rows={5}
-            placeholder="Example: If heavy cream is low, swap with whole milk + 1 tbsp unsalted butter from main pantry fridge..."
+            placeholder={t('placeholder')}
             className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-xl p-3 text-sm text-charcoal disabled:opacity-60 resize-y"
           />
           <div className="absolute bottom-2 right-3 text-[10px] text-charcoal/30">
@@ -84,8 +85,8 @@ export default function SubstitutionEditor({
 
         {(lastUpdatedAt || lastUpdatedBy) && (
           <div className="text-[11px] text-charcoal/40 flex justify-between items-center bg-cream px-3 py-1.5 rounded-lg">
-            <span>Last modified: {lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleDateString() : 'N/A'}</span>
-            <span>By: {lastUpdatedBy || 'System'}</span>
+            <span>{t('lastModified', { date: lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleDateString() : 'N/A' })}</span>
+            <span>{t('by', { name: lastUpdatedBy || 'System' })}</span>
           </div>
         )}
 
@@ -98,7 +99,7 @@ export default function SubstitutionEditor({
                 disabled={isPending}
                 className="text-xs text-rust hover:text-rust/80 font-medium disabled:opacity-50"
               >
-                Clear all
+                {t('clearAll')}
               </button>
             )}
           </div>
@@ -110,7 +111,7 @@ export default function SubstitutionEditor({
                 onClick={() => setNotes(initialNotes)}
                 className="text-sm text-charcoal/50 hover:text-charcoal px-3 py-1.5"
               >
-                Revert
+                {tc('revert')}
               </button>
             )}
             <button
@@ -118,7 +119,7 @@ export default function SubstitutionEditor({
               disabled={!isDirty || isPending}
               className="text-sm font-medium bg-charcoal text-cream px-4 py-1.5 rounded-full disabled:opacity-40"
             >
-              {isPending ? 'Saving…' : 'Save'}
+              {isPending ? tc('saving') : tc('save')}
             </button>
           </div>
         </div>

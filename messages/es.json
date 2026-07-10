@@ -50,6 +50,45 @@
     "createInventoryItem": "Crear artículo de inventario",
     "noInventoryLink": "Aún no vinculado al inventario"
   },
+  "recipeCards": {
+    "familyNotes": {
+      "title": "Notas Familiares",
+      "description": "Cosas que solo la familia sabría — a quién le gusta de cierta manera, qué omitir, por qué se hace así.",
+      "placeholder": "ej. A Tatty le gusta menos dulce — reduce el azúcar a la mitad cuando esté en casa.",
+      "savedToast": "Notas familiares guardadas.",
+      "errorToast": "Error al guardar."
+    },
+    "substitutions": {
+      "title": "Sustituciones",
+      "description": "Opciones manuales de ingredientes de respaldo cuando el mapeo de inventario en vivo no es suficiente.",
+      "placeholder": "Ejemplo: Si la crema espesa está baja, sustituye con leche entera + 1 cucharada de mantequilla sin sal del refrigerador de la despensa principal...",
+      "clearAll": "Borrar todo",
+      "clearConfirm": "¿Estás seguro de que deseas borrar permanentemente todas las notas de sustitución de esta receta?",
+      "lastModified": "Última modificación: {date}",
+      "by": "Por: {name}",
+      "savedToast": "Sustituciones guardadas exitosamente.",
+      "errorToast": "Ocurrió un error inesperado."
+    },
+    "kitchenTools": {
+      "title": "Utensilios de Cocina",
+      "description": "Equipo que esta receta necesita tener a mano.",
+      "empty": "Aún no hay equipo listado.",
+      "addButton": "Agregar",
+      "remove": "Eliminar {item}",
+      "placeholder": "ej. Molde 9x13",
+      "savedToast": "Utensilios de cocina guardados.",
+      "errorToast": "Error al guardar."
+    },
+    "bracha": {
+      "title": "Bracha",
+      "description": "Qué bracha aplica — una decisión manual, nunca asignada automáticamente.",
+      "notSet": "No establecido",
+      "before": "Antes:",
+      "after": "Después:",
+      "savedToast": "Bracha guardada.",
+      "errorToast": "Error al guardar."
+    }
+  },
   "course": {
     "soup": "Sopa",
     "protein": "Proteína",

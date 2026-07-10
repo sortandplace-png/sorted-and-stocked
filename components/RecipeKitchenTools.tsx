@@ -3,6 +3,7 @@
 
 import { useState, useTransition } from 'react';
 import { X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { updateRecipeEquipment } from '@/app/recipes/actions';
 import { useToast } from '@/components/Toast';
 
@@ -18,6 +19,8 @@ export default function RecipeKitchenTools({
   const [draft, setDraft] = useState('');
   const [isPending, startTransition] = useTransition();
   const showToast = useToast();
+  const t = useTranslations('recipeCards.kitchenTools');
+  const tc = useTranslations('common');
 
   const isDirty = JSON.stringify(equipment) !== JSON.stringify(saved);
 
@@ -40,20 +43,20 @@ export default function RecipeKitchenTools({
       const result = await updateRecipeEquipment({ recipeId, equipment });
       if (result.success) {
         setSaved(equipment);
-        showToast('Kitchen tools saved.', { variant: 'success' });
+        showToast(t('savedToast'), { variant: 'success' });
       } else {
-        showToast(result.error ?? 'Failed to save.', { variant: 'error' });
+        showToast(result.error ?? t('errorToast'), { variant: 'error' });
       }
     });
   }
 
   return (
     <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 print:hidden">
-      <h3 className="font-display text-lg text-charcoal mb-1">Kitchen Tools</h3>
-      <p className="text-xs text-charcoal/50 mb-2">Equipment this recipe needs on hand.</p>
+      <h3 className="font-display text-lg text-charcoal mb-1">{t('title')}</h3>
+      <p className="text-xs text-charcoal/50 mb-2">{t('description')}</p>
 
       {equipment.length === 0 && !isPending && (
-        <p className="text-sm text-charcoal/40 mb-2">No equipment listed yet.</p>
+        <p className="text-sm text-charcoal/40 mb-2">{t('empty')}</p>
       )}
 
       <div className="flex flex-wrap gap-1.5 mb-2">
@@ -66,7 +69,7 @@ export default function RecipeKitchenTools({
             <button
               onClick={() => removeItem(item)}
               disabled={isPending}
-              aria-label={`Remove ${item}`}
+              aria-label={t('remove', { item })}
               className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-charcoal/10 transition"
             >
               <X size={12} strokeWidth={2} />
@@ -87,7 +90,7 @@ export default function RecipeKitchenTools({
             }
           }}
           disabled={isPending}
-          placeholder="e.g. 9x13 Pan"
+          placeholder={t('placeholder')}
           className="flex-1 border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-xl px-3 py-1.5 text-sm text-charcoal disabled:opacity-60"
         />
         <button
@@ -95,7 +98,7 @@ export default function RecipeKitchenTools({
           disabled={isPending || !draft.trim()}
           className="text-sm font-medium text-gold-dark border border-gold-light/60 px-3 py-1.5 rounded-xl disabled:opacity-40"
         >
-          Add
+          {t('addButton')}
         </button>
       </div>
 
@@ -105,7 +108,7 @@ export default function RecipeKitchenTools({
             onClick={() => setEquipment(saved)}
             className="text-sm text-charcoal/50 hover:text-charcoal px-3 py-1.5"
           >
-            Revert
+            {tc('revert')}
           </button>
         )}
         <button
@@ -113,7 +116,7 @@ export default function RecipeKitchenTools({
           disabled={!isDirty || isPending}
           className="text-sm font-medium bg-charcoal text-cream px-4 py-1.5 rounded-full disabled:opacity-40"
         >
-          {isPending ? 'Saving…' : 'Save'}
+          {isPending ? tc('saving') : tc('save')}
         </button>
       </div>
     </div>
