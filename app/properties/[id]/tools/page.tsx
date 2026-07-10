@@ -1,6 +1,6 @@
 // app/properties/[id]/tools/page.tsx
-import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import ToolsGroupList from '@/components/ToolsGroupList';
 
 const TOOLS = [
   {
@@ -142,36 +142,16 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
   const tools = flags.guest_taste_memory ? [...TOOLS, TASTE_MEMORY_TOOL] : TOOLS;
   const bySlug = new Map(tools.map((t) => [t.slug, t]));
 
+  const groups = GROUPS.map((group) => ({
+    key: group.key,
+    label: group.label,
+    tools: group.slugs.map((slug) => bySlug.get(slug)).filter((t): t is (typeof TOOLS)[number] => !!t),
+  })).filter((group) => group.tools.length > 0);
+
   return (
     <div className="max-w-md lg:max-w-4xl mx-auto p-4">
       <h1 className="text-2xl font-display text-charcoal mb-4">Tools</h1>
-      <div className="space-y-6">
-        {GROUPS.map((group) => {
-          const groupTools = group.slugs.map((slug) => bySlug.get(slug)).filter((t): t is (typeof TOOLS)[number] => !!t);
-          if (groupTools.length === 0) return null;
-          return (
-            <div key={group.key}>
-              <h2 className="text-xs font-medium uppercase tracking-wider text-gold-dark mb-2">{group.label}</h2>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {groupTools.map((tool) => (
-                  <li key={tool.slug}>
-                    <Link
-                      href={`/properties/${id}/tools/${tool.slug}`}
-                      className="flex flex-col items-center text-center gap-2 bg-white rounded-xl2 shadow-sm shadow-charcoal/5 px-4 py-5 hover:shadow-md hover:shadow-charcoal/10 transition-shadow h-full"
-                    >
-                      <span className="w-11 h-11 flex items-center justify-center rounded-full bg-gold-dark text-lg">
-                        {tool.icon}
-                      </span>
-                      <span className="block font-display font-semibold text-charcoal">{tool.title}</span>
-                      <span className="block text-sm text-charcoal/50">{tool.description}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
-      </div>
+      <ToolsGroupList propertyId={id} groups={groups} />
     </div>
   );
 }
