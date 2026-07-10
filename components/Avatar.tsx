@@ -1,7 +1,7 @@
 // components/Avatar.tsx
-// Text-only avatar — initials from profiles.full_name, falling back to the
-// first letter of email when full_name is empty. No photo upload; if that's
-// ever wanted later, this is the single place to add a photo_url prop.
+// Photo avatar (profiles.avatar_url) when set, falling back to initials
+// from full_name, then the first letter of email. Upload flow lives in
+// HeaderAvatarUpload.tsx -- this component only handles display.
 type AvatarSize = 'sm' | 'md' | 'lg';
 
 const SIZE_CLASSES: Record<AvatarSize, string> = {
@@ -27,14 +27,27 @@ function getInitials(fullName: string | null | undefined, email: string | null |
 export default function Avatar({
   fullName,
   email,
+  photoUrl,
   size = 'md',
   className = '',
 }: {
   fullName?: string | null;
   email?: string | null;
+  photoUrl?: string | null;
   size?: AvatarSize;
   className?: string;
 }) {
+  if (photoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={photoUrl}
+        alt={fullName?.trim() || email || 'User avatar'}
+        title={fullName?.trim() || email || undefined}
+        className={`inline-flex rounded-full object-cover shrink-0 ${SIZE_CLASSES[size]} ${className}`}
+      />
+    );
+  }
   const initials = getInitials(fullName, email);
   return (
     <span

@@ -164,6 +164,9 @@ export default function RecipeDetailClient({
         setIngredients(ingredientData);
         setTargetServings(recipeData?.servings ?? 4);
       } catch (err) {
+        // Was previously swallowed entirely -- couldn't diagnose past
+        // reports of this error with nothing in the console to go on.
+        console.error('Failed to load recipe:', err);
         setError('Could not load this recipe.');
       } finally {
         setLoading(false);

@@ -382,7 +382,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
                 <option value="manager">Manager</option>
                 <option value="staff">Staff</option>
               </select>
-              {member.role !== 'owner' && (
+              {member.role !== 'owner' && canManage(viewerRole) && (
                 <button
                   onClick={() => removeMember(member.id, member.full_name)}
                   className="text-rust text-sm"

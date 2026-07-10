@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import DesktopNav from '@/components/nav/DesktopNav';
 import MobileBottomNav from '@/components/nav/MobileBottomNav';
 import LogoutButton from '@/components/LogoutButton';
-import Avatar from '@/components/Avatar';
+import HeaderAvatarUpload from '@/components/HeaderAvatarUpload';
 import CommandPalette from '@/components/CommandPalette';
 import CommandPaletteTrigger from '@/components/CommandPaletteTrigger';
 import { LogoMark } from '@/components/Logo';
@@ -45,7 +45,11 @@ export default async function PropertyLayout({
 
   const propertyName = (membership.properties as unknown as { name: string } | null)?.name;
 
-  const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, avatar_url')
+    .eq('id', user.id)
+    .maybeSingle();
 
   return (
     <PropertyRoleProvider role={membership.role as PropertyRole}>
@@ -61,7 +65,12 @@ export default async function PropertyLayout({
           <div className="flex items-center gap-3">
             <CommandPaletteTrigger />
             <LocaleToggle />
-            <Avatar fullName={profile?.full_name} email={user.email} size="sm" />
+            <HeaderAvatarUpload
+              userId={user.id}
+              fullName={profile?.full_name}
+              email={user.email}
+              avatarUrl={profile?.avatar_url}
+            />
             <LogoutButton variant="light" />
           </div>
         </header>
