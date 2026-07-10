@@ -4,6 +4,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientUpdate } from '@/lib/resilient-write';
 import ShoppingListView, { ShoppingListItem } from '@/components/ShoppingListView';
@@ -24,6 +25,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
 
   const supabase = createClient();
   const showToast = useToast();
+  const t = useTranslations('shopping');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -106,7 +108,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
     );
     if (!result.ok) {
       setError(result.error);
-      showToast('Failed to update — reverted.', { variant: 'error' });
+      showToast(t('revertedToast'), { variant: 'error' });
       // Roll back the optimistic flip since this was a real failure, not
       // just "offline" (offline is already handled inside resilientUpdate).
       setItems((prev) =>
@@ -115,7 +117,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
         )
       );
     } else if (result.queued) {
-      showToast('Saved — will sync when back online.');
+      showToast(t('queuedToast'));
     }
   }
 
@@ -144,7 +146,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
     setAdding(false);
     if (!result.ok) {
       setError(result.error);
-      showToast('Failed to add item.', { variant: 'error' });
+      showToast(t('failedToAdd'), { variant: 'error' });
       setItems((prev) => prev.filter((i) => i.id !== newId));
     }
   }
@@ -164,7 +166,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
                 : 'border-transparent text-charcoal/50 hover:text-charcoal'
             }`}
           >
-            Recipe Ingredients
+            {t('recipeIngredientsTab')}
           </button>
           <button
             onClick={() => setActiveTab('staples')}
@@ -174,7 +176,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
                 : 'border-transparent text-charcoal/50 hover:text-charcoal'
             }`}
           >
-            Household Staples
+            {t('householdStaplesTab')}
           </button>
         </div>
       </div>
@@ -184,7 +186,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
           className="flex justify-center text-xs text-charcoal/40 overflow-hidden transition-all"
           style={{ height: refreshing ? 32 : pullDistance }}
         >
-          {refreshing ? 'Refreshing…' : pullDistance > 50 ? 'Release to refresh' : 'Pull to refresh'}
+          {refreshing ? t('refreshing') : pullDistance > 50 ? t('releaseToRefresh') : t('pullToRefresh')}
         </div>
       )}
       {error && (
@@ -201,7 +203,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addCustomItem()}
-              placeholder="Add an item…"
+              placeholder={t('addItemPlaceholder')}
               className="flex-1 border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-white text-sm"
             />
             <button
@@ -209,7 +211,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
               disabled={adding || !newItemName.trim()}
               className="px-5 rounded-full bg-charcoal text-cream text-sm disabled:opacity-40 font-medium"
             >
-              Add
+              {t('addItemButton')}
             </button>
           </div>
 
@@ -217,7 +219,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
             {listId ? (
               <ShoppingListViewEnhanced propertyId={propertyId} shoppingListId={listId} />
             ) : (
-              <p className="text-sm text-charcoal/40 text-center mt-8">Loading list…</p>
+              <p className="text-sm text-charcoal/40 text-center mt-8">{t('loadingList')}</p>
             )}
           </div>
         </>
@@ -229,7 +231,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
           {listId ? (
             <StaplesTab propertyId={propertyId} shoppingListId={listId} />
           ) : (
-            <p className="text-sm text-charcoal/40 text-center mt-8">Loading staples…</p>
+            <p className="text-sm text-charcoal/40 text-center mt-8">{t('loadingStaples')}</p>
           )}
         </div>
       )}

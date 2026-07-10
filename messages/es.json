@@ -128,7 +128,19 @@
     "generateFromWeek": "Generar de las comidas de esta semana",
     "generating": "Generando…",
     "generatedCount": "Se agregaron {count} ingrediente(s) a la lista.",
-    "noLinkedRecipesThisWeek": "No hay recetas vinculadas planificadas esta semana — nada que agregar."
+    "noLinkedRecipesThisWeek": "No hay recetas vinculadas planificadas esta semana — nada que agregar.",
+    "recipeIngredientsTab": "Ingredientes de Recetas",
+    "householdStaplesTab": "Básicos del Hogar",
+    "addItemPlaceholder": "Agregar un artículo…",
+    "addItemButton": "Agregar",
+    "refreshing": "Actualizando…",
+    "releaseToRefresh": "Suelta para actualizar",
+    "pullToRefresh": "Desliza para actualizar",
+    "loadingList": "Cargando lista…",
+    "loadingStaples": "Cargando básicos…",
+    "failedToAdd": "Error al agregar el artículo.",
+    "revertedToast": "Error al actualizar — revertido.",
+    "queuedToast": "Guardado — se sincronizará cuando vuelva la conexión."
   },
   "labels": {
     "title": "Imprimir Etiquetas",
