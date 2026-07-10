@@ -23,7 +23,16 @@ function LoginForm() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirectTo') || '/properties';
+  // Must start with exactly one "/" — rules out "//evil.com" (parsed as a
+  // protocol-relative URL to a third-party host) and rules out an
+  // unprefixed value reaching an external host. Same validation already
+  // applied in app/auth/callback/route.ts; this was the one redirect
+  // point that never got it.
+  const requestedRedirect = searchParams.get('redirectTo');
+  const redirectTo =
+    requestedRedirect && requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//')
+      ? requestedRedirect
+      : '/properties';
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
