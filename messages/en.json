@@ -85,6 +85,8 @@
       "notSet": "Not set",
       "before": "Before:",
       "after": "After:",
+      "achronaLabel": "Bracha achrona (after):",
+      "needsSourcing": "Consult your rav — sources needed",
       "savedToast": "Bracha saved.",
       "errorToast": "Failed to save."
     },

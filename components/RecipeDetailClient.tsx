@@ -65,6 +65,9 @@ interface Recipe {
   family_notes: string | null;
   equipment: string[] | null;
   bracha_category: string | null;
+  bracha_achrona: string | null;
+  bracha_achrona_note: string | null;
+  bracha_needs_sourcing: boolean | null;
   tags: string[] | null;
   approx_total_minutes: number | null;
   prep_lead_days: number | null;
@@ -783,7 +786,13 @@ export default function RecipeDetailClient({
       </div>
 
       <div className="lg:col-span-1 space-y-4 mt-8 lg:mt-0 print:hidden">
-        <RecipeBracha recipeId={recipeId} initialCategory={recipe.bracha_category} />
+        <RecipeBracha
+          recipeId={recipeId}
+          initialCategory={recipe.bracha_category}
+          achrona={recipe.bracha_achrona}
+          achronaNote={recipe.bracha_achrona_note}
+          needsSourcing={!!recipe.bracha_needs_sourcing}
+        />
         <RecipeFamilyNotes recipeId={recipeId} initialNotes={recipe.family_notes ?? ''} />
         <RecipeKitchenTools recipeId={recipeId} initialEquipment={recipe.equipment ?? []} />
         {canManage(role) && (

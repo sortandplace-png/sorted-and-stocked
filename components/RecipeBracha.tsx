@@ -29,13 +29,23 @@ function titleCase(key: string) {
 export default function RecipeBracha({
   recipeId,
   initialCategory,
+  achrona: initialAchrona,
+  achronaNote,
+  needsSourcing: initialNeedsSourcing,
 }: {
   recipeId: string;
   initialCategory: string | null;
+  achrona: string | null;
+  achronaNote: string | null;
+  needsSourcing: boolean;
 }) {
   const [categories, setCategories] = useState<BrachaCategoryRow[]>([]);
   const [selected, setSelected] = useState<string | null>(initialCategory);
   const [saved, setSaved] = useState<string | null>(initialCategory);
+  // Kept in sync with the save response so the display doesn't go stale
+  // after changing categories -- achrona is server-derived, not editable.
+  const [achrona, setAchrona] = useState(initialAchrona);
+  const [needsSourcing, setNeedsSourcing] = useState(initialNeedsSourcing);
   const [isPending, startTransition] = useTransition();
   const showToast = useToast();
   const t = useTranslations('recipeCards.bracha');
@@ -58,6 +68,8 @@ export default function RecipeBracha({
       const result = await updateRecipeBrachaCategory({ recipeId, brachaCategory: selected });
       if (result.success) {
         setSaved(selected);
+        setAchrona(result.achrona ?? null);
+        setNeedsSourcing(!!result.needsSourcing);
         showToast(t('savedToast'), { variant: 'success' });
       } else {
         showToast(result.error ?? t('errorToast'), { variant: 'error' });
@@ -93,6 +105,21 @@ export default function RecipeBracha({
             <span className="font-medium text-charcoal">{t('after')}</span> {selectedRow.bracha_achrona}
           </div>
           {selectedRow.note && <div className="italic pt-1">{selectedRow.note}</div>}
+        </div>
+      )}
+
+      {selected && selected === saved && (
+        <div className="mt-2 text-xs px-3 py-2 rounded-lg">
+          {needsSourcing ? (
+            <div className="bg-rust/10 text-rust font-medium px-3 py-2 -mx-3 -my-2 rounded-lg">
+              ⚠️ {t('needsSourcing')}
+            </div>
+          ) : achrona ? (
+            <div className="bg-sage/10 text-charcoal px-3 py-2 -mx-3 -my-2 rounded-lg">
+              <span className="font-medium">{t('achronaLabel')}</span> {achrona}
+              {achronaNote && <div className="italic text-charcoal/60 pt-1">{achronaNote}</div>}
+            </div>
+          ) : null}
         </div>
       )}
 

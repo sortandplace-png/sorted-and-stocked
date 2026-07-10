@@ -85,6 +85,8 @@
       "notSet": "No establecido",
       "before": "Antes:",
       "after": "Después:",
+      "achronaLabel": "Bracha achrona (después):",
+      "needsSourcing": "Consulte a su rav — necesita fuentes",
       "savedToast": "Bracha guardada.",
       "errorToast": "Error al guardar."
     },
