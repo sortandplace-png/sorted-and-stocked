@@ -227,7 +227,11 @@ export default function GuestScalerClient({ propertyId }: { propertyId: string }
         </div>
       )}
 
-      {events.length === 0 && <p className="text-sm text-charcoal/40 text-center py-4 print:hidden">No events yet.</p>}
+      {events.length === 0 && (
+        <p className="text-sm text-charcoal/40 text-center py-4 print:hidden">
+          No events yet — use the form above to add your first one (e.g. "Shabbos Dinner, 12 guests").
+        </p>
+      )}
 
       <ul className="space-y-2 mb-6 print:hidden">
         {events.map((ev) => (

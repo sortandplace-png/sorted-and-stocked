@@ -155,7 +155,11 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
       {/* Staples Grid */}
       {filteredStaples.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-sm text-charcoal/40">No staples found</p>
+          <p className="text-sm text-charcoal/40">
+            {staples.length === 0
+              ? 'No staples set up for this household yet.'
+              : `No staples match "${searchTerm}" — try a different search.`}
+          </p>
         </div>
       ) : (
         <div className="space-y-3">

@@ -176,7 +176,11 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
 
       {filtered.length === 0 && (
         <p className="text-sm text-charcoal/40 text-center py-8">
-          {contacts.length === 0 ? 'No contacts yet.' : 'No matches.'}
+          {contacts.length === 0
+            ? canManage(role)
+              ? 'No contacts yet — use the form above to add your plumber, cleaner, or handyman.'
+              : 'No contacts yet. Ask a manager to add one.'
+            : 'No matches.'}
         </p>
       )}
 

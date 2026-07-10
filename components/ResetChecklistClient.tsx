@@ -154,7 +154,9 @@ export default function ResetChecklistClient({ propertyId }: { propertyId: strin
       </p>
 
       {templates.length === 0 && (
-        <p className="text-sm text-charcoal/40 text-center py-8">No checklist templates yet.</p>
+        <p className="text-sm text-charcoal/40 text-center py-8">
+          No checklist templates set up yet — these are configured by a household admin.
+        </p>
       )}
 
       <div className="space-y-6">
