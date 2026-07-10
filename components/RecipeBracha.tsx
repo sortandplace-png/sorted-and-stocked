@@ -42,11 +42,6 @@ export default function RecipeBracha({
   const [categories, setCategories] = useState<BrachaCategoryRow[]>([]);
   const [selected, setSelected] = useState<string | null>(initialCategory);
   const [saved, setSaved] = useState<string | null>(initialCategory);
-  // The suggestion is only ever a starting point, never applied silently --
-  // it pre-fills `selected` (so it's visible and one Save away from being
-  // real) but never `saved`, so it can never look confirmed until someone
-  // actually confirms it.
-  const [suggestedCategory, setSuggestedCategory] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   // Kept in sync with the save response so the display doesn't go stale
   // after changing categories -- achrona is server-derived, not editable.
@@ -67,20 +62,28 @@ export default function RecipeBracha({
   }, []);
 
   // Only offer a suggestion when nothing has ever been set for this recipe
-  // -- never override an existing manual choice, even an old one.
+  // -- never override an existing manual choice, even an old one. Per
+  // Racquel's settled decision, the suggestion is saved immediately and
+  // rendered through the exact same path as a manual choice -- selected and
+  // saved are set together, so there is no separate "unconfirmed" state or
+  // visual treatment anywhere in this component.
   useEffect(() => {
     if (initialCategory !== null) return;
-    suggestRecipeBrachaCategory(recipeId).then((suggestion) => {
+    suggestRecipeBrachaCategory(recipeId).then(async (suggestion) => {
       if (!suggestion) return;
-      setSuggestedCategory(suggestion);
-      setSelected((current) => (current === null ? suggestion : current));
+      const result = await updateRecipeBrachaCategory({ recipeId, brachaCategory: suggestion });
+      if (result.success) {
+        setSelected(suggestion);
+        setSaved(suggestion);
+        setAchrona(result.achrona ?? null);
+        setNeedsSourcing(!!result.needsSourcing);
+      }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recipeId]);
 
   const isDirty = selected !== saved;
   const selectedRow = categories.find((c) => c.category === selected);
-  const isUnconfirmedSuggestion = isDirty && selected !== null && selected === suggestedCategory;
 
   function handleSave() {
     startTransition(async () => {
@@ -105,9 +108,7 @@ export default function RecipeBracha({
         value={selected ?? ''}
         onChange={(e) => setSelected(e.target.value || null)}
         disabled={isPending}
-        className={`w-full border focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-xl p-2.5 text-sm text-charcoal disabled:opacity-60 bg-white ${
-          isUnconfirmedSuggestion ? 'border-dashed border-gold' : 'border-gold-light/60 focus:border-gold'
-        }`}
+        className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-xl p-2.5 text-sm text-charcoal disabled:opacity-60 bg-white"
       >
         <option value="">{t('notSet')}</option>
         {categories.map((c) => (
@@ -116,15 +117,6 @@ export default function RecipeBracha({
           </option>
         ))}
       </select>
-
-      {/* Dashed border above + this line together mark an unsaved AI
-          suggestion. The instant it's saved, saved === selected, this
-          disappears, and the achrona preview below renders identically to
-          any manually-chosen bracha -- confirmed is confirmed, regardless
-          of where the pick came from. */}
-      {isUnconfirmedSuggestion && (
-        <p className="mt-1.5 text-xs font-medium text-gold-dark">💡 AI suggestion — tap Save to confirm</p>
-      )}
 
       <button
         type="button"
