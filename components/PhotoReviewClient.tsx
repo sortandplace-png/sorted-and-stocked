@@ -24,7 +24,15 @@ type QueueItem = {
   assigning: boolean;
 };
 
-export default function PhotoReviewClient({ propertyId }: { propertyId: string }) {
+export default function PhotoReviewClient({
+  propertyId,
+  hideBackLink = false,
+}: {
+  propertyId: string;
+  // Suppressed when rendered inside ToolModal -- a "← Tools" link that
+  // navigates to a full page would defeat the point of staying put.
+  hideBackLink?: boolean;
+}) {
   const supabase = createClient();
   const showToast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -143,9 +151,11 @@ export default function PhotoReviewClient({ propertyId }: { propertyId: string }
 
   return (
     <div className="max-w-2xl mx-auto p-4">
-      <Link href={`/properties/${propertyId}/tools`} className="text-sm text-charcoal/50 underline mb-3 inline-block">
-        ← Tools
-      </Link>
+      {!hideBackLink && (
+        <Link href={`/properties/${propertyId}/tools`} className="text-sm text-charcoal/50 underline mb-3 inline-block">
+          ← Tools
+        </Link>
+      )}
       <h1 className="font-display text-2xl text-charcoal mb-1">Room Photo Review</h1>
       <p className="text-sm text-charcoal/60 mb-1">
         Upload photos, match each to a real room, assign. This is the permanent home for bulk house-photo drops —

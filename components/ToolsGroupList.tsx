@@ -3,9 +3,32 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import ToolModal, { type ToolModalSlug } from '@/components/ToolModal';
 
 type Tool = { slug: string; icon: string; title: string; description: string };
 type Group = { key: string; label: string; tools: Tool[] };
+
+// Same modal treatment already proven for Kitchen Ops (opened from a
+// recipe, via KitchenOpsToolModal) applied here to the tools that are
+// simple enough to fit -- getting "stuck" on a full-page tool with no way
+// back except browser Back was the actual complaint. Needs Linking,
+// Taste Memory, Staff Task Center, and Home Memory Timeline stay full
+// pages on purpose (real content-heavy exceptions, not overlooked).
+// Halachic Calendar isn't here either -- it's a server component that
+// fetches directly from Hebcal, so it needs a client-refactor before it
+// can go in a modal at all; that's tracked separately.
+const MODAL_SLUGS = new Set<ToolModalSlug>([
+  'price-scanner',
+  'ingredient-scanner',
+  'recipe-stealer',
+  'pantry-zones',
+  'borrowed-items',
+  'duplicate-ingredients',
+  'photo-review',
+  'knowledge-base',
+  'contacts',
+  'takeout-directory',
+]);
 
 export default function ToolsGroupList({ propertyId, groups }: { propertyId: string; groups: Group[] }) {
   // Same pattern as RecipesGridView's collapsedLetters: empty set means
@@ -13,6 +36,7 @@ export default function ToolsGroupList({ propertyId, groups }: { propertyId: str
   // collapse state resets on every page load -- matches that page's
   // behavior rather than inventing a new persistence convention here.
   const [collapsedKeys, setCollapsedKeys] = useState<Set<string>>(new Set());
+  const [openTool, setOpenTool] = useState<ToolModalSlug | null>(null);
 
   function toggleGroup(key: string) {
     setCollapsedKeys((prev) => {
@@ -40,25 +64,41 @@ export default function ToolsGroupList({ propertyId, groups }: { propertyId: str
             </button>
             {!collapsed && (
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {group.tools.map((tool) => (
-                  <li key={tool.slug}>
-                    <Link
-                      href={`/properties/${propertyId}/tools/${tool.slug}`}
-                      className="flex flex-col items-center text-center gap-2 bg-white rounded-xl2 shadow-sm shadow-charcoal/5 px-4 py-5 hover:shadow-md hover:shadow-charcoal/10 transition-shadow h-full"
-                    >
+                {group.tools.map((tool) => {
+                  const cardInner = (
+                    <>
                       <span className="w-11 h-11 flex items-center justify-center rounded-full bg-gold-dark text-lg">
                         {tool.icon}
                       </span>
                       <span className="block font-display font-semibold text-charcoal">{tool.title}</span>
                       <span className="block text-sm text-charcoal/50">{tool.description}</span>
-                    </Link>
-                  </li>
-                ))}
+                    </>
+                  );
+                  const cardClass =
+                    'flex flex-col items-center text-center gap-2 bg-white rounded-xl2 shadow-sm shadow-charcoal/5 px-4 py-5 hover:shadow-md hover:shadow-charcoal/10 transition-shadow h-full w-full';
+                  return (
+                    <li key={tool.slug}>
+                      {MODAL_SLUGS.has(tool.slug as ToolModalSlug) ? (
+                        <button onClick={() => setOpenTool(tool.slug as ToolModalSlug)} className={cardClass}>
+                          {cardInner}
+                        </button>
+                      ) : (
+                        <Link href={`/properties/${propertyId}/tools/${tool.slug}`} className={cardClass}>
+                          {cardInner}
+                        </Link>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
         );
       })}
+
+      {openTool && (
+        <ToolModal slug={openTool} propertyId={propertyId} onClose={() => setOpenTool(null)} />
+      )}
     </div>
   );
 }
