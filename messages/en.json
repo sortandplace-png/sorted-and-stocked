@@ -27,7 +27,8 @@
     "revert": "Revert",
     "search": "Search",
     "searchShortcut": "Search (Cmd+K)",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "unknown": "someone"
   },
   "recipesGrid": {
     "title": "Recipes",
@@ -56,7 +57,15 @@
       "description": "Things only the family would know — who likes it a certain way, what to skip, why it's made this way.",
       "placeholder": "e.g. Tatty likes this less sweet — halve the sugar when he's home.",
       "savedToast": "Family notes saved.",
-      "errorToast": "Failed to save."
+      "errorToast": "Failed to save.",
+      "noPeople": "No household members added yet — add people under Guest & Family Taste Memory to start per-person notes.",
+      "bold": "Bold",
+      "italic": "Italic",
+      "list": "List",
+      "link": "Link",
+      "linkPrompt": "Link URL (https://...)",
+      "linkInvalid": "Links must start with https:// or http://",
+      "lastEdited": "Last edited by {name} · {time}"
     },
     "substitutions": {
       "title": "Substitutions",

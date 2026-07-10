@@ -27,7 +27,8 @@
     "revert": "Deshacer",
     "search": "Buscar",
     "searchShortcut": "Buscar (Cmd+K)",
-    "signOut": "Cerrar sesión"
+    "signOut": "Cerrar sesión",
+    "unknown": "alguien"
   },
   "recipesGrid": {
     "title": "Recetas",
@@ -56,7 +57,15 @@
       "description": "Cosas que solo la familia sabría — a quién le gusta de cierta manera, qué omitir, por qué se hace así.",
       "placeholder": "ej. A Tatty le gusta menos dulce — reduce el azúcar a la mitad cuando esté en casa.",
       "savedToast": "Notas familiares guardadas.",
-      "errorToast": "Error al guardar."
+      "errorToast": "Error al guardar.",
+      "noPeople": "Aún no se han agregado miembros del hogar — agregue personas en Memoria de Gustos Familiares para comenzar notas por persona.",
+      "bold": "Negrita",
+      "italic": "Cursiva",
+      "list": "Lista",
+      "link": "Enlace",
+      "linkPrompt": "URL del enlace (https://...)",
+      "linkInvalid": "Los enlaces deben comenzar con https:// o http://",
+      "lastEdited": "Última edición por {name} · {time}"
     },
     "substitutions": {
       "title": "Sustituciones",
