@@ -15,6 +15,7 @@ import { getLocationIcon } from '@/lib/location-icons';
 import RestockPhotoPrompt from '@/components/RestockPhotoPrompt';
 import LocationPhotoUpload from '@/components/LocationPhotoUpload';
 import DuplicateItemWarning from '@/components/DuplicateItemWarning';
+import InventoryBracha from '@/components/InventoryBracha';
 import { Camera } from 'lucide-react';
 
 type StorageLocation = {
@@ -1182,6 +1183,12 @@ function ItemFormSheet({
           <button onClick={onDelete} className="w-full text-center text-sm text-rust mt-3">
             Delete item
           </button>
+        )}
+
+        {form.id && (
+          <div className="mt-5 pt-4 border-t border-gold-light/40">
+            <InventoryBracha itemId={form.id} itemName={form.name} />
+          </div>
         )}
 
         {form.id && restockInterval !== null && (
