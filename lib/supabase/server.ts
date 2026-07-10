@@ -12,6 +12,21 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // Must match lib/supabase/client.ts's cookieOptions.name exactly --
+      // without this, the server looks for @supabase/ssr's default cookie
+      // name while the browser writes to 'sb-auth', so a freshly-logged-in
+      // session is invisible server-side (confirmed directly: browser gets
+      // a valid session + sb-auth cookie, but every server-rendered route
+      // still sees no user and bounces back to /login). Present since the
+      // initial commit -- never caught before because it only breaks a
+      // brand-new login, not an already-established long-lived session
+      // cookie predating this file.
+      cookieOptions: {
+        name: 'sb-auth',
+        lifetime: 60 * 60 * 24 * 365,
+        path: '/',
+        sameSite: 'lax',
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll();

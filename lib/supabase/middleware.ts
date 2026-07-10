@@ -11,6 +11,14 @@ export async function updateSession(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // Must match lib/supabase/client.ts's cookieOptions.name -- see the
+      // matching comment in lib/supabase/server.ts for the full story.
+      cookieOptions: {
+        name: 'sb-auth',
+        lifetime: 60 * 60 * 24 * 365,
+        path: '/',
+        sameSite: 'lax',
+      },
       cookies: {
         getAll() {
           return request.cookies.getAll();

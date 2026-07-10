@@ -20,6 +20,9 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# local dev notes (may contain test credentials -- never commit)
+DEV_NOTES.local.md
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
