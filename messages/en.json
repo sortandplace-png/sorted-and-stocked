@@ -87,6 +87,15 @@
       "after": "After:",
       "savedToast": "Bracha saved.",
       "errorToast": "Failed to save."
+    },
+    "prepLeadDays": {
+      "title": "Prep lead time",
+      "description": "Days of head start this recipe needs (e.g. moving meat from freezer to fridge) — shows as a dashboard reminder before the day it's planned.",
+      "placeholder": "e.g. 2",
+      "daysAheadSingular": "day ahead",
+      "daysAheadPlural": "days ahead",
+      "savedToast": "Prep lead time saved.",
+      "errorToast": "Failed to save."
     }
   },
   "course": {

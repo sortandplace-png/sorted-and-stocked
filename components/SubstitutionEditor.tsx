@@ -64,7 +64,7 @@ export default function SubstitutionEditor({
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+    <div className="bg-white rounded-xl2 shadow-sm shadow-charcoal/5 p-5">
       <h3 className="font-display text-lg text-charcoal mb-1">{t('title')}</h3>
       <p className="text-xs text-charcoal/50 mb-2">{t('description')}</p>
 
@@ -117,7 +117,7 @@ export default function SubstitutionEditor({
             <button
               type="submit"
               disabled={!isDirty || isPending}
-              className="text-sm font-medium bg-charcoal text-cream px-4 py-1.5 rounded-full disabled:opacity-40"
+              className="text-sm font-medium bg-gold-dark text-white px-4 py-1.5 rounded-full disabled:opacity-40"
             >
               {isPending ? tc('saving') : tc('save')}
             </button>

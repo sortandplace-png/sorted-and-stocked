@@ -87,6 +87,15 @@
       "after": "Después:",
       "savedToast": "Bracha guardada.",
       "errorToast": "Error al guardar."
+    },
+    "prepLeadDays": {
+      "title": "Tiempo de preparación anticipada",
+      "description": "Días de anticipación que esta receta necesita (ej. pasar la carne del congelador al refrigerador) — aparece como recordatorio en el panel antes del día planificado.",
+      "placeholder": "ej. 2",
+      "daysAheadSingular": "día de anticipación",
+      "daysAheadPlural": "días de anticipación",
+      "savedToast": "Tiempo de preparación guardado.",
+      "errorToast": "Error al guardar."
     }
   },
   "course": {

@@ -6,6 +6,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { updateRecipePrepLeadDays } from '@/app/recipes/actions';
 import { useToast } from '@/components/Toast';
 
@@ -20,6 +21,8 @@ export default function RecipePrepLeadDays({
   const [saved, setSaved] = useState(initialDays !== null ? String(initialDays) : '');
   const [isPending, startTransition] = useTransition();
   const showToast = useToast();
+  const t = useTranslations('recipeCards.prepLeadDays');
+  const tc = useTranslations('common');
 
   const isDirty = days.trim() !== saved.trim();
 
@@ -29,20 +32,17 @@ export default function RecipePrepLeadDays({
       const result = await updateRecipePrepLeadDays({ recipeId, prepLeadDays: parsed });
       if (result.success) {
         setSaved(days.trim());
-        showToast('Prep lead time saved.', { variant: 'success' });
+        showToast(t('savedToast'), { variant: 'success' });
       } else {
-        showToast(result.error ?? 'Failed to save.', { variant: 'error' });
+        showToast(result.error ?? t('errorToast'), { variant: 'error' });
       }
     });
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 print:hidden">
-      <h3 className="font-display text-lg text-charcoal mb-1">Prep lead time</h3>
-      <p className="text-xs text-charcoal/50 mb-2">
-        Days of head start this recipe needs (e.g. moving meat from freezer to fridge) — shows as a dashboard
-        reminder before the day it's planned.
-      </p>
+    <div className="bg-white rounded-xl2 shadow-sm shadow-charcoal/5 p-5 print:hidden">
+      <h3 className="font-display text-lg text-charcoal mb-1">{t('title')}</h3>
+      <p className="text-xs text-charcoal/50 mb-2">{t('description')}</p>
       <div className="flex items-center gap-2">
         <input
           type="number"
@@ -51,23 +51,25 @@ export default function RecipePrepLeadDays({
           value={days}
           onChange={(e) => setDays(e.target.value)}
           disabled={isPending}
-          placeholder="e.g. 2"
+          placeholder={t('placeholder')}
           className="w-24 border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-xl px-3 py-2 text-sm text-charcoal disabled:opacity-60"
         />
-        <span className="text-sm text-charcoal/50">day{days.trim() === '1' ? '' : 's'} ahead</span>
+        <span className="text-sm text-charcoal/50">
+          {days.trim() === '1' ? t('daysAheadSingular') : t('daysAheadPlural')}
+        </span>
       </div>
       <div className="flex justify-end gap-2 mt-2">
         {isDirty && !isPending && (
           <button onClick={() => setDays(saved)} className="text-sm text-charcoal/50 hover:text-charcoal px-3 py-1.5">
-            Revert
+            {tc('revert')}
           </button>
         )}
         <button
           onClick={handleSave}
           disabled={!isDirty || isPending}
-          className="text-sm font-medium bg-charcoal text-cream px-4 py-1.5 rounded-full disabled:opacity-40"
+          className="text-sm font-medium bg-gold-dark text-white px-4 py-1.5 rounded-full disabled:opacity-40"
         >
-          {isPending ? 'Saving…' : 'Save'}
+          {isPending ? tc('saving') : tc('save')}
         </button>
       </div>
     </div>

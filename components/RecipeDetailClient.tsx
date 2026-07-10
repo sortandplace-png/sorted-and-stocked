@@ -378,7 +378,7 @@ export default function RecipeDetailClient({
   const hasEnglish = !!recipe.instructions_en;
 
   return (
-    <div className="max-w-md lg:max-w-5xl mx-auto p-4 print:max-w-full">
+    <div className="max-w-md lg:max-w-6xl mx-auto p-4 print:max-w-full">
       <div className="flex items-center justify-between mb-4 print:hidden gap-2 flex-wrap">
         {/* Recipes is always reachable regardless of entry point (recipe
             grid, meal-plan substitution swap, or the global Command
@@ -559,6 +559,8 @@ export default function RecipeDetailClient({
 
       {showHistory && <RecipeHistoryModal recipeId={recipeId} onClose={() => setShowHistory(false)} />}
 
+      <div className="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
+      <div className="lg:col-span-2">
       {recipe.photo_url && isDirectImageUrl(recipe.photo_url) ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -652,7 +654,7 @@ export default function RecipeDetailClient({
       />
 
       <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
-      <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-4 print:shadow-none print:border print:border-gold-light">
+      <div className="bg-white rounded-xl2 shadow-sm shadow-charcoal/5 p-5 mb-4 print:shadow-none print:border print:border-gold-light">
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-display text-lg text-charcoal">
             {lang === 'es' ? 'Ingredientes' : 'Ingredients'}
@@ -738,7 +740,7 @@ export default function RecipeDetailClient({
           <div className="grid grid-cols-1 print:grid-cols-2 gap-4">
             {hasEnglish && (
               <div
-                className={`bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 print:shadow-none print:border print:border-gold-light ${
+                className={`bg-white rounded-xl2 shadow-sm shadow-charcoal/5 p-5 print:shadow-none print:border print:border-gold-light ${
                   lang === 'es' && hasSpanish ? 'hidden print:block' : ''
                 }`}
               >
@@ -754,7 +756,7 @@ export default function RecipeDetailClient({
             )}
             {hasSpanish && (
               <div
-                className={`bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 print:shadow-none print:border print:border-gold-light ${
+                className={`bg-white rounded-xl2 shadow-sm shadow-charcoal/5 p-5 print:shadow-none print:border print:border-gold-light ${
                   lang === 'en' && hasEnglish ? 'hidden print:block' : ''
                 }`}
               >
@@ -778,8 +780,9 @@ export default function RecipeDetailClient({
         )}
       </div>
       </div>
+      </div>
 
-      <div className="mt-8 print:hidden space-y-4">
+      <div className="lg:col-span-1 space-y-4 mt-8 lg:mt-0 print:hidden">
         <RecipeBracha recipeId={recipeId} initialCategory={recipe.bracha_category} />
         <RecipeFamilyNotes recipeId={recipeId} initialNotes={recipe.family_notes ?? ''} />
         <RecipeKitchenTools recipeId={recipeId} initialEquipment={recipe.equipment ?? []} />
@@ -792,6 +795,7 @@ export default function RecipeDetailClient({
           lastUpdatedBy={substitutionUpdatedBy}
           lastUpdatedAt={substitutionUpdatedAt ? new Date(substitutionUpdatedAt) : undefined}
         />
+      </div>
       </div>
 
       <div className="mt-8 print:hidden">
