@@ -141,6 +141,8 @@
     "shabbos": "Shabbos",
     "erevShabbos": "Erev Shabbos",
     "sameDayWarning": "Same day meat/dairy — add buffer?",
+    "mdBuffer": "Meat + Dairy",
+    "nothingPlanned": "Nothing planned yet",
     "generateShoppingList": "Generate shopping list for week",
     "printWeek": "Print week",
     "printMonth": "Print month"

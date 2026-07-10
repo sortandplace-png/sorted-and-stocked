@@ -12,6 +12,18 @@ import { kosherIcon } from '@/lib/icon-maps';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { COURSES, type Course } from '@/lib/course-constants';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
+import { getRecipeIcon } from '@/lib/recipe-icons';
+
+// Same kashrut color tokens as the dashboard's KASHRUT_INFO (Fleishig/
+// Milchig/Parve) -- reused here keyed by the real recipes.kosher_type
+// values instead of the dashboard's name-guessing heuristic, since Month
+// view has the actual field.
+const KOSHER_DOT_COLOR: Record<string, string> = {
+  Meat: 'bg-rust',
+  Dairy: 'bg-dairy',
+  Parve: 'bg-sage',
+  'Parve (Fish)': 'bg-sage',
+};
 
 type Recipe = {
   id: string;
@@ -172,6 +184,11 @@ export default function MealPlanView({
   const [moveTargetDate, setMoveTargetDate] = useState('');
   const [moving, setMoving] = useState(false);
   const [printOnlyDate, setPrintOnlyDate] = useState<string | null>(null);
+
+  // Month view's fast path: tapping one dish opens just that dish, not the
+  // full Day Drawer. The full drawer (Add Course, Duplicate Day, etc.) stays
+  // reachable via the day cell's empty space / "View full day" link.
+  const [quickEditDish, setQuickEditDish] = useState<{ date: string; entry: Entry } | null>(null);
 
   // entryId is set when editing a specific existing row (a "Change") so
   // saveEntry knows exactly which row to replace -- important now that a
@@ -1144,6 +1161,7 @@ export default function MealPlanView({
           recipeTitle={recipeTitle}
           t={t}
           onDayClick={(date) => openDayDrawer(date)}
+          onDishClick={(date, entry) => setQuickEditDish({ date, entry })}
         />
       )}
 
@@ -1372,6 +1390,83 @@ export default function MealPlanView({
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {quickEditDish && (
+        <div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+          onClick={() => setQuickEditDish(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {quickEditDish.entry.recipes?.photo_url && (
+              <img
+                src={quickEditDish.entry.recipes.photo_url}
+                alt=""
+                className="w-full h-32 object-cover"
+              />
+            )}
+            <div className="p-4">
+              <p className="text-[11px] text-charcoal/50">
+                {tCourse(quickEditDish.entry.course)} ·{' '}
+                {new Date(quickEditDish.date + 'T12:00:00').toLocaleDateString(undefined, {
+                  weekday: 'long',
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </p>
+              <p className="font-display text-lg text-charcoal mt-0.5">{displayName(quickEditDish.entry)}</p>
+
+              {canEdit ? (
+                <div className="mt-4 flex flex-col gap-2">
+                  <button
+                    onClick={() => {
+                      const { date, entry } = quickEditDish;
+                      setQuickEditDish(null);
+                      openPicker(date, entry.course, true, entry);
+                    }}
+                    className="w-full rounded-full bg-gold-dark text-white text-sm font-medium py-2"
+                  >
+                    Change
+                  </button>
+                  <button
+                    onClick={() => {
+                      const { date, entry } = quickEditDish;
+                      setQuickEditDish(null);
+                      clearEntry(date, entry.course, entry.id);
+                    }}
+                    className="w-full rounded-full border border-rust/40 text-rust text-sm font-medium py-2"
+                  >
+                    Remove
+                  </button>
+                  <button
+                    onClick={() => {
+                      const { date } = quickEditDish;
+                      setQuickEditDish(null);
+                      openDayDrawer(date);
+                    }}
+                    className="w-full text-center text-xs text-charcoal/50 py-1"
+                  >
+                    View full day →
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    const { date } = quickEditDish;
+                    setQuickEditDish(null);
+                    openDayDrawer(date);
+                  }}
+                  className="mt-4 w-full text-center text-xs text-charcoal/50 py-1"
+                >
+                  View full day →
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -1607,6 +1702,7 @@ function MonthGrid({
   recipeTitle,
   t,
   onDayClick,
+  onDishClick,
 }: {
   days: Date[];
   data: Record<string, DayData>;
@@ -1615,71 +1711,131 @@ function MonthGrid({
   recipeTitle: (r: Recipe) => string;
   t: ReturnType<typeof useTranslations>;
   onDayClick: (date: string) => void;
+  onDishClick: (date: string, entry: Entry) => void;
 }) {
   return (
     <div className="grid grid-cols-7 gap-1.5">
       {days.map((d) => {
         const date = fmt(d);
         const day = data[date];
+        const entries = day?.entries ?? [];
         const fastDay = fastDays[date];
-        const hasMajorFastConflict = fastDay?.severity === 'major' && (day?.entries.length ?? 0) > 0;
+        const hasMajorFastConflict = fastDay?.severity === 'major' && entries.length > 0;
         const hcal = hebcal[date];
         return (
-          <button
+          // A day cell is a plain div (not <button>) so each dish inside can
+          // be its own real <button> for tap-to-quick-edit -- nesting
+          // <button> inside <button> is invalid HTML and React won't render
+          // it correctly. Blank space in the cell still opens the full Day
+          // Drawer via this div's own onClick; dish buttons stop propagation
+          // so tapping a dish doesn't also trigger that.
+          <div
             key={date}
+            role="button"
+            tabIndex={0}
             onClick={() => onDayClick(date)}
-            className={`relative min-h-[90px] rounded-lg border p-1.5 text-[10px] text-left hover:border-gold transition-colors ${
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') onDayClick(date);
+            }}
+            className={`relative min-h-[124px] rounded-lg border p-2 text-xs text-left hover:border-gold transition-colors cursor-pointer ${
               hcal?.isFast ? 'border-gold-light/40 bg-cream/60 text-charcoal/50' : 'border-gold-light/40 bg-white'
             }`}
           >
             {hcal?.isYomTov && (
-              <div className="absolute inset-x-0 top-0 rounded-t-lg bg-gold-light/40 px-1 py-0.5 text-center text-[8px] font-medium text-charcoal">
+              <div className="absolute inset-x-0 top-0 rounded-t-lg bg-gold-light/40 px-1 py-0.5 text-center text-[9px] font-medium text-charcoal">
                 {t('yomTov')}
               </div>
             )}
-            <div className={`flex items-center justify-between ${hcal?.isYomTov ? 'mt-4' : ''}`}>
+            <div className={`flex items-start justify-between gap-1 flex-wrap ${hcal?.isYomTov ? 'mt-4' : ''}`}>
               <span className="font-medium">{d.getDate()}</span>
-              {hcal?.isErevShabbos && <Flame className="h-3 w-3 text-gold-dark" />}
-              {day?.hasMeatDairyBuffer && (
-                <span title={t('sameDayWarning')} className="h-2 w-2 rounded-full bg-gold" />
-              )}
-              {getPrepWarning(day?.entries ?? [], hcal?.candleLighting) && (
-                <span title="Recorded prep time for this day may not finish before candle-lighting">
-                  <AlertTriangle className="h-3 w-3 text-rust" />
-                </span>
-              )}
-              {hasMajorFastConflict && (
-                <span title={fastDay!.note}>
-                  <AlertTriangle className="h-3 w-3 text-white bg-rust rounded-full p-0.5" />
-                </span>
-              )}
+              {/* Text labels stay visible at every width, not just on hover/desktop --
+                  hover tooltips don't exist on a touch device, which is exactly the
+                  case these are meant to cover. */}
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                {hcal?.isErevShabbos && (
+                  <span className="flex items-center gap-0.5 text-gold-dark whitespace-nowrap">
+                    <Flame className="h-3 w-3 shrink-0" />
+                    <span className="text-[9px] font-medium">{t('shabbos')}</span>
+                  </span>
+                )}
+                {day?.hasMeatDairyBuffer && (
+                  <span className="flex items-center gap-0.5 whitespace-nowrap" title={t('sameDayWarning')}>
+                    <span className="h-2 w-2 rounded-full bg-gold shrink-0" aria-hidden />
+                    <span className="text-[9px] font-medium text-gold-dark">{t('mdBuffer')}</span>
+                  </span>
+                )}
+                {getPrepWarning(entries, hcal?.candleLighting) && (
+                  <span title="Recorded prep time for this day may not finish before candle-lighting">
+                    <AlertTriangle className="h-3 w-3 text-rust" />
+                  </span>
+                )}
+                {hasMajorFastConflict && (
+                  <span title={fastDay!.note}>
+                    <AlertTriangle className="h-3 w-3 text-white bg-rust rounded-full p-0.5" />
+                  </span>
+                )}
+              </div>
             </div>
-            {hcal?.isFast && <p className="text-[8px]">{t('fast')}</p>}
+            {hcal?.isFast && <p className="text-[10px]">{t('fast')}</p>}
             {fastDay?.severity === 'major' && (
-              <p className="text-[8px] font-semibold text-rust" title={fastDay.note}>
+              <p className="text-[10px] font-semibold text-rust" title={fastDay.note}>
                 {fastDay.holiday_name}
               </p>
             )}
             {fastDay?.severity === 'minor' && (
-              <p className="text-[8px] text-charcoal/50" title={fastDay.note}>
+              <p className="text-[10px] text-charcoal/50" title={fastDay.note}>
                 {fastDay.holiday_name} (fast)
               </p>
             )}
             {hcal?.hebrewDate && (
-              <p className="text-[8px] text-charcoal/40" lang="he" dir="rtl">
+              <p className="text-[9px] text-charcoal/40" lang="he" dir="rtl">
                 {hcal.hebrewDate}
               </p>
             )}
-            <div className="mt-1 space-y-0.5">
-              {(day?.entries ?? []).slice(0, 4).map((e) =>
-                e.recipes ? (
-                  <p key={e.id} className="line-clamp-1">
-                    {recipeTitle(e.recipes)}
-                  </p>
-                ) : null
+            <div className="mt-1 space-y-1">
+              {entries.length === 0 ? (
+                <p className="text-[10px] text-charcoal/40 italic">{t('nothingPlanned')}</p>
+              ) : (
+                <>
+                  {entries.slice(0, 5).map((e) => {
+                    const kosherType = e.recipes?.kosher_type ?? null;
+                    const dotColor = kosherType ? KOSHER_DOT_COLOR[kosherType] : undefined;
+                    const DishIcon = getRecipeIcon(e.course);
+                    const name = e.recipes ? recipeTitle(e.recipes) : e.custom_name ?? '';
+                    if (!name) return null;
+                    return (
+                      <button
+                        key={e.id}
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          onDishClick(date, e);
+                        }}
+                        className="flex items-start gap-1 w-full text-left hover:bg-gold-light/10 rounded px-0.5 -mx-0.5"
+                      >
+                        <span
+                          className={`mt-1 h-1.5 w-1.5 rounded-full shrink-0 ${dotColor ?? 'bg-charcoal/20'}`}
+                          aria-hidden
+                        />
+                        {e.recipes?.photo_url ? (
+                          <img
+                            src={e.recipes.photo_url}
+                            alt=""
+                            className="h-3.5 w-3.5 rounded-sm object-cover shrink-0 mt-0.5"
+                          />
+                        ) : (
+                          <DishIcon className="h-3 w-3 text-charcoal/40 shrink-0 mt-0.5" aria-hidden />
+                        )}
+                        <span className="line-clamp-2 leading-snug">{name}</span>
+                      </button>
+                    );
+                  })}
+                  {entries.length > 5 && (
+                    <p className="text-[9px] text-charcoal/40 pl-3">+{entries.length - 5} more</p>
+                  )}
+                </>
               )}
             </div>
-          </button>
+          </div>
         );
       })}
     </div>

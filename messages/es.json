@@ -141,6 +141,8 @@
     "shabbos": "Shabat",
     "erevShabbos": "Víspera de Shabat",
     "sameDayWarning": "Mismo día carne/lácteo — ¿agregar separación?",
+    "mdBuffer": "Carne + Lácteo",
+    "nothingPlanned": "Nada planeado todavía",
     "generateShoppingList": "Generar lista de compras de la semana",
     "printWeek": "Imprimir semana",
     "printMonth": "Imprimir mes"
