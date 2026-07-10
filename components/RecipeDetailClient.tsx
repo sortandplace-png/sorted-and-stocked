@@ -16,6 +16,7 @@ import RecipeFamilyNotes from '@/components/RecipeFamilyNotes';
 import RecipeKitchenTools from '@/components/RecipeKitchenTools';
 import RecipeBracha from '@/components/RecipeBracha';
 import RecipePrepLeadDays from '@/components/RecipePrepLeadDays';
+import KitchenOpsToolModal, { type KitchenOpsSlug } from '@/components/KitchenOpsToolModal';
 import AddToMealPlanButton from '@/components/AddToMealPlanButton';
 import type { Course } from '@/lib/course-constants';
 import IngredientShoppingLink from '@/components/IngredientShoppingLink';
@@ -145,6 +146,7 @@ export default function RecipeDetailClient({
   const [checkedIds, setCheckedIds] = useState<Record<string, boolean>>({});
   const [addingToListIds, setAddingToListIds] = useState<Record<string, boolean>>({});
   const [showHistory, setShowHistory] = useState(false);
+  const [openKitchenOpsTool, setOpenKitchenOpsTool] = useState<KitchenOpsSlug | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [pairsWellWith, setPairsWellWith] = useState<PairSuggestion[]>([]);
@@ -821,21 +823,36 @@ export default function RecipeDetailClient({
             different sizing, and there are only these two call sites. Fixed
             2-col grid rather than 3-at-sm: with exactly 4 items, 3-per-row
             leaves an awkward 3+1 split; 2x2 stays clean at every width. */}
+        {/* Opens as a modal over this recipe rather than navigating away --
+            confirmed live that all 4 previously used a plain <Link> to a
+            full page route with no way back except the browser's native
+            back button. The Tools Hub page's own versions of these same
+            tools (app/properties/[id]/tools/page.tsx) are untouched and
+            still navigate normally, since a standalone-page launch has
+            nothing to "get back to." */}
         <div className="grid grid-cols-2 gap-2">
           {KITCHEN_OPS_LINKS.map((tool) => (
-            <Link
+            <button
               key={tool.slug}
-              href={`/properties/${propertyId}/tools/${tool.slug}`}
-              className="flex items-center gap-2 bg-white rounded-xl2 shadow-sm shadow-charcoal/5 px-3 py-2.5 hover:shadow-md hover:shadow-charcoal/10 transition-shadow"
+              onClick={() => setOpenKitchenOpsTool(tool.slug as KitchenOpsSlug)}
+              className="flex items-center gap-2 bg-white rounded-xl2 shadow-sm shadow-charcoal/5 px-3 py-2.5 hover:shadow-md hover:shadow-charcoal/10 transition-shadow text-left"
             >
               <span className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-gold-dark text-sm" aria-hidden="true">
                 {tool.icon}
               </span>
               <span className="truncate text-xs font-semibold text-charcoal">{tool.title}</span>
-            </Link>
+            </button>
           ))}
         </div>
       </div>
+
+      {openKitchenOpsTool && (
+        <KitchenOpsToolModal
+          slug={openKitchenOpsTool}
+          propertyId={propertyId}
+          onClose={() => setOpenKitchenOpsTool(null)}
+        />
+      )}
 
       {pairsWellWith.length > 0 && (
         <div className="mt-8 print:hidden">
