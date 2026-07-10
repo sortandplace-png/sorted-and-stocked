@@ -26,13 +26,19 @@ export function useShelfAuditor(initialItems: any[], onComplete: () => void) {
         .update({ current_qty: 0, last_counted_at: currentTimestamp })
         .eq('id', activeItem.id);
 
-      // Add to shopping list if it's a staple
-      await supabase.rpc('add_staple_to_shopping_list', {
-        p_shopping_list_id: activeItem.shopping_list_id,
-        p_staple_id: activeItem.id
-      }).catch(() => {
+      // Add to shopping list if it's a staple. Supabase's query builder is
+      // thenable but not a real Promise instance, so .catch() chained
+      // directly on it doesn't type-check -- try/catch around the await
+      // is the correct equivalent, same "if RPC fails, just continue"
+      // behavior.
+      try {
+        await supabase.rpc('add_staple_to_shopping_list', {
+          p_shopping_list_id: activeItem.shopping_list_id,
+          p_staple_id: activeItem.id
+        });
+      } catch {
         // If RPC fails (not a staple), just continue
-      });
+      }
     }
 
     // Advance to next item or complete

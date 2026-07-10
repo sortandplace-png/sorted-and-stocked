@@ -1,6 +1,6 @@
 // app/api/batch-update-photos/route.ts
 import { createClient } from '@supabase/supabase-js';
-import { batchFetchPhotos } from '@/lib/instacart-fetcher';
+import { batchFetchPhotos, type ProductResult } from '@/lib/instacart-fetcher';
 import { persistPhoto } from '@/lib/persist-photo';
 
 export const maxDuration = 300;
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
     // Update recipe_ingredients table with photos
     let updateCount = 0;
-    const updateErrors = [];
+    const updateErrors: { ingredient: string; error: string }[] = [];
 
     for (const result of photos) {
       if (result.photo_url) {
@@ -76,7 +76,13 @@ export async function POST(request: Request) {
       }
     }
 
-    const response = {
+    const response: {
+      message: string;
+      updated: number;
+      total: number;
+      photos: ProductResult[];
+      errors?: { ingredient: string; error: string }[];
+    } = {
       message: `Updated ${updateCount} of ${photos.length} ingredients with photos`,
       updated: updateCount,
       total: uniqueNames.length,

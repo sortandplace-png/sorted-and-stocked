@@ -106,7 +106,11 @@ export async function POST(request: Request) {
       affectedRows: number;
     }> = [];
 
-    const updatePromises: Promise<any>[] = [];
+    // Supabase's query builder is thenable but not a literal Promise
+    // instance (missing catch/finally/Symbol.toStringTag per TS's
+    // structural check) -- PromiseLike is the correct type for what's
+    // actually pushed here, and Promise.allSettled accepts it fine.
+    const updatePromises: PromiseLike<any>[] = [];
 
     for (const [name, context] of ingredientMap.entries()) {
       const recommendation = buildShoppingLinkRecommendation(context);

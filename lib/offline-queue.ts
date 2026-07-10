@@ -46,7 +46,7 @@ export async function flushQueue(supabase: SupabaseClient) {
       try {
         let query = supabase.from(item.table);
         if (item.operation === 'insert') {
-          const { error } = await query.insert(item.values);
+          const { error } = await query.insert(item.values!);
           if (error) throw error;
         } else if (item.operation === 'update') {
           let q = query.update(item.values!);
