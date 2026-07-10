@@ -18,10 +18,18 @@ export default function KitchenOpsToolModal({
   slug,
   propertyId,
   onClose,
+  recipeName,
+  recipeMinutes,
 }: {
   slug: KitchenOpsSlug;
   propertyId: string;
   onClose: () => void;
+  // Only meaningful for 'kitchen-timer' -- pre-fills the add-timer form
+  // when opened from a specific recipe's own approx_total_minutes. Absent
+  // (Tools Hub launch) or null (recipe has no recorded time) both fall back
+  // to the tool's normal blank/manual-entry behavior.
+  recipeName?: string;
+  recipeMinutes?: number | null;
 }) {
   return (
     <div
@@ -39,7 +47,9 @@ export default function KitchenOpsToolModal({
         >
           <X size={20} strokeWidth={1.75} />
         </button>
-        {slug === 'kitchen-timer' && <KitchenTimerClient />}
+        {slug === 'kitchen-timer' && (
+          <KitchenTimerClient initialName={recipeName} initialMinutes={recipeMinutes} />
+        )}
         {slug === 'guest-scaler' && <GuestScalerClient propertyId={propertyId} />}
         {slug === 'reset-checklist' && <ResetChecklistClient propertyId={propertyId} />}
         {slug === 'prep-timeline' && <PrepTimelineClient propertyId={propertyId} />}

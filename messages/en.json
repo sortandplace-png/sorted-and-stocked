@@ -115,7 +115,10 @@
       "daysAheadSingular": "day ahead",
       "daysAheadPlural": "days ahead",
       "savedToast": "Prep lead time saved.",
-      "errorToast": "Failed to save."
+      "errorToast": "Failed to save.",
+      "loadingCandleLighting": "Checking the next candle-lighting time…",
+      "startByForCandleLighting": "Next candle-lighting is {candleDate} at {time} — start prep by {startBy}.",
+      "noCandleLightingFound": "Couldn't find an upcoming candle-lighting time to schedule against."
     }
   },
   "course": {

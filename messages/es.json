@@ -115,7 +115,10 @@
       "daysAheadSingular": "día de anticipación",
       "daysAheadPlural": "días de anticipación",
       "savedToast": "Tiempo de preparación guardado.",
-      "errorToast": "Error al guardar."
+      "errorToast": "Error al guardar.",
+      "loadingCandleLighting": "Buscando el próximo horario de encendido de velas…",
+      "startByForCandleLighting": "El próximo encendido de velas es el {candleDate} a las {time} — comienza la preparación antes del {startBy}.",
+      "noCandleLightingFound": "No se encontró un próximo horario de encendido de velas para calcular."
     }
   },
   "course": {

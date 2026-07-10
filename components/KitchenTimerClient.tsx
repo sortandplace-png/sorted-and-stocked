@@ -43,10 +43,22 @@ function playAlarm() {
 // running at once) — reused as-is on both its original standalone page
 // (/tools/kitchen-timer) and the new floating popup on the Recipes page,
 // rather than building a second, separate timer component.
-export default function KitchenTimerClient() {
+// initialName/initialMinutes let a caller (e.g. opening the timer from a
+// specific recipe) pre-fill the add-timer form with that recipe's own
+// approx_total_minutes -- still just a starting point in the form, not an
+// auto-started timer, since the user may want to adjust before starting.
+export default function KitchenTimerClient({
+  initialName,
+  initialMinutes,
+}: {
+  initialName?: string;
+  initialMinutes?: number | null;
+} = {}) {
   const [timers, setTimers] = useState<Timer[]>([]);
-  const [newName, setNewName] = useState('');
-  const [newMinutes, setNewMinutes] = useState('5');
+  const [newName, setNewName] = useState(initialName ?? '');
+  const [newMinutes, setNewMinutes] = useState(
+    initialMinutes != null ? String(initialMinutes) : '5'
+  );
   const tickRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {

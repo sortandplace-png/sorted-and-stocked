@@ -350,11 +350,15 @@ export default function RecipeDetailClient({
 
   async function addToShoppingList(i: Ingredient) {
     setAddingToListIds((prev) => ({ ...prev, [i.id]: true }));
+    // Same scaling formatQty() already applies for display -- without this,
+    // scaling a recipe to 8 servings and adding an ingredient still queued
+    // the original 4-serving amount, silently discarding the scale-up.
+    const scaledQuantity = i.quantity == null ? null : i.quantity * scaleFactor;
     const result = await addIngredientsToShoppingList(supabase, propertyId, [
       {
         name: i.name,
         category: i.category,
-        quantity: i.quantity,
+        quantity: scaledQuantity,
         unit: i.unit,
         recipe_id: recipeId,
       },
@@ -851,6 +855,8 @@ export default function RecipeDetailClient({
           slug={openKitchenOpsTool}
           propertyId={propertyId}
           onClose={() => setOpenKitchenOpsTool(null)}
+          recipeName={recipe.name}
+          recipeMinutes={recipe.approx_total_minutes}
         />
       )}
 
