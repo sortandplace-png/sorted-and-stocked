@@ -10,7 +10,7 @@ import type { LucideIcon } from 'lucide-react';
 
 export function FilterPill({
   active,
-  icon: Icon,
+  icon,
   label,
   count,
   hebrew,
@@ -18,13 +18,22 @@ export function FilterPill({
   title,
 }: {
   active: boolean;
-  icon: LucideIcon;
+  // Most callers (Recipes) pass a real Lucide component. Inventory's
+  // category filter uses the app's existing emoji category icons
+  // (lib/icon-maps.ts's categoryIcon()) instead -- there's no Lucide
+  // equivalent for an open-ended, data-driven category list, and emoji is
+  // already the established visual language for categories elsewhere in
+  // Inventory (room grid, item cards), so a string is accepted here too
+  // rather than forking a second pill component for one prop's type.
+  icon: LucideIcon | string;
   label: string;
   count: number;
   hebrew?: string | null;
   onClick: () => void;
   title?: string;
 }) {
+  const Icon = typeof icon === 'string' ? null : icon;
+  const iconEmoji = typeof icon === 'string' ? icon : null;
   return (
     <button onClick={onClick} title={title} className="min-h-11 flex items-center justify-center">
       <span
@@ -33,7 +42,11 @@ export function FilterPill({
         }`}
       >
         <span className="flex items-center gap-1.5 leading-tight">
-          <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+          {Icon ? (
+            <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+          ) : (
+            <span className="text-xs leading-none" aria-hidden="true">{iconEmoji}</span>
+          )}
           {label}
           {hebrew === undefined && (
             <span className={active ? 'text-charcoal/60' : 'text-charcoal/40'}>({count})</span>

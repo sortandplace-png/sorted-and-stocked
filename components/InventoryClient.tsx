@@ -1,7 +1,7 @@
 // components/InventoryClient.tsx
 'use client';
 
-import { useEffect, useState, useCallback, useRef, useId } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientUpdate, resilientDelete } from '@/lib/resilient-write';
 import { usePropertyRole, canManage } from '@/components/PropertyRoleContext';
@@ -16,7 +16,8 @@ import RestockPhotoPrompt from '@/components/RestockPhotoPrompt';
 import LocationPhotoUpload from '@/components/LocationPhotoUpload';
 import DuplicateItemWarning from '@/components/DuplicateItemWarning';
 import InventoryBracha from '@/components/InventoryBracha';
-import { Camera } from 'lucide-react';
+import { FilterPill, FilterPillRow } from '@/components/recipes/FilterPill';
+import { Camera, AlertTriangle, Clock } from 'lucide-react';
 
 type StorageLocation = {
   id: string;
@@ -97,6 +98,16 @@ function isDirectImageUrl(url: string) {
 
 const UNASSIGNED = 'Unassigned';
 const FAVORITES = '__favorites__';
+// Matches the Recipes page's own expiring-soon default window
+// (RecipesGridView's expiringWindow, get_expiring_soon_recipes RPC).
+const EXPIRING_SOON_DAYS = 4;
+
+function isExpiringSoon(expirationDate: string | null): boolean {
+  if (!expirationDate) return false;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() + EXPIRING_SOON_DAYS);
+  return new Date(expirationDate) <= cutoff;
+}
 
 // Matches the real Inventory Ops group + icons already in the Tools Hub
 // (app/properties/[id]/tools/page.tsx) — same 4 tools, same slugs/icons,
@@ -141,6 +152,7 @@ export default function InventoryClient({
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [belowParOnly, setBelowParOnly] = useState(false);
+  const [expiringSoonOnly, setExpiringSoonOnly] = useState(false);
   // 'rooms' = existing location drill-down, unchanged. 'all' = new flat
   // grid of every item regardless of room.
   const [viewMode, setViewMode] = useState<'rooms' | 'all'>('rooms');
@@ -493,14 +505,30 @@ export default function InventoryClient({
       : items.filter((i) => i.location_id === locationFilter)
     : items;
 
-  const hasActiveFilter = searchQuery.trim() !== '' || categoryFilter !== null || belowParOnly;
+  const hasActiveFilter =
+    searchQuery.trim() !== '' || categoryFilter !== null || belowParOnly || expiringSoonOnly;
 
   function matchesFilters(item: InventoryItem) {
     if (searchQuery.trim() && !item.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) return false;
     if (categoryFilter && item.category !== categoryFilter) return false;
     if (belowParOnly && !(item.current_qty < item.min_qty)) return false;
+    if (expiringSoonOnly && !isExpiringSoon(item.expiration_date)) return false;
     return true;
   }
+
+  // Counts against the full item list, not the currently-filtered subset --
+  // matches the Recipes page's own filter-pill convention, so picking one
+  // pill doesn't make the others' counts shift under you.
+  const categoryPillCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const item of items) if (item.category) counts[item.category] = (counts[item.category] ?? 0) + 1;
+    return counts;
+  }, [items]);
+  const lowStockPillCount = useMemo(() => items.filter((i) => i.current_qty < i.min_qty).length, [items]);
+  const expiringSoonPillCount = useMemo(
+    () => items.filter((i) => isExpiringSoon(i.expiration_date)).length,
+    [items]
+  );
 
   // Searching/filtering with no room selected searches across every room,
   // not just whatever the room grid happened to be showing.
@@ -700,27 +728,67 @@ export default function InventoryClient({
           placeholder="Search items…"
           className="flex-1 min-w-[140px] border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-white text-sm"
         />
-        <select
-          value={categoryFilter ?? ''}
-          onChange={(e) => setCategoryFilter(e.target.value || null)}
-          className="border border-gold-light/60 rounded-full px-3 py-2 bg-white text-sm"
-        >
-          <option value="">All categories</option>
-          {categorySuggestions.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={() => setBelowParOnly((v) => !v)}
-          className={`text-sm px-4 py-2 rounded-full border shrink-0 ${
-            belowParOnly ? 'bg-rust text-white border-rust' : 'border-gold-light/60 text-charcoal'
-          }`}
-        >
-          Below par only
-        </button>
+        {/* Browse by Room keeps its exact original filter UI (dropdown +
+            toggle button) untouched -- it's a genuinely different, spatial
+            view. Only All Items gets the new pill treatment below. */}
+        {viewMode === 'rooms' && (
+          <>
+            <select
+              value={categoryFilter ?? ''}
+              onChange={(e) => setCategoryFilter(e.target.value || null)}
+              className="border border-gold-light/60 rounded-full px-3 py-2 bg-white text-sm"
+            >
+              <option value="">All categories</option>
+              {categorySuggestions.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setBelowParOnly((v) => !v)}
+              className={`text-sm px-4 py-2 rounded-full border shrink-0 ${
+                belowParOnly ? 'bg-rust text-white border-rust' : 'border-gold-light/60 text-charcoal'
+              }`}
+            >
+              Below par only
+            </button>
+          </>
+        )}
       </div>
+
+      {viewMode === 'all' && (
+        <div className="mb-4 space-y-3">
+          <FilterPillRow label="Category">
+            {categorySuggestions.map((c) => (
+              <FilterPill
+                key={c}
+                active={categoryFilter === c}
+                icon={categoryIcon(c)}
+                label={c}
+                count={categoryPillCounts[c] ?? 0}
+                onClick={() => setCategoryFilter(categoryFilter === c ? null : c)}
+              />
+            ))}
+          </FilterPillRow>
+          <FilterPillRow label="Status">
+            <FilterPill
+              active={belowParOnly}
+              icon={AlertTriangle}
+              label="Low Stock"
+              count={lowStockPillCount}
+              onClick={() => setBelowParOnly((v) => !v)}
+            />
+            <FilterPill
+              active={expiringSoonOnly}
+              icon={Clock}
+              label="Expiring Soon"
+              count={expiringSoonPillCount}
+              onClick={() => setExpiringSoonOnly((v) => !v)}
+            />
+          </FilterPillRow>
+        </div>
+      )}
 
       {viewMode === 'all' ? (
         // ---- All Items: flat grid of the whole inventory, ignoring room selection ----
