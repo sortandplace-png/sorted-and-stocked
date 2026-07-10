@@ -5,7 +5,7 @@
 // Small, stable reference table (7 rows) — hardcoded here the same way
 // lib/item-icons.ts hardcodes the equally-small `categories.icon_name` set,
 // rather than an extra query on every recipe list render.
-import { IceCreamCone, Beef, Salad, Soup, Wheat, Carrot, Apple, UtensilsCrossed, type LucideIcon } from 'lucide-react';
+import { IceCreamCone, Beef, Salad, Soup, Wheat, Carrot, Apple, Droplets, UtensilsCrossed, type LucideIcon } from 'lucide-react';
 
 const COURSE_ICONS: Record<string, LucideIcon> = {
   dessert: IceCreamCone,
@@ -15,6 +15,7 @@ const COURSE_ICONS: Record<string, LucideIcon> = {
   starch: Wheat,
   vege: Carrot,
   kids_platter: Apple,
+  dip: Droplets,
 };
 
 export function getRecipeIcon(course: string | null | undefined): LucideIcon {

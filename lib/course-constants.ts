@@ -4,10 +4,12 @@
 // carry (matches the `course` column's actual values).
 export type Course = 'soup' | 'protein' | 'starch' | 'vege' | 'salad' | 'dessert' | 'kids_platter' | 'dip';
 
-// Order is deliberate, not alphabetical/schema order: Kids Platter first,
-// then the everyday courses, with Dessert and Dip last since those skew
-// Shabbos-associated rather than everyday-meal courses.
+// Order is deliberate, not alphabetical/schema order: Dip first (served
+// before everything else at the table), then Kids Platter, then the
+// everyday courses, with Dessert last since it skews Shabbos-associated
+// rather than everyday-meal.
 export const COURSES: { key: Course; label: string; icon: string }[] = [
+  { key: 'dip', label: 'Dip', icon: '🫙' },
   { key: 'kids_platter', label: 'Kids Platter', icon: '🍎' },
   { key: 'soup', label: 'Soup', icon: '🥣' },
   { key: 'protein', label: 'Protein', icon: '🍗' },
@@ -15,5 +17,4 @@ export const COURSES: { key: Course; label: string; icon: string }[] = [
   { key: 'vege', label: 'Vege', icon: '🥕' },
   { key: 'salad', label: 'Salad', icon: '🥗' },
   { key: 'dessert', label: 'Dessert', icon: '🧁' },
-  { key: 'dip', label: 'Dip', icon: '🫙' },
 ];

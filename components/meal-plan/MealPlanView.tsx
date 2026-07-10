@@ -35,6 +35,7 @@ type Entry = {
   recipe_id: string | null;
   custom_name: string | null;
   recipes: Recipe | null;
+  sequence: number;
 };
 
 type DayData = { date: string; entries: Entry[]; hasMeatDairyBuffer: boolean };
@@ -158,7 +159,27 @@ export default function MealPlanView({
   const [repeatingWeek, setRepeatingWeek] = useState(false);
   const [extending, setExtending] = useState(false);
 
-  const [editing, setEditing] = useState<{ date: string; course: Course } | null>(null);
+  // Day Drawer — the single day-interaction surface for both Week and Month
+  // views (Week's per-course rows stay inline and untouched; the drawer
+  // adds Duplicate/Print/per-dish move-or-remove/Add Course in one place
+  // reachable from either view without navigating away).
+  const [dayDrawerOpen, setDayDrawerOpen] = useState<string | null>(null);
+  const [drawerDuplicateOpen, setDrawerDuplicateOpen] = useState(false);
+  const [duplicateTarget, setDuplicateTarget] = useState('');
+  const [duplicating, setDuplicating] = useState(false);
+  const [dishMenuOpen, setDishMenuOpen] = useState<string | null>(null);
+  const [moveDishOpen, setMoveDishOpen] = useState<string | null>(null);
+  const [moveTargetDate, setMoveTargetDate] = useState('');
+  const [moving, setMoving] = useState(false);
+  const [printOnlyDate, setPrintOnlyDate] = useState<string | null>(null);
+
+  // entryId is set when editing a specific existing row (a "Change") so
+  // saveEntry knows exactly which row to replace -- important now that a
+  // course/day can have more than one entry (dip/salad), so "the" entry for
+  // a course is no longer well-defined without it. Absent entryId means
+  // "add a new row" (either the course's first, or another alongside
+  // existing ones for dip/salad).
+  const [editing, setEditing] = useState<{ date: string; course: Course; entryId?: string } | null>(null);
   const [pickerMode, setPickerMode] = useState<'existing' | 'custom'>('existing');
   const [showIntentStep, setShowIntentStep] = useState(false);
   const [swapIntent, setSwapIntent] = useState<
@@ -181,7 +202,7 @@ export default function MealPlanView({
     const { data: entries, error: fetchError } = await supabase
       .from('meal_plan_entries')
       .select(
-        'id, plan_date, meal_slot, course, custom_name, recipe_id, recipes(id, name, name_es, photo_url, kosher_type, is_shabbos_only, approx_total_minutes)'
+        'id, plan_date, meal_slot, course, custom_name, recipe_id, sequence, recipes(id, name, name_es, photo_url, kosher_type, is_shabbos_only, approx_total_minutes)'
       )
       .eq('property_id', propertyId)
       .gte('plan_date', start)
@@ -236,12 +257,155 @@ export default function MealPlanView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Print Day sets a CSS-only "hide every other day" scope before invoking
+  // the browser print dialog, then clears it once the dialog closes —
+  // window.print() itself doesn't return a promise, so onafterprint is the
+  // only reliable signal that printing is done (or was cancelled).
+  useEffect(() => {
+    const handler = () => setPrintOnlyDate(null);
+    window.addEventListener('afterprint', handler);
+    return () => window.removeEventListener('afterprint', handler);
+  }, []);
+
+  function printDay(dateStr: string) {
+    setPrintOnlyDate(dateStr);
+    requestAnimationFrame(() => window.print());
+  }
+
+  // Print Day reuses the Week-view card's own print:hidden scoping, so the
+  // day must actually be rendered as a Week-view card first — if the drawer
+  // was opened from Month view, switch view + wait a couple of frames for
+  // that card to mount before invoking the print dialog.
+  function printDayFromDrawer(dateStr: string) {
+    const needsViewSwitch = viewMode === 'month';
+    if (needsViewSwitch) {
+      setAnchor(new Date(dateStr + 'T12:00:00'));
+      setViewMode('week');
+    }
+    closeDayDrawer();
+    if (needsViewSwitch) {
+      requestAnimationFrame(() => requestAnimationFrame(() => printDay(dateStr)));
+    } else {
+      printDay(dateStr);
+    }
+  }
+
+  function openDayDrawer(dateStr: string) {
+    setDayDrawerOpen(dateStr);
+    setDrawerDuplicateOpen(false);
+    setDishMenuOpen(null);
+    setMoveDishOpen(null);
+  }
+
+  function closeDayDrawer() {
+    setDayDrawerOpen(null);
+    setDrawerDuplicateOpen(false);
+    setDishMenuOpen(null);
+    setMoveDishOpen(null);
+  }
+
+  // Insert at the target date first, only remove the original entry once
+  // that succeeds — a same-course conflict on the target date fails the
+  // insert and the original stays put, instead of losing data.
+  async function moveDish(entry: Entry, targetDate: string) {
+    if (!targetDate || targetDate === entry.plan_date) return;
+    setMoving(true);
+    const payload = entry.recipe_id
+      ? {
+          property_id: propertyId,
+          plan_date: targetDate,
+          course: entry.course,
+          recipe_id: entry.recipe_id,
+          meal_slot: entry.meal_slot,
+        }
+      : {
+          property_id: propertyId,
+          plan_date: targetDate,
+          course: entry.course,
+          custom_name: entry.custom_name,
+          meal_slot: entry.meal_slot,
+        };
+    const result = await resilientInsert(supabase, 'meal_plan_entries', payload);
+    if (!result.ok) {
+      setMoving(false);
+      showToast(`Couldn't move — ${targetDate} already has a ${tCourse(entry.course)} planned.`, {
+        variant: 'error',
+      });
+      return;
+    }
+    await resilientDelete(supabase, 'meal_plan_entries', { id: entry.id });
+    setMoving(false);
+    setMoveDishOpen(null);
+    setMoveTargetDate('');
+    showToast(`Moved to ${targetDate}.`, { variant: 'success' });
+    loadEntries();
+  }
+
+  async function duplicateDay(sourceDate: string, targetDate: string) {
+    if (!targetDate || targetDate === sourceDate) return;
+    setDuplicating(true);
+    const sourceEntries = days[sourceDate]?.entries ?? [];
+    const targetEntries = days[targetDate]?.entries ?? [];
+    // Track the next free sequence per course on the target date so copying
+    // a source day with 2 dips doesn't insert both at the default sequence
+    // (1) and collide with each other, or with anything already on the
+    // target date for that course.
+    const seqByCourse: Record<string, number> = {};
+    for (const e of targetEntries) {
+      seqByCourse[e.course] = Math.max(seqByCourse[e.course] ?? 0, e.sequence);
+    }
+    let inserted = 0;
+    for (const entry of sourceEntries) {
+      const sequence = (seqByCourse[entry.course] ?? 0) + 1;
+      seqByCourse[entry.course] = sequence;
+      const payload = entry.recipe_id
+        ? {
+            property_id: propertyId,
+            plan_date: targetDate,
+            course: entry.course,
+            recipe_id: entry.recipe_id,
+            meal_slot: entry.meal_slot,
+            sequence,
+          }
+        : {
+            property_id: propertyId,
+            plan_date: targetDate,
+            course: entry.course,
+            custom_name: entry.custom_name,
+            meal_slot: entry.meal_slot,
+            sequence,
+          };
+      const result = await resilientInsert(supabase, 'meal_plan_entries', payload);
+      if (result.ok) inserted++;
+    }
+    setDuplicating(false);
+    setDrawerDuplicateOpen(false);
+    setDuplicateTarget('');
+    showToast(
+      inserted > 0
+        ? `Duplicated ${inserted} meal${inserted === 1 ? '' : 's'} to ${targetDate}.`
+        : `Nothing duplicated — ${targetDate} already has all those courses planned.`,
+      { variant: inserted > 0 ? 'success' : 'error' }
+    );
+    loadEntries();
+  }
+
   function recipeTitle(r: Recipe) {
     return locale === 'es' && r.name_es ? r.name_es : r.name;
   }
 
+  // All entries for a course/day, not just one -- dip and salad can now
+  // legitimately have more than one row per day (real schema change, see
+  // migration 061). Sorted by id as a stable tiebreaker since insertion
+  // order isn't otherwise tracked.
+  function entriesFor(dateStr: string, course: Course) {
+    return (days[dateStr]?.entries ?? [])
+      .filter((e) => e.course === course)
+      .sort((a, b) => a.sequence - b.sequence);
+  }
+
   function entryFor(dateStr: string, course: Course) {
-    return days[dateStr]?.entries.find((e) => e.course === course) ?? null;
+    return entriesFor(dateStr, course)[0] ?? null;
   }
 
   function displayName(entry: Entry | null) {
@@ -249,11 +413,14 @@ export default function MealPlanView({
     return entry.recipes ? recipeTitle(entry.recipes) : entry.custom_name;
   }
 
-  function openPicker(dateStr: string, course: Course, isSwap = false) {
+  function openPicker(dateStr: string, course: Course, isSwap = false, targetEntry?: Entry) {
     if (!canEdit) return;
     const recipesForCourse = recipes.filter((r) => r.course === course);
-    const existing = entryFor(dateStr, course);
-    setEditing({ date: dateStr, course });
+    // targetEntry (a specific row's "Change") takes precedence; falling
+    // back to entryFor keeps single-entry courses working exactly as
+    // before when called without one.
+    const existing = targetEntry ?? (isSwap ? entryFor(dateStr, course) : null);
+    setEditing({ date: dateStr, course, entryId: existing?.id });
     if (existing?.recipe_id) {
       setPickerMode('existing');
       setPickedRecipeId(existing.recipe_id);
@@ -279,9 +446,27 @@ export default function MealPlanView({
     if (!editing) return;
     setSaving(true);
 
-    const existing = entryFor(editing.date, editing.course);
-    if (existing) {
-      await resilientDelete(supabase, 'meal_plan_entries', { id: existing.id });
+    // Only delete the specific row being replaced (a real "Change") --
+    // deleting "the first entry for this course" would be wrong now that
+    // dip/salad can have more than one row; adding a new one (no entryId)
+    // must never touch any existing row for that course.
+    //
+    // sequence must be computed explicitly, not left to the column's
+    // default (1) -- every insert would otherwise collide with the first
+    // dip/salad row's sequence=1 under the real unique constraint
+    // (property_id, plan_date, meal_slot, course, sequence), silently
+    // failing to insert a genuine 2nd entry (caught live while verifying
+    // this feature: a "2nd dip" add produced 0 new rows).
+    const existingEntries = entriesFor(editing.date, editing.course);
+    const editingEntry = editing.entryId ? existingEntries.find((e) => e.id === editing.entryId) : null;
+    const sequence = editingEntry
+      ? editingEntry.sequence
+      : existingEntries.length > 0
+      ? Math.max(...existingEntries.map((e) => e.sequence)) + 1
+      : 1;
+
+    if (editing.entryId) {
+      await resilientDelete(supabase, 'meal_plan_entries', { id: editing.entryId });
     }
 
     const payload =
@@ -292,6 +477,7 @@ export default function MealPlanView({
             course: editing.course,
             recipe_id: pickedRecipeId,
             meal_slot: 'dinner',
+            sequence,
           }
         : {
             property_id: propertyId,
@@ -299,6 +485,7 @@ export default function MealPlanView({
             course: editing.course,
             custom_name: customName.trim(),
             meal_slot: 'dinner',
+            sequence,
           };
 
     const result = await resilientInsert(supabase, 'meal_plan_entries', payload);
@@ -325,10 +512,16 @@ export default function MealPlanView({
           pickerMode === 'existing' && pickedRecipeId
             ? recipes.find((r) => r.id === pickedRecipeId) ?? null
             : null,
+        sequence,
       };
       setDays((prev) => {
         const day = prev[editing.date] ?? { date: editing.date, entries: [], hasMeatDairyBuffer: false };
-        const entries = [...day.entries.filter((e) => e.course !== editing.course), optimisticEntry];
+        // Replace only the specific row being changed; adding a new one
+        // (no entryId) must keep every existing row for the course intact.
+        const entries = [
+          ...day.entries.filter((e) => (editing.entryId ? e.id !== editing.entryId : true)),
+          optimisticEntry,
+        ];
         return { ...prev, [editing.date]: { ...day, entries } };
       });
       setEditing(null);
@@ -339,10 +532,10 @@ export default function MealPlanView({
     loadEntries();
   }
 
-  async function clearEntry(dateStr: string, course: Course) {
-    const existing = entryFor(dateStr, course);
-    if (!existing) return;
-    await resilientDelete(supabase, 'meal_plan_entries', { id: existing.id });
+  async function clearEntry(dateStr: string, course: Course, entryId?: string) {
+    const target = entryId ? { id: entryId } : entryFor(dateStr, course);
+    if (!target) return;
+    await resilientDelete(supabase, 'meal_plan_entries', { id: target.id });
     loadEntries();
   }
 
@@ -422,6 +615,10 @@ export default function MealPlanView({
       .lte('plan_date', fmt(nextWeekEnd));
     const existingKeys = new Set((existing ?? []).map((e) => `${e.plan_date}:${e.course}`));
 
+    // Tracks the next free sequence per (date, course) within this run so
+    // copying a source day with 2 dips doesn't insert both at the default
+    // sequence (1) and collide with each other.
+    const seqByDateCourse: Record<string, number> = {};
     let inserted = 0;
     for (const entry of thisWeekEntries) {
       const dayOffset = Math.round(
@@ -430,8 +627,15 @@ export default function MealPlanView({
       const newDate = new Date(nextWeekStart);
       newDate.setDate(newDate.getDate() + dayOffset);
       const newDateStr = fmt(newDate);
+      const newDow = newDate.getDay();
 
       if (existingKeys.has(`${newDateStr}:${entry.course}`)) continue;
+      // Standing rule: Kids Platter never appears Fri/Sat/Sun.
+      if (entry.course === 'kids_platter' && (newDow === 0 || newDow === 5 || newDow === 6)) continue;
+
+      const seqKey = `${newDateStr}:${entry.course}`;
+      const sequence = (seqByDateCourse[seqKey] ?? 0) + 1;
+      seqByDateCourse[seqKey] = sequence;
 
       const payload = entry.recipe_id
         ? {
@@ -440,6 +644,7 @@ export default function MealPlanView({
             course: entry.course,
             recipe_id: entry.recipe_id,
             meal_slot: entry.meal_slot,
+            sequence,
           }
         : {
             property_id: propertyId,
@@ -447,6 +652,7 @@ export default function MealPlanView({
             course: entry.course,
             custom_name: entry.custom_name,
             meal_slot: entry.meal_slot,
+            sequence,
           };
 
       const result = await resilientInsert(supabase, 'meal_plan_entries', payload);
@@ -458,9 +664,28 @@ export default function MealPlanView({
     loadEntries();
   }
 
+  // Picks the least-recently-used candidate (never-used sorts first via a
+  // sentinel date), then immediately records it as used so the next pick
+  // for the same course within this run doesn't repeat it.
+  function pickLeastRecentlyUsed(candidates: Recipe[], lastUsedMap: Map<string, string>, planDate: string) {
+    if (candidates.length === 0) return null;
+    const sorted = [...candidates].sort((a, b) => {
+      const da = lastUsedMap.get(a.id) ?? '0000-00-00';
+      const db = lastUsedMap.get(b.id) ?? '0000-00-00';
+      return da < db ? -1 : da > db ? 1 : 0;
+    });
+    const picked = sorted[0];
+    lastUsedMap.set(picked.id, planDate);
+    return picked;
+  }
+
   // Extends past wherever the plan currently ends — not tied to whatever
-  // week is on screen — by repeating the last populated week's pattern
-  // forward, same skip-if-already-planned rule as repeatWeekForward.
+  // week is on screen. Reuses the last populated week's *structure* (which
+  // dates get which courses/meal_slots) but selects a fresh recipe per slot
+  // via least-recently-used rotation, rather than repeating the exact same
+  // recipes verbatim — otherwise "extend" just cloned one week on a loop.
+  // Same skip-if-already-planned rule as repeatWeekForward (resilientInsert
+  // no-ops on a conflicting row).
   async function extendMealPlan(weeks: number) {
     setExtending(true);
 
@@ -494,32 +719,114 @@ export default function MealPlanView({
       return;
     }
 
+    // Least-recently-used needs the recipe's real full history, not just the
+    // template week — and this table now has 2000+ rows for this property,
+    // past PostgREST's hard 1000-row-per-request cap, so a plain select
+    // silently truncates. Real pagination.
+    const history: { plan_date: string; recipe_id: string | null }[] = [];
+    {
+      const PAGE = 1000;
+      let from = 0;
+      while (true) {
+        const { data: page, error: pageError } = await supabase
+          .from('meal_plan_entries')
+          .select('plan_date, recipe_id')
+          .eq('property_id', propertyId)
+          .range(from, from + PAGE - 1);
+        if (pageError || !page) break;
+        history.push(...page);
+        if (page.length < PAGE) break;
+        from += PAGE;
+      }
+    }
+
+    const lastUsedMap = new Map<string, string>();
+    for (const e of history) {
+      if (!e.recipe_id) continue;
+      const prev = lastUsedMap.get(e.recipe_id);
+      if (!prev || e.plan_date > prev) lastUsedMap.set(e.recipe_id, e.plan_date);
+    }
+
+    const recipeById = new Map(recipes.map((r) => [r.id, r]));
+    const isMeat = (kt: string | null | undefined) => kt === 'Meat';
+    const isDairy = (kt: string | null | undefined) => kt === 'Dairy';
+
+    // Protein first so it sets the day's meat/dairy character before the
+    // rest of that day's courses are picked (protein skews heavily Meat).
+    const orderedTemplate = [...templateEntries].sort((a, b) =>
+      a.course === 'protein' ? -1 : b.course === 'protein' ? 1 : 0
+    );
+
+    // Tracks the next free sequence per (date, course) across the whole
+    // extend run so a template day with 2 dips doesn't insert both copies
+    // at the default sequence (1) and collide with each other.
+    const seqByDateCourse: Record<string, number> = {};
     let inserted = 0;
     for (let w = 1; w <= weeks; w++) {
-      for (const entry of templateEntries) {
+      // Reset per week so each generated week gets its own fresh meat/dairy
+      // read per day rather than carrying state across different dates.
+      const dayType = new Map<string, { meat: boolean; dairy: boolean }>();
+
+      for (const entry of orderedTemplate) {
         const dayOffset = Math.round(
           (new Date(entry.plan_date).getTime() - templateWeek.start.getTime()) / (1000 * 60 * 60 * 24)
         );
         const newDate = new Date(templateWeek.start);
         newDate.setDate(newDate.getDate() + 7 * w + dayOffset);
+        const newDateStr = fmt(newDate);
+        const newDow = newDate.getDay();
+        const isShabbos = newDow === 5 || newDow === 6;
 
-        const payload = entry.recipe_id
-          ? {
-              property_id: propertyId,
-              plan_date: fmt(newDate),
-              course: entry.course,
-              recipe_id: entry.recipe_id,
-              meal_slot: entry.meal_slot,
-            }
-          : {
-              property_id: propertyId,
-              plan_date: fmt(newDate),
-              course: entry.course,
-              custom_name: entry.custom_name,
-              meal_slot: entry.meal_slot,
-            };
+        // Standing rule: Kids Platter never appears Fri/Sat/Sun (confirmed
+        // live, existing rows on those days were removed in the same pass
+        // that added this check) — skip it here rather than let the
+        // template silently keep it clean by coincidence.
+        if (entry.course === 'kids_platter' && (newDow === 0 || newDow === 5 || newDow === 6)) {
+          continue;
+        }
 
-        const result = await resilientInsert(supabase, 'meal_plan_entries', payload);
+        const seqKey = `${newDateStr}:${entry.course}`;
+        const sequence = (seqByDateCourse[seqKey] ?? 0) + 1;
+        seqByDateCourse[seqKey] = sequence;
+
+        if (!entry.recipe_id) {
+          // No recipe to rotate — carry the manual custom entry forward as-is.
+          const result = await resilientInsert(supabase, 'meal_plan_entries', {
+            property_id: propertyId,
+            plan_date: newDateStr,
+            course: entry.course,
+            custom_name: entry.custom_name,
+            meal_slot: entry.meal_slot,
+            sequence,
+          });
+          if (result.ok) inserted++;
+          continue;
+        }
+
+        const type = dayType.get(newDateStr) ?? { meat: false, dairy: false };
+        const templateRecipe = recipeById.get(entry.recipe_id);
+        const pool = recipes.filter((r) => {
+          if (r.course !== entry.course) return false;
+          if (r.is_shabbos_only && !isShabbos) return false;
+          if (type.meat && isDairy(r.kosher_type)) return false;
+          if (type.dairy && isMeat(r.kosher_type)) return false;
+          return true;
+        });
+        const picked = pickLeastRecentlyUsed(pool, lastUsedMap, newDateStr) ?? templateRecipe ?? null;
+        if (!picked) continue;
+
+        if (isMeat(picked.kosher_type)) type.meat = true;
+        if (isDairy(picked.kosher_type)) type.dairy = true;
+        dayType.set(newDateStr, type);
+
+        const result = await resilientInsert(supabase, 'meal_plan_entries', {
+          property_id: propertyId,
+          plan_date: newDateStr,
+          course: entry.course,
+          recipe_id: picked.id,
+          meal_slot: entry.meal_slot,
+          sequence,
+        });
         if (result.ok) inserted++;
       }
     }
@@ -655,6 +962,7 @@ export default function MealPlanView({
             const dateStr = fmt(d);
             const isToday = fmt(new Date()) === dateStr;
             const isShabbos = i === 5 || i === 6;
+            const isWeekendOrSunday = i === 0 || i === 5 || i === 6;
             const hcal = hebcal[dateStr];
             const day = days[dateStr];
             const fastDay = fastDays[dateStr];
@@ -665,7 +973,8 @@ export default function MealPlanView({
                 key={dateStr}
                 className={
                   'rounded-2xl bg-white shadow-sm shadow-charcoal/5 overflow-hidden' +
-                  (isToday ? ' ring-2 ring-gold' : '')
+                  (isToday ? ' ring-2 ring-gold' : '') +
+                  (printOnlyDate && printOnlyDate !== dateStr ? ' print:hidden' : '')
                 }
               >
                 <div
@@ -718,6 +1027,14 @@ export default function MealPlanView({
                     </span>
                   ) : null}
                 </div>
+                <div className="print:hidden flex items-center px-4 py-1.5 border-b border-gold-light/20">
+                  <button
+                    onClick={() => openDayDrawer(dateStr)}
+                    className="text-[11px] font-medium text-gold-dark ml-auto"
+                  >
+                    Day options →
+                  </button>
+                </div>
                 {hasMajorFastConflict && (
                   <div className="flex items-start gap-2 px-4 py-2 bg-rust/10 border-b border-rust/20">
                     <AlertTriangle className="h-4 w-4 text-rust shrink-0 mt-0.5" />
@@ -727,58 +1044,91 @@ export default function MealPlanView({
                   </div>
                 )}
                 <div className="divide-y divide-gold-light/20">
-                  {COURSES.filter(({ key }) => key !== 'dessert' || isShabbos).map(({ key, label, icon }) => {
-                    const entry = entryFor(dateStr, key);
-                    const name = displayName(entry);
-                    const photo = entry?.recipes?.photo_url;
-                    const linkedRecipeId = entry?.recipe_id;
-                    return (
-                      <div key={key} className="flex items-center gap-2.5 px-4 py-2">
-                        {photo && isDirectImageUrl(photo) ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={photo} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" />
-                        ) : (
-                          <span className="w-9 h-9 rounded-lg bg-gold-light/25 shrink-0 flex items-center justify-center text-base">
-                            {icon}
-                          </span>
-                        )}
-                        <span className="text-[11px] text-charcoal/40 w-14 shrink-0">{tCourse(key)}</span>
-                        {linkedRecipeId ? (
-                          <Link
-                            href={`/properties/${propertyId}/recipes/${linkedRecipeId}`}
-                            className="flex-1 min-w-0 text-sm text-charcoal truncate underline decoration-gold-light decoration-2 underline-offset-2"
-                          >
-                            {name}
-                          </Link>
-                        ) : (
+                  {COURSES.filter(
+                    ({ key }) =>
+                      (key !== 'dessert' || isShabbos || entriesFor(dateStr, key).length > 0) &&
+                      (key !== 'dip' || isShabbos || entriesFor(dateStr, key).length > 0) &&
+                      // Standing rule: Kids Platter never appears Fri/Sat/Sun
+                      // — same "hide the row, don't just leave it empty"
+                      // treatment dip already gets, not a new pattern.
+                      (key !== 'kids_platter' || !isWeekendOrSunday || entriesFor(dateStr, key).length > 0)
+                  ).flatMap(({ key, label, icon }) => {
+                    const entries = entriesFor(dateStr, key);
+                    // Multi-entry courses (dip/salad) can have several real
+                    // rows a day now (migration 061) -- one row per entry,
+                    // never collapsed into "the" entry for the course.
+                    const rows = entries.length > 0 ? entries : [null];
+                    const canAddAnother = (key === 'dip' || key === 'salad') && entries.length > 0;
+                    return [
+                      ...rows.map((entry, idx) => {
+                        const name = displayName(entry);
+                        const photo = entry?.recipes?.photo_url;
+                        const linkedRecipeId = entry?.recipe_id;
+                        return (
+                          <div key={`${key}-${entry?.id ?? 'empty'}`} className="flex items-center gap-2.5 px-4 py-2">
+                            {photo && isDirectImageUrl(photo) ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={photo} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                            ) : (
+                              <span className="w-9 h-9 rounded-lg bg-gold-light/25 shrink-0 flex items-center justify-center text-base">
+                                {icon}
+                              </span>
+                            )}
+                            <span className="text-[11px] text-charcoal/40 w-14 shrink-0">
+                              {tCourse(key)}
+                              {rows.length > 1 ? ` ${idx + 1}` : ''}
+                            </span>
+                            {linkedRecipeId ? (
+                              <Link
+                                href={`/properties/${propertyId}/recipes/${linkedRecipeId}`}
+                                className="flex-1 min-w-0 text-sm text-charcoal truncate underline decoration-gold-light decoration-2 underline-offset-2"
+                              >
+                                {name}
+                              </Link>
+                            ) : (
+                              <button
+                                onClick={() => openPicker(dateStr, key)}
+                                disabled={!canEdit}
+                                className="flex-1 text-left min-w-0 text-sm disabled:cursor-default"
+                              >
+                                {name ? (
+                                  <span className="text-charcoal truncate block">{name}</span>
+                                ) : (
+                                  <span className="text-charcoal/25">{canEdit ? '+ add' : ''}</span>
+                                )}
+                              </button>
+                            )}
+                            {canEdit && linkedRecipeId && (
+                              <button
+                                onClick={() => openPicker(dateStr, key, true, entry ?? undefined)}
+                                className="text-charcoal/30 text-xs shrink-0"
+                                aria-label="Change"
+                              >
+                                ✏️
+                              </button>
+                            )}
+                            {canEdit && entry && (
+                              <button
+                                onClick={() => clearEntry(dateStr, key, entry.id)}
+                                className="text-rust text-xs shrink-0"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        );
+                      }),
+                      canAddAnother && canEdit ? (
+                        <div key={`${key}-add-another`} className="px-4 py-1.5">
                           <button
                             onClick={() => openPicker(dateStr, key)}
-                            disabled={!canEdit}
-                            className="flex-1 text-left min-w-0 text-sm disabled:cursor-default"
+                            className="text-[11px] text-gold-dark font-medium"
                           >
-                            {name ? (
-                              <span className="text-charcoal truncate block">{name}</span>
-                            ) : (
-                              <span className="text-charcoal/25">{canEdit ? '+ add' : ''}</span>
-                            )}
+                            + Add another {tCourse(key)}
                           </button>
-                        )}
-                        {canEdit && linkedRecipeId && (
-                          <button
-                            onClick={() => openPicker(dateStr, key, true)}
-                            className="text-charcoal/30 text-xs shrink-0"
-                            aria-label="Change"
-                          >
-                            ✏️
-                          </button>
-                        )}
-                        {canEdit && entry && (
-                          <button onClick={() => clearEntry(dateStr, key)} className="text-rust text-xs shrink-0">
-                            ✕
-                          </button>
-                        )}
-                      </div>
-                    );
+                        </div>
+                      ) : null,
+                    ].filter(Boolean);
                   })}
                 </div>
               </div>
@@ -793,10 +1143,7 @@ export default function MealPlanView({
           fastDays={fastDays}
           recipeTitle={recipeTitle}
           t={t}
-          onDayClick={(date) => {
-            setAnchor(new Date(date + 'T12:00:00'));
-            setViewMode('week');
-          }}
+          onDayClick={(date) => openDayDrawer(date)}
         />
       )}
 
@@ -833,6 +1180,201 @@ export default function MealPlanView({
           Next →
         </button>
       </div>
+
+      {dayDrawerOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-50 flex justify-end print:hidden"
+          onClick={closeDayDrawer}
+        >
+          <div
+            className="bg-cream w-full max-w-sm h-full overflow-y-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-cream border-b border-gold-light/30 px-5 py-4 flex items-start justify-between z-10">
+              <div>
+                <h2 className="font-display text-lg text-charcoal">
+                  {new Date(dayDrawerOpen + 'T12:00:00').toLocaleDateString(undefined, {
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </h2>
+                {hebcal[dayDrawerOpen]?.hebrewDate && (
+                  <p className="text-xs text-charcoal/40" lang="he" dir="rtl">
+                    {hebcal[dayDrawerOpen]!.hebrewDate}
+                  </p>
+                )}
+              </div>
+              <button onClick={closeDayDrawer} className="text-charcoal/40 text-xl leading-none" aria-label="Close">
+                ✕
+              </button>
+            </div>
+
+            {canEdit && (
+              <div className="px-5 py-3 flex items-center gap-4 border-b border-gold-light/20">
+                <div className="relative">
+                  <button
+                    onClick={() => setDrawerDuplicateOpen((v) => !v)}
+                    className="text-xs font-medium text-gold-dark"
+                  >
+                    Duplicate Day
+                  </button>
+                  {drawerDuplicateOpen && (
+                    <div className="absolute z-20 top-full left-0 mt-1 w-56 rounded-xl bg-white shadow-lg shadow-charcoal/10 border border-gold-light/40 p-3 space-y-2">
+                      <p className="text-[11px] text-charcoal/60">Copy this day's meals to:</p>
+                      <input
+                        type="date"
+                        value={duplicateTarget}
+                        onChange={(e) => setDuplicateTarget(e.target.value)}
+                        className="w-full rounded-lg border border-gold-light/60 px-2 py-1 text-xs text-charcoal"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => setDrawerDuplicateOpen(false)} className="text-[11px] text-charcoal/50">
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => duplicateDay(dayDrawerOpen, duplicateTarget)}
+                          disabled={!duplicateTarget || duplicating}
+                          className="rounded-full bg-gold-dark px-3 py-1 text-[11px] font-medium text-white disabled:opacity-40"
+                        >
+                          {duplicating ? '…' : 'Copy'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => printDayFromDrawer(dayDrawerOpen)}
+                  className="text-xs font-medium text-gold-dark"
+                >
+                  Print Day
+                </button>
+              </div>
+            )}
+
+            <div className="divide-y divide-gold-light/20 bg-white">
+              {COURSES.flatMap(({ key }) => {
+                const entries = entriesFor(dayDrawerOpen, key);
+                const canAddAnother = (key === 'dip' || key === 'salad') && entries.length > 0 && canEdit;
+                const rows = entries.map((entry, idx, arr) => {
+                const name = displayName(entry);
+                return (
+                  <div key={entry.id} className="flex items-center gap-2.5 px-5 py-3">
+                    <span className="text-base shrink-0" aria-hidden>
+                      {kosherIcon(entry.recipes?.kosher_type ?? null)}
+                    </span>
+                    <span className="text-[11px] text-charcoal/40 w-14 shrink-0">
+                      {tCourse(key)}
+                      {arr.length > 1 ? ` ${idx + 1}` : ''}
+                    </span>
+                    <span className="flex-1 min-w-0 text-sm text-charcoal truncate">{name}</span>
+                    {canEdit && (
+                      <div className="relative shrink-0">
+                        <button
+                          onClick={() => setDishMenuOpen(dishMenuOpen === entry.id ? null : entry.id)}
+                          className="text-charcoal/40 text-sm px-1"
+                          aria-label="Dish options"
+                        >
+                          •••
+                        </button>
+                        {dishMenuOpen === entry.id && (
+                          <div
+                            className="absolute z-20 top-full right-0 mt-1 w-44 rounded-xl bg-white shadow-lg shadow-charcoal/10 border border-gold-light/40 py-1"
+                            onMouseLeave={() => setDishMenuOpen(null)}
+                          >
+                            <button
+                              onClick={() => {
+                                setDishMenuOpen(null);
+                                openPicker(dayDrawerOpen, key, true, entry);
+                              }}
+                              className="block w-full text-left px-3 py-1.5 text-xs text-charcoal hover:bg-gold-light/15"
+                            >
+                              Change
+                            </button>
+                            <button
+                              onClick={() => {
+                                setDishMenuOpen(null);
+                                setMoveDishOpen(entry.id);
+                                setMoveTargetDate('');
+                              }}
+                              className="block w-full text-left px-3 py-1.5 text-xs text-charcoal hover:bg-gold-light/15"
+                            >
+                              Move to Another Day
+                            </button>
+                            <button
+                              onClick={() => {
+                                setDishMenuOpen(null);
+                                clearEntry(dayDrawerOpen, key, entry.id);
+                              }}
+                              className="block w-full text-left px-3 py-1.5 text-xs text-rust hover:bg-rust/10"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        )}
+                        {moveDishOpen === entry.id && (
+                          <div className="absolute z-20 top-full right-0 mt-1 w-56 rounded-xl bg-white shadow-lg shadow-charcoal/10 border border-gold-light/40 p-3 space-y-2">
+                            <p className="text-[11px] text-charcoal/60">Move to:</p>
+                            <input
+                              type="date"
+                              value={moveTargetDate}
+                              onChange={(e) => setMoveTargetDate(e.target.value)}
+                              className="w-full rounded-lg border border-gold-light/60 px-2 py-1 text-xs text-charcoal"
+                            />
+                            <div className="flex justify-end gap-2">
+                              <button onClick={() => setMoveDishOpen(null)} className="text-[11px] text-charcoal/50">
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => moveDish(entry, moveTargetDate)}
+                                disabled={!moveTargetDate || moving}
+                                className="rounded-full bg-gold-dark px-3 py-1 text-[11px] font-medium text-white disabled:opacity-40"
+                              >
+                                {moving ? '…' : 'Move'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+                });
+                return canAddAnother
+                  ? [
+                      ...rows,
+                      <div key={`${key}-add-another`} className="px-5 py-2">
+                        <button
+                          onClick={() => openPicker(dayDrawerOpen, key)}
+                          className="text-xs text-gold-dark font-medium"
+                        >
+                          + Add another {tCourse(key)}
+                        </button>
+                      </div>,
+                    ]
+                  : rows;
+              })}
+            </div>
+
+            {canEdit && COURSES.filter(({ key }) => !entryFor(dayDrawerOpen, key)).length > 0 && (
+              <div className="px-5 py-4">
+                <p className="text-[10px] uppercase tracking-wide text-charcoal/40 mb-2">Add course</p>
+                <div className="flex flex-wrap gap-2">
+                  {COURSES.filter(({ key }) => !entryFor(dayDrawerOpen, key)).map(({ key, icon }) => (
+                    <button
+                      key={key}
+                      onClick={() => openPicker(dayDrawerOpen, key)}
+                      className="rounded-full border border-gold px-3 py-1.5 text-xs font-medium text-gold-dark"
+                    >
+                      {icon} {tCourse(key)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {editing && (
         <div

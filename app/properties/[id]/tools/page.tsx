@@ -82,6 +82,12 @@ const TOOLS = [
     description: 'Same ingredient, spelled differently — merge them.',
   },
   {
+    slug: 'photo-review',
+    icon: '🖼️',
+    title: 'Room Photo Review',
+    description: 'Bulk-upload house photos and match each to a real room.',
+  },
+  {
     slug: 'takeout-directory',
     icon: '🥡',
     title: 'Local Takeout Directory',
@@ -121,7 +127,7 @@ const TASTE_MEMORY_TOOL = {
 const GROUPS: { key: string; label: string; slugs: string[] }[] = [
   { key: 'scanners', label: 'Scanners', slugs: ['price-scanner', 'ingredient-scanner', 'recipe-stealer'] },
   { key: 'kitchen-ops', label: 'Kitchen Ops', slugs: ['kitchen-timer', 'guest-scaler', 'reset-checklist', 'prep-timeline'] },
-  { key: 'inventory-ops', label: 'Inventory Ops', slugs: ['pantry-zones', 'borrowed-items', 'duplicate-ingredients', 'needs-linking'] },
+  { key: 'inventory-ops', label: 'Inventory Ops', slugs: ['pantry-zones', 'borrowed-items', 'duplicate-ingredients', 'needs-linking', 'photo-review'] },
   {
     key: 'household',
     label: 'Household',

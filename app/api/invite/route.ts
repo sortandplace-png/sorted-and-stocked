@@ -3,6 +3,57 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { emailShell, escapeHtml } from '@/lib/email-template';
+
+const RESEND_FROM = 'Sorted & Stocked <invites@sortandplace.com>';
+
+async function sendInviteEmail(opts: {
+  toEmail: string;
+  inviterName: string;
+  propertyName: string;
+  role: string;
+  actionLink: string;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    return { sent: false, reason: 'RESEND_API_KEY not configured' as const };
+  }
+
+  const roleLabel = opts.role === 'manager' ? 'manager / gerente' : 'staff / personal';
+  const html = emailShell(
+    'You’ve been invited / Has sido invitado',
+    `
+    <p style="color:#2B2B2B;font-size:15px;">
+      ${escapeHtml(opts.inviterName)} invited you to join <strong>${escapeHtml(opts.propertyName)}</strong>
+      on Sorted &amp; Stocked as <strong>${roleLabel}</strong>.<br/>
+      <em>${escapeHtml(opts.inviterName)} te invitó a unirte a <strong>${escapeHtml(
+      opts.propertyName
+    )}</strong> en Sorted &amp; Stocked como <strong>${roleLabel}</strong>.</em>
+    </p>
+    <p style="margin:24px 0;">
+      <a href="${opts.actionLink}" style="background:#8A6E42;color:#FAF7F2;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:600;">
+        Accept &amp; set up account / Aceptar y configurar cuenta
+      </a>
+    </p>
+    <p style="color:#2B2B2B99;font-size:12px;">
+      If the button doesn't work, copy this link: ${opts.actionLink}<br/>
+      Si el botón no funciona, copia este enlace: ${opts.actionLink}
+    </p>`
+  );
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: RESEND_FROM,
+      to: opts.toEmail,
+      subject: `You're invited to ${opts.propertyName} on Sorted & Stocked`,
+      html,
+    }),
+  });
+
+  return { sent: res.ok, reason: res.ok ? null : `Resend returned ${res.status}` };
+}
 
 export async function POST(request: Request) {
   const { propertyId, email, role } = await request.json();
@@ -48,8 +99,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: rateLimit.error }, { status: 429 });
   }
 
-  // Step 2: create the auth user + send the invite email. This requires the
-  // service-role key, hence the separate admin client.
+  // Step 2: create the auth user + get an invite action link. This requires
+  // the service-role key, hence the separate admin client.
+  //
+  // generateLink (not inviteUserByEmail) deliberately -- inviteUserByEmail
+  // always fires Supabase's own default templated email with no way to
+  // suppress it, which would mean every invite sends TWO emails once a real
+  // branded one is added below. generateLink creates the same auth user and
+  // returns the action link without sending anything itself, so the branded
+  // Resend email below is the only one that goes out.
   const admin = createAdminClient();
   // request.url reflects the internal host when running behind a reverse
   // proxy, not the public-facing domain — prefer the standard forwarded
@@ -59,8 +117,10 @@ export async function POST(request: Request) {
   const forwardedProto = request.headers.get('x-forwarded-proto');
   const origin = forwardedHost ? `${forwardedProto ?? 'https'}://${forwardedHost}` : new URL(request.url).origin;
 
-  const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${origin}/auth/callback?redirectTo=/properties`,
+  const { data: linkData, error: inviteError } = await admin.auth.admin.generateLink({
+    type: 'invite',
+    email,
+    options: { redirectTo: `${origin}/auth/callback?redirectTo=/properties` },
   });
 
   if (inviteError) {
@@ -78,26 +138,50 @@ export async function POST(request: Request) {
     );
   }
 
-  // Step 3: add them to property_members now — inviteUserByEmail creates
-  // the auth.users row immediately (the on_auth_user_created trigger from
+  const invitedUserId = linkData.user.id;
+
+  // Step 3: add them to property_members now — generateLink creates the
+  // auth.users row immediately (the on_auth_user_created trigger from
   // 001_init_schema.sql fires and creates their profiles row too), even
-  // though they haven't accepted the email yet. Use the caller's own
+  // though they haven't accepted the invite yet. Use the caller's own
   // RLS-respecting client for this insert — the earlier role check already
   // proved they're allowed to do it, no need for the admin client here.
   const { error: memberError } = await supabase.from('property_members').insert({
     property_id: propertyId,
-    user_id: invited.user.id,
+    user_id: invitedUserId,
     role,
   });
 
   if (memberError) {
     // The auth user + profile row already exist at this point (created by
-    // inviteUserByEmail above) — without cleanup, a failed membership
-    // insert would leave a stranded account with no way to sign into any
+    // generateLink above) — without cleanup, a failed membership insert
+    // would leave a stranded account with no way to sign into any
     // property. Best-effort: report the original error either way.
-    await admin.auth.admin.deleteUser(invited.user.id).catch(() => {});
+    await admin.auth.admin.deleteUser(invitedUserId).catch(() => {});
     return NextResponse.json({ error: memberError.message }, { status: 400 });
   }
 
-  return NextResponse.json({ status: 'invited', userId: invited.user.id });
+  // Step 4: send the real branded invite email via Resend. Best-effort --
+  // the account + membership already exist at this point regardless of
+  // whether the email send succeeds, so a Resend failure doesn't strand
+  // anything; the UI can tell the inviter to share the link manually.
+  const [{ data: property }, { data: inviterProfile }] = await Promise.all([
+    admin.from('properties').select('name').eq('id', propertyId).single(),
+    admin.from('profiles').select('full_name').eq('id', user.id).single(),
+  ]);
+
+  const emailResult = await sendInviteEmail({
+    toEmail: email,
+    inviterName: inviterProfile?.full_name || user.email || 'A household member',
+    propertyName: property?.name ?? 'the property',
+    role,
+    actionLink: linkData.properties.action_link,
+  });
+
+  return NextResponse.json({
+    status: 'invited',
+    userId: invitedUserId,
+    emailSent: emailResult.sent,
+    emailReason: emailResult.reason,
+  });
 }

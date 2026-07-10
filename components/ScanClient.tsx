@@ -18,6 +18,7 @@ type ScannedItem = {
   current_qty: number;
   min_qty: number;
   unit: string;
+  unit_cost: number | null;
   photo_url: string | null;
   reorder_link: string | null;
 };
@@ -38,6 +39,7 @@ export default function ScanClient({
 }) {
   const [state, setState] = useState<LookupState>({ status: 'scanning' });
   const [adjustedQty, setAdjustedQty] = useState('');
+  const [adjustedPrice, setAdjustedPrice] = useState('');
   const [saving, setSaving] = useState(false);
   const [photoPromptItem, setPhotoPromptItem] = useState<{ id: string; name: string } | null>(null);
   const router = useRouter();
@@ -74,7 +76,7 @@ export default function ScanClient({
 
       const { data: item, error } = await supabase
         .from('inventory_items')
-        .select('id, name, current_qty, min_qty, unit, photo_url, reorder_link')
+        .select('id, name, current_qty, min_qty, unit, unit_cost, photo_url, reorder_link')
         .eq('property_id', propertyId)
         .eq('qr_code', code)
         .maybeSingle();
@@ -88,6 +90,7 @@ export default function ScanClient({
       if (item) {
         triggerFeedback('success');
         setAdjustedQty(String(item.current_qty));
+        setAdjustedPrice(item.unit_cost !== null ? String(item.unit_cost) : '');
         setState({ status: 'item-found', item });
         return;
       }
@@ -109,11 +112,16 @@ export default function ScanClient({
   async function saveQty() {
     if (state.status !== 'item-found') return;
     setSaving(true);
+    // Price is optional and manual, same as the main inventory edit form —
+    // an empty field means "leave unset," not "set to 0".
     const result = await resilientUpdate(
       supabase,
       'inventory_items',
       { id: state.item.id },
-      { current_qty: Number(adjustedQty) || 0 }
+      {
+        current_qty: Number(adjustedQty) || 0,
+        unit_cost: adjustedPrice.trim() ? Number(adjustedPrice) : null,
+      }
     );
     setSaving(false);
     if (!result.ok) {
@@ -208,6 +216,15 @@ export default function ScanClient({
             onChange={(e) => setAdjustedQty(e.target.value)}
             className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-2.5 mb-3 bg-cream/40"
             autoFocus
+          />
+          <label className="text-sm text-charcoal/60 block mb-1">Price ($, optional)</label>
+          <input
+            type="number"
+            step="0.01"
+            value={adjustedPrice}
+            onChange={(e) => setAdjustedPrice(e.target.value)}
+            placeholder="—"
+            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-2.5 mb-3 bg-cream/40"
           />
           <div className="flex gap-2">
             <button

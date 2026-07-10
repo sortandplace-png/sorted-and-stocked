@@ -1059,6 +1059,7 @@ function ItemFormSheet({
   propertyId: string;
 }) {
   const restockInterval = restockIntervalDays(history);
+  const lastPurchased = lastPurchasedDate(history);
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4" onClick={onCancel}>
@@ -1145,7 +1146,7 @@ function ItemFormSheet({
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <FieldLabel>Supplier</FieldLabel>
+              <FieldLabel>Preferred store</FieldLabel>
               <input
                 className={fieldClass}
                 value={form.supplier}
@@ -1259,11 +1260,19 @@ function ItemFormSheet({
           </div>
         )}
 
-        {form.id && restockInterval !== null && (
-          <div className="mt-5 pt-4 border-t border-gold-light/40">
-            <p className="text-xs text-charcoal/60 bg-gold-light/15 rounded-lg px-3 py-2 mb-3">
-              Usually restocked every ~{restockInterval} day{restockInterval === 1 ? '' : 's'}
-            </p>
+        {form.id && (restockInterval !== null || lastPurchased) && (
+          <div className="mt-5 pt-4 border-t border-gold-light/40 space-y-2">
+            {lastPurchased && (
+              <p className="text-xs text-charcoal/60 bg-gold-light/15 rounded-lg px-3 py-2">
+                Last purchased{' '}
+                {lastPurchased.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+            )}
+            {restockInterval !== null && (
+              <p className="text-xs text-charcoal/60 bg-gold-light/15 rounded-lg px-3 py-2">
+                Usually restocked every ~{restockInterval} day{restockInterval === 1 ? '' : 's'}
+              </p>
+            )}
           </div>
         )}
 
@@ -1313,6 +1322,22 @@ function restockIntervalDays(history: HistoryEntry[]): number | null {
   }
   const avg = gapsDays.reduce((sum, g) => sum + g, 0) / gapsDays.length;
   return Math.round(avg);
+}
+
+// Most recent quantity_changed row where the number actually went UP — a
+// restock, not a consumption decrease (or an unrelated field edit). Derived
+// from history rather than a new column so it can never drift out of sync
+// with what actually happened.
+function lastPurchasedDate(history: HistoryEntry[]): Date | null {
+  const restocks = history
+    .filter((h) => h.action_type === 'quantity_changed')
+    .filter((h) => {
+      const oldVal = Number(h.old_value);
+      const newVal = Number(h.new_value);
+      return Number.isFinite(oldVal) && Number.isFinite(newVal) && newVal > oldVal;
+    })
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  return restocks.length > 0 ? new Date(restocks[0].created_at) : null;
 }
 
 function describeHistoryEntry(h: HistoryEntry): string {
