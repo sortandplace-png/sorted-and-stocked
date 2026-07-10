@@ -58,6 +58,11 @@ export default function ShoppingListViewEnhanced({
   const [aggregateDuplicates, setAggregateDuplicates] = useState(true);
   const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  // Collapsible sections -- same pattern as the Recipes grid's letter
+  // headers (title + count + chevron), applied to whichever grouping is
+  // active (Staples/Recipe Ingredients, aisle categories, or recipes)
+  // rather than forcing a literal A-Z regrouping on top of those.
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   // Same broken-link concern as InventoryClient — photo_url existing isn't
   // the same as the image actually loading.
   const [brokenPhotoIds, setBrokenPhotoIds] = useState<Set<string>>(new Set());
@@ -242,6 +247,15 @@ export default function ShoppingListViewEnhanced({
     }
     showToast(t('generatedCount', { count: result.count }), { variant: 'success' });
     loadItems();
+  }
+
+  function toggleGroup(title: string) {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(title)) next.delete(title);
+      else next.add(title);
+      return next;
+    });
   }
 
   function sourceTitle(s: ShoppingItemSource) {
@@ -600,17 +614,24 @@ export default function ShoppingListViewEnhanced({
       </div>
 
       {/* Items Grouped */}
-      {groups.map(
-        group =>
-          group.items.length > 0 && (
-            <div key={group.title} className="space-y-2">
-              <h3 className="text-sm font-semibold text-charcoal bg-gold-light/20 px-3 py-2 rounded-lg">
+      {groups.map(group => {
+        if (group.items.length === 0) return null;
+        const collapsed = collapsedGroups.has(group.title);
+        return (
+          <div key={group.title} className="space-y-2">
+            <button
+              onClick={() => toggleGroup(group.title)}
+              className="w-full flex items-center justify-between text-sm font-semibold text-charcoal bg-gold-light/20 px-3 py-2 rounded-lg"
+            >
+              <span>
                 {group.title} ({group.items.length})
-              </h3>
-              {group.items.map(renderItemCard)}
-            </div>
-          )
-      )}
+              </span>
+              <span className="text-xs text-charcoal/40">{collapsed ? '▸' : '▾'}</span>
+            </button>
+            {!collapsed && group.items.map(renderItemCard)}
+          </div>
+        );
+      })}
 
       {items.length === 0 && (
         <div className="text-center py-12 px-4">

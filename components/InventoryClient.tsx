@@ -156,6 +156,10 @@ export default function InventoryClient({
   // 'rooms' = existing location drill-down, unchanged. 'all' = new flat
   // grid of every item regardless of room.
   const [viewMode, setViewMode] = useState<'rooms' | 'all'>('rooms');
+  // Collapsible A-Z letter sections for All Items -- same pattern as the
+  // Recipes grid and the Tools hub. Only relevant to 'all' (the longest
+  // list, 698 items); room drill-down keeps its own real hierarchy.
+  const [collapsedLetters, setCollapsedLetters] = useState<Set<string>>(new Set());
   const categoryDatalistId = useId();
   // Tracks item IDs whose photo failed to actually load (dead link, 404,
   // etc.) — isDirectImageUrl only checks the URL *shape*, not whether the
@@ -538,6 +542,36 @@ export default function InventoryClient({
   // inventory, still respecting the search/category/below-par overlay.
   const allItemsDisplay = items.filter(matchesFilters);
 
+  // Grouped after filtering, so per-letter counts always reflect whatever
+  // filter is active (category, below-par, search) rather than the whole
+  // unfiltered inventory.
+  const allItemsByLetter = useMemo(() => {
+    const map = new Map<string, InventoryItem[]>();
+    for (const item of allItemsDisplay) {
+      const firstChar = item.name.trim().charAt(0).toUpperCase();
+      const letter = /[A-Z]/.test(firstChar) ? firstChar : '#';
+      if (!map.has(letter)) map.set(letter, []);
+      map.get(letter)!.push(item);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return [...map.entries()].sort(([a], [b]) => {
+      if (a === '#') return 1;
+      if (b === '#') return -1;
+      return a.localeCompare(b);
+    });
+  }, [allItemsDisplay]);
+
+  function toggleLetter(letter: string) {
+    setCollapsedLetters((prev) => {
+      const next = new Set(prev);
+      if (next.has(letter)) next.delete(letter);
+      else next.add(letter);
+      return next;
+    });
+  }
+
   const grouped = groupByLocation(visibleItems, locationName);
 
   if (loading) return <SkeletonList />;
@@ -791,9 +825,31 @@ export default function InventoryClient({
       )}
 
       {viewMode === 'all' ? (
-        // ---- All Items: flat grid of the whole inventory, ignoring room selection ----
-        <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
-          {allItemsDisplay.map((item) => renderItemCard(item, true))}
+        // ---- All Items: whole inventory, ignoring room selection, grouped
+        // into collapsible A-Z letter sections (this is the longest list in
+        // the app -- 698 items -- so collapsing actually helps here) ----
+        <div className="space-y-3">
+          {allItemsByLetter.map(([letter, letterItems]) => {
+            const collapsed = collapsedLetters.has(letter);
+            return (
+              <div key={letter}>
+                <button
+                  onClick={() => toggleLetter(letter)}
+                  className="w-full flex items-center gap-2 mb-2 text-left"
+                >
+                  <span className="font-display text-lg text-charcoal">{letter}</span>
+                  <span className="text-xs text-charcoal/40">({letterItems.length})</span>
+                  <span className="flex-1 border-t border-gold-light/40" />
+                  <span className="text-charcoal/40 text-sm">{collapsed ? '▸' : '▾'}</span>
+                </button>
+                {!collapsed && (
+                  <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
+                    {letterItems.map((item) => renderItemCard(item, true))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       ) : !locationFilter && !hasActiveFilter ? (
         // ---- Room grid: pick a room to see what's inside, grouped by real top-level room ----

@@ -1,7 +1,7 @@
 // components/StaplesTab.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useToast } from '@/components/Toast';
 import { fetchStaplesWithInventory, addStapleToList } from '@/lib/api/staples';
 import { Search, Plus, Check } from 'lucide-react';
@@ -26,6 +26,11 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
   const [sortBy, setSortBy] = useState<'category' | 'name' | 'low-first'>('category');
   const [loading, setLoading] = useState(true);
   const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
+  // Collapsible sections -- same title+count+chevron pattern as the Recipes
+  // grid, applied per-category (Category sort) or per-letter (Name sort).
+  // Low First stays a flat list since it's a short priority ranking, not a
+  // long alphabetical browse -- collapsing 2 buckets wouldn't help.
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const showToast = useToast();
 
   // Fetch all staples with their inventory details
@@ -110,6 +115,96 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
     }
   };
 
+  function renderStapleCard(staple: Staple) {
+    return (
+      <div
+        key={staple.staple_id}
+        className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gold-light/20 hover:border-gold-light/40 transition-colors"
+      >
+        {/* Item Info */}
+        <div className="flex-1 min-w-0">
+          <h4 className="font-medium text-sm text-charcoal truncate">{staple.staple_name}</h4>
+          <div className="flex items-center gap-2 mt-1 text-xs text-charcoal/60">
+            <span className="bg-gold-light/20 px-2 py-0.5 rounded-full text-charcoal font-medium">
+              {staple.staple_category}
+            </span>
+            <span>{staple.default_unit}</span>
+          </div>
+        </div>
+
+        {/* Stock Status */}
+        <div className="flex flex-col items-end gap-1">
+          <div
+            className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+              staple.current_qty === 0 && !staple.is_low
+                ? 'bg-slate-200 text-slate-700'
+                : staple.is_low
+                  ? 'bg-rust/15 text-rust'
+                  : 'bg-emerald-100/50 text-emerald-700'
+            }`}
+          >
+            {staple.current_qty === 0 && !staple.is_low
+              ? 'Not Yet Audited'
+              : staple.is_low
+                ? 'Low Stock'
+                : `${staple.current_qty} in stock`}
+          </div>
+          {staple.is_low && <span className="text-[11px] text-charcoal/40">Min: {staple.min_qty}</span>}
+        </div>
+
+        {/* Add Button */}
+        <button
+          onClick={() => handleAddToList(staple)}
+          disabled={staple.already_on_list || addingIds.has(staple.staple_id)}
+          className={`flex-shrink-0 h-9 w-9 rounded-full flex items-center justify-center transition-colors ${
+            staple.already_on_list
+              ? 'bg-emerald-100 text-emerald-700 cursor-default'
+              : addingIds.has(staple.staple_id)
+                ? 'bg-gold-light/40 text-charcoal'
+                : 'bg-gold-light/60 text-charcoal hover:bg-gold-light/80'
+          }`}
+        >
+          {staple.already_on_list ? (
+            <Check className="h-4 w-4" />
+          ) : addingIds.has(staple.staple_id) ? (
+            <div className="animate-spin h-4 w-4 border-2 border-charcoal border-t-transparent rounded-full" />
+          ) : (
+            <Plus className="h-4 w-4" />
+          )}
+        </button>
+      </div>
+    );
+  }
+
+  function toggleGroup(key: string) {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  const groups = useMemo(() => {
+    if (sortBy === 'low-first') return null;
+    const map = new Map<string, Staple[]>();
+    for (const s of filteredStaples) {
+      const key =
+        sortBy === 'category'
+          ? s.staple_category
+          : /[A-Z]/.test(s.staple_name.trim().charAt(0).toUpperCase())
+            ? s.staple_name.trim().charAt(0).toUpperCase()
+            : '#';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(s);
+    }
+    return [...map.entries()].sort(([a], [b]) => {
+      if (a === '#') return 1;
+      if (b === '#') return -1;
+      return a.localeCompare(b);
+    });
+  }, [filteredStaples, sortBy]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -161,71 +256,30 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
               : `No staples match "${searchTerm}" — try a different search.`}
           </p>
         </div>
-      ) : (
+      ) : groups ? (
         <div className="space-y-3">
-          {filteredStaples.map(staple => (
-            <div
-              key={staple.staple_id}
-              className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gold-light/20 hover:border-gold-light/40 transition-colors"
-            >
-              {/* Item Info */}
-              <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-sm text-charcoal truncate">{staple.staple_name}</h4>
-                <div className="flex items-center gap-2 mt-1 text-xs text-charcoal/60">
-                  <span className="bg-gold-light/20 px-2 py-0.5 rounded-full text-charcoal font-medium">
-                    {staple.staple_category}
-                  </span>
-                  <span>{staple.default_unit}</span>
-                </div>
-              </div>
-
-              {/* Stock Status */}
-              <div className="flex flex-col items-end gap-1">
-                <div
-                  className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                    staple.current_qty === 0 && !staple.is_low
-                      ? 'bg-slate-200 text-slate-700'
-                      : staple.is_low
-                        ? 'bg-rust/15 text-rust'
-                        : 'bg-emerald-100/50 text-emerald-700'
-                  }`}
+          {groups.map(([key, groupStaples]) => {
+            const collapsed = collapsedGroups.has(key);
+            return (
+              <div key={key}>
+                <button
+                  onClick={() => toggleGroup(key)}
+                  className="w-full flex items-center gap-2 mb-2 text-left"
                 >
-                  {staple.current_qty === 0 && !staple.is_low
-                    ? 'Not Yet Audited'
-                    : staple.is_low
-                      ? 'Low Stock'
-                      : `${staple.current_qty} in stock`}
-                </div>
-                {staple.is_low && (
-                  <span className="text-[11px] text-charcoal/40">
-                    Min: {staple.min_qty}
-                  </span>
+                  <span className="font-display text-lg text-charcoal">{key}</span>
+                  <span className="text-xs text-charcoal/40">({groupStaples.length})</span>
+                  <span className="flex-1 border-t border-gold-light/40" />
+                  <span className="text-charcoal/40 text-sm">{collapsed ? '▸' : '▾'}</span>
+                </button>
+                {!collapsed && (
+                  <div className="space-y-3">{groupStaples.map(renderStapleCard)}</div>
                 )}
               </div>
-
-              {/* Add Button */}
-              <button
-                onClick={() => handleAddToList(staple)}
-                disabled={staple.already_on_list || addingIds.has(staple.staple_id)}
-                className={`flex-shrink-0 h-9 w-9 rounded-full flex items-center justify-center transition-colors ${
-                  staple.already_on_list
-                    ? 'bg-emerald-100 text-emerald-700 cursor-default'
-                    : addingIds.has(staple.staple_id)
-                      ? 'bg-gold-light/40 text-charcoal'
-                      : 'bg-gold-light/60 text-charcoal hover:bg-gold-light/80'
-                }`}
-              >
-                {staple.already_on_list ? (
-                  <Check className="h-4 w-4" />
-                ) : addingIds.has(staple.staple_id) ? (
-                  <div className="animate-spin h-4 w-4 border-2 border-charcoal border-t-transparent rounded-full" />
-                ) : (
-                  <Plus className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
+      ) : (
+        <div className="space-y-3">{filteredStaples.map(renderStapleCard)}</div>
       )}
 
       <div className="text-xs text-charcoal/40 pt-2 border-t border-gold-light/20">
