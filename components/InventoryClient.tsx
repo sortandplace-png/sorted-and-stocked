@@ -544,24 +544,10 @@ export default function InventoryClient({
 
   // Grouped after filtering, so per-letter counts always reflect whatever
   // filter is active (category, below-par, search) rather than the whole
-  // unfiltered inventory.
-  const allItemsByLetter = useMemo(() => {
-    const map = new Map<string, InventoryItem[]>();
-    for (const item of allItemsDisplay) {
-      const firstChar = item.name.trim().charAt(0).toUpperCase();
-      const letter = /[A-Z]/.test(firstChar) ? firstChar : '#';
-      if (!map.has(letter)) map.set(letter, []);
-      map.get(letter)!.push(item);
-    }
-    for (const list of map.values()) {
-      list.sort((a, b) => a.name.localeCompare(b.name));
-    }
-    return [...map.entries()].sort(([a], [b]) => {
-      if (a === '#') return 1;
-      if (b === '#') return -1;
-      return a.localeCompare(b);
-    });
-  }, [allItemsDisplay]);
+  // unfiltered inventory. Same helper powers both All Items and a single
+  // room's item list below -- one collapsible-letters implementation, not two.
+  const allItemsByLetter = useMemo(() => groupByLetter(allItemsDisplay), [allItemsDisplay]);
+  const roomItemsByLetter = useMemo(() => groupByLetter(displayItems), [displayItems]);
 
   function toggleLetter(letter: string) {
     setCollapsedLetters((prev) => {
@@ -588,12 +574,22 @@ export default function InventoryClient({
     0
   );
 
-  // Room summaries for the grid view — count + low-stock count per location.
-  const roomSummaries = grouped.map(([location, locationItems]) => ({
-    location,
-    count: locationItems.length,
-    lowCount: locationItems.filter((i) => i.current_qty < i.min_qty).length,
-  }));
+  // Room summaries for the grid view — every real room (a location with a
+  // parent, i.e. not a top-level group like Basement/Main Floor/Upstairs
+  // itself), not just ones that already have items. A brand-new empty room
+  // still needs to show up so there's somewhere to actually add its first
+  // item -- deriving this from `grouped` alone silently dropped any room
+  // with zero items.
+  const roomSummaries = locations
+    .filter((l) => l.parent_location_id !== null)
+    .map((loc) => {
+      const locationItems = items.filter((i) => i.location_id === loc.id);
+      return {
+        location: loc.name,
+        count: locationItems.length,
+        lowCount: locationItems.filter((i) => i.current_qty < i.min_qty).length,
+      };
+    });
 
   // Group room cards under their real top-level room (Basement / Main Floor
   // / Upstairs) now that locations have a real hierarchy, instead of one
@@ -941,8 +937,28 @@ export default function InventoryClient({
           <h2 className="font-display text-lg text-charcoal mb-2">
             {locationFilter === FAVORITES ? '⭐ Favorites' : locationPath(locations, locationFilter)}
           </h2>
-          <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
-            {displayItems.map((item) => renderItemCard(item, false))}
+          <div className="space-y-3">
+            {roomItemsByLetter.map(([letter, letterItems]) => {
+              const collapsed = collapsedLetters.has(letter);
+              return (
+                <div key={letter}>
+                  <button
+                    onClick={() => toggleLetter(letter)}
+                    className="w-full flex items-center gap-2 mb-2 text-left"
+                  >
+                    <span className="font-display text-lg text-charcoal">{letter}</span>
+                    <span className="text-xs text-charcoal/40">({letterItems.length})</span>
+                    <span className="flex-1 border-t border-gold-light/40" />
+                    <span className="text-charcoal/40 text-sm">{collapsed ? '▸' : '▾'}</span>
+                  </button>
+                  {!collapsed && (
+                    <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
+                      {letterItems.map((item) => renderItemCard(item, false))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </>
       )}
@@ -1061,6 +1077,26 @@ export default function InventoryClient({
       )}
     </div>
   );
+}
+
+// Same A-Z letter-group shape used by the Recipes grid and the Tools hub --
+// non-letter-leading names fall into a trailing "#" bucket.
+function groupByLetter(items: InventoryItem[]): [string, InventoryItem[]][] {
+  const map = new Map<string, InventoryItem[]>();
+  for (const item of items) {
+    const firstChar = item.name.trim().charAt(0).toUpperCase();
+    const letter = /[A-Z]/.test(firstChar) ? firstChar : '#';
+    if (!map.has(letter)) map.set(letter, []);
+    map.get(letter)!.push(item);
+  }
+  for (const list of map.values()) {
+    list.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  return [...map.entries()].sort(([a], [b]) => {
+    if (a === '#') return 1;
+    if (b === '#') return -1;
+    return a.localeCompare(b);
+  });
 }
 
 function groupByLocation(
