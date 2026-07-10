@@ -25,7 +25,7 @@ const TOOLS = [
     slug: 'kitchen-timer',
     icon: '⏱️',
     title: 'Kitchen Timer',
-    description: 'Quick presets and a clear alarm for what\'s on the stove.',
+    description: 'Set multiple timers at once.',
   },
   {
     slug: 'knowledge-base',
@@ -60,14 +60,14 @@ const TOOLS = [
   {
     slug: 'reset-checklist',
     icon: '🧹',
-    title: 'Reset Checklists',
-    description: 'Run through after Shabbos or Yom Tov.',
+    title: 'Reset for Next',
+    description: 'Clear checklists & start fresh.',
   },
   {
     slug: 'guest-scaler',
     icon: '🎉',
-    title: 'Simcha Guest Scaler',
-    description: 'Scale any recipe to how many people are actually coming.',
+    title: 'Scale Servings',
+    description: 'Adjust for guests or batch size.',
   },
   {
     slug: 'needs-linking',
@@ -152,18 +152,18 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
           return (
             <div key={group.key}>
               <h2 className="text-xs font-medium uppercase tracking-wider text-gold-dark mb-2">{group.label}</h2>
-              <ul className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {groupTools.map((tool) => (
                   <li key={tool.slug}>
                     <Link
                       href={`/properties/${id}/tools/${tool.slug}`}
-                      className="flex items-center gap-3 bg-white rounded-2xl shadow-sm shadow-charcoal/5 px-4 py-3 hover:bg-gold-light/15 transition-colors h-full"
+                      className="flex flex-col items-center text-center gap-2 bg-white rounded-xl2 shadow-sm shadow-charcoal/5 px-4 py-5 hover:shadow-md hover:shadow-charcoal/10 transition-shadow h-full"
                     >
-                      <span className="text-2xl">{tool.icon}</span>
-                      <span>
-                        <span className="block font-display text-lg text-charcoal">{tool.title}</span>
-                        <span className="block text-sm text-charcoal/50">{tool.description}</span>
+                      <span className="w-11 h-11 flex items-center justify-center rounded-full bg-gold-dark text-lg">
+                        {tool.icon}
                       </span>
+                      <span className="block font-display font-semibold text-charcoal">{tool.title}</span>
+                      <span className="block text-sm text-charcoal/50">{tool.description}</span>
                     </Link>
                   </li>
                 ))}
