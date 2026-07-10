@@ -34,6 +34,7 @@ const KITCHEN_OPS_LINKS = [
   { slug: 'prep-timeline', icon: '⏳', title: 'Prep Timeline' },
 ];
 import { formatScaledNumber } from '@/lib/scale-quantity';
+import { approxGrams } from '@/lib/metric-conversion';
 import { useToast } from '@/components/Toast';
 
 interface Ingredient {
@@ -331,7 +332,9 @@ export default function RecipeDetailClient({
       return [i.unit, i.name].filter(Boolean).join(' ');
     }
     const scaledQty = i.quantity * scaleFactor;
-    return [formatScaledNumber(scaledQty), i.unit, i.name].filter(Boolean).join(' ');
+    const base = [formatScaledNumber(scaledQty), i.unit, i.name].filter(Boolean).join(' ');
+    const grams = approxGrams(scaledQty, i.unit, i.name);
+    return grams != null ? `${base} (approx ${grams}g)` : base;
   }
 
   async function addToShoppingList(i: Ingredient) {
