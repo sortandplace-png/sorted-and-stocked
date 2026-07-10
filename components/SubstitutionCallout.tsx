@@ -28,14 +28,11 @@ export default function SubstitutionCallout({ recipeName, substitutionNotes }: S
       {/* Content Cluster */}
       <div className="space-y-1">
         <h4 className="text-sm font-bold tracking-tight text-amber-400">
-          House Manager Operational Substitutions
+          Substitution Notes
         </h4>
         <p className="text-xs text-amber-200/80 leading-relaxed font-sans">
           {substitutionNotes}
         </p>
-        <span className="text-[10px] text-amber-500/70 block uppercase font-mono tracking-wider pt-1">
-          *Fallback enabled: Standard string matching suspended for {recipeName}
-        </span>
       </div>
     </div>
   );
