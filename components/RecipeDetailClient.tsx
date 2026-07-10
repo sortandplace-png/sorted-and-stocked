@@ -28,10 +28,14 @@ import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
 // Simcha Guest Scaler, and Reset Checklists were already known-real from
 // tonight's Tools Hub work; Prep Timeline specifically was re-verified here
 // since it hadn't been checked before.
+// Names match the Tools Hub's TOOLS list (app/properties/[id]/tools/page.tsx)
+// exactly -- these are two separate hardcoded lists for the same 4 tools, so
+// a rename in one and not the other silently produces different labels for
+// the same tool depending which page you're on.
 const KITCHEN_OPS_LINKS = [
   { slug: 'kitchen-timer', icon: '⏱️', title: 'Kitchen Timer' },
-  { slug: 'guest-scaler', icon: '🎉', title: 'Simcha Guest Scaler' },
-  { slug: 'reset-checklist', icon: '🧹', title: 'Reset Checklists' },
+  { slug: 'guest-scaler', icon: '🎉', title: 'Scale Servings' },
+  { slug: 'reset-checklist', icon: '🧹', title: 'Reset for Next' },
   { slug: 'prep-timeline', icon: '⏳', title: 'Prep Timeline' },
 ];
 import { formatScaledNumber } from '@/lib/scale-quantity';
@@ -809,15 +813,25 @@ export default function RecipeDetailClient({
 
       <div className="mt-8 print:hidden">
         <h2 className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-2">Kitchen Ops</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {/* Same real tokens as the Tools Hub redesign (white card, rounded-xl2,
+            gold-dark circular badge, charcoal heading), sized down for a
+            footer dock living inside an already-long recipe page rather than
+            a full page of its own -- not extracted as a shared component
+            with Tools Hub's card since the two contexts genuinely need
+            different sizing, and there are only these two call sites. Fixed
+            2-col grid rather than 3-at-sm: with exactly 4 items, 3-per-row
+            leaves an awkward 3+1 split; 2x2 stays clean at every width. */}
+        <div className="grid grid-cols-2 gap-2">
           {KITCHEN_OPS_LINKS.map((tool) => (
             <Link
               key={tool.slug}
               href={`/properties/${propertyId}/tools/${tool.slug}`}
-              className="flex items-center gap-1.5 bg-white rounded-xl border border-gold-light/40 px-3 py-2 text-xs text-charcoal hover:border-gold transition-colors"
+              className="flex items-center gap-2 bg-white rounded-xl2 shadow-sm shadow-charcoal/5 px-3 py-2.5 hover:shadow-md hover:shadow-charcoal/10 transition-shadow"
             >
-              <span aria-hidden="true">{tool.icon}</span>
-              <span className="truncate">{tool.title}</span>
+              <span className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-gold-dark text-sm" aria-hidden="true">
+                {tool.icon}
+              </span>
+              <span className="truncate text-xs font-semibold text-charcoal">{tool.title}</span>
             </Link>
           ))}
         </div>
