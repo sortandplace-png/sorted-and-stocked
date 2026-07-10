@@ -1,0 +1,70 @@
+// components/recipes/FilterPill.tsx
+// Single pill button used by every filter row (Course/Dietary/Occasion/Prep)
+// on both the desktop and mobile-accordion filter UI in RecipesGridView --
+// those were 8 near-identical inline blocks before this extraction (4
+// categories x desktop/mobile), differing only in their data + click
+// handler, not their markup or styling.
+'use client';
+
+import type { LucideIcon } from 'lucide-react';
+
+export function FilterPill({
+  active,
+  icon: Icon,
+  label,
+  count,
+  hebrew,
+  onClick,
+  title,
+}: {
+  active: boolean;
+  icon: LucideIcon;
+  label: string;
+  count: number;
+  hebrew?: string | null;
+  onClick: () => void;
+  title?: string;
+}) {
+  return (
+    <button onClick={onClick} title={title} className="min-h-11 flex items-center justify-center">
+      <span
+        className={`flex ${hebrew !== undefined ? 'flex-col items-center gap-0.5' : 'items-center gap-1.5 leading-tight'} text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${
+          active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+        }`}
+      >
+        <span className="flex items-center gap-1.5 leading-tight">
+          <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+          {label}
+          {hebrew === undefined && (
+            <span className={active ? 'text-charcoal/60' : 'text-charcoal/40'}>({count})</span>
+          )}
+        </span>
+        {hebrew !== undefined && (
+          <span className={`flex items-center gap-1 text-[10px] leading-tight ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>
+            <span>({count})</span>
+            {hebrew && (
+              <span lang="he" dir="rtl">
+                {hebrew}
+              </span>
+            )}
+          </span>
+        )}
+      </span>
+    </button>
+  );
+}
+
+export function FilterPillRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">{label}</p>
+      <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">{children}</div>
+    </div>
+  );
+}

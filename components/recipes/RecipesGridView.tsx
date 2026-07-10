@@ -41,6 +41,22 @@ import { createClient } from '@/lib/supabase/client';
 import NewRecipeModal from '@/components/NewRecipeModal';
 import FloatingKitchenTimerButton from '@/components/FloatingKitchenTimerButton';
 import { useToast } from '@/components/Toast';
+import { FilterPill, FilterPillRow } from '@/components/recipes/FilterPill';
+
+// Meat/Dairy/Parve as color-coded status pills, reusing the app's existing
+// kashrut-indicator tokens (tailwind.config.ts already documents rust/dairy/
+// sage as "third kashrut-indicator color" etc.) rather than inventing new
+// colors -- no mapping like this existed anywhere before this pass.
+const KOSHER_PILL_COLORS: Record<string, string> = {
+  Meat: 'bg-rust/10 text-rust border-rust/20',
+  Dairy: 'bg-dairy/10 text-dairy border-dairy/20',
+  Parve: 'bg-sage/10 text-sage border-sage/20',
+};
+
+function kosherPillClass(kosherType: string) {
+  const base = kosherType.startsWith('Parve') ? 'Parve' : kosherType;
+  return KOSHER_PILL_COLORS[base] ?? 'bg-gold-light/30 text-charcoal border-gold-light/50';
+}
 
 interface Recipe {
   id: string;
@@ -487,8 +503,13 @@ export default function RecipesGridView({
 
   return (
     <div className="max-w-md lg:max-w-6xl mx-auto p-4">
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <h1 className="text-2xl font-display text-charcoal">{t('title')}</h1>
+      <div className="flex items-start justify-between mb-4 flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-display font-bold text-charcoal">{t('title')}</h1>
+          <p className="text-sm text-charcoal/50 mt-0.5">
+            {recipes.length} recipe{recipes.length === 1 ? '' : 's'} in your collection
+          </p>
+        </div>
         <div className="flex gap-2">
           <a
             href={`/properties/${propertyId}/scan`}
@@ -500,7 +521,7 @@ export default function RecipesGridView({
           {canManage(role) && (
             <button
               onClick={() => setShowNewRecipe(true)}
-              className="text-sm font-medium bg-gold-dark text-white px-4 py-2 rounded-full hover:opacity-90 transition"
+              className="text-sm font-medium bg-gold-dark text-white px-4 py-2 rounded-full hover:opacity-90 transition shadow-sm"
             >
               + {t('newRecipe')}
             </button>
@@ -512,7 +533,7 @@ export default function RecipesGridView({
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder={t('searchPlaceholder')}
-        className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40 mb-3"
+        className="w-full border border-gold-light/60 rounded-xl2 px-4 py-2.5 bg-white mb-3"
       />
 
       {hasActiveFilters && (
@@ -533,68 +554,38 @@ export default function RecipesGridView({
       )}
 
       <div className="hidden md:block space-y-4 mb-6">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Course</p>
-          <div className="flex flex-wrap gap-x-4 gap-y-2">
-            {COURSES.map((c) => {
-              const active = courseFilter === c.key;
-              const Icon = COURSE_PILL_ICONS[c.key];
-              return (
-                <button key={c.key} onClick={() => setCourseFilter(active ? null : c.key)} className="min-h-11 flex items-center">
-                  <span
-                    className={`flex items-center gap-1.5 leading-tight text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${
-                      active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
-                    }`}
-                  >
-                    <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                    {c.label} <span className={active ? 'text-charcoal/60' : 'text-charcoal/40'}>({courseCounts[c.key] ?? 0})</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <FilterPillRow label="Course">
+          {COURSES.map((c) => (
+            <FilterPill
+              key={c.key}
+              active={courseFilter === c.key}
+              icon={COURSE_PILL_ICONS[c.key]}
+              label={c.label}
+              count={courseCounts[c.key] ?? 0}
+              onClick={() => setCourseFilter(courseFilter === c.key ? null : c.key)}
+            />
+          ))}
+        </FilterPillRow>
 
         <div className="flex gap-6">
           <div className="flex-1">
-            <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Dietary</p>
-            <div className="flex flex-wrap gap-x-4 gap-y-2">
-              {KOSHER_TYPES.map((k) => {
-                const active = kosherFilter === k;
-                const Icon = KOSHER_PILL_ICONS[k];
-                return (
-                  <button
-                    key={k}
-                    onClick={() => setKosherFilter(active ? null : k)}
-                    className="min-h-11 flex items-center justify-center"
-                  >
-                    <span
-                      className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-colors ${
-                        active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
-                      }`}
-                    >
-                      <span className="flex items-center gap-1.5 leading-tight text-sm font-medium">
-                        <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                        {k}
-                      </span>
-                      <span className={`flex items-center gap-1 text-[10px] leading-tight ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>
-                        <span>({kosherCounts[k] ?? 0})</span>
-                        {KOSHER_HEBREW[k] && (
-                          <span lang="he" dir="rtl">
-                            {KOSHER_HEBREW[k]}
-                          </span>
-                        )}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            <FilterPillRow label="Dietary">
+              {KOSHER_TYPES.map((k) => (
+                <FilterPill
+                  key={k}
+                  active={kosherFilter === k}
+                  icon={KOSHER_PILL_ICONS[k]}
+                  label={k}
+                  count={kosherCounts[k] ?? 0}
+                  hebrew={KOSHER_HEBREW[k]}
+                  onClick={() => setKosherFilter(kosherFilter === k ? null : k)}
+                />
+              ))}
+            </FilterPillRow>
           </div>
 
           <div className="flex-1">
-            <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Occasion</p>
-            <div className="flex flex-wrap gap-x-4 gap-y-2">
+            <FilterPillRow label="Occasion">
               {(
                 [
                   ['shabbos', 'Shabbos'],
@@ -602,79 +593,42 @@ export default function RecipesGridView({
                   ['pesach', 'Pesach'],
                   ['weekday', 'Weekday'],
                 ] as [Occasion, string][]
-              ).map(([key, label]) => {
-                const active = occasionFilter === key;
-                const hebrew = OCCASION_HEBREW[key];
-                const Icon = OCCASION_PILL_ICONS[key];
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setOccasionFilter(active ? null : key)}
-                    className="min-h-11 flex items-center justify-center"
-                  >
-                    <span
-                      className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-colors ${
-                        active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
-                      }`}
-                    >
-                      <span className="flex items-center gap-1.5 leading-tight text-sm font-medium">
-                        <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                        {label}
-                      </span>
-                      <span className={`flex items-center gap-1 text-[10px] leading-tight ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>
-                        <span>({occasionCounts[key] ?? 0})</span>
-                        {hebrew && (
-                          <span lang="he" dir="rtl">
-                            {hebrew}
-                          </span>
-                        )}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+              ).map(([key, label]) => (
+                <FilterPill
+                  key={key}
+                  active={occasionFilter === key}
+                  icon={OCCASION_PILL_ICONS[key]}
+                  label={label}
+                  count={occasionCounts[key] ?? 0}
+                  hebrew={OCCASION_HEBREW[key]}
+                  onClick={() => setOccasionFilter(occasionFilter === key ? null : key)}
+                />
+              ))}
+            </FilterPillRow>
           </div>
         </div>
 
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">Prep</p>
-          <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
-            {PREP_FILTERS.map((p) => {
-              const active = prepFilter === p.key;
-              const Icon = PREP_PILL_ICONS[p.key];
-              return (
-                <button key={p.key} onClick={() => setPrepFilter(active ? null : p.key)} className="min-h-11 flex items-center">
-                  <span
-                    className={`flex items-center gap-1.5 leading-tight text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${
-                      active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
-                    }`}
-                  >
-                    <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                    {p.label} <span className={active ? 'text-charcoal/60' : 'text-charcoal/40'}>({prepCounts[p.key] ?? 0})</span>
-                  </span>
-                </button>
-              );
-            })}
-            <span className="w-px h-6 bg-gold-light/60 shrink-0" aria-hidden="true" />
-            <button
-              onClick={() => setCourseFilter(null)}
-              className="min-h-11 flex items-center"
-              title="Clear the Course filter (shows every recipe)"
-            >
-              <span
-                className={`flex items-center gap-1.5 leading-tight text-sm font-medium px-3 py-1.5 rounded-full border border-dashed transition-colors ${
-                  !courseFilter
-                    ? 'bg-gold text-charcoal border-gold'
-                    : 'bg-white border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
-                }`}
-              >
-                <LayoutGrid className={`w-3.5 h-3.5 ${!courseFilter ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                All <span className={!courseFilter ? 'text-charcoal/60' : 'text-charcoal/40'}>({recipes.length})</span>
-              </span>
-            </button>
-          </div>
-        </div>
+        <FilterPillRow label="Prep">
+          {PREP_FILTERS.map((p) => (
+            <FilterPill
+              key={p.key}
+              active={prepFilter === p.key}
+              icon={PREP_PILL_ICONS[p.key]}
+              label={p.label}
+              count={prepCounts[p.key] ?? 0}
+              onClick={() => setPrepFilter(prepFilter === p.key ? null : p.key)}
+            />
+          ))}
+          <span className="w-px h-6 bg-gold-light/60 shrink-0" aria-hidden="true" />
+          <FilterPill
+            active={!courseFilter}
+            icon={LayoutGrid}
+            label="All"
+            count={recipes.length}
+            onClick={() => setCourseFilter(null)}
+            title="Clear the Course filter (shows every recipe)"
+          />
+        </FilterPillRow>
       </div>
 
       {/* Mobile: staged filters, accordion sections, sticky Apply bar --
@@ -693,32 +647,23 @@ export default function RecipesGridView({
           </button>
           {mobileOpen.course && (
             <div className="flex flex-wrap gap-x-4 gap-y-2 pt-2">
-              <button onClick={() => setStagedCourseFilter(null)} className="min-h-11 flex items-center">
-                <span
-                  className={`flex items-center gap-1.5 leading-tight text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${
-                    !stagedCourseFilter ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
-                  }`}
-                >
-                  <LayoutGrid className={`w-3.5 h-3.5 ${!stagedCourseFilter ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                  All <span className={!stagedCourseFilter ? 'text-charcoal/60' : 'text-charcoal/40'}>({recipes.length})</span>
-                </span>
-              </button>
-              {COURSES.map((c) => {
-                const active = stagedCourseFilter === c.key;
-                const Icon = COURSE_PILL_ICONS[c.key];
-                return (
-                  <button key={c.key} onClick={() => setStagedCourseFilter(active ? null : c.key)} className="min-h-11 flex items-center">
-                    <span
-                      className={`flex items-center gap-1.5 leading-tight text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${
-                        active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
-                      }`}
-                    >
-                      <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                      {c.label} <span className={active ? 'text-charcoal/60' : 'text-charcoal/40'}>({courseCounts[c.key] ?? 0})</span>
-                    </span>
-                  </button>
-                );
-              })}
+              <FilterPill
+                active={!stagedCourseFilter}
+                icon={LayoutGrid}
+                label="All"
+                count={recipes.length}
+                onClick={() => setStagedCourseFilter(null)}
+              />
+              {COURSES.map((c) => (
+                <FilterPill
+                  key={c.key}
+                  active={stagedCourseFilter === c.key}
+                  icon={COURSE_PILL_ICONS[c.key]}
+                  label={c.label}
+                  count={courseCounts[c.key] ?? 0}
+                  onClick={() => setStagedCourseFilter(stagedCourseFilter === c.key ? null : c.key)}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -736,36 +681,17 @@ export default function RecipesGridView({
           </button>
           {mobileOpen.dietary && (
             <div className="flex flex-wrap gap-x-4 gap-y-2 pt-2">
-              {KOSHER_TYPES.map((k) => {
-                const active = stagedKosherFilter === k;
-                const Icon = KOSHER_PILL_ICONS[k];
-                return (
-                  <button
-                    key={k}
-                    onClick={() => setStagedKosherFilter(active ? null : k)}
-                    className="min-h-11 flex items-center justify-center"
-                  >
-                    <span
-                      className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-colors ${
-                        active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
-                      }`}
-                    >
-                      <span className="flex items-center gap-1.5 leading-tight text-sm font-medium">
-                        <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                        {k}
-                      </span>
-                      <span className={`flex items-center gap-1 text-[10px] leading-tight ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>
-                        <span>({kosherCounts[k] ?? 0})</span>
-                        {KOSHER_HEBREW[k] && (
-                          <span lang="he" dir="rtl">
-                            {KOSHER_HEBREW[k]}
-                          </span>
-                        )}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
+              {KOSHER_TYPES.map((k) => (
+                <FilterPill
+                  key={k}
+                  active={stagedKosherFilter === k}
+                  icon={KOSHER_PILL_ICONS[k]}
+                  label={k}
+                  count={kosherCounts[k] ?? 0}
+                  hebrew={KOSHER_HEBREW[k]}
+                  onClick={() => setStagedKosherFilter(stagedKosherFilter === k ? null : k)}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -790,37 +716,17 @@ export default function RecipesGridView({
                   ['pesach', 'Pesach'],
                   ['weekday', 'Weekday'],
                 ] as [Occasion, string][]
-              ).map(([key, label]) => {
-                const active = stagedOccasionFilter === key;
-                const hebrew = OCCASION_HEBREW[key];
-                const Icon = OCCASION_PILL_ICONS[key];
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setStagedOccasionFilter(active ? null : key)}
-                    className="min-h-11 flex items-center justify-center"
-                  >
-                    <span
-                      className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-colors ${
-                        active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
-                      }`}
-                    >
-                      <span className="flex items-center gap-1.5 leading-tight text-sm font-medium">
-                        <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                        {label}
-                      </span>
-                      <span className={`flex items-center gap-1 text-[10px] leading-tight ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>
-                        <span>({occasionCounts[key] ?? 0})</span>
-                        {hebrew && (
-                          <span lang="he" dir="rtl">
-                            {hebrew}
-                          </span>
-                        )}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
+              ).map(([key, label]) => (
+                <FilterPill
+                  key={key}
+                  active={stagedOccasionFilter === key}
+                  icon={OCCASION_PILL_ICONS[key]}
+                  label={label}
+                  count={occasionCounts[key] ?? 0}
+                  hebrew={OCCASION_HEBREW[key]}
+                  onClick={() => setStagedOccasionFilter(stagedOccasionFilter === key ? null : key)}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -838,22 +744,16 @@ export default function RecipesGridView({
           </button>
           {mobileOpen.prep && (
             <div className="flex flex-wrap gap-x-4 gap-y-2 pt-2">
-              {PREP_FILTERS.map((p) => {
-                const active = stagedPrepFilter === p.key;
-                const Icon = PREP_PILL_ICONS[p.key];
-                return (
-                  <button key={p.key} onClick={() => setStagedPrepFilter(active ? null : p.key)} className="min-h-11 flex items-center">
-                    <span
-                      className={`flex items-center gap-1.5 leading-tight text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${
-                        active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
-                      }`}
-                    >
-                      <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
-                      {p.label} <span className={active ? 'text-charcoal/60' : 'text-charcoal/40'}>({prepCounts[p.key] ?? 0})</span>
-                    </span>
-                  </button>
-                );
-              })}
+              {PREP_FILTERS.map((p) => (
+                <FilterPill
+                  key={p.key}
+                  active={stagedPrepFilter === p.key}
+                  icon={PREP_PILL_ICONS[p.key]}
+                  label={p.label}
+                  count={prepCounts[p.key] ?? 0}
+                  onClick={() => setStagedPrepFilter(stagedPrepFilter === p.key ? null : p.key)}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -1008,12 +908,12 @@ export default function RecipesGridView({
                   <span className="text-charcoal/40 text-sm">{collapsed ? '▸' : '▾'}</span>
                 </button>
                 {!collapsed && (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
                     {groupRecipes.map((recipe) => (
                       <Link
                         key={recipe.id}
                         href={`/properties/${propertyId}/recipes/${recipe.id}`}
-                        className="block rounded-2xl overflow-hidden border border-gold-light/40 bg-white shadow-sm shadow-charcoal/5 hover:border-gold transition-colors"
+                        className="block rounded-xl2 overflow-hidden border border-gold-light/40 bg-white shadow-sm shadow-charcoal/5 hover:border-gold transition-colors"
                       >
                         <div className="relative w-full aspect-[4/3] bg-cream">
                           {recipe.photo_url && isDirectImageUrl(recipe.photo_url) ? (
@@ -1097,20 +997,22 @@ export default function RecipesGridView({
                           )}
                         </div>
                         <div className="p-3">
-                          <h2 className="font-display text-lg text-charcoal leading-snug mb-1.5">
+                          <h2 className="font-display font-bold text-lg text-charcoal leading-snug mb-1">
                             {recipe.name}
                           </h2>
                           <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
                             {(() => {
                               const courseInfo = COURSES.find((c) => c.key === recipe.course);
                               return courseInfo ? (
-                                <span className="inline-block text-xs font-medium text-charcoal bg-cream border border-gold-light/40 px-2.5 py-1 rounded-full">
+                                <span className="inline-block text-xs font-medium text-charcoal/70">
                                   {courseInfo.icon} {courseInfo.label}
                                 </span>
                               ) : null;
                             })()}
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
                             {recipe.kosher_type && (
-                              <span className="inline-block text-xs font-medium text-charcoal bg-gold-light/30 px-2.5 py-1 rounded-full">
+                              <span className={`inline-block text-xs font-medium border px-2.5 py-1 rounded-full ${kosherPillClass(recipe.kosher_type)}`}>
                                 {kosherIcon(recipe.kosher_type)} {recipe.kosher_type}
                               </span>
                             )}
