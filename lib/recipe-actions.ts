@@ -11,7 +11,7 @@ export async function fetchRecipeWithIngredients(recipeId: string) {
   // Fetch recipe
   const { data: recipe, error: recipeError } = await supabase
     .from('recipes')
-    .select('id, name, name_es, photo_url, instructions_en, instructions_es, kosher_type, course, servings, family_notes, tags, approx_total_minutes, prep_lead_days, is_shabbos_only, is_yom_tov, is_pesach')
+    .select('id, name, name_es, photo_url, instructions_en, instructions_es, kosher_type, course, servings, family_notes, equipment, tags, approx_total_minutes, prep_lead_days, is_shabbos_only, is_yom_tov, is_pesach')
     .eq('id', recipeId)
     .single();
 

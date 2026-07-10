@@ -77,6 +77,32 @@ export async function updateRecipeFamilyNotes({
   }
 }
 
+interface UpdateEquipmentInput {
+  recipeId: string;
+  equipment: string[];
+}
+
+export async function updateRecipeEquipment({
+  recipeId,
+  equipment,
+}: UpdateEquipmentInput): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createClient();
+
+    const { error } = await supabase.from('recipes').update({ equipment }).eq('id', recipeId);
+
+    if (error) {
+      console.error('Equipment update failed:', error);
+      return { success: false, error: 'Failed to save kitchen tools.' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Equipment update failed:', error);
+    return { success: false, error: 'Database transaction failed.' };
+  }
+}
+
 interface UpdatePrepLeadDaysInput {
   recipeId: string;
   prepLeadDays: number | null;
