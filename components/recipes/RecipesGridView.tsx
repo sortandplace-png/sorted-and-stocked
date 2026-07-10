@@ -1101,6 +1101,14 @@ export default function RecipesGridView({
                             {recipe.name}
                           </h2>
                           <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                            {(() => {
+                              const courseInfo = COURSES.find((c) => c.key === recipe.course);
+                              return courseInfo ? (
+                                <span className="inline-block text-xs font-medium text-charcoal bg-cream border border-gold-light/40 px-2.5 py-1 rounded-full">
+                                  {courseInfo.icon} {courseInfo.label}
+                                </span>
+                              ) : null;
+                            })()}
                             {recipe.kosher_type && (
                               <span className="inline-block text-xs font-medium text-charcoal bg-gold-light/30 px-2.5 py-1 rounded-full">
                                 {kosherIcon(recipe.kosher_type)} {recipe.kosher_type}
