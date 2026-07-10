@@ -88,7 +88,9 @@
       "achronaLabel": "Bracha achrona (after):",
       "needsSourcing": "Consult your rav — sources needed",
       "savedToast": "Bracha saved.",
-      "errorToast": "Failed to save."
+      "errorToast": "Failed to save.",
+      "notSureLink": "Not sure?",
+      "notSureHelp": "This is always a manual judgment call — the app never assigns it automatically. If you're not sure which bracha applies, ask your rav rather than guessing."
     },
     "prepLeadDays": {
       "title": "Prep lead time",

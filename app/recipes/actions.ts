@@ -134,6 +134,52 @@ function deriveBrachaAchrona(category: string | null, recipeName: string): strin
   return null;
 }
 
+// Keyword heuristic against actual ingredient names -- course (protein,
+// starch, vege, etc.) doesn't map cleanly to a bracha category (e.g.
+// "starch" could be bread or grain_mezonos depending on the dough, "vege"
+// could be ground_produce or tree_fruit), so this reads real ingredient
+// text instead. This is a best-effort suggestion, not a determination --
+// the category with the most keyword hits wins; ties and zero-hit recipes
+// return null rather than guessing. Caller must present this as an
+// unconfirmed suggestion, never as if a person already chose it.
+const CATEGORY_KEYWORDS: Record<string, RegExp> = {
+  bread: /\b(bread|challah|roll|bun|baguette|pita|bagel|dough)\b/i,
+  grain_mezonos: /\b(pasta|noodle|rice|oat|oatmeal|cereal|barley|couscous|quinoa|cracker|cookie|cake|pretzel|granola)\b/i,
+  wine_grape_juice: /\b(wine|grape juice|grape-juice)\b/i,
+  tree_fruit: /\b(apple|pear|peach|plum|cherry|apricot|orange|lemon|lime|grapefruit|banana|mango|pineapple|grapes?|figs?|pomegranates?|olives?|dates?|nectarine)\b/i,
+  ground_produce: /\b(potato|carrot|onion|garlic|celery|pepper|tomato|cucumber|lettuce|spinach|broccoli|cauliflower|zucchini|squash|cabbage|mushroom|corn|bean|pea|eggplant)\b/i,
+  meat_fish_dairy_eggs: /\b(chicken|turkey|beef|meat|steak|fish|salmon|tuna|egg|milk|cheese|cream|yogurt|butter)\b/i,
+};
+
+export async function suggestRecipeBrachaCategory(recipeId: string): Promise<string | null> {
+  try {
+    const supabase = await createClient();
+    const { data: ingredients } = await supabase
+      .from('recipe_ingredients')
+      .select('name')
+      .eq('recipe_id', recipeId);
+
+    if (!ingredients || ingredients.length === 0) return null;
+
+    const counts: Record<string, number> = {};
+    for (const { name } of ingredients) {
+      for (const [category, pattern] of Object.entries(CATEGORY_KEYWORDS)) {
+        if (pattern.test(name)) counts[category] = (counts[category] ?? 0) + 1;
+      }
+    }
+
+    const entries = Object.entries(counts);
+    if (entries.length === 0) return null;
+    entries.sort((a, b) => b[1] - a[1]);
+    // A tie at the top means the heuristic genuinely can't tell -- don't
+    // pick one arbitrarily.
+    if (entries.length > 1 && entries[0][1] === entries[1][1]) return null;
+    return entries[0][0];
+  } catch {
+    return null;
+  }
+}
+
 export async function updateRecipeBrachaCategory({
   recipeId,
   brachaCategory,

@@ -88,7 +88,9 @@
       "achronaLabel": "Bracha achrona (después):",
       "needsSourcing": "Consulte a su rav — necesita fuentes",
       "savedToast": "Bracha guardada.",
-      "errorToast": "Error al guardar."
+      "errorToast": "Error al guardar.",
+      "notSureLink": "¿No está seguro?",
+      "notSureHelp": "Esto siempre es una decisión manual — la app nunca la asigna automáticamente. Si no está seguro de qué bracha aplica, consulte a su rav en lugar de adivinar."
     },
     "prepLeadDays": {
       "title": "Tiempo de preparación anticipada",
