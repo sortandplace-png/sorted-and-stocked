@@ -2,10 +2,12 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 
 export default function LogoutButton({ variant = 'dark' }: { variant?: 'dark' | 'light' }) {
   const router = useRouter();
+  const t = useTranslations('common');
 
   async function handleLogout() {
     const supabase = createClient();
@@ -19,7 +21,7 @@ export default function LogoutButton({ variant = 'dark' }: { variant?: 'dark' | 
       onClick={handleLogout}
       className={`text-sm underline ${variant === 'dark' ? 'text-cream/80' : 'text-charcoal/60'}`}
     >
-      Sign out
+      {t('signOut')}
     </button>
   );
 }

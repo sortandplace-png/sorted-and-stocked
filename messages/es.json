@@ -21,7 +21,13 @@
     "share": "Compartir",
     "whatsapp": "WhatsApp",
     "add": "+ agregar",
-    "edit": "Editar"
+    "edit": "Editar",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "revert": "Deshacer",
+    "search": "Buscar",
+    "searchShortcut": "Buscar (Cmd+K)",
+    "signOut": "Cerrar sesión"
   },
   "recipesGrid": {
     "title": "Recetas",
