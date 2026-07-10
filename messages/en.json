@@ -86,7 +86,14 @@
       "remove": "Remove {item}",
       "placeholder": "e.g. 9x13 Pan",
       "savedToast": "Kitchen tools saved.",
-      "errorToast": "Failed to save."
+      "errorToast": "Failed to save.",
+      "ownedSummary": "{owned} of {total} owned",
+      "readyForPrep": "Ready for prep",
+      "owned": "Owned",
+      "notOwned": "Not owned",
+      "addAllToPrepList": "Add {count} missing to shopping list",
+      "customizePrepList": "Or customize your prep list",
+      "addedToListToast": "Added {count} to the shopping list."
     },
     "bracha": {
       "title": "Bracha",

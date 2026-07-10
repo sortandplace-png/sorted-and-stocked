@@ -86,7 +86,14 @@
       "remove": "Eliminar {item}",
       "placeholder": "ej. Molde 9x13",
       "savedToast": "Utensilios de cocina guardados.",
-      "errorToast": "Error al guardar."
+      "errorToast": "Error al guardar.",
+      "ownedSummary": "{owned} de {total} en posesión",
+      "readyForPrep": "Listo para preparar",
+      "owned": "En posesión",
+      "notOwned": "No en posesión",
+      "addAllToPrepList": "Agregar {count} faltantes a la lista de compras",
+      "customizePrepList": "O personalice su lista de preparación",
+      "addedToListToast": "Se agregaron {count} a la lista de compras."
     },
     "bracha": {
       "title": "Bracha",

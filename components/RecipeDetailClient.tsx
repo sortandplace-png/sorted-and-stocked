@@ -798,7 +798,7 @@ export default function RecipeDetailClient({
           needsSourcing={!!recipe.bracha_needs_sourcing}
         />
         <RecipeFamilyNotes recipeId={recipeId} propertyId={propertyId} />
-        <RecipeKitchenTools recipeId={recipeId} initialEquipment={recipe.equipment ?? []} />
+        <RecipeKitchenTools recipeId={recipeId} propertyId={propertyId} initialEquipment={recipe.equipment ?? []} />
         {canManage(role) && (
           <RecipePrepLeadDays recipeId={recipeId} initialDays={recipe.prep_lead_days} />
         )}
