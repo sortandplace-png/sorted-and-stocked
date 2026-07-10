@@ -14,6 +14,7 @@ import SubstitutionEditor from '@/components/SubstitutionEditor';
 import RecipeHistoryModal from '@/components/RecipeHistoryModal';
 import RecipeFamilyNotes from '@/components/RecipeFamilyNotes';
 import RecipeKitchenTools from '@/components/RecipeKitchenTools';
+import RecipeBracha from '@/components/RecipeBracha';
 import RecipePrepLeadDays from '@/components/RecipePrepLeadDays';
 import AddToMealPlanButton from '@/components/AddToMealPlanButton';
 import type { Course } from '@/lib/course-constants';
@@ -63,6 +64,7 @@ interface Recipe {
   servings: number | null;
   family_notes: string | null;
   equipment: string[] | null;
+  bracha_category: string | null;
   tags: string[] | null;
   approx_total_minutes: number | null;
   prep_lead_days: number | null;
@@ -778,6 +780,7 @@ export default function RecipeDetailClient({
       </div>
 
       <div className="mt-8 print:hidden space-y-4">
+        <RecipeBracha recipeId={recipeId} initialCategory={recipe.bracha_category} />
         <RecipeFamilyNotes recipeId={recipeId} initialNotes={recipe.family_notes ?? ''} />
         <RecipeKitchenTools recipeId={recipeId} initialEquipment={recipe.equipment ?? []} />
         {canManage(role) && (

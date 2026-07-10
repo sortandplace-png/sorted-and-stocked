@@ -103,6 +103,35 @@ export async function updateRecipeEquipment({
   }
 }
 
+interface UpdateBrachaCategoryInput {
+  recipeId: string;
+  brachaCategory: string | null;
+}
+
+export async function updateRecipeBrachaCategory({
+  recipeId,
+  brachaCategory,
+}: UpdateBrachaCategoryInput): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createClient();
+
+    const { error } = await supabase
+      .from('recipes')
+      .update({ bracha_category: brachaCategory })
+      .eq('id', recipeId);
+
+    if (error) {
+      console.error('Bracha category update failed:', error);
+      return { success: false, error: 'Failed to save bracha.' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Bracha category update failed:', error);
+    return { success: false, error: 'Database transaction failed.' };
+  }
+}
+
 interface UpdatePrepLeadDaysInput {
   recipeId: string;
   prepLeadDays: number | null;
