@@ -71,7 +71,7 @@ export default function ToolModal({
         {slug === 'recipe-stealer' && (
           <PhotoToolClient
             propertyId={propertyId}
-            title="Copycat Recipe"
+            title="Recipe Scanner"
             description="Photograph or describe a dish to get a home-cookable version."
             apiRoute="/api/tools/recipe-stealer"
             actionLabel="Take or upload a photo of a dish"

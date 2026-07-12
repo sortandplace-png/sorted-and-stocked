@@ -9,7 +9,7 @@ import ScanModal from '@/components/nav/ScanModal';
 // in the app opens (DesktopNav, MobileBottomNav, Inventory, Recipes) — not
 // a separate flow. There's no "pick Inventory/Price/Ingredient/Recipe"
 // chooser anywhere in the app to route through; Price Scanner, Ingredient
-// Scanner, and Copycat Recipe are a separate, unrelated tool family only
+// Scanner, and Recipe Scanner are a separate, unrelated tool family only
 // reachable from the Tools Hub grid, never via a "Scan" button.
 export default function FloatingScanButton({ propertyId }: { propertyId: string }) {
   const [showScan, setShowScan] = useState(false);

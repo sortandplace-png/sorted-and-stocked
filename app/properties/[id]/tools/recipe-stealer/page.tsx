@@ -6,7 +6,7 @@ export default async function RecipeStealerPage({ params }: { params: Promise<{ 
   return (
     <PhotoToolClient
       propertyId={id}
-      title="Copycat Recipe"
+      title="Recipe Scanner"
       description="Photograph or describe a dish to get a home-cookable version."
       apiRoute="/api/tools/recipe-stealer"
       actionLabel="Take or upload a photo of a dish"

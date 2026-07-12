@@ -18,7 +18,7 @@ const TOOLS = [
   {
     slug: 'recipe-stealer',
     icon: '🍽️',
-    title: 'Copycat Recipe',
+    title: 'Recipe Scanner',
     description: 'Photograph a dish, get a home-cookable recipe.',
   },
   {
