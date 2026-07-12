@@ -1,8 +1,13 @@
-// app/properties/[id]/tools/halachic-calendar/page.tsx
-// Three small, related, pure-calculation features in one page rather than
-// three near-empty ones: Sefiras HaOmer (only relevant ~7 weeks a year),
-// an Erev Pesach countdown, and a static Bedikas Tolaim reference.
-import { format } from 'date-fns'
+// components/HalachicCalendarClient.tsx
+// Client-refactor of the old server-component page (app/properties/[id]/
+// tools/halachic-calendar/page.tsx, now removed) so it can run inside
+// ToolModal like the rest of the Household group. The Hebcal fetch logic
+// itself is unchanged, just moved server-side into /api/tools/halachic-calendar
+// so it can keep Next's fetch cache.
+'use client';
+
+import { useEffect, useState } from 'react';
+import { SkeletonList } from '@/components/Skeleton';
 
 const BEDIKAS_TOLAIM_ITEMS = [
   { item: 'Romaine lettuce', note: 'Check leaves individually against light, or use pre-checked bagged romaine.' },
@@ -12,52 +17,28 @@ const BEDIKAS_TOLAIM_ITEMS = [
   { item: 'Brussels sprouts', note: 'Peel back outer leaves and check between layers.' },
   { item: 'Herbs (parsley, dill, cilantro)', note: 'Rinse and inspect stems closely — a common source of overlooked bugs.' },
   { item: 'Corn on the cob', note: 'Check silk and tip carefully before cooking.' },
-]
+];
 
-async function getOmerStatus() {
-  try {
-    const now = new Date()
-    const res = await fetch(
-      `https://www.hebcal.com/hebcal?cfg=json&v=1&year=${now.getFullYear()}&month=${now.getMonth() + 1}&o=on`,
-      { next: { revalidate: 3600 } }
-    )
-    const data = await res.json()
-    const today = format(now, 'yyyy-MM-dd')
-    const omerItem = data.items?.find((i: any) => i.category === 'omer' && i.date?.startsWith(today))
-    return omerItem?.title ?? null
-  } catch {
-    return null
-  }
-}
+type CalendarData = {
+  omerTitle: string | null;
+  erevPesach: { title: string; date: string } | null;
+  daysUntilPesach: number | null;
+};
 
-async function getNextErevPesach() {
-  try {
-    const now = new Date()
-    const years = [now.getFullYear(), now.getFullYear() + 1]
-    const events: { title: string; date: string }[] = []
-    for (const year of years) {
-      const res = await fetch(`https://www.hebcal.com/hebcal?cfg=json&v=1&year=${year}&maj=on`, {
-        next: { revalidate: 3600 * 24 },
-      })
-      const data = await res.json()
-      events.push(...(data.items ?? []))
-    }
-    const todayStr = format(now, 'yyyy-MM-dd')
-    const candidates = events
-      .filter((e) => e.title?.includes('Erev Pesach') && e.date >= todayStr)
-      .sort((a, b) => a.date.localeCompare(b.date))
-    return candidates[0] ?? null
-  } catch {
-    return null
-  }
-}
+export default function HalachicCalendarClient() {
+  const [data, setData] = useState<CalendarData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-export default async function HalachicCalendarPage() {
-  const [omerTitle, erevPesach] = await Promise.all([getOmerStatus(), getNextErevPesach()])
+  useEffect(() => {
+    fetch('/api/tools/halachic-calendar')
+      .then((res) => res.json())
+      .then(setData)
+      .finally(() => setLoading(false));
+  }, []);
 
-  const daysUntilPesach = erevPesach
-    ? Math.round((new Date(erevPesach.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    : null
+  if (loading) return <SkeletonList rows={3} />;
+
+  const { omerTitle, erevPesach, daysUntilPesach } = data ?? { omerTitle: null, erevPesach: null, daysUntilPesach: null };
 
   return (
     <div className="max-w-md mx-auto p-4 space-y-4">
@@ -102,5 +83,5 @@ export default async function HalachicCalendarPage() {
         </ul>
       </div>
     </div>
-  )
+  );
 }

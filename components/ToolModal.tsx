@@ -11,6 +11,7 @@ import PhotoReviewClient from '@/components/PhotoReviewClient';
 import HouseholdKnowledgeClient from '@/components/HouseholdKnowledgeClient';
 import HouseholdContactsClient from '@/components/HouseholdContactsClient';
 import LocalFoodDirectoryClient from '@/components/LocalFoodDirectoryClient';
+import HalachicCalendarClient from '@/components/HalachicCalendarClient';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 
 export type ToolModalSlug =
@@ -23,7 +24,8 @@ export type ToolModalSlug =
   | 'photo-review'
   | 'knowledge-base'
   | 'contacts'
-  | 'takeout-directory';
+  | 'takeout-directory'
+  | 'halachic-calendar';
 
 // Same modal shell as KitchenOpsToolModal (its own established, verified
 // pattern) applied to the Scanners / Inventory Ops / Household groups --
@@ -89,6 +91,7 @@ export default function ToolModal({
         {slug === 'knowledge-base' && <HouseholdKnowledgeClient propertyId={propertyId} />}
         {slug === 'contacts' && <HouseholdContactsClient propertyId={propertyId} />}
         {slug === 'takeout-directory' && <LocalFoodDirectoryClient propertyId={propertyId} />}
+        {slug === 'halachic-calendar' && <HalachicCalendarClient />}
       </div>
     </div>
   );

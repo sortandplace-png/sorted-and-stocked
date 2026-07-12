@@ -14,9 +14,6 @@ type Group = { key: string; label: string; tools: Tool[] };
 // back except browser Back was the actual complaint. Needs Linking,
 // Taste Memory, Staff Task Center, and Home Memory Timeline stay full
 // pages on purpose (real content-heavy exceptions, not overlooked).
-// Halachic Calendar isn't here either -- it's a server component that
-// fetches directly from Hebcal, so it needs a client-refactor before it
-// can go in a modal at all; that's tracked separately.
 const MODAL_SLUGS = new Set<ToolModalSlug>([
   'price-scanner',
   'ingredient-scanner',
@@ -28,6 +25,7 @@ const MODAL_SLUGS = new Set<ToolModalSlug>([
   'knowledge-base',
   'contacts',
   'takeout-directory',
+  'halachic-calendar',
 ]);
 
 export default function ToolsGroupList({ propertyId, groups }: { propertyId: string; groups: Group[] }) {
