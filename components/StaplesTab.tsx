@@ -15,6 +15,7 @@ type Staple = {
   current_qty: number;
   min_qty: number;
   location_id: string | null;
+  photo_url: string | null;
   is_low: boolean;
   already_on_list: boolean;
 };
@@ -121,6 +122,16 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
         key={staple.staple_id}
         className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gold-light/20 hover:border-gold-light/40 transition-colors"
       >
+        {/* Photo, same photo-or-fallback pattern as RecipesGridView */}
+        <div className="w-10 h-10 rounded bg-cream flex items-center justify-center shrink-0">
+          {staple.photo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={staple.photo_url} alt="" className="w-full h-full object-cover rounded" />
+          ) : (
+            <span className="text-base text-charcoal/20">📦</span>
+          )}
+        </div>
+
         {/* Item Info */}
         <div className="flex-1 min-w-0">
           <h4 className="font-medium text-sm text-charcoal truncate">{staple.staple_name}</h4>

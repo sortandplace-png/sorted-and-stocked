@@ -11,6 +11,7 @@ export interface StaplesWithInventory {
   current_qty: number;
   min_qty: number;
   location_id: string | null;
+  photo_url: string | null;
   is_low: boolean;
   already_on_list: boolean;
 }
