@@ -6,7 +6,14 @@
 // anyone from adding a genuinely new item that happens to share words.
 'use client';
 
-type Match = { id: string; name: string; location_name: string | null; similarity: number };
+type Match = {
+  id: string;
+  name: string;
+  location_name: string | null;
+  similarity: number;
+  opened_date: string | null;
+  current_qty: number;
+};
 
 export default function DuplicateItemWarning({
   enteredName,
@@ -22,6 +29,10 @@ export default function DuplicateItemWarning({
   onDismiss: () => void;
 }) {
   const top = matches[0];
+  // "Open It First" (3e-i): the existing duplicate-detection flow already
+  // catches this case, so it gets a distinct message here rather than a
+  // second, separate warning system.
+  const topIsOpenAndInStock = !!top.opened_date && top.current_qty > 0;
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-[60] sm:p-4" onClick={onDismiss}>
@@ -29,10 +40,21 @@ export default function DuplicateItemWarning({
         className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="font-display text-xl text-charcoal mb-1">Already have this?</h2>
+        <h2 className="font-display text-xl text-charcoal mb-1">
+          {topIsOpenAndInStock ? 'Finish the opened one first?' : 'Already have this?'}
+        </h2>
         <p className="text-sm text-charcoal/60 mb-3">
-          You may already have <span className="font-medium text-charcoal">{top.name}</span>
-          {top.location_name ? ` in ${top.location_name}` : ''}.
+          {topIsOpenAndInStock ? (
+            <>
+              You already have an opened <span className="font-medium text-charcoal">{top.name}</span>
+              {top.location_name ? ` in ${top.location_name}` : ''} — worth using that up before adding a new one.
+            </>
+          ) : (
+            <>
+              You may already have <span className="font-medium text-charcoal">{top.name}</span>
+              {top.location_name ? ` in ${top.location_name}` : ''}.
+            </>
+          )}
         </p>
 
         {matches.length > 1 && (

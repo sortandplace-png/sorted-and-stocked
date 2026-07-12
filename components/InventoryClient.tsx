@@ -39,6 +39,7 @@ type InventoryItem = {
   reorder_link: string | null;
   photo_url: string | null;
   expiration_date: string | null;
+  opened_date: string | null;
   qr_code: string | null;
   print_label: boolean;
 };
@@ -66,6 +67,7 @@ type ItemFormState = {
   reorder_link: string;
   photo_url: string;
   expiration_date: string;
+  opened_date: string;
   qr_code: string | null; // read-only, DB-generated — display only, never submitted
   print_label: boolean;
 };
@@ -83,6 +85,7 @@ const EMPTY_FORM: ItemFormState = {
   reorder_link: '',
   photo_url: '',
   expiration_date: '',
+  opened_date: '',
   qr_code: null,
   print_label: true,
 };
@@ -145,7 +148,14 @@ export default function InventoryClient({
   const [showNewRoom, setShowNewRoom] = useState(false);
   const [photoUploadLocation, setPhotoUploadLocation] = useState<StorageLocation | null>(null);
   const [duplicateMatches, setDuplicateMatches] = useState<
-    { id: string; name: string; location_name: string | null; similarity: number }[] | null
+    {
+      id: string;
+      name: string;
+      location_name: string | null;
+      similarity: number;
+      opened_date: string | null;
+      current_qty: number;
+    }[] | null
   >(null);
   const [newRoomName, setNewRoomName] = useState('');
   const [savingRoom, setSavingRoom] = useState(false);
@@ -185,7 +195,7 @@ export default function InventoryClient({
       supabase
         .from('inventory_items')
         .select(
-          'id, name, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, category, expiration_date, qr_code, print_label'
+          'id, name, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, category, expiration_date, opened_date, qr_code, print_label'
         )
         .eq('property_id', propertyId)
         .order('name'),
@@ -325,6 +335,7 @@ export default function InventoryClient({
       reorder_link: item.reorder_link ?? '',
       photo_url: item.photo_url ?? '',
       expiration_date: item.expiration_date ?? '',
+      opened_date: item.opened_date ?? '',
       qr_code: item.qr_code,
       print_label: item.print_label,
     });
@@ -385,7 +396,7 @@ export default function InventoryClient({
     const { data: existing } = await supabase
       .from('inventory_items')
       .select(
-        'id, name, category, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, expiration_date, qr_code, print_label'
+        'id, name, category, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, expiration_date, opened_date, qr_code, print_label'
       )
       .eq('id', matchId)
       .single();
@@ -415,6 +426,7 @@ export default function InventoryClient({
       reorder_link: form.reorder_link.trim() || null,
       photo_url: form.photo_url.trim() || null,
       expiration_date: form.expiration_date || null,
+      opened_date: form.opened_date || null,
       print_label: form.print_label,
     };
 
@@ -1301,6 +1313,16 @@ function ItemFormSheet({
               className={fieldClass}
               value={form.expiration_date}
               onChange={(e) => onChange({ ...form, expiration_date: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <FieldLabel>Opened Date</FieldLabel>
+            <input
+              type="date"
+              className={fieldClass}
+              value={form.opened_date}
+              onChange={(e) => onChange({ ...form, opened_date: e.target.value })}
             />
           </div>
 
