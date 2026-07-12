@@ -21,9 +21,13 @@ type Staple = {
 
 export default function StaplesTab({ propertyId, shoppingListId }: { propertyId: string; shoppingListId: string }) {
   const [staples, setStaples] = useState<Staple[]>([]);
-  const [filteredStaples, setFilteredStaples] = useState<Staple[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'category' | 'name' | 'low-first'>('category');
+  // Same category-dropdown + "Below par only" pattern as the main
+  // Inventory page's Rooms filter bar -- reused exactly, not a second
+  // filter UI. Sort modes above still control ordering; these narrow.
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [belowParOnly, setBelowParOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
   // Collapsible sections -- same title+count+chevron pattern as the Recipes
@@ -39,7 +43,6 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
     try {
       const data = await fetchStaplesWithInventory(propertyId, shoppingListId);
       setStaples(data);
-      applyFiltersAndSort(data, searchTerm, sortBy);
     } catch (error) {
       console.error('Error loading staples:', error);
       showToast('Failed to load staples.', { variant: 'error' });
@@ -52,37 +55,39 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
     loadStaples();
   }, [propertyId, shoppingListId]);
 
-  const applyFiltersAndSort = (items: Staple[], search: string, sort: string) => {
-    let filtered = items.filter(s => s.staple_name.toLowerCase().includes(search.toLowerCase()));
+  // Real categories from the actual loaded staples, same as Inventory's
+  // categorySuggestions -- not a hardcoded list that could drift.
+  const categorySuggestions = useMemo(
+    () => [...new Set(staples.map((s) => s.staple_category))].sort((a, b) => a.localeCompare(b)),
+    [staples]
+  );
 
-    if (sort === 'category') {
+  // Derived instead of imperatively recomputed on every handler -- removes
+  // a whole class of "forgot to pass the new filter param here" bugs now
+  // that there are two filters (category, below-par) on top of search+sort.
+  const filteredStaples = useMemo(() => {
+    let filtered = staples.filter((s) => s.staple_name.toLowerCase().includes(searchTerm.toLowerCase()));
+    if (categoryFilter) filtered = filtered.filter((s) => s.staple_category === categoryFilter);
+    if (belowParOnly) filtered = filtered.filter((s) => s.is_low);
+
+    filtered = [...filtered];
+    if (sortBy === 'category') {
       filtered.sort((a, b) => {
         if (a.staple_category !== b.staple_category) {
           return a.staple_category.localeCompare(b.staple_category);
         }
         return a.staple_name.localeCompare(b.staple_name);
       });
-    } else if (sort === 'name') {
+    } else if (sortBy === 'name') {
       filtered.sort((a, b) => a.staple_name.localeCompare(b.staple_name));
-    } else if (sort === 'low-first') {
+    } else if (sortBy === 'low-first') {
       filtered.sort((a, b) => {
         if (a.is_low !== b.is_low) return a.is_low ? -1 : 1;
         return a.staple_name.localeCompare(b.staple_name);
       });
     }
-
-    setFilteredStaples(filtered);
-  };
-
-  const handleSearch = (term: string) => {
-    setSearchTerm(term);
-    applyFiltersAndSort(staples, term, sortBy);
-  };
-
-  const handleSort = (sort: 'category' | 'name' | 'low-first') => {
-    setSortBy(sort);
-    applyFiltersAndSort(staples, searchTerm, sort);
-  };
+    return filtered;
+  }, [staples, searchTerm, sortBy, categoryFilter, belowParOnly]);
 
   const handleAddToList = async (staple: Staple) => {
     if (staple.already_on_list) return;
@@ -95,11 +100,6 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
       // Update local state to reflect the addition
       setStaples(prev =>
         prev.map(s => (s.staple_id === staple.staple_id ? { ...s, already_on_list: true } : s))
-      );
-      applyFiltersAndSort(
-        staples.map(s => (s.staple_id === staple.staple_id ? { ...s, already_on_list: true } : s)),
-        searchTerm,
-        sortBy
       );
 
       showToast(`Added ${staple.staple_name} to shopping list.`, { variant: 'success' });
@@ -223,16 +223,39 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
             type="text"
             placeholder="Search staples..."
             value={searchTerm}
-            onChange={e => handleSearch(e.target.value)}
+            onChange={e => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 border border-gold-light/40 rounded-full bg-white text-sm focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/30"
           />
+        </div>
+
+        <div className="flex gap-2 flex-wrap items-center">
+          <select
+            value={categoryFilter ?? ''}
+            onChange={(e) => setCategoryFilter(e.target.value || null)}
+            className="border border-gold-light/60 rounded-full px-3 py-2 bg-white text-sm"
+          >
+            <option value="">All categories</option>
+            {categorySuggestions.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => setBelowParOnly((v) => !v)}
+            className={`text-sm px-4 py-2 rounded-full border shrink-0 ${
+              belowParOnly ? 'bg-rust text-white border-rust' : 'border-gold-light/60 text-charcoal'
+            }`}
+          >
+            Below par only
+          </button>
         </div>
 
         <div className="flex gap-2 flex-wrap">
           {(['category', 'name', 'low-first'] as const).map(option => (
             <button
               key={option}
-              onClick={() => handleSort(option)}
+              onClick={() => setSortBy(option)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 sortBy === option
                   ? 'bg-charcoal text-cream'

@@ -19,6 +19,7 @@ import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
 type ShoppingListItem = {
   item_id: string;
   name: string;
+  name_es: string | null;
   category: string;
   qty_needed: number;
   unit_estimate: string | null;
@@ -30,9 +31,20 @@ type ShoppingListItem = {
   current_stock: number | null;
   location_name: string | null;
   supplier: string | null;
+  kosher_type: string | null;
   // UI flags
   is_rich_item: boolean;
   is_staple_origin: boolean;
+};
+
+// Same kashrut color tokens used elsewhere this session (Month view dots,
+// dashboard's KASHRUT_INFO) -- keyed here by the real inventory_items.
+// kosher_type values instead of a name-guessing heuristic.
+const KOSHER_PILL_STYLE: Record<string, string> = {
+  Meat: 'bg-rust/15 text-rust',
+  Dairy: 'bg-dairy/15 text-dairy',
+  Parve: 'bg-sage/15 text-sage',
+  'Parve (Fish)': 'bg-sage/15 text-sage',
 };
 
 type GroupBy = 'staples-first' | 'category' | 'by-recipe';
@@ -63,6 +75,11 @@ export default function ShoppingListViewEnhanced({
   // active (Staples/Recipe Ingredients, aisle categories, or recipes)
   // rather than forcing a literal A-Z regrouping on top of those.
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  // Checked items stay inside their real group now instead of one global
+  // "Completed" section -- each group's checked subsection starts
+  // collapsed, so this tracks which ones have been explicitly expanded
+  // (inverse of collapsedGroups, which tracks explicitly-collapsed).
+  const [expandedCheckedGroups, setExpandedCheckedGroups] = useState<Set<string>>(new Set());
   // Same broken-link concern as InventoryClient — photo_url existing isn't
   // the same as the image actually loading.
   const [brokenPhotoIds, setBrokenPhotoIds] = useState<Set<string>>(new Set());
@@ -258,14 +275,30 @@ export default function ShoppingListViewEnhanced({
     });
   }
 
+  function toggleCheckedGroup(title: string) {
+    setExpandedCheckedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(title)) next.delete(title);
+      else next.add(title);
+      return next;
+    });
+  }
+
   function sourceTitle(s: ShoppingItemSource) {
     return locale === 'es' && s.recipe_name_es ? s.recipe_name_es : s.recipe_name;
   }
 
-  function recipePills(itemId: string) {
-    const itemSources = sources[itemId];
-    if (!itemSources || itemSources.length === 0) return null;
+  // Merged items (mergedCount > 1) previously showed zero recipe pills --
+  // recipePills used to look up sources by a single item_id, but a merged
+  // display row's item_id is only the first underlying row's id, so every
+  // other real row's sources were silently dropped. Now looks up sources
+  // across every underlying id the merged row represents.
+  function recipePills(item: DisplayItem) {
+    const ids = item._mergedIds ?? [item.item_id];
+    const itemSources = ids.flatMap((id) => sources[id] ?? []);
+    if (itemSources.length === 0) return null;
     const [first, ...rest] = itemSources;
+    const itemId = item.item_id;
     return (
       <div className="relative flex items-center gap-1 mt-1">
         <span className="rounded-full bg-gold-light/20 px-2 py-0.5 text-[10px] text-charcoal">
@@ -281,8 +314,8 @@ export default function ShoppingListViewEnhanced({
         )}
         {expandedPills[itemId] && rest.length > 0 && (
           <div className="absolute left-0 top-6 z-10 w-56 rounded-lg border border-gold-light/40 bg-white p-2 shadow-lg">
-            {itemSources.map((s) => (
-              <div key={s.recipe_id} className="flex justify-between py-0.5 text-xs">
+            {itemSources.map((s, i) => (
+              <div key={s.recipe_id + '_' + i} className="flex justify-between py-0.5 text-xs">
                 <span>{sourceTitle(s)}</span>
                 <span className="text-charcoal/50">
                   {s.quantity ?? ''} {s.unit ?? ''}
@@ -293,6 +326,29 @@ export default function ShoppingListViewEnhanced({
         )}
       </div>
     );
+  }
+
+  // qty_needed is always 1 on every real row (a hardcoded default set on
+  // insert, not a real amount) -- the actual per-recipe quantities live in
+  // shopping_list_item_sources, the same data recipePills already reads.
+  // Summed across every merged id so the quantity pill shows a real total
+  // rather than a meaningless constant "1".
+  function totalQuantity(item: DisplayItem): { qty: number; unit: string } | null {
+    const ids = item._mergedIds ?? [item.item_id];
+    const itemSources = ids.flatMap((id) => sources[id] ?? []);
+    if (itemSources.length === 0) return null;
+    const qty = itemSources.reduce((sum, s) => sum + (s.quantity ?? 0), 0);
+    if (qty <= 0) return null;
+    const unit = itemSources.find((s) => s.unit)?.unit ?? '';
+    return { qty, unit };
+  }
+
+  function displayName(item: DisplayItem) {
+    return locale === 'es' && item.name_es ? item.name_es : item.name;
+  }
+
+  function secondaryName(item: DisplayItem) {
+    return locale === 'es' ? item.name : item.name_es;
   }
 
   function shareWhatsApp() {
@@ -308,46 +364,41 @@ export default function ShoppingListViewEnhanced({
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   }
 
-  const groupItems = () => {
-    // Purchased items get pulled into their own "Completed" section below,
-    // regardless of view — an active shopping list shouldn't need scrolling
-    // past everything already in the cart to see what's left.
-    const rawActiveItems = items.filter((i) => i.status !== 'purchased');
+  // Buckets one item list (either all-pending or all-purchased) into the
+  // active groupBy mode's real groups. Shared by both buckets below so
+  // checked items land in the *same* named group as their pending
+  // counterparts instead of one global "Completed" pile.
+  function bucketByMode(rawItems: DisplayItem[]): { title: string; items: DisplayItem[] }[] {
     // Aggregating collapses same-name rows from different recipes into one
     // display row, which would make "By Recipe" grouping lose its meaning
     // (a merged row can't cleanly belong to a single recipe group) — so
     // aggregation only applies outside that view.
-    const activeItems: DisplayItem[] = groupBy === 'by-recipe' ? rawActiveItems : aggregateItems(rawActiveItems);
+    const bucketItems: DisplayItem[] = groupBy === 'by-recipe' ? rawItems : aggregateItems(rawItems);
 
     if (groupBy === 'staples-first') {
-      const staples = activeItems.filter(i => i.is_staple_origin);
-      const recipes = activeItems.filter(i => !i.is_staple_origin);
+      const staples = bucketItems.filter((i) => i.is_staple_origin);
+      const recipes = bucketItems.filter((i) => !i.is_staple_origin);
       return [
         { title: 'Staples', items: staples },
-        { title: 'Recipe Ingredients', items: recipes }
+        { title: 'Recipe Ingredients', items: recipes },
       ];
     }
     if (groupBy === 'by-recipe') {
       const groupsMap: Record<string, { title: string; items: DisplayItem[] }> = {};
-      for (const item of activeItems) {
+      for (const item of bucketItems) {
         const itemSources = sources[item.item_id];
         const primary = itemSources?.[0];
         const key = primary?.recipe_id ?? 'unassigned';
         const title = primary ? sourceTitle(primary) : 'Other';
         (groupsMap[key] ??= { title, items: [] }).items.push(item);
       }
-      // "Other" (items with no recipe attribution — old items from before
-      // this feature existed, or hand-added ones) is pushed to the end
-      // rather than wherever it happened to be encountered first, so a big
-      // leftover bucket doesn't bury the groups that actually answer "what
-      // recipe is this for."
       return Object.values(groupsMap).sort((a, b) => {
         if (a.title === 'Other') return 1;
         if (b.title === 'Other') return -1;
         return a.title.localeCompare(b.title);
       });
     }
-    const byCategory = activeItems.reduce(
+    const byCategory = bucketItems.reduce(
       (acc, item) => {
         const cat = item.category || 'Other';
         if (!acc[cat]) acc[cat] = [];
@@ -363,95 +414,145 @@ export default function ShoppingListViewEnhanced({
         if (b.title === 'Other') return -1;
         return a.title.localeCompare(b.title);
       });
+  }
+
+  // Checked items now stay inside their real group (Staples/aisle/recipe),
+  // collapsed at the bottom of it, instead of getting pulled out into one
+  // global "Completed" section at the page bottom -- matches how a real
+  // paper list works (crossed-off milk stays in "Dairy," not a separate page).
+  const groupItems = (): { title: string; items: DisplayItem[]; checkedItems: DisplayItem[] }[] => {
+    const pendingRaw = items.filter((i) => i.status !== 'purchased');
+    const purchasedRaw = items.filter((i) => i.status === 'purchased');
+    const pendingGroups = bucketByMode(pendingRaw);
+    const checkedGroups = bucketByMode(purchasedRaw);
+    const checkedByTitle = new Map(checkedGroups.map((g) => [g.title, g.items]));
+
+    const merged = pendingGroups.map((g) => ({
+      title: g.title,
+      items: g.items,
+      checkedItems: checkedByTitle.get(g.title) ?? [],
+    }));
+    // A group that's fully checked off (no pending items left) still needs
+    // to render its header + checked section rather than vanishing.
+    for (const g of checkedGroups) {
+      if (!merged.some((m) => m.title === g.title)) {
+        merged.push({ title: g.title, items: [], checkedItems: g.items });
+      }
+    }
+    return merged;
   };
 
   function renderItemCard(item: DisplayItem) {
     const mergedCount = item._mergedIds?.length ?? 1;
+    const isChecked = item.status === 'purchased';
+    const qty = totalQuantity(item);
+    const kosherStyle = item.kosher_type ? KOSHER_PILL_STYLE[item.kosher_type] : null;
+    const secondary = secondaryName(item);
+
     return (
       <div
         key={item.item_id}
         className={`rounded-lg border bg-white border-gold-light/20 hover:border-gold-light/40 transition-colors ${
           density === 'compact' ? 'p-2' : 'p-3'
-        }`}
+        } ${isChecked ? 'opacity-60' : ''}`}
       >
-        {/* RICH ITEM: Full inventory card with photo, location, reorder link */}
-        {item.is_rich_item ? (
-          <div className="flex gap-3">
-            {/* Photo */}
-            {item.photo_url && !brokenPhotoIds.has(item.item_id) ? (
-              <div className="flex-shrink-0">
-                <img
-                  src={item.photo_url}
-                  alt={item.name}
-                  className="h-16 w-16 rounded object-cover bg-gold-light/10"
-                  onError={() => setBrokenPhotoIds((prev) => new Set(prev).add(item.item_id))}
-                />
-              </div>
+        <div className="flex gap-3">
+          {/* Checkbox first, per the card redesign order */}
+          <button
+            onClick={() => toggleStatusForDisplayItem(item)}
+            disabled={isItemProcessing(item)}
+            className={`print:hidden flex-shrink-0 mt-0.5 text-charcoal hover:text-sage transition-colors ${
+              isItemProcessing(item) ? 'opacity-40 cursor-wait' : ''
+            }`}
+          >
+            {isChecked ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
+          </button>
+
+          {item.is_rich_item &&
+            (item.photo_url && !brokenPhotoIds.has(item.item_id) ? (
+              <img
+                src={item.photo_url}
+                alt={item.name}
+                className="h-14 w-14 rounded object-cover flex-shrink-0 bg-gold-light/10"
+                onError={() => setBrokenPhotoIds((prev) => new Set(prev).add(item.item_id))}
+              />
             ) : (
-              <div className="flex-shrink-0 h-16 w-16 rounded bg-gold-light/10 flex items-center justify-center text-xs text-charcoal/40">
+              <div className="h-14 w-14 rounded bg-gold-light/10 flex items-center justify-center text-[10px] text-charcoal/40 flex-shrink-0">
                 No photo
+              </div>
+            ))}
+
+          <div className="flex-1 min-w-0">
+            {/* Name, bilingual EN/ES stacked */}
+            <h4 className={`font-medium text-sm ${isChecked ? 'line-through text-charcoal/50' : 'text-charcoal'}`}>
+              {displayName(item)}
+              {mergedCount > 1 && <span className="text-charcoal/40 font-normal"> ×{mergedCount}</span>}
+            </h4>
+            {secondary && (
+              <p className={`text-xs italic ${isChecked ? 'line-through text-charcoal/30' : 'text-charcoal/50'}`}>
+                {secondary}
+              </p>
+            )}
+
+            {/* Quantity + kosher-type pills */}
+            {(qty || (item.kosher_type && kosherStyle)) && (
+              <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                {qty && (
+                  <span className="rounded-full bg-gold/15 text-gold-dark px-2 py-0.5 text-[10px] font-medium">
+                    {Math.round(qty.qty * 100) / 100} {qty.unit}
+                  </span>
+                )}
+                {item.kosher_type && kosherStyle && (
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${kosherStyle}`}>
+                    {item.kosher_type}
+                  </span>
+                )}
               </div>
             )}
 
-            <div className="flex-1 min-w-0">
-              {/* Name + Status */}
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <div className="flex-1">
-                  <h4
-                    className={`font-medium text-sm ${
-                      item.status === 'purchased' ? 'line-through text-charcoal/50' : 'text-charcoal'
-                    }`}
-                  >
-                    {item.name}
-                    {mergedCount > 1 && <span className="text-charcoal/40 font-normal"> ×{mergedCount}</span>}
-                  </h4>
-                  <p className="text-xs text-charcoal/60 mt-0.5">
-                    {item.supplier && <span>{item.supplier} · </span>}
-                    {item.category}
-                  </p>
-                  {mergedCount === 1 && recipePills(item.item_id)}
-                </div>
-                <button
-                  onClick={() => toggleStatusForDisplayItem(item)}
-                  disabled={isItemProcessing(item)}
-                  className={`print:hidden flex-shrink-0 text-charcoal hover:text-sage transition-colors ${isItemProcessing(item) ? 'opacity-40 cursor-wait' : ''}`}
-                >
-                  {item.status === 'purchased' ? (
-                    <CheckCircle2 className="h-5 w-5" />
-                  ) : (
-                    <Circle className="h-5 w-5" />
+            {recipePills(item)}
+
+            {item.is_rich_item ? (
+              <>
+                <div className="flex items-center gap-2 mt-2 text-xs text-charcoal/60 flex-wrap">
+                  {item.supplier && (
+                    <span className="bg-gold-light/20 px-2 py-0.5 rounded-full">{item.supplier}</span>
                   )}
-                </button>
-              </div>
-
-              {/* Stock + Location */}
-              <div className="flex items-center gap-2 mb-2 text-xs text-charcoal/60">
-                {item.current_stock !== null && (
-                  <span className="bg-gold-light/20 px-2 py-0.5 rounded-full">
-                    In stock: {item.current_stock}
-                  </span>
-                )}
-                {item.location_name && (
-                  <span className="bg-gold-light/20 px-2 py-0.5 rounded-full text-charcoal/70">
-                    📍 {item.location_name}
-                  </span>
-                )}
-              </div>
-
-              {/* Reorder Link + Delete */}
-              <div className="print:hidden flex items-center gap-2">
-                {item.reorder_link ? (
-                  <a
-                    href={item.reorder_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-gold-dark hover:text-charcoal transition-colors font-medium"
+                  {item.current_stock !== null && (
+                    <span className="bg-gold-light/20 px-2 py-0.5 rounded-full">
+                      In stock: {item.current_stock}
+                    </span>
+                  )}
+                  {item.location_name && (
+                    <span className="bg-gold-light/20 px-2 py-0.5 rounded-full text-charcoal/70">
+                      📍 {item.location_name}
+                    </span>
+                  )}
+                </div>
+                <div className="print:hidden flex items-center gap-2 mt-2">
+                  {item.reorder_link ? (
+                    <a
+                      href={item.reorder_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-gold-dark hover:text-charcoal transition-colors font-medium"
+                    >
+                      Reorder <ExternalLink className="h-3 w-3" />
+                    </a>
+                  ) : (
+                    <span className="text-xs text-charcoal/30">No reorder link</span>
+                  )}
+                  <button
+                    onClick={() => deleteDisplayItem(item)}
+                    className="ml-auto text-charcoal/40 hover:text-rust transition-colors"
                   >
-                    Reorder <ExternalLink className="h-3 w-3" />
-                  </a>
-                ) : (
-                  <span className="text-xs text-charcoal/30">No reorder link</span>
-                )}
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="print:hidden flex items-center gap-2 mt-2">
+                <span className="text-xs text-charcoal/40">{item.category}</span>
                 <button
                   onClick={() => deleteDisplayItem(item)}
                   className="ml-auto text-charcoal/40 hover:text-rust transition-colors"
@@ -459,45 +560,9 @@ export default function ShoppingListViewEnhanced({
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
-            </div>
+            )}
           </div>
-        ) : (
-          /* PLAIN TEXT FALLBACK: For unmapped ingredients */
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <h4
-                className={`font-medium text-sm ${
-                  item.status === 'purchased' ? 'line-through text-charcoal/50' : 'text-charcoal'
-                }`}
-              >
-                {item.name}
-                {mergedCount > 1 && <span className="text-charcoal/40 font-normal"> ×{mergedCount}</span>}
-              </h4>
-              <p className="text-xs text-charcoal/60 mt-0.5">{item.category}</p>
-              {mergedCount === 1 && recipePills(item.item_id)}
-            </div>
-
-            <div className="print:hidden flex items-center gap-2">
-              <button
-                onClick={() => toggleStatusForDisplayItem(item)}
-                disabled={isItemProcessing(item)}
-                className={`text-charcoal hover:text-sage transition-colors ${isItemProcessing(item) ? 'opacity-40 cursor-wait' : ''}`}
-              >
-                {item.status === 'purchased' ? (
-                  <CheckCircle2 className="h-5 w-5" />
-                ) : (
-                  <Circle className="h-5 w-5" />
-                )}
-              </button>
-              <button
-                onClick={() => deleteDisplayItem(item)}
-                className="text-charcoal/40 hover:text-rust transition-colors"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     );
   }
@@ -613,10 +678,12 @@ export default function ShoppingListViewEnhanced({
         ))}
       </div>
 
-      {/* Items Grouped */}
+      {/* Items Grouped -- checked items stay inside their own group's
+          collapsed checked subsection instead of one global bottom section */}
       {groups.map(group => {
-        if (group.items.length === 0) return null;
+        if (group.items.length === 0 && group.checkedItems.length === 0) return null;
         const collapsed = collapsedGroups.has(group.title);
+        const checkedExpanded = expandedCheckedGroups.has(group.title);
         return (
           <div key={group.title} className="space-y-2">
             <button
@@ -628,7 +695,25 @@ export default function ShoppingListViewEnhanced({
               </span>
               <span className="text-xs text-charcoal/40">{collapsed ? '▸' : '▾'}</span>
             </button>
-            {!collapsed && group.items.map(renderItemCard)}
+            {!collapsed && (
+              <>
+                {group.items.map(renderItemCard)}
+                {showCompleted && group.checkedItems.length > 0 && (
+                  <div className="pt-1">
+                    <button
+                      onClick={() => toggleCheckedGroup(group.title)}
+                      className="w-full flex items-center justify-between text-xs font-medium text-charcoal/50 px-3 py-1.5"
+                    >
+                      <span>Checked ({group.checkedItems.length})</span>
+                      <span>{checkedExpanded ? '▾' : '▸'}</span>
+                    </button>
+                    {checkedExpanded && (
+                      <div className="space-y-2 mt-1">{group.checkedItems.map(renderItemCard)}</div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         );
       })}
@@ -645,19 +730,6 @@ export default function ShoppingListViewEnhanced({
             <Sparkles className="h-4 w-4" />
             {generating ? t('generating') : t('generateFromWeek')}
           </button>
-        </div>
-      )}
-
-      {completedItems.length > 0 && (
-        <div className="print:hidden space-y-2 pt-2">
-          <button
-            onClick={() => setShowCompleted((v) => !v)}
-            className="w-full flex items-center justify-between text-sm font-semibold text-charcoal/60 bg-cream px-3 py-2 rounded-lg"
-          >
-            <span>Completed ({completedItems.length})</span>
-            <span className="text-xs">{showCompleted ? '▾' : '▸'}</span>
-          </button>
-          {showCompleted && <div className="space-y-2 opacity-60">{completedItems.map(renderItemCard)}</div>}
         </div>
       )}
 

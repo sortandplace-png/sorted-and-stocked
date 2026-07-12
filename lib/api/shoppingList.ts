@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 export interface EnhancedShoppingItem {
   item_id: string;
   name: string;
+  name_es: string | null;
   category: string;
   qty_needed: number;
   unit_estimate: string | null;
@@ -16,6 +17,7 @@ export interface EnhancedShoppingItem {
   current_stock: number | null;
   location_name: string | null;
   supplier: string | null;
+  kosher_type: string | null;
   // UI flags for conditional rendering
   is_rich_item: boolean;
   is_staple_origin: boolean;
