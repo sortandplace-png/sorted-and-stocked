@@ -13,6 +13,13 @@ import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { COURSES, type Course } from '@/lib/course-constants';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
 import { getRecipeIcon } from '@/lib/recipe-icons';
+import { getNineDaysWindows, isInNineDays, type DateWindow } from '@/lib/nine-days';
+
+// Shared by extendMealPlan's pool filter, repeatWeekForward's copy-skip
+// check, and the manual-add warning -- one definition of "meat"/"dairy"
+// instead of three.
+const isMeat = (kt: string | null | undefined) => kt === 'Meat';
+const isDairy = (kt: string | null | undefined) => kt === 'Dairy';
 
 // Same kashrut color tokens as the dashboard's KASHRUT_INFO (Fleishig/
 // Milchig/Parve) -- reused here keyed by the real recipes.kosher_type
@@ -207,6 +214,8 @@ export default function MealPlanView({
   const [kosherFilter, setKosherFilter] = useState<string | null>(null);
   const [customName, setCustomName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [nineDaysWindows, setNineDaysWindows] = useState<DateWindow[]>([]);
+  const [favoriteRecipeIds, setFavoriteRecipeIds] = useState<Set<string>>(new Set());
 
   const range = viewMode === 'week' ? weekRange(anchor) : monthRange(anchor);
 
@@ -273,6 +282,32 @@ export default function MealPlanView({
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Reference windows, not property-scoped -- fetched once, same pattern as
+  // fastDays above. Current + next Gregorian year comfortably covers both
+  // manual adds and the largest real extend/repeat range this UI offers.
+  useEffect(() => {
+    const thisYear = new Date().getFullYear();
+    getNineDaysWindows([thisYear, thisYear + 1]).then(setNineDaysWindows);
+  }, []);
+
+  // 3i: recipe favorites feeding into extendMealPlan's rotation pick, same
+  // per-person convention as RecipesGridView's own favorites fetch.
+  useEffect(() => {
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('recipe_favorites')
+        .select('recipe_id')
+        .eq('property_id', propertyId)
+        .eq('user_id', user.id);
+      setFavoriteRecipeIds(new Set((data ?? []).map((f) => f.recipe_id)));
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyId]);
 
   // Print Day sets a CSS-only "hide every other day" scope before invoking
   // the browser print dialog, then clears it once the dialog closes —
@@ -649,6 +684,15 @@ export default function MealPlanView({
       if (existingKeys.has(`${newDateStr}:${entry.course}`)) continue;
       // Standing rule: Kids Platter never appears Fri/Sat/Sun.
       if (entry.course === 'kids_platter' && (newDow === 0 || newDow === 5 || newDow === 6)) continue;
+      // Nine Days: repeatWeekForward copies recipe_id verbatim rather than
+      // re-selecting from a pool (unlike extendMealPlan), so a meat entry
+      // landing on a non-Shabbos date in the window gets skipped here
+      // instead of filtered out beforehand -- leaves a real gap rather than
+      // copying it through.
+      const isShabbosDay = newDow === 5 || newDow === 6;
+      if (!isShabbosDay && isInNineDays(newDateStr, nineDaysWindows) && isMeat(entry.recipes?.kosher_type)) {
+        continue;
+      }
 
       const seqKey = `${newDateStr}:${entry.course}`;
       const sequence = (seqByDateCourse[seqKey] ?? 0) + 1;
@@ -683,13 +727,28 @@ export default function MealPlanView({
 
   // Picks the least-recently-used candidate (never-used sorts first via a
   // sentinel date), then immediately records it as used so the next pick
-  // for the same course within this run doesn't repeat it.
-  function pickLeastRecentlyUsed(candidates: Recipe[], lastUsedMap: Map<string, string>, planDate: string) {
+  // for the same course within this run doesn't repeat it. Favorites (3i)
+  // only break a real tie on last-used date -- most commonly several
+  // never-used candidates at once -- rather than unconditionally beating
+  // every non-favorite regardless of recency. An unconditional favorite-first
+  // rule was tried and rejected: it would let 2-3 favorited recipes
+  // permanently dominate a course's rotation, defeating the actual point of
+  // LRU (variety), not just biasing it.
+  function pickLeastRecentlyUsed(
+    candidates: Recipe[],
+    lastUsedMap: Map<string, string>,
+    planDate: string,
+    favoriteIds: Set<string> = new Set()
+  ) {
     if (candidates.length === 0) return null;
     const sorted = [...candidates].sort((a, b) => {
       const da = lastUsedMap.get(a.id) ?? '0000-00-00';
       const db = lastUsedMap.get(b.id) ?? '0000-00-00';
-      return da < db ? -1 : da > db ? 1 : 0;
+      if (da !== db) return da < db ? -1 : 1;
+      const aFav = favoriteIds.has(a.id);
+      const bFav = favoriteIds.has(b.id);
+      if (aFav !== bFav) return aFav ? -1 : 1;
+      return 0;
     });
     const picked = sorted[0];
     lastUsedMap.set(picked.id, planDate);
@@ -765,8 +824,6 @@ export default function MealPlanView({
     }
 
     const recipeById = new Map(recipes.map((r) => [r.id, r]));
-    const isMeat = (kt: string | null | undefined) => kt === 'Meat';
-    const isDairy = (kt: string | null | undefined) => kt === 'Dairy';
 
     // Protein first so it sets the day's meat/dairy character before the
     // rest of that day's courses are picked (protein skews heavily Meat).
@@ -827,9 +884,11 @@ export default function MealPlanView({
           if (r.is_shabbos_only && !isShabbos) return false;
           if (type.meat && isDairy(r.kosher_type)) return false;
           if (type.dairy && isMeat(r.kosher_type)) return false;
+          // Nine Days: no meat on a non-Shabbos date inside 1-9 Av.
+          if (isMeat(r.kosher_type) && !isShabbos && isInNineDays(newDateStr, nineDaysWindows)) return false;
           return true;
         });
-        const picked = pickLeastRecentlyUsed(pool, lastUsedMap, newDateStr) ?? templateRecipe ?? null;
+        const picked = pickLeastRecentlyUsed(pool, lastUsedMap, newDateStr, favoriteRecipeIds) ?? templateRecipe ?? null;
         if (!picked) continue;
 
         if (isMeat(picked.kosher_type)) type.meat = true;
@@ -867,6 +926,19 @@ export default function MealPlanView({
         )
         .filter(matchesSwapIntent)
     : [];
+
+  // Manual-add Nine Days warning -- non-blocking (per the standing pattern
+  // for minhag-level cautions in this app, e.g. Rosh Hashana nuts), shown
+  // only in 'existing' picker mode with a real Meat recipe selected.
+  const pickedRecipe = pickerMode === 'existing' ? recipes.find((r) => r.id === pickedRecipeId) : null;
+  const editingIsShabbos = editing
+    ? [5, 6].includes(new Date(editing.date + 'T00:00:00Z').getUTCDay())
+    : false;
+  const showNineDaysWarning =
+    !!editing &&
+    !editingIsShabbos &&
+    isMeat(pickedRecipe?.kosher_type) &&
+    isInNineDays(editing.date, nineDaysWindows);
 
   // "Different protein" has no real backing field to filter on (no
   // protein-type column exists anywhere) — it's offered as a reason but
@@ -1668,6 +1740,16 @@ export default function MealPlanView({
                 className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40 mb-3"
                 autoFocus
               />
+            )}
+
+            {showNineDaysWarning && (
+              <div className="flex items-start gap-2 px-3 py-2 mb-3 bg-rust/10 border border-rust/20 rounded-2xl">
+                <AlertTriangle className="h-4 w-4 text-rust shrink-0 mt-0.5" />
+                <p className="text-xs text-rust font-medium">
+                  This falls within the Nine Days (1–9 Av), when many avoid meat except on Shabbos. You can still
+                  save this — consult your rav if you're unsure.
+                </p>
+              </div>
             )}
 
             <div className="flex gap-2">
