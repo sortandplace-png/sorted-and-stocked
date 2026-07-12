@@ -14,6 +14,8 @@ import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import { usePullToRefresh } from '@/lib/use-pull-to-refresh';
 
+type PairingRule = { id: string; item_a: string; item_b: string };
+
 export default function ShoppingListClient({ propertyId }: { propertyId: string }) {
   const [listId, setListId] = useState<string | null>(null);
   const [items, setItems] = useState<ShoppingListItem[]>([]);
@@ -22,10 +24,36 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
   const [newItemName, setNewItemName] = useState('');
   const [adding, setAdding] = useState(false);
   const [activeTab, setActiveTab] = useState<'recipes' | 'staples'>('recipes');
+  const [pairingRules, setPairingRules] = useState<PairingRule[]>([]);
+  const [dismissedPairingNudge, setDismissedPairingNudge] = useState(false);
 
   const supabase = createClient();
   const showToast = useToast();
   const t = useTranslations('shopping');
+
+  // Reference table, not property-scoped -- fetched once, same pattern as
+  // other curated reference data elsewhere in this app.
+  useEffect(() => {
+    supabase
+      .from('pairing_rules')
+      .select('id, item_a, item_b')
+      .then(({ data }) => setPairingRules(data ?? []));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // "Forgot Something" (3e-ii): one-sided real pairs still on the active
+  // list, checked by case-insensitive substring against pending items only
+  // -- an already-purchased item doesn't need a reminder.
+  const pendingNames = items.filter((i) => i.status === 'pending').map((i) => i.name.toLowerCase());
+  const missingPairs = pairingRules
+    .map((rule) => {
+      const hasA = pendingNames.some((n) => n.includes(rule.item_a.toLowerCase()));
+      const hasB = pendingNames.some((n) => n.includes(rule.item_b.toLowerCase()));
+      if (hasA && !hasB) return { have: rule.item_a, missing: rule.item_b };
+      if (hasB && !hasA) return { have: rule.item_b, missing: rule.item_a };
+      return null;
+    })
+    .filter((p): p is { have: string; missing: string } => p !== null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -193,6 +221,26 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
         <p className="text-sm text-rust bg-rust/10 rounded-lg px-3 py-2 mb-3 mx-4 max-w-md md:mx-auto">
           {error}
         </p>
+      )}
+
+      {!dismissedPairingNudge && missingPairs.length > 0 && (
+        <div className="mx-4 max-w-md md:mx-auto mb-3 bg-gold-light/20 border border-gold-light rounded-2xl p-3 flex items-start justify-between gap-2">
+          <p className="text-sm text-charcoal">
+            {missingPairs.map((p, i) => (
+              <span key={p.missing}>
+                {i > 0 && ' · '}
+                Forgot <span className="font-medium">{p.missing}</span>? You have {p.have}.
+              </span>
+            ))}
+          </p>
+          <button
+            onClick={() => setDismissedPairingNudge(true)}
+            className="text-charcoal/40 hover:text-charcoal text-xs shrink-0"
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
       )}
 
       {/* Recipe Ingredients Tab */}
