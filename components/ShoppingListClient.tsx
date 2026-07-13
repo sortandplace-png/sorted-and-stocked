@@ -185,7 +185,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
     <div className="pt-4">
       {/* Tab Navigation */}
       <div className="bg-white border-b border-gold-light/20 sticky top-0 z-10 mb-4">
-        <div className="max-w-md mx-auto flex px-4">
+        <div className="max-w-md lg:max-w-6xl mx-auto flex px-4">
           <button
             onClick={() => setActiveTab('recipes')}
             className={`flex-1 py-3 font-medium text-sm border-b-2 transition-colors ${
@@ -218,13 +218,13 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
         </div>
       )}
       {error && (
-        <p className="text-sm text-rust bg-rust/10 rounded-lg px-3 py-2 mb-3 mx-4 max-w-md md:mx-auto">
+        <p className="text-sm text-rust bg-rust/10 rounded-lg px-3 py-2 mb-3 mx-4 max-w-md lg:max-w-6xl md:mx-auto">
           {error}
         </p>
       )}
 
       {!dismissedPairingNudge && missingPairs.length > 0 && (
-        <div className="mx-4 max-w-md md:mx-auto mb-3 bg-gold-light/20 border border-gold-light rounded-2xl p-3 flex items-start justify-between gap-2">
+        <div className="mx-4 max-w-md lg:max-w-6xl md:mx-auto mb-3 bg-gold-light/20 border border-gold-light rounded-2xl p-3 flex items-start justify-between gap-2">
           <p className="text-sm text-charcoal">
             {missingPairs.map((p, i) => (
               <span key={p.missing}>
@@ -246,7 +246,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
       {/* Recipe Ingredients Tab */}
       {activeTab === 'recipes' && (
         <>
-          <div className="max-w-md mx-auto px-4 mb-4 flex gap-2">
+          <div className="max-w-md lg:max-w-6xl mx-auto px-4 mb-4 flex gap-2">
             <input
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
@@ -263,7 +263,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
             </button>
           </div>
 
-          <div className="max-w-md mx-auto px-4">
+          <div className="max-w-md lg:max-w-6xl mx-auto px-4">
             {listId ? (
               <ShoppingListViewEnhanced propertyId={propertyId} shoppingListId={listId} />
             ) : (

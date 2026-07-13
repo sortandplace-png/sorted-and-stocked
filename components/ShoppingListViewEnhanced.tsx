@@ -44,7 +44,6 @@ const KOSHER_PILL_STYLE: Record<string, string> = {
   Meat: 'bg-rust/15 text-rust',
   Dairy: 'bg-dairy/15 text-dairy',
   Parve: 'bg-sage/15 text-sage',
-  'Parve (Fish)': 'bg-sage/15 text-sage',
 };
 
 type GroupBy = 'staples-first' | 'category' | 'by-recipe';
@@ -669,8 +668,8 @@ export default function ShoppingListViewEnhanced({
             onClick={() => setGroupBy(option)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
               groupBy === option
-                ? 'bg-charcoal text-cream'
-                : 'bg-gold-light/20 text-charcoal hover:bg-gold-light/30'
+                ? 'bg-gold text-charcoal'
+                : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
             }`}
           >
             {option === 'staples-first' ? 'Staples First' : option === 'category' ? 'By Aisle' : 'By Recipe'}
@@ -679,44 +678,52 @@ export default function ShoppingListViewEnhanced({
       </div>
 
       {/* Items Grouped -- checked items stay inside their own group's
-          collapsed checked subsection instead of one global bottom section */}
-      {groups.map(group => {
-        if (group.items.length === 0 && group.checkedItems.length === 0) return null;
-        const collapsed = collapsedGroups.has(group.title);
-        const checkedExpanded = expandedCheckedGroups.has(group.title);
-        return (
-          <div key={group.title} className="space-y-2">
-            <button
-              onClick={() => toggleGroup(group.title)}
-              className="w-full flex items-center justify-between text-sm font-semibold text-charcoal bg-gold-light/20 px-3 py-2 rounded-lg"
+          collapsed checked subsection instead of one global bottom section.
+          Each group is its own bordered card in a 2-column desktop grid
+          (1-column on mobile), matching StaplesTab's card treatment so both
+          tabs feel like the same app rather than two different styles. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        {groups.map(group => {
+          if (group.items.length === 0 && group.checkedItems.length === 0) return null;
+          const collapsed = collapsedGroups.has(group.title);
+          const checkedExpanded = expandedCheckedGroups.has(group.title);
+          return (
+            <div
+              key={group.title}
+              className="bg-white rounded-2xl border border-gold-light/40 shadow-sm shadow-charcoal/5 p-4"
             >
-              <span>
-                {group.title} ({group.items.length})
-              </span>
-              <span className="text-xs text-charcoal/40">{collapsed ? '▸' : '▾'}</span>
-            </button>
-            {!collapsed && (
-              <>
-                {group.items.map(renderItemCard)}
-                {showCompleted && group.checkedItems.length > 0 && (
-                  <div className="pt-1">
-                    <button
-                      onClick={() => toggleCheckedGroup(group.title)}
-                      className="w-full flex items-center justify-between text-xs font-medium text-charcoal/50 px-3 py-1.5"
-                    >
-                      <span>Checked ({group.checkedItems.length})</span>
-                      <span>{checkedExpanded ? '▾' : '▸'}</span>
-                    </button>
-                    {checkedExpanded && (
-                      <div className="space-y-2 mt-1">{group.checkedItems.map(renderItemCard)}</div>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        );
-      })}
+              <button
+                onClick={() => toggleGroup(group.title)}
+                className="w-full flex items-center gap-2 mb-3 text-left"
+              >
+                <span className="font-display text-lg text-charcoal">{group.title}</span>
+                <span className="text-xs text-charcoal/40">({group.items.length})</span>
+                <span className="flex-1 border-t border-gold-light/40" />
+                <span className="text-charcoal/40 text-sm">{collapsed ? '▸' : '▾'}</span>
+              </button>
+              {!collapsed && (
+                <div className="space-y-2">
+                  {group.items.map(renderItemCard)}
+                  {showCompleted && group.checkedItems.length > 0 && (
+                    <div className="pt-1">
+                      <button
+                        onClick={() => toggleCheckedGroup(group.title)}
+                        className="w-full flex items-center justify-between text-xs font-medium text-charcoal/50 px-3 py-1.5"
+                      >
+                        <span>Checked ({group.checkedItems.length})</span>
+                        <span>{checkedExpanded ? '▾' : '▸'}</span>
+                      </button>
+                      {checkedExpanded && (
+                        <div className="space-y-2 mt-1">{group.checkedItems.map(renderItemCard)}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       {items.length === 0 && (
         <div className="text-center py-12 px-4">
