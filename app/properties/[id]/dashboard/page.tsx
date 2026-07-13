@@ -71,10 +71,27 @@ function weekBounds(today: Date) {
 async function getData(propertyId: string) {
   const supabase = await createClient()
   const { startStr, endStr } = weekBounds(new Date())
+
+  // shopping_list_items has no property_id of its own (only shopping_list_id)
+  // -- this was previously filtering shopping_list_items directly on
+  // property_id, a column that doesn't exist on that table, which Supabase
+  // silently turned into an empty result rather than a visible error.
+  // Real relationship: shopping_lists.property_id -> shopping_list_items.shopping_list_id.
+  const { data: list } = await supabase
+    .from('shopping_lists')
+    .select('id')
+    .eq('property_id', propertyId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
   const [meals, inventory, shopping] = await Promise.all([
     supabase.from('meal_plan_entries').select('plan_date, recipe_id, recipes(name)').eq('property_id', propertyId).gte('plan_date', startStr).lte('plan_date', endStr).order('plan_date'),
     supabase.from('inventory_items').select('category, name, current_qty, min_qty, photo_url, reorder_link').eq('property_id', propertyId).order('category'),
-    supabase.from('shopping_list_items').select('name, category, qty_needed, status, inventory_items(photo_url, reorder_link)').eq('property_id', propertyId).eq('status', 'pending').order('category')
+    list
+      ? supabase.from('shopping_list_items').select('name, category, qty_needed, status, inventory_items(photo_url, reorder_link)').eq('shopping_list_id', list.id).eq('status', 'pending').order('category')
+      : Promise.resolve({ data: [] as any[] })
   ])
   return { meals: meals.data || [], inventory: inventory.data || [], shopping: shopping.data || [] }
 }
