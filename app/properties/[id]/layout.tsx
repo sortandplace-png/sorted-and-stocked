@@ -11,6 +11,7 @@ import CommandPaletteTrigger from '@/components/CommandPaletteTrigger';
 import { LogoMark } from '@/components/Logo';
 import LocaleToggle from '@/components/LocaleToggle';
 import { PropertyRoleProvider, type PropertyRole } from '@/components/PropertyRoleContext';
+import PropertySwitcher from '@/components/PropertySwitcher';
 
 export default async function PropertyLayout({
   params,
@@ -43,7 +44,19 @@ export default async function PropertyLayout({
 
   if (!membership) redirect('/properties');
 
-  const propertyName = (membership.properties as unknown as { name: string } | null)?.name;
+  const propertyName = (membership.properties as unknown as { name: string } | null)?.name ?? '';
+
+  // All properties this user belongs to, for the switcher -- not just the
+  // one from the membership check above.
+  const { data: allMemberships } = await supabase
+    .from('property_members')
+    .select('properties(id, name)')
+    .eq('user_id', user.id);
+
+  const switcherProperties = (allMemberships ?? [])
+    .map((m) => m.properties as unknown as { id: string; name: string } | null)
+    .filter((p): p is { id: string; name: string } => p !== null)
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -55,13 +68,17 @@ export default async function PropertyLayout({
     <PropertyRoleProvider role={membership.role as PropertyRole}>
       <div className="min-h-screen bg-cream">
         <header className="flex items-center justify-between px-4 py-3 bg-cream text-charcoal border-b border-gold-light/40 sticky top-0 z-30 print:hidden">
-          <Link href={`/properties/${id}/dashboard`} className="flex items-center gap-2.5 min-w-0">
-            <LogoMark className="w-9 h-9" />
-            <div className="min-w-0 leading-tight">
-              <span className="block font-display text-lg">Sorted &amp; Stocked</span>
-              <span className="block text-[11px] text-charcoal/60 truncate">{propertyName}</span>
-            </div>
-          </Link>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Link href={`/properties/${id}/dashboard`} className="flex items-center gap-2.5 min-w-0">
+              <LogoMark className="w-9 h-9" />
+              <span className="font-display text-lg whitespace-nowrap">Sorted &amp; Stocked</span>
+            </Link>
+            <PropertySwitcher
+              currentPropertyId={id}
+              currentPropertyName={propertyName}
+              properties={switcherProperties}
+            />
+          </div>
           <div className="flex items-center gap-3">
             <CommandPaletteTrigger />
             <LocaleToggle />
