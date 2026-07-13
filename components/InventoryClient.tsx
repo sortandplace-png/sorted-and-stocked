@@ -1374,7 +1374,7 @@ function ItemFormSheet({
           </div>
         )}
 
-        {form.id && (restockInterval !== null || lastPurchased) && (
+        {form.id && (
           <div className="mt-5 pt-4 border-t border-gold-light/40 space-y-2">
             {lastPurchased && (
               <p className="text-xs text-charcoal/60 bg-gold-light/15 rounded-lg px-3 py-2">
@@ -1385,6 +1385,24 @@ function ItemFormSheet({
             {restockInterval !== null && (
               <p className="text-xs text-charcoal/60 bg-gold-light/15 rounded-lg px-3 py-2">
                 Usually restocked every ~{restockInterval} day{restockInterval === 1 ? '' : 's'}
+              </p>
+            )}
+            {/* 3f-i: "likely out by" only when both real numbers exist to
+                project from -- a single fact alone isn't enough to predict
+                a date, and this ships now rather than waiting on more usage
+                data, per the standing instruction not to fake a forecast. */}
+            {restockInterval !== null && lastPurchased && (
+              <p className="text-xs text-charcoal/60 bg-gold-light/15 rounded-lg px-3 py-2">
+                At that pace, likely to run out around{' '}
+                {new Date(lastPurchased.getTime() + restockInterval * 24 * 60 * 60 * 1000).toLocaleDateString(
+                  undefined,
+                  { month: 'short', day: 'numeric', year: 'numeric' }
+                )}
+              </p>
+            )}
+            {restockInterval === null && !lastPurchased && (
+              <p className="text-xs text-charcoal/40 bg-gold-light/15 rounded-lg px-3 py-2">
+                Not enough usage history yet to predict restock timing.
               </p>
             )}
           </div>
