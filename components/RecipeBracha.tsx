@@ -6,25 +6,7 @@ import { useTranslations } from 'next-intl';
 import { updateRecipeBrachaCategory, suggestRecipeBrachaCategory } from '@/app/recipes/actions';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
-
-interface BrachaCategoryRow {
-  category: string;
-  bracha_rishona: string;
-  bracha_achrona: string;
-  note: string | null;
-}
-
-// Categories are a human title, not a raw db key (e.g. "grain_mezonos" ->
-// "Grain Mezonos") -- derived from the row itself rather than a separate
-// hardcoded label map, so this never drifts from bracha_categories. Left
-// untranslated in both locales on purpose -- these are halachic terms
-// (Hamotzi, Mezonos, etc.), same treatment as Shabbos/Parve.
-function titleCase(key: string) {
-  return key
-    .split('_')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
-}
+import BrachaCategorySelect, { type BrachaCategoryRow } from '@/components/BrachaCategorySelect';
 
 export default function RecipeBracha({
   recipeId,
@@ -104,19 +86,13 @@ export default function RecipeBracha({
       <h3 className="font-display text-lg text-charcoal mb-1">{t('title')}</h3>
       <p className="text-xs text-charcoal/50 mb-2">{t('description')}</p>
 
-      <select
-        value={selected ?? ''}
-        onChange={(e) => setSelected(e.target.value || null)}
+      <BrachaCategorySelect
+        categories={categories}
+        value={selected}
+        onChange={setSelected}
         disabled={isPending}
-        className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-xl p-2.5 text-sm text-charcoal disabled:opacity-60 bg-white"
-      >
-        <option value="">{t('notSet')}</option>
-        {categories.map((c) => (
-          <option key={c.category} value={c.category}>
-            {titleCase(c.category)} — {c.bracha_rishona}
-          </option>
-        ))}
-      </select>
+        notSetLabel={t('notSet')}
+      />
 
       <button
         type="button"

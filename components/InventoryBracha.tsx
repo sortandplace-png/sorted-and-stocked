@@ -5,13 +5,7 @@ import { useEffect, useState, useTransition } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { resilientUpdate } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
-
-interface BrachaCategoryRow {
-  category: string;
-  bracha_rishona: string;
-  bracha_achrona: string;
-  note: string | null;
-}
+import BrachaCategorySelect, { type BrachaCategoryRow } from '@/components/BrachaCategorySelect';
 
 // Same derivation as app/recipes/actions.ts's deriveBrachaAchrona — kept in
 // sync manually since one lives client-side (inventory writes go through
@@ -30,13 +24,6 @@ function deriveBrachaAchrona(category: string | null, itemName: string): string 
     return 'Borei Nefashos';
   }
   return null;
-}
-
-function titleCase(key: string) {
-  return key
-    .split('_')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
 }
 
 export default function InventoryBracha({ itemId, itemName }: { itemId: string; itemName: string }) {
@@ -126,19 +113,13 @@ export default function InventoryBracha({ itemId, itemName }: { itemId: string; 
         Which bracha applies — a manual judgment call, never auto-assigned.
       </p>
 
-      <select
-        value={selected ?? ''}
-        onChange={(e) => setSelected(e.target.value || null)}
+      <BrachaCategorySelect
+        categories={categories}
+        value={selected}
+        onChange={setSelected}
         disabled={isPending}
-        className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-xl p-2.5 text-sm text-charcoal disabled:opacity-60 bg-white"
-      >
-        <option value="">Not set</option>
-        {categories.map((c) => (
-          <option key={c.category} value={c.category}>
-            {titleCase(c.category)} — {c.bracha_rishona}
-          </option>
-        ))}
-      </select>
+        notSetLabel="Not set"
+      />
 
       {selectedRow && (
         <div className="mt-2 text-xs text-charcoal/60 bg-cream px-3 py-2 rounded-lg space-y-0.5">
