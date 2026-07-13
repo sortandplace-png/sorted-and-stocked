@@ -205,6 +205,7 @@ export default function NewRecipeModal({
 
     // Photo upload happens after we have a real recipeId — a brand-new
     // recipe doesn't have one until the insert above completes.
+    let photoUploadError: string | null = null;
     if (photoFile) {
       const path = `${propertyId}/${recipeId}-${Date.now()}.jpg`;
       try {
@@ -216,10 +217,10 @@ export default function NewRecipeModal({
           const { data } = supabase.storage.from('recipe-photos').getPublicUrl(path);
           await supabase.from('recipes').update({ photo_url: data.publicUrl }).eq('id', recipeId);
         } else {
-          showToast('Recipe saved, but the photo failed to upload.', { variant: 'error' });
+          photoUploadError = uploadError.message;
         }
-      } catch {
-        showToast('Recipe saved, but the photo failed to upload.', { variant: 'error' });
+      } catch (err) {
+        photoUploadError = err instanceof Error ? err.message : 'Unknown error';
       }
     } else if (photoRemoved) {
       await supabase.from('recipes').update({ photo_url: null }).eq('id', recipeId);
@@ -250,7 +251,18 @@ export default function NewRecipeModal({
     }
 
     setSaving(false);
-    showToast(isEditing ? 'Recipe updated.' : 'Recipe saved.', { variant: 'success' });
+    if (photoUploadError) {
+      // One clear message instead of a success toast immediately followed
+      // by (and visually burying) a separate error toast -- this is the
+      // exact silent-failure gap that let a real upload failure go
+      // unnoticed while the rest of the form saved fine.
+      showToast(
+        `Recipe saved, but the photo failed to upload: ${photoUploadError}`,
+        { variant: 'error', durationMs: 8000 }
+      );
+    } else {
+      showToast(isEditing ? 'Recipe updated.' : 'Recipe saved.', { variant: 'success' });
+    }
     if (!isEditing) await clearDraft();
     onSaved();
   }
