@@ -41,6 +41,7 @@ const KITCHEN_OPS_LINKS = [
   { slug: 'prep-timeline', icon: '⏳', title: 'Prep Timeline' },
 ];
 import { formatScaledNumber } from '@/lib/scale-quantity';
+import { formatMinutes } from '@/lib/format-time';
 import { approxGrams } from '@/lib/metric-conversion';
 import { useToast } from '@/components/Toast';
 
@@ -646,7 +647,7 @@ export default function RecipeDetailClient({
         )}
         {recipe.approx_total_minutes && (
           <span className="text-xs font-medium text-charcoal/60 bg-cream border border-gold-light/40 px-2.5 py-1 rounded-full">
-            ⏱ {recipe.approx_total_minutes} min
+            ⏱ {formatMinutes(recipe.approx_total_minutes)}
           </span>
         )}
       </div>
@@ -850,7 +851,7 @@ export default function RecipeDetailClient({
           achronaNote={recipe.bracha_achrona_note}
           needsSourcing={!!recipe.bracha_needs_sourcing}
         />
-        <RecipeFamilyNotes recipeId={recipeId} propertyId={propertyId} />
+        <RecipeFamilyNotes recipeId={recipeId} initialNotes={recipe.family_notes} />
         <RecipeKitchenTools recipeId={recipeId} propertyId={propertyId} initialEquipment={recipe.equipment ?? []} />
         {canManage(role) && (
           <RecipePrepLeadDays recipeId={recipeId} initialDays={recipe.prep_lead_days} />

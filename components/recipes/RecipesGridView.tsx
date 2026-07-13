@@ -43,6 +43,7 @@ import NewRecipeModal from '@/components/NewRecipeModal';
 import FloatingKitchenTimerButton from '@/components/FloatingKitchenTimerButton';
 import { useToast } from '@/components/Toast';
 import { FilterPill, FilterPillRow } from '@/components/recipes/FilterPill';
+import { formatMinutes } from '@/lib/format-time';
 
 // Meat/Dairy/Parve as color-coded status pills, reusing the app's existing
 // kashrut-indicator tokens (tailwind.config.ts already documents rust/dairy/
@@ -1029,7 +1030,7 @@ export default function RecipesGridView({
                             )}
                             {recipe.approx_total_minutes && (
                               <span className="text-xs font-medium text-charcoal/60 bg-cream border border-gold-light/40 px-2.5 py-1 rounded-full">
-                                ⏱ {recipe.approx_total_minutes} min
+                                ⏱ {formatMinutes(recipe.approx_total_minutes)}
                               </span>
                             )}
                           </div>
