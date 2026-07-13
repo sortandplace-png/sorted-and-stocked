@@ -35,7 +35,6 @@ export const KOSHER_ICONS: Record<string, string> = {
   Meat: '🥩',
   Dairy: '🧀',
   Parve: '🌿',
-  'Parve (Fish)': '🐟',
 };
 
 export function kosherIcon(kosherType: string | null | undefined): string {

@@ -29,7 +29,6 @@ const KOSHER_DOT_COLOR: Record<string, string> = {
   Meat: 'bg-rust',
   Dairy: 'bg-dairy',
   Parve: 'bg-sage',
-  'Parve (Fish)': 'bg-sage',
 };
 
 type Recipe = {
