@@ -65,7 +65,7 @@ export default function ToolsGroupList({ propertyId, groups }: { propertyId: str
                 {group.tools.map((tool) => {
                   const cardInner = (
                     <>
-                      <span className="w-11 h-11 flex items-center justify-center rounded-full bg-gold-dark text-lg">
+                      <span className="w-11 h-11 flex items-center justify-center rounded-full bg-gold/15 text-lg">
                         {tool.icon}
                       </span>
                       <span className="block font-display font-semibold text-charcoal">{tool.title}</span>
