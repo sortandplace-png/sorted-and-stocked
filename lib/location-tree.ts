@@ -50,6 +50,29 @@ export function locationPath(locations: LocationNode[], id: string | null): stri
   return parts.length > 0 ? parts.join(' › ') : 'Unassigned';
 }
 
+// Every id below `id` in the tree (children, grandchildren, ...), not
+// including `id` itself. Used to aggregate a room's item count across its
+// own items plus everything stored in its sub-locations (Kitchen's count
+// includes Kitchen pantry, Kitchen Fridge, etc.), instead of only exact
+// location_id matches.
+export function getDescendantIds(locations: LocationNode[], id: string): string[] {
+  const byParent = new Map<string | null, LocationNode[]>();
+  for (const loc of locations) {
+    const key = loc.parent_location_id;
+    (byParent.get(key) ?? byParent.set(key, []).get(key)!).push(loc);
+  }
+  const result: string[] = [];
+  function walk(parentId: string, depth: number) {
+    if (depth > 20) return; // defends against a corrupt/cyclic parent chain
+    for (const child of byParent.get(parentId) ?? []) {
+      result.push(child.id);
+      walk(child.id, depth + 1);
+    }
+  }
+  walk(id, 0);
+  return result;
+}
+
 // The top-level ancestor's name for a given location — e.g. "Wine Fridge"
 // belongs to root group "Basement". Used to group leaf locations under
 // their real top-level room instead of a flat list.

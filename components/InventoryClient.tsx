@@ -10,7 +10,7 @@ import { SkeletonList } from '@/components/Skeleton';
 import { usePullToRefresh } from '@/lib/use-pull-to-refresh';
 import { categoryIcon } from '@/lib/icon-maps';
 import { getItemIcon } from '@/lib/item-icons';
-import { flattenLocationTree, locationPath, rootGroupName } from '@/lib/location-tree';
+import { flattenLocationTree, locationPath, rootGroupName, getDescendantIds } from '@/lib/location-tree';
 import { getLocationIcon } from '@/lib/location-icons';
 import RestockPhotoPrompt from '@/components/RestockPhotoPrompt';
 import LocationPhotoUpload from '@/components/LocationPhotoUpload';
@@ -147,6 +147,10 @@ export default function InventoryClient({
   // Arrived here via a location QR scan — start filtered to that area, but
   // let the user clear it to see everything.
   const [locationFilter, setLocationFilter] = useState<string | null>(initialLocationFilter);
+  // Room grid sort/filter -- purely a display-order concern, doesn't touch
+  // which rooms exist or how they're grouped by floor.
+  const [lowStockFirst, setLowStockFirst] = useState(false);
+  const [floorFilter, setFloorFilter] = useState<string | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -563,13 +567,39 @@ export default function InventoryClient({
   const locationName = (id: string | null) =>
     locations.find((l) => l.id === id)?.name ?? UNASSIGNED;
 
+  // A room filter matches its own items PLUS everything stored in its
+  // sub-locations (Kitchen's view includes Kitchen pantry, Kitchen Fridge,
+  // etc.) -- a plain locationFilter === locationFilter equality only ever
+  // caught items filed directly on the room itself, silently hiding
+  // anything actually put away in one of its named sub-spots.
+  const filterSubtreeIds = useMemo(() => {
+    if (!locationFilter || locationFilter === UNASSIGNED || locationFilter === FAVORITES) return null;
+    return new Set([locationFilter, ...getDescendantIds(locations, locationFilter)]);
+  }, [locationFilter, locations]);
+
   const visibleItems = locationFilter
     ? locationFilter === UNASSIGNED
       ? items.filter((i) => i.location_id === null)
       : locationFilter === FAVORITES
       ? items.filter((i) => favoriteIds.has(i.id))
-      : items.filter((i) => i.location_id === locationFilter)
+      : items.filter((i) => i.location_id !== null && filterSubtreeIds!.has(i.location_id))
     : items;
+
+  // Direct sub-locations of whatever room is currently selected (Kitchen
+  // pantry, Kitchen Fridge, ... under Kitchen) -- rendered as drill-down
+  // chips in the single-room view so a room's own sub-spots stay reachable
+  // now that they no longer get separate top-level cards.
+  const currentSubLocations =
+    locationFilter && locationFilter !== UNASSIGNED && locationFilter !== FAVORITES
+      ? locations
+          .filter((l) => l.parent_location_id === locationFilter)
+          .map((loc) => {
+            const subtreeIds = new Set([loc.id, ...getDescendantIds(locations, loc.id)]);
+            const count = items.filter((i) => i.location_id !== null && subtreeIds.has(i.location_id)).length;
+            return { loc, count };
+          })
+          .sort((a, b) => a.loc.name.localeCompare(b.loc.name))
+      : [];
 
   const hasActiveFilter =
     searchQuery.trim() !== '' || categoryFilter !== null || belowParOnly || expiringSoonOnly;
@@ -636,20 +666,37 @@ export default function InventoryClient({
     0
   );
 
-  // Room summaries for the grid view — every real room (a location with a
-  // parent, i.e. not a top-level group like Basement/Main Floor/Upstairs
-  // itself), not just ones that already have items. A brand-new empty room
-  // still needs to show up so there's somewhere to actually add its first
-  // item -- deriving this from `grouped` alone silently dropped any room
-  // with zero items.
+  // Room summaries for the grid view — one card per real room (a location
+  // one level below a top-level group like Basement/Main Floor/Upstairs),
+  // not just ones that already have items. A brand-new empty room still
+  // needs to show up so there's somewhere to actually add its first item --
+  // deriving this from `grouped` alone silently dropped any room with zero
+  // items.
+  //
+  // A room's own children (Kitchen pantry, Kitchen Fridge, ... under
+  // Kitchen) do NOT get their own top-level card -- they used to, because
+  // the old filter was just "has any parent," which can't tell a real room
+  // apart from a sub-location of a room. That flattened Kitchen's 6
+  // sub-locations into 6 extra sibling cards under Main Floor instead of
+  // one Kitchen card. Now a card only exists for a location whose PARENT is
+  // itself a root (parent_location_id === null); everything deeper rolls
+  // into that room's count via getDescendantIds and shows up through the
+  // sub-location drill-down inside the room instead (see the single-room
+  // view below).
+  const locationById = new Map(locations.map((l) => [l.id, l]));
   const roomSummaries = locations
-    .filter((l) => l.parent_location_id !== null)
+    .filter((l) => {
+      if (l.parent_location_id === null) return false;
+      const parent = locationById.get(l.parent_location_id);
+      return !parent || parent.parent_location_id === null;
+    })
     .map((loc) => {
-      const locationItems = items.filter((i) => i.location_id === loc.id);
+      const subtreeIds = new Set([loc.id, ...getDescendantIds(locations, loc.id)]);
+      const subtreeItems = items.filter((i) => i.location_id !== null && subtreeIds.has(i.location_id));
       return {
         location: loc.name,
-        count: locationItems.length,
-        lowCount: locationItems.filter((i) => i.current_qty < i.min_qty).length,
+        count: subtreeItems.length,
+        lowCount: subtreeItems.filter((i) => i.current_qty < i.min_qty).length,
       };
     });
 
@@ -662,11 +709,21 @@ export default function InventoryClient({
     const group = loc ? rootGroupName(locations, loc.id) : 'Unassigned';
     (roomsByGroup.get(group) ?? roomsByGroup.set(group, []).get(group)!).push(summary);
   }
-  const roomGroupEntries = [...roomsByGroup.entries()].sort(([a], [b]) => {
-    if (a === 'Unassigned') return 1;
-    if (b === 'Unassigned') return -1;
-    return a.localeCompare(b);
-  });
+  const allFloorNames = [...roomsByGroup.keys()].filter((g) => g !== 'Unassigned').sort((a, b) => a.localeCompare(b));
+
+  const roomGroupEntries = [...roomsByGroup.entries()]
+    .filter(([groupName]) => !floorFilter || groupName === floorFilter)
+    .sort(([a], [b]) => {
+      if (a === 'Unassigned') return 1;
+      if (b === 'Unassigned') return -1;
+      return a.localeCompare(b);
+    })
+    .map(([groupName, summaries]) => {
+      const sorted = [...summaries].sort((a, b) =>
+        lowStockFirst ? b.lowCount - a.lowCount || a.location.localeCompare(b.location) : a.location.localeCompare(b.location)
+      );
+      return [groupName, sorted] as [string, typeof summaries];
+    });
 
   function renderItemCard(item: InventoryItem, showLocation: boolean) {
     const low = item.current_qty < item.min_qty;
@@ -925,6 +982,42 @@ export default function InventoryClient({
               </button>
             </div>
           )}
+          {roomSummaries.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => setLowStockFirst((v) => !v)}
+                className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+                  lowStockFirst ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70'
+                }`}
+              >
+                Low stock first
+              </button>
+              {allFloorNames.length > 1 && (
+                <>
+                  <span className="w-px h-5 bg-gold-light/60" aria-hidden="true" />
+                  <button
+                    onClick={() => setFloorFilter(null)}
+                    className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+                      !floorFilter ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70'
+                    }`}
+                  >
+                    All floors
+                  </button>
+                  {allFloorNames.map((floor) => (
+                    <button
+                      key={floor}
+                      onClick={() => setFloorFilter(floor)}
+                      className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+                        floorFilter === floor ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70'
+                      }`}
+                    >
+                      {floor}
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
           {roomGroupEntries.map(([groupName, summaries]) => (
             <div key={groupName}>
               {roomGroupEntries.length > 1 && (
@@ -951,12 +1044,13 @@ export default function InventoryClient({
                           {count} item{count === 1 ? '' : 's'}
                         </p>
                         {lowCount > 0 && (
-                          <span className="inline-block mt-2 text-xs font-medium text-rust bg-rust/10 px-2 py-0.5 rounded-full">
+                          <span className="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-white bg-rust px-2.5 py-1 rounded-full">
+                            <AlertTriangle className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
                             {lowCount} low
                           </span>
                         )}
                       </div>
-                      {loc && canManage(role) && (
+                      {loc && canManage(role) && !loc.photo_url && (
                         <span
                           onClick={(e) => {
                             e.stopPropagation();
@@ -965,6 +1059,19 @@ export default function InventoryClient({
                           className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-charcoal/60 hover:text-charcoal"
                           role="button"
                           aria-label={`Add photo of ${location}`}
+                        >
+                          <Camera className="w-3.5 h-3.5" strokeWidth={1.75} />
+                        </span>
+                      )}
+                      {loc && canManage(role) && loc.photo_url && (
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPhotoUploadLocation(loc);
+                          }}
+                          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/70 flex items-center justify-center text-charcoal/40 hover:text-charcoal hover:bg-white/90 transition-colors"
+                          role="button"
+                          aria-label={`Replace photo of ${location}`}
                         >
                           <Camera className="w-3.5 h-3.5" strokeWidth={1.75} />
                         </span>
@@ -999,6 +1106,19 @@ export default function InventoryClient({
           <h2 className="font-display text-lg text-charcoal mb-2">
             {locationFilter === FAVORITES ? '⭐ Favorites' : locationPath(locations, locationFilter)}
           </h2>
+          {currentSubLocations.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {currentSubLocations.map(({ loc, count }) => (
+                <button
+                  key={loc.id}
+                  onClick={() => setLocationFilter(loc.id)}
+                  className="text-xs font-medium px-3 py-1.5 rounded-full bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/15 transition-colors"
+                >
+                  {loc.name} <span className="text-charcoal/40">({count})</span>
+                </button>
+              ))}
+            </div>
+          )}
           <div className="space-y-3">
             {roomItemsByLetter.map(([letter, letterItems]) => {
               const collapsed = collapsedLetters.has(letter);
