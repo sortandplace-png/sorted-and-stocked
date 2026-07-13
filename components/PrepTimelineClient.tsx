@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { SkeletonList } from '@/components/Skeleton';
+import { formatMinutes } from '@/lib/format-time';
 
 type Entry = {
   id: string;
@@ -48,8 +49,15 @@ export default function PrepTimelineClient({ propertyId }: { propertyId: string 
   const [readyHour, readyMinute] = readyTime.split(':').map(Number);
   const readyTotalMinutes = readyHour * 60 + readyMinute;
 
+  // Kids Platter is a fixed combo set out ahead of time, not a dish someone
+  // is actively cooking -- sorting it into the duration-based countdown by
+  // its short prep time (an "Apple slices" entry with a 5-minute
+  // approx_total_minutes) put it right before "Ready to serve" instead of
+  // treating it as an early, separate task. Pulled out of the countdown
+  // entirely (regardless of whether it even has a recorded prep time) and
+  // shown as its own fixed early suggestion instead.
   const withTimes = entries
-    .filter((e) => e.recipes?.approx_total_minutes != null)
+    .filter((e) => e.course !== 'kids_platter' && e.recipes?.approx_total_minutes != null)
     .map((e) => ({
       name: e.recipes!.name,
       minutes: e.recipes!.approx_total_minutes!,
@@ -57,8 +65,13 @@ export default function PrepTimelineClient({ propertyId }: { propertyId: string 
     }))
     .sort((a, b) => b.minutes - a.minutes);
 
-  const noTimeRecorded = entries.filter((e) => e.recipes && e.recipes.approx_total_minutes == null);
-  const customOnly = entries.filter((e) => !e.recipes && e.custom_name);
+  const noTimeRecorded = entries.filter(
+    (e) => e.course !== 'kids_platter' && e.recipes && e.recipes.approx_total_minutes == null
+  );
+  const customOnly = entries.filter((e) => e.course !== 'kids_platter' && !e.recipes && e.custom_name);
+  const kidsPlatterEntries = entries.filter(
+    (e) => e.course === 'kids_platter' && (e.recipes?.name || e.custom_name)
+  );
 
   if (loading) return <SkeletonList />;
 
@@ -86,6 +99,22 @@ export default function PrepTimelineClient({ propertyId }: { propertyId: string 
         <p className="text-sm text-charcoal/40 text-center py-8">Nothing planned for this day yet.</p>
       )}
 
+      {kidsPlatterEntries.length > 0 && (
+        <div className="bg-gold-light/15 border border-gold-light/60 rounded-2xl p-4 mb-4">
+          <p className="text-sm font-medium text-charcoal mb-1">🧸 Kids Platter — put out early</p>
+          <p className="text-xs text-charcoal/50 mb-2">
+            30–45 min before serving ({minutesToClock(readyTotalMinutes, 45)}–{minutesToClock(readyTotalMinutes, 30)}) — not part of the cooking countdown:
+          </p>
+          <ul className="space-y-1">
+            {kidsPlatterEntries.map((e) => (
+              <li key={e.id} className="text-sm text-charcoal">
+                {e.recipes?.name ?? e.custom_name}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {withTimes.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-4">
           <ul className="space-y-3">
@@ -94,7 +123,7 @@ export default function PrepTimelineClient({ propertyId }: { propertyId: string 
                 <span className="text-sm font-medium text-gold-dark w-20 shrink-0">{item.startClock}</span>
                 <div className="flex-1 border-l-2 border-gold-light/40 pl-3">
                   <p className="text-sm text-charcoal">{item.name}</p>
-                  <p className="text-xs text-charcoal/40">~{item.minutes} min</p>
+                  <p className="text-xs text-charcoal/40">~{formatMinutes(item.minutes)}</p>
                 </div>
               </li>
             ))}
