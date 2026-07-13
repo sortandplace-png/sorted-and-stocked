@@ -10,7 +10,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { config } from 'dotenv';
 
-config({ path: 'C:/Users/rockl/OneDrive/Desktop/sorted-and-stocked-files/.env.local' });
+config({ path: 'C:/dev/sorted-and-stocked-files/.env.local' });
 
 const limit = Number(process.argv[2] ?? 12);
 
