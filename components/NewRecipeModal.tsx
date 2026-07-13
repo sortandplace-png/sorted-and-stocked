@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { COURSES, type Course } from '@/lib/course-constants';
 import { useDraftAutosave } from '@/hooks/useDraftAutosave';
 import { findAutoLinkMatch } from '@/lib/inventory-matching';
+import { compressImageToBlob } from '@/lib/compress-image';
 import FieldLabel from '@/components/FieldLabel';
 
 type IngredientRow = { name: string; quantity: string; unit: string; category: string };
@@ -17,6 +18,11 @@ type RecipeDraft = {
   ingredientRows: IngredientRow[];
 };
 
+// "Parve (Fish)" used to be a separate fourth value here but was merged
+// into plain "Parve" -- fish is halachically parve, and nothing in the app
+// depended on the distinction beyond a cosmetic icon.
+const KOSHER_TYPES = ['Meat', 'Dairy', 'Parve'];
+
 export default function NewRecipeModal({
   propertyId,
   onClose,
@@ -27,6 +33,17 @@ export default function NewRecipeModal({
   initialServings,
   initialCourse,
   initialIngredients,
+  initialNameEs,
+  initialKosherType,
+  initialInstructionsEn,
+  initialTags,
+  initialEquipment,
+  initialApproxTotalMinutes,
+  initialPrepLeadDays,
+  initialIsShabbosOnly,
+  initialIsYomTov,
+  initialIsPesach,
+  initialPhotoUrl,
 }: {
   propertyId: string;
   onClose: () => void;
@@ -39,6 +56,17 @@ export default function NewRecipeModal({
   initialServings?: number | null;
   initialCourse?: Course;
   initialIngredients?: IngredientRow[];
+  initialNameEs?: string | null;
+  initialKosherType?: string | null;
+  initialInstructionsEn?: string | null;
+  initialTags?: string[] | null;
+  initialEquipment?: string[] | null;
+  initialApproxTotalMinutes?: number | null;
+  initialPrepLeadDays?: number | null;
+  initialIsShabbosOnly?: boolean | null;
+  initialIsYomTov?: boolean | null;
+  initialIsPesach?: boolean | null;
+  initialPhotoUrl?: string | null;
 }) {
   const isEditing = !!editRecipeId;
   const [name, setName] = useState(initialName ?? '');
@@ -49,6 +77,25 @@ export default function NewRecipeModal({
       ? initialIngredients
       : [{ name: '', quantity: '', unit: '', category: '' }]
   );
+  const [nameEs, setNameEs] = useState(initialNameEs ?? '');
+  const [kosherType, setKosherType] = useState(initialKosherType ?? '');
+  const [instructionsEn, setInstructionsEn] = useState(initialInstructionsEn ?? '');
+  const [tagsText, setTagsText] = useState((initialTags ?? []).join(', '));
+  const [equipmentText, setEquipmentText] = useState((initialEquipment ?? []).join(', '));
+  const [approxTotalMinutes, setApproxTotalMinutes] = useState(
+    initialApproxTotalMinutes != null ? String(initialApproxTotalMinutes) : ''
+  );
+  const [prepLeadDays, setPrepLeadDays] = useState(initialPrepLeadDays != null ? String(initialPrepLeadDays) : '');
+  const [isShabbosOnly, setIsShabbosOnly] = useState(!!initialIsShabbosOnly);
+  const [isYomTov, setIsYomTov] = useState(!!initialIsYomTov);
+  const [isPesach, setIsPesach] = useState(!!initialIsPesach);
+
+  const [photoUrl] = useState<string | null>(initialPhotoUrl ?? null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoRemoved, setPhotoRemoved] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [saving, setSaving] = useState(false);
 
   const supabase = createClient();
@@ -85,17 +132,51 @@ export default function NewRecipeModal({
     setIngredientRows((prev) => prev.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
   }
 
+  function handlePhotoSelected(fileList: FileList | null) {
+    const file = fileList?.[0];
+    if (!file) return;
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    setPhotoRemoved(false);
+  }
+
+  function removePhoto() {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setPhotoRemoved(true);
+  }
+
+  function parseCommaList(text: string): string[] {
+    return text
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
   async function saveNewRecipe() {
     if (!name.trim()) return;
     setSaving(true);
 
     let recipeId: string;
 
+    const sharedFields = {
+      name: name.trim(),
+      servings: Number(servings) || 4,
+      course,
+      name_es: nameEs.trim() || null,
+      kosher_type: kosherType || null,
+      instructions_en: instructionsEn.trim() || null,
+      tags: parseCommaList(tagsText),
+      equipment: parseCommaList(equipmentText),
+      approx_total_minutes: approxTotalMinutes ? Number(approxTotalMinutes) || null : null,
+      prep_lead_days: prepLeadDays ? Number(prepLeadDays) || null : null,
+      is_shabbos_only: isShabbosOnly,
+      is_yom_tov: isYomTov,
+      is_pesach: isPesach,
+    };
+
     if (isEditing) {
-      const { error: updateError } = await supabase
-        .from('recipes')
-        .update({ name: name.trim(), servings: Number(servings) || 4, course })
-        .eq('id', editRecipeId);
+      const { error: updateError } = await supabase.from('recipes').update(sharedFields).eq('id', editRecipeId);
 
       if (updateError) {
         setSaving(false);
@@ -110,12 +191,7 @@ export default function NewRecipeModal({
     } else {
       const { data: recipe, error: recipeError } = await supabase
         .from('recipes')
-        .insert({
-          property_id: propertyId,
-          name: name.trim(),
-          servings: Number(servings) || 4,
-          course,
-        })
+        .insert({ property_id: propertyId, ...sharedFields })
         .select('id')
         .single();
 
@@ -125,6 +201,28 @@ export default function NewRecipeModal({
         return;
       }
       recipeId = recipe.id;
+    }
+
+    // Photo upload happens after we have a real recipeId — a brand-new
+    // recipe doesn't have one until the insert above completes.
+    if (photoFile) {
+      const path = `${propertyId}/${recipeId}-${Date.now()}.jpg`;
+      try {
+        const compressed = await compressImageToBlob(photoFile);
+        const { error: uploadError } = await supabase.storage
+          .from('recipe-photos')
+          .upload(path, compressed, { contentType: 'image/jpeg' });
+        if (!uploadError) {
+          const { data } = supabase.storage.from('recipe-photos').getPublicUrl(path);
+          await supabase.from('recipes').update({ photo_url: data.publicUrl }).eq('id', recipeId);
+        } else {
+          showToast('Recipe saved, but the photo failed to upload.', { variant: 'error' });
+        }
+      } catch {
+        showToast('Recipe saved, but the photo failed to upload.', { variant: 'error' });
+      }
+    } else if (photoRemoved) {
+      await supabase.from('recipes').update({ photo_url: null }).eq('id', recipeId);
     }
 
     const validRows = ingredientRows.filter((r) => r.name.trim());
@@ -157,6 +255,8 @@ export default function NewRecipeModal({
     onSaved();
   }
 
+  const displayedPhoto = photoPreview ?? (photoRemoved ? null : photoUrl);
+
   return (
     <div
       className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4"
@@ -188,6 +288,47 @@ export default function NewRecipeModal({
           </div>
         )}
 
+        <div className="mb-3">
+          <FieldLabel>Photo</FieldLabel>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handlePhotoSelected(e.target.files)}
+          />
+          {displayedPhoto ? (
+            <div>
+              <img
+                src={displayedPhoto}
+                alt=""
+                className="w-full h-40 object-cover rounded-2xl border border-gold-light/60"
+              />
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-xs font-medium"
+                >
+                  Replace photo
+                </button>
+                <button
+                  onClick={removePhoto}
+                  className="flex-1 py-2 rounded-full bg-cream border border-rust/40 text-rust text-xs font-medium"
+                >
+                  Remove photo
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full h-24 rounded-2xl border-2 border-dashed border-gold-light/60 text-charcoal/50 text-sm font-medium hover:bg-gold-light/10 transition"
+            >
+              + Add a photo
+            </button>
+          )}
+        </div>
+
         <div className="space-y-3 mb-3">
           <div>
             <FieldLabel>Recipe name</FieldLabel>
@@ -200,28 +341,118 @@ export default function NewRecipeModal({
             />
           </div>
           <div>
-            <FieldLabel>Course</FieldLabel>
-            <select
-              value={course}
-              onChange={(e) => setCourse(e.target.value as Course)}
-              className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
-            >
-              {COURSES.map((c) => (
-                <option key={c.key} value={c.key}>
-                  {c.icon} {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <FieldLabel>Servings</FieldLabel>
+            <FieldLabel>Spanish name</FieldLabel>
             <input
-              type="number"
-              value={servings}
-              onChange={(e) => setServings(e.target.value)}
-              placeholder="Servings"
+              value={nameEs}
+              onChange={(e) => setNameEs(e.target.value)}
+              placeholder="Optional"
               className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
             />
+          </div>
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <FieldLabel>Course</FieldLabel>
+              <select
+                value={course}
+                onChange={(e) => setCourse(e.target.value as Course)}
+                className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
+              >
+                {COURSES.map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.icon} {c.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1">
+              <FieldLabel>Kosher type</FieldLabel>
+              <select
+                value={kosherType}
+                onChange={(e) => setKosherType(e.target.value)}
+                className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
+              >
+                <option value="">Not set</option>
+                {KOSHER_TYPES.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <FieldLabel>Servings</FieldLabel>
+              <input
+                type="number"
+                value={servings}
+                onChange={(e) => setServings(e.target.value)}
+                placeholder="Servings"
+                className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
+              />
+            </div>
+            <div className="flex-1">
+              <FieldLabel>Total minutes</FieldLabel>
+              <input
+                type="number"
+                value={approxTotalMinutes}
+                onChange={(e) => setApproxTotalMinutes(e.target.value)}
+                placeholder="Optional"
+                className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
+              />
+            </div>
+            <div className="flex-1">
+              <FieldLabel>Prep lead days</FieldLabel>
+              <input
+                type="number"
+                value={prepLeadDays}
+                onChange={(e) => setPrepLeadDays(e.target.value)}
+                placeholder="Optional"
+                className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
+              />
+            </div>
+          </div>
+          <div>
+            <FieldLabel>Instructions</FieldLabel>
+            <textarea
+              value={instructionsEn}
+              onChange={(e) => setInstructionsEn(e.target.value)}
+              placeholder="Step-by-step instructions"
+              rows={5}
+              className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40 text-sm"
+            />
+          </div>
+          <div>
+            <FieldLabel>Tags</FieldLabel>
+            <input
+              value={tagsText}
+              onChange={(e) => setTagsText(e.target.value)}
+              placeholder="Comma-separated, e.g. quick-easy, oven, freezer-friendly"
+              className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40 text-sm"
+            />
+          </div>
+          <div>
+            <FieldLabel>Equipment</FieldLabel>
+            <input
+              value={equipmentText}
+              onChange={(e) => setEquipmentText(e.target.value)}
+              placeholder="Comma-separated, e.g. 9x13 pan, immersion blender"
+              className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40 text-sm"
+            />
+          </div>
+          <div className="flex gap-4 text-sm">
+            <label className="flex items-center gap-1.5">
+              <input type="checkbox" checked={isShabbosOnly} onChange={(e) => setIsShabbosOnly(e.target.checked)} />
+              Shabbos
+            </label>
+            <label className="flex items-center gap-1.5">
+              <input type="checkbox" checked={isYomTov} onChange={(e) => setIsYomTov(e.target.checked)} />
+              Yom Tov
+            </label>
+            <label className="flex items-center gap-1.5">
+              <input type="checkbox" checked={isPesach} onChange={(e) => setIsPesach(e.target.checked)} />
+              Pesach
+            </label>
           </div>
         </div>
 
