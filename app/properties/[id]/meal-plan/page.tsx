@@ -10,10 +10,11 @@ export default async function MealPlanPage({
   const { id } = await params;
   const supabase = await createClient();
 
+  // Recipes are shared across every property Racquel owns (migration 072).
   const { data: recipes } = await supabase
     .from('recipes')
-    .select('id, name, name_es, photo_url, course, kosher_type, is_shabbos_only, tags, approx_total_minutes')
-    .eq('property_id', id)
+    .select('id, name, name_es, photo_url, course, kosher_type, is_shabbos_only, tags, approx_total_minutes, recipe_property_links!inner(property_id)')
+    .eq('recipe_property_links.property_id', id)
     .order('name');
 
   return <MealPlanView propertyId={id} recipes={recipes || []} />;

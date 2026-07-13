@@ -18,10 +18,11 @@ export async function POST(request: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    // Recipes are shared across every property Racquel owns (migration 072).
     const { data: recipes, error: fetchError } = await supabase
       .from('recipes')
-      .select('id, name')
-      .eq('property_id', propertyId)
+      .select('id, name, recipe_property_links!inner(property_id)')
+      .eq('recipe_property_links.property_id', propertyId)
       .is('photo_url', null)
       .limit(limit);
 

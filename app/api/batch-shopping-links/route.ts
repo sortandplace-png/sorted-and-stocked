@@ -29,11 +29,12 @@ export async function POST(request: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // Fetch all recipes for this property
+    // Fetch all recipes visible to this property (recipes are shared across
+    // every property Racquel owns -- migration 072).
     const { data: recipes, error: recipesError } = await supabase
       .from('recipes')
-      .select('id, kosher_type')
-      .eq('property_id', propertyId);
+      .select('id, kosher_type, recipe_property_links!inner(property_id)')
+      .eq('recipe_property_links.property_id', propertyId);
 
     if (recipesError || !recipes) {
       return Response.json({ error: recipesError?.message || 'No recipes found' }, { status: 400 });

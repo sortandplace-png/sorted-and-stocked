@@ -1038,7 +1038,11 @@ export default function RecipesGridView({
                               {recipe.tags.map((tag) => (
                                 <span
                                   key={tag}
-                                  className="text-[10px] font-medium text-gold-dark bg-gold/10 px-2 py-0.5 rounded-full"
+                                  className={
+                                    tag === 'NEW'
+                                      ? 'text-[10px] font-medium text-cream bg-gold px-2 py-0.5 rounded-full'
+                                      : 'text-[10px] font-medium text-gold-dark bg-gold/10 px-2 py-0.5 rounded-full'
+                                  }
                                 >
                                   {tag}
                                 </span>

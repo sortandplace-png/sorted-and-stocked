@@ -142,7 +142,11 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
 
   async function ensureLookupsLoaded() {
     if (recipes === null) {
-      const { data } = await supabase.from('recipes').select('id, name').eq('property_id', propertyId).order('name');
+      const { data } = await supabase
+        .from('recipes')
+        .select('id, name, recipe_property_links!inner(property_id)')
+        .eq('recipe_property_links.property_id', propertyId)
+        .order('name');
       setRecipes(data ?? []);
     }
     if (inventoryItems === null) {

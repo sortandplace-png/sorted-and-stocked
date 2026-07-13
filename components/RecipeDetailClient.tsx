@@ -189,8 +189,8 @@ export default function RecipeDetailClient({
     (async () => {
       const { data } = await supabase
         .from('recipes')
-        .select('id, name, photo_url, course, is_shabbos_only, is_yom_tov, is_pesach')
-        .eq('property_id', propertyId)
+        .select('id, name, photo_url, course, is_shabbos_only, is_yom_tov, is_pesach, recipe_property_links!inner(property_id)')
+        .eq('recipe_property_links.property_id', propertyId)
         .neq('id', recipeId);
 
       const candidates = data ?? [];
@@ -653,7 +653,14 @@ export default function RecipeDetailClient({
       {recipe.tags && recipe.tags.length > 0 && (
         <div className="flex items-center gap-1 flex-wrap mb-4">
           {recipe.tags.map((tag) => (
-            <span key={tag} className="text-[10px] font-medium text-gold-dark bg-gold/10 px-2 py-0.5 rounded-full">
+            <span
+              key={tag}
+              className={
+                tag === 'NEW'
+                  ? 'text-[10px] font-medium text-cream bg-gold px-2 py-0.5 rounded-full'
+                  : 'text-[10px] font-medium text-gold-dark bg-gold/10 px-2 py-0.5 rounded-full'
+              }
+            >
               {tag}
             </span>
           ))}
@@ -879,12 +886,12 @@ export default function RecipeDetailClient({
             <button
               key={tool.slug}
               onClick={() => setOpenKitchenOpsTool(tool.slug as KitchenOpsSlug)}
-              className="flex items-center gap-2 bg-white rounded-xl2 shadow-sm shadow-charcoal/5 px-3 py-2.5 hover:shadow-md hover:shadow-charcoal/10 transition-shadow text-left"
+              className="flex flex-col items-center text-center gap-2 bg-white rounded-xl2 shadow-sm shadow-charcoal/5 px-3 py-4 hover:shadow-md hover:shadow-charcoal/10 transition-shadow"
             >
-              <span className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-gold-dark text-sm" aria-hidden="true">
+              <span className="w-11 h-11 shrink-0 flex items-center justify-center rounded-full bg-gold/15 text-lg" aria-hidden="true">
                 {tool.icon}
               </span>
-              <span className="truncate text-xs font-semibold text-charcoal">{tool.title}</span>
+              <span className="text-xs font-bold text-charcoal">{tool.title}</span>
             </button>
           ))}
         </div>

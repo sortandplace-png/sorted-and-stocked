@@ -155,10 +155,11 @@ async function getPropertyName(propertyId: string): Promise<string | null> {
 // against information_schema before assuming one) — every recipe counts.
 async function getRecipeCount(propertyId: string): Promise<number> {
   const supabase = await createClient()
+  // Recipes are shared across every property Racquel owns (migration 072).
   const { count } = await supabase
     .from('recipes')
-    .select('id', { count: 'exact', head: true })
-    .eq('property_id', propertyId)
+    .select('id, recipe_property_links!inner(property_id)', { count: 'exact', head: true })
+    .eq('recipe_property_links.property_id', propertyId)
   return count ?? 0
 }
 

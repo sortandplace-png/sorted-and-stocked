@@ -64,7 +64,10 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
         .eq('status', 'pending')
         .order('created_at'),
       supabase.from('locations').select('id, name').eq('property_id', propertyId),
-      supabase.from('recipes').select('id, name').eq('property_id', propertyId),
+      supabase
+        .from('recipes')
+        .select('id, name, recipe_property_links!inner(property_id)')
+        .eq('recipe_property_links.property_id', propertyId),
       supabase.from('borrowed_items').select('id', { count: 'exact', head: true }).eq('property_id', propertyId).eq('returned', false),
     ]);
 

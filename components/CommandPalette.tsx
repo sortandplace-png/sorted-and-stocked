@@ -77,7 +77,12 @@ export default function CommandPalette({ propertyId }: { propertyId: string }) {
       setLoading(true);
       const like = `%${q.trim()}%`;
       const [recipes, inventory, locations] = await Promise.all([
-        supabase.from('recipes').select('id, name').eq('property_id', propertyId).ilike('name', like).limit(6),
+        supabase
+          .from('recipes')
+          .select('id, name, recipe_property_links!inner(property_id)')
+          .eq('recipe_property_links.property_id', propertyId)
+          .ilike('name', like)
+          .limit(6),
         supabase
           .from('inventory_items')
           .select('id, name, location_id')

@@ -66,8 +66,8 @@ export default function GuestScalerClient({ propertyId }: { propertyId: string }
   useEffect(() => {
     supabase
       .from('recipes')
-      .select('id, name, servings')
-      .eq('property_id', propertyId)
+      .select('id, name, servings, recipe_property_links!inner(property_id)')
+      .eq('recipe_property_links.property_id', propertyId)
       .order('name')
       .then(({ data }) => setRecipeOptions(data ?? []));
   }, [propertyId, supabase]);

@@ -46,7 +46,10 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
     setLoading(true);
     // recipe_ingredients has no property_id of its own — scope through
     // this property's recipe ids first.
-    const { data: recipeRows } = await supabase.from('recipes').select('id').eq('property_id', propertyId);
+    const { data: recipeRows } = await supabase
+      .from('recipes')
+      .select('id, recipe_property_links!inner(property_id)')
+      .eq('recipe_property_links.property_id', propertyId);
     const recipeIds = (recipeRows ?? []).map((r) => r.id);
 
     if (recipeIds.length === 0) {

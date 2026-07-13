@@ -31,7 +31,10 @@ export default function DuplicateIngredientsClient({ propertyId }: { propertyId:
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data: recipeRows } = await supabase.from('recipes').select('id').eq('property_id', propertyId);
+    const { data: recipeRows } = await supabase
+      .from('recipes')
+      .select('id, recipe_property_links!inner(property_id)')
+      .eq('recipe_property_links.property_id', propertyId);
     const recipeIds = (recipeRows ?? []).map((r) => r.id);
 
     if (recipeIds.length === 0) {
