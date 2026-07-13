@@ -35,6 +35,11 @@ export default function CommandPalette({ propertyId }: { propertyId: string }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Set by onOpenRequest right before setOpen(true) and consumed by the
+  // effect below on the same open transition — lets the header's inline
+  // expand-on-click input (CommandPaletteTrigger) hand off whatever the
+  // user already typed there instead of the modal opening blank.
+  const pendingQueryRef = useRef<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -49,7 +54,8 @@ export default function CommandPalette({ propertyId }: { propertyId: string }) {
     window.addEventListener('keydown', onKeyDown);
     // Lets a plain header button open the palette too — Cmd+K alone has
     // zero discoverability for anyone who doesn't already know it exists.
-    function onOpenRequest() {
+    function onOpenRequest(e: Event) {
+      pendingQueryRef.current = (e as CustomEvent<{ query?: string }>).detail?.query ?? null;
       setOpen(true);
     }
     window.addEventListener('open-command-palette', onOpenRequest);
@@ -61,7 +67,9 @@ export default function CommandPalette({ propertyId }: { propertyId: string }) {
 
   useEffect(() => {
     if (open) {
-      setQuery('');
+      const pending = pendingQueryRef.current;
+      pendingQueryRef.current = null;
+      setQuery(pending ?? '');
       setResults([]);
       setActiveIndex(0);
       setTimeout(() => inputRef.current?.focus(), 0);

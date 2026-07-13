@@ -1402,7 +1402,16 @@ export default function MealPlanView({
                       {tCourse(key)}
                       {arr.length > 1 ? ` ${idx + 1}` : ''}
                     </span>
-                    <span className="flex-1 min-w-0 text-sm text-charcoal truncate">{name}</span>
+                    {entry.recipe_id ? (
+                      <Link
+                        href={`/properties/${propertyId}/recipes/${entry.recipe_id}`}
+                        className="flex-1 min-w-0 text-sm text-charcoal truncate underline decoration-gold-light decoration-2 underline-offset-2"
+                      >
+                        {name}
+                      </Link>
+                    ) : (
+                      <span className="flex-1 min-w-0 text-sm text-charcoal truncate">{name}</span>
+                    )}
                     {canEdit && (
                       <div className="relative shrink-0">
                         <button
@@ -1417,6 +1426,15 @@ export default function MealPlanView({
                             className="absolute z-20 top-full right-0 mt-1 w-44 rounded-xl bg-white shadow-lg shadow-charcoal/10 border border-gold-light/40 py-1"
                             onMouseLeave={() => setDishMenuOpen(null)}
                           >
+                            {entry.recipe_id && (
+                              <Link
+                                href={`/properties/${propertyId}/recipes/${entry.recipe_id}`}
+                                onClick={() => setDishMenuOpen(null)}
+                                className="block w-full text-left px-3 py-1.5 text-xs text-charcoal hover:bg-gold-light/15"
+                              >
+                                View recipe
+                              </Link>
+                            )}
                             <button
                               onClick={() => {
                                 setDishMenuOpen(null);
@@ -1536,7 +1554,17 @@ export default function MealPlanView({
                   day: 'numeric',
                 })}
               </p>
-              <p className="font-display text-lg text-charcoal mt-0.5">{displayName(quickEditDish.entry)}</p>
+              {quickEditDish.entry.recipe_id ? (
+                <Link
+                  href={`/properties/${propertyId}/recipes/${quickEditDish.entry.recipe_id}`}
+                  onClick={() => setQuickEditDish(null)}
+                  className="font-display text-lg text-charcoal mt-0.5 block underline decoration-gold-light decoration-2 underline-offset-2"
+                >
+                  {displayName(quickEditDish.entry)}
+                </Link>
+              ) : (
+                <p className="font-display text-lg text-charcoal mt-0.5">{displayName(quickEditDish.entry)}</p>
+              )}
 
               {canEdit ? (
                 <div className="mt-4 flex flex-col gap-2">
@@ -1683,7 +1711,7 @@ export default function MealPlanView({
                         }}
                         className={
                           isActive
-                            ? 'text-left px-4 py-2.5 rounded-2xl bg-gold-light/30 text-charcoal font-medium text-sm border border-gold'
+                            ? 'text-left px-4 py-2.5 rounded-2xl bg-charcoal text-cream font-semibold text-sm border border-charcoal'
                             : 'text-left px-4 py-2.5 rounded-2xl bg-cream/60 text-charcoal text-sm border border-gold-light/40'
                         }
                       >
@@ -1755,8 +1783,8 @@ export default function MealPlanView({
                           onClick={() => setPickedRecipeId(r.id)}
                           className={
                             r.id === pickedRecipeId
-                              ? 'w-full text-left px-4 py-2.5 bg-gold-light/30 text-charcoal font-medium text-sm'
-                              : 'w-full text-left px-4 py-2.5 text-charcoal text-sm hover:bg-gold-light/10'
+                              ? 'w-full text-left px-4 py-2.5 border-l-2 border-gold-active bg-gold-light/30 text-charcoal font-semibold text-sm'
+                              : 'w-full text-left px-4 py-2.5 border-l-2 border-transparent text-charcoal text-sm hover:bg-gold-light/10'
                           }
                         >
                           {recipeTitle(r)}

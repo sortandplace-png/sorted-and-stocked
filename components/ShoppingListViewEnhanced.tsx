@@ -11,7 +11,7 @@ import {
   removeShoppingItem,
   type ShoppingItemSource,
 } from '@/lib/api/shoppingList';
-import { ExternalLink, Trash2, CheckCircle2, Circle, MessageCircle, Printer, Sparkles, MoreVertical } from 'lucide-react';
+import { ExternalLink, Trash2, CheckCircle2, Circle, MessageCircle, Printer, Sparkles, MoreVertical, ShoppingCart } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import { createClient } from '@/lib/supabase/client';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
@@ -64,21 +64,22 @@ export default function ShoppingListViewEnhanced({
   const [sources, setSources] = useState<Record<string, ShoppingItemSource[]>>({});
   const [loading, setLoading] = useState(true);
   const [groupBy, setGroupBy] = useState<GroupBy>('staples-first');
-  const [showCompleted, setShowCompleted] = useState(false);
   const [expandedPills, setExpandedPills] = useState<Record<string, boolean>>({});
   const [aggregateDuplicates, setAggregateDuplicates] = useState(true);
   const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   // Collapsible sections -- same pattern as the Recipes grid's letter
   // headers (title + count + chevron), applied to whichever grouping is
-  // active (Staples/Recipe Ingredients, aisle categories, or recipes)
-  // rather than forcing a literal A-Z regrouping on top of those.
+  // active (Staples/Recipe Ingredients, aisle categories, or recipes).
+  // Seeded to "everything collapsed" on load and on groupBy switch (see
+  // the effect below) rather than starting empty, so a 124-item list
+  // doesn't dump open by default.
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-  // Checked items stay inside their real group now instead of one global
-  // "Completed" section -- each group's checked subsection starts
-  // collapsed, so this tracks which ones have been explicitly expanded
-  // (inverse of collapsedGroups, which tracks explicitly-collapsed).
-  const [expandedCheckedGroups, setExpandedCheckedGroups] = useState<Set<string>>(new Set());
+  // All checked-off items (across every group) live in one collapsed
+  // "Completed" section at the page bottom instead of inline with pending
+  // items -- matches a real shopping trip, where you don't want a crossed-
+  // off item still competing for attention next to what's left to buy.
+  const [completedExpanded, setCompletedExpanded] = useState(false);
   // Same broken-link concern as InventoryClient — photo_url existing isn't
   // the same as the image actually loading.
   const [brokenPhotoIds, setBrokenPhotoIds] = useState<Set<string>>(new Set());
@@ -114,6 +115,19 @@ export default function ShoppingListViewEnhanced({
   useEffect(() => {
     loadItems();
   }, [shoppingListId]);
+
+  // Seeds "everything collapsed" once when the list first has data, and
+  // again whenever the grouping mode changes (a fresh set of group titles
+  // the user hasn't interacted with yet) — but not on every items change,
+  // so toggling/checking an item doesn't re-collapse a group the user just
+  // opened.
+  useEffect(() => {
+    if (items.length === 0) return;
+    const pendingRaw = items.filter((i) => i.status !== 'purchased');
+    const titles = bucketByMode(pendingRaw, groupBy).map((g) => g.title);
+    setCollapsedGroups(new Set(titles));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupBy, items.length > 0]);
 
   const toggleStatus = async (itemId: string, currentStatus: string) => {
     const newStatus = (currentStatus === 'purchased' ? 'pending' : 'purchased') as 'pending' | 'purchased';
@@ -274,15 +288,6 @@ export default function ShoppingListViewEnhanced({
     });
   }
 
-  function toggleCheckedGroup(title: string) {
-    setExpandedCheckedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(title)) next.delete(title);
-      else next.add(title);
-      return next;
-    });
-  }
-
   function sourceTitle(s: ShoppingItemSource) {
     return locale === 'es' && s.recipe_name_es ? s.recipe_name_es : s.recipe_name;
   }
@@ -367,22 +372,45 @@ export default function ShoppingListViewEnhanced({
   // active groupBy mode's real groups. Shared by both buckets below so
   // checked items land in the *same* named group as their pending
   // counterparts instead of one global "Completed" pile.
-  function bucketByMode(rawItems: DisplayItem[]): { title: string; items: DisplayItem[] }[] {
+  function bucketByMode(rawItems: DisplayItem[], mode: GroupBy = groupBy): { title: string; items: DisplayItem[] }[] {
     // Aggregating collapses same-name rows from different recipes into one
     // display row, which would make "By Recipe" grouping lose its meaning
     // (a merged row can't cleanly belong to a single recipe group) — so
     // aggregation only applies outside that view.
-    const bucketItems: DisplayItem[] = groupBy === 'by-recipe' ? rawItems : aggregateItems(rawItems);
+    const bucketItems: DisplayItem[] = mode === 'by-recipe' ? rawItems : aggregateItems(rawItems);
 
-    if (groupBy === 'staples-first') {
+    if (mode === 'staples-first') {
+      // is_staple_origin depends on the item being linked to a real
+      // inventory_item that also matches a configured staple -- right now
+      // that's 0 of 132 pending items (nothing is inventory-linked yet, a
+      // separate backlog), so the old flat "everything not staple-origin
+      // dumps into one Recipe Ingredients pile" read as one long undifferen-
+      // tiated list. Sub-grouping the non-staple bucket by aisle (same
+      // grouping "By Aisle" uses) makes it useful with today's real data;
+      // the Staples bucket still surfaces first, above the aisle groups,
+      // whenever it's non-empty, so this stays correct as linking improves.
       const staples = bucketItems.filter((i) => i.is_staple_origin);
-      const recipes = bucketItems.filter((i) => !i.is_staple_origin);
-      return [
-        { title: 'Staples', items: staples },
-        { title: 'Recipe Ingredients', items: recipes },
-      ];
+      const rest = bucketItems.filter((i) => !i.is_staple_origin);
+
+      const byCategory = rest.reduce(
+        (acc, item) => {
+          const cat = item.category || 'Other';
+          (acc[cat] ??= []).push(item);
+          return acc;
+        },
+        {} as Record<string, DisplayItem[]>
+      );
+      const categoryGroups = Object.entries(byCategory)
+        .map(([title, items]) => ({ title, items }))
+        .sort((a, b) => {
+          if (a.title === 'Other') return 1;
+          if (b.title === 'Other') return -1;
+          return a.title.localeCompare(b.title);
+        });
+
+      return staples.length > 0 ? [{ title: 'Staples', items: staples }, ...categoryGroups] : categoryGroups;
     }
-    if (groupBy === 'by-recipe') {
+    if (mode === 'by-recipe') {
       const groupsMap: Record<string, { title: string; items: DisplayItem[] }> = {};
       for (const item of bucketItems) {
         const itemSources = sources[item.item_id];
@@ -415,30 +443,13 @@ export default function ShoppingListViewEnhanced({
       });
   }
 
-  // Checked items now stay inside their real group (Staples/aisle/recipe),
-  // collapsed at the bottom of it, instead of getting pulled out into one
-  // global "Completed" section at the page bottom -- matches how a real
-  // paper list works (crossed-off milk stays in "Dairy," not a separate page).
-  const groupItems = (): { title: string; items: DisplayItem[]; checkedItems: DisplayItem[] }[] => {
+  // Only pending items get grouped into Staples/aisle/recipe sections --
+  // checked-off items move out entirely into the one global Completed
+  // section at the page bottom (see the render below), so a crossed-off
+  // item stops competing for attention next to what's still left to buy.
+  const groupItems = (): { title: string; items: DisplayItem[] }[] => {
     const pendingRaw = items.filter((i) => i.status !== 'purchased');
-    const purchasedRaw = items.filter((i) => i.status === 'purchased');
-    const pendingGroups = bucketByMode(pendingRaw);
-    const checkedGroups = bucketByMode(purchasedRaw);
-    const checkedByTitle = new Map(checkedGroups.map((g) => [g.title, g.items]));
-
-    const merged = pendingGroups.map((g) => ({
-      title: g.title,
-      items: g.items,
-      checkedItems: checkedByTitle.get(g.title) ?? [],
-    }));
-    // A group that's fully checked off (no pending items left) still needs
-    // to render its header + checked section rather than vanishing.
-    for (const g of checkedGroups) {
-      if (!merged.some((m) => m.title === g.title)) {
-        merged.push({ title: g.title, items: [], checkedItems: g.items });
-      }
-    }
-    return merged;
+    return bucketByMode(pendingRaw);
   };
 
   function renderItemCard(item: DisplayItem) {
@@ -467,19 +478,18 @@ export default function ShoppingListViewEnhanced({
             {isChecked ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
           </button>
 
-          {item.is_rich_item &&
-            (item.photo_url && !brokenPhotoIds.has(item.item_id) ? (
-              <img
-                src={item.photo_url}
-                alt={item.name}
-                className="h-14 w-14 rounded object-cover flex-shrink-0 bg-gold-light/10"
-                onError={() => setBrokenPhotoIds((prev) => new Set(prev).add(item.item_id))}
-              />
-            ) : (
-              <div className="h-14 w-14 rounded bg-gold-light/10 flex items-center justify-center text-[10px] text-charcoal/40 flex-shrink-0">
-                No photo
-              </div>
-            ))}
+          {item.photo_url && !brokenPhotoIds.has(item.item_id) ? (
+            <img
+              src={item.photo_url}
+              alt={item.name}
+              className="h-14 w-14 rounded object-cover flex-shrink-0 bg-gold-light/10"
+              onError={() => setBrokenPhotoIds((prev) => new Set(prev).add(item.item_id))}
+            />
+          ) : (
+            <div className="h-14 w-14 rounded bg-gold-light/10 flex items-center justify-center text-[10px] text-charcoal/40 flex-shrink-0">
+              No photo
+            </div>
+          )}
 
           <div className="flex-1 min-w-0">
             {/* Name, bilingual EN/ES stacked */}
@@ -601,15 +611,6 @@ export default function ShoppingListViewEnhanced({
                 className="h-4 w-4 accent-gold-dark rounded"
               />
             </label>
-            <label className="flex items-center justify-between text-sm text-charcoal">
-              <span>Hide checked items</span>
-              <input
-                type="checkbox"
-                checked={!showCompleted}
-                onChange={(e) => setShowCompleted(!e.target.checked)}
-                className="h-4 w-4 accent-gold-dark rounded"
-              />
-            </label>
             <button
               onClick={() => {
                 clearChecked();
@@ -677,16 +678,16 @@ export default function ShoppingListViewEnhanced({
         ))}
       </div>
 
-      {/* Items Grouped -- checked items stay inside their own group's
-          collapsed checked subsection instead of one global bottom section.
-          Each group is its own bordered card in a 2-column desktop grid
-          (1-column on mobile), matching StaplesTab's card treatment so both
-          tabs feel like the same app rather than two different styles. */}
+      {/* Items Grouped -- collapsed by default (title + count only) until
+          tapped open. Each group is its own bordered card in a 2-column
+          desktop grid (1-column on mobile), matching StaplesTab's card
+          treatment so both tabs feel like the same app rather than two
+          different styles. Checked-off items don't appear here at all --
+          they move to the single Completed section below. */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {groups.map(group => {
-          if (group.items.length === 0 && group.checkedItems.length === 0) return null;
+          if (group.items.length === 0) return null;
           const collapsed = collapsedGroups.has(group.title);
-          const checkedExpanded = expandedCheckedGroups.has(group.title);
           return (
             <div
               key={group.title}
@@ -701,32 +702,38 @@ export default function ShoppingListViewEnhanced({
                 <span className="flex-1 border-t border-gold-light/40" />
                 <span className="text-charcoal/40 text-sm">{collapsed ? '▸' : '▾'}</span>
               </button>
-              {!collapsed && (
-                <div className="space-y-2">
-                  {group.items.map(renderItemCard)}
-                  {showCompleted && group.checkedItems.length > 0 && (
-                    <div className="pt-1">
-                      <button
-                        onClick={() => toggleCheckedGroup(group.title)}
-                        className="w-full flex items-center justify-between text-xs font-medium text-charcoal/50 px-3 py-1.5"
-                      >
-                        <span>Checked ({group.checkedItems.length})</span>
-                        <span>{checkedExpanded ? '▾' : '▸'}</span>
-                      </button>
-                      {checkedExpanded && (
-                        <div className="space-y-2 mt-1">{group.checkedItems.map(renderItemCard)}</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+              {!collapsed && <div className="space-y-2">{group.items.map(renderItemCard)}</div>}
             </div>
           );
         })}
       </div>
 
+      {/* Completed -- every checked-off item, regardless of group, in one
+          collapsed section at the bottom. Cards already render checked
+          items at reduced opacity with strikethrough text (renderItemCard's
+          isChecked styling), unchanged here. */}
+      {completedItems.length > 0 && (
+        <div className="print:hidden bg-white rounded-2xl border border-gold-light/40 shadow-sm shadow-charcoal/5 p-4">
+          <button
+            onClick={() => setCompletedExpanded((v) => !v)}
+            className="w-full flex items-center gap-2 text-left"
+          >
+            <span className="font-display text-lg text-charcoal/60">Completed</span>
+            <span className="text-xs text-charcoal/40">({completedItems.length})</span>
+            <span className="flex-1 border-t border-gold-light/40" />
+            <span className="text-charcoal/40 text-sm">{completedExpanded ? '▾' : '▸'}</span>
+          </button>
+          {completedExpanded && (
+            <div className="space-y-2 mt-3">{aggregateItems(completedItems).map(renderItemCard)}</div>
+          )}
+        </div>
+      )}
+
       {items.length === 0 && (
         <div className="text-center py-12 px-4">
+          <div className="mx-auto mb-3 w-14 h-14 rounded-full bg-gold-light/25 flex items-center justify-center">
+            <ShoppingCart className="h-6 w-6 text-gold-dark" strokeWidth={1.75} aria-hidden="true" />
+          </div>
           <p className="text-sm text-charcoal/60 mb-1">{t('emptyTitle')}</p>
           <p className="text-xs text-charcoal/40 mb-4">{t('emptySubtitle')}</p>
           <button

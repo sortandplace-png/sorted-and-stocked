@@ -81,8 +81,10 @@ export default function PropertySwitcher({
                 type="button"
                 role="menuitem"
                 onClick={() => switchTo(p.id)}
-                className={`w-full flex items-center justify-between gap-2 px-4 py-2 text-sm text-left whitespace-nowrap transition-colors ${
-                  active ? 'text-charcoal font-medium bg-gold-light/20' : 'text-charcoal/70 hover:bg-gold-light/10'
+                className={`w-full flex items-center justify-between gap-2 px-4 py-2 text-sm text-left whitespace-nowrap transition-colors border-l-2 ${
+                  active
+                    ? 'text-charcoal font-semibold bg-gold-light/20 border-gold-active'
+                    : 'text-charcoal/70 hover:bg-gold-light/10 border-transparent'
                 }`}
               >
                 <span className="font-display truncate">{p.name}</span>

@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientUpdate } from '@/lib/resilient-write';
+import { Lightbulb } from 'lucide-react';
 import ShoppingListView, { ShoppingListItem } from '@/components/ShoppingListView';
 import ShoppingListViewEnhanced from '@/components/ShoppingListViewEnhanced';
 import StaplesTab from '@/components/StaplesTab';
@@ -149,34 +150,49 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
     }
   }
 
-  async function addCustomItem() {
-    const name = newItemName.trim();
-    if (!name || !listId) return;
-    setAdding(true);
+  // Supplying the id ourselves means the optimistic local row and the real
+  // server row share one id from the start, so a later toggle/update by id
+  // always finds the right row instead of the stale local-only one. Shared
+  // by the typed "add item" bar and the "Add X" button on a pairing nudge —
+  // same insert, two entry points.
+  async function addItemByName(name: string): Promise<boolean> {
+    const trimmed = name.trim();
+    if (!trimmed || !listId) return false;
 
-    // Supplying the id ourselves means the optimistic local row and the
-    // real server row share one id from the start, so a later toggle/update
-    // by id always finds the right row instead of the stale local-only one.
     const newId = crypto.randomUUID();
     const payload = {
       id: newId,
       shopping_list_id: listId,
-      name,
+      name: trimmed,
       category: null,
       qty_needed: 1,
       status: 'pending' as const,
     };
 
     setItems((prev) => [...prev, payload]);
-    setNewItemName('');
 
     const result = await resilientInsert(supabase, 'shopping_list_items', payload);
-    setAdding(false);
     if (!result.ok) {
       setError(result.error);
       showToast(t('failedToAdd'), { variant: 'error' });
       setItems((prev) => prev.filter((i) => i.id !== newId));
+      return false;
     }
+    return true;
+  }
+
+  async function addCustomItem() {
+    if (!newItemName.trim()) return;
+    setAdding(true);
+    const name = newItemName;
+    setNewItemName('');
+    await addItemByName(name);
+    setAdding(false);
+  }
+
+  async function addSuggestedItem(name: string) {
+    const ok = await addItemByName(name);
+    if (ok) showToast(`Added ${name} to your list.`, { variant: 'success' });
   }
 
   if (loading) return <SkeletonList />;
@@ -224,15 +240,26 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
       )}
 
       {!dismissedPairingNudge && missingPairs.length > 0 && (
-        <div className="mx-4 max-w-md lg:max-w-6xl md:mx-auto mb-3 bg-gold-light/20 border border-gold-light rounded-2xl p-3 flex items-start justify-between gap-2">
-          <p className="text-sm text-charcoal">
-            {missingPairs.map((p, i) => (
-              <span key={p.missing}>
-                {i > 0 && ' · '}
-                Forgot <span className="font-medium">{p.missing}</span>? You have {p.have}.
-              </span>
+        <div className="mx-4 max-w-md lg:max-w-6xl md:mx-auto mb-3 bg-gold-light/15 border border-gold-light/60 rounded-2xl p-3 flex items-start gap-2.5">
+          <div className="shrink-0 mt-0.5 w-6 h-6 rounded-full bg-gold-light/40 flex items-center justify-center">
+            <Lightbulb className="h-3.5 w-3.5 text-gold-dark" strokeWidth={1.75} aria-hidden="true" />
+          </div>
+          <div className="flex-1 space-y-2">
+            {missingPairs.map((p) => (
+              <div key={p.missing} className="flex items-center justify-between gap-2 flex-wrap">
+                <p className="text-sm text-charcoal">
+                  You have <span className="font-medium">{p.have}</span> in stock but no{' '}
+                  <span className="font-medium">{p.missing}</span> on your list — commonly paired, want to add it?
+                </p>
+                <button
+                  onClick={() => addSuggestedItem(p.missing)}
+                  className="shrink-0 text-xs font-medium text-gold-dark bg-white border border-gold-light/60 px-3 py-1 rounded-full hover:bg-gold-light/20 transition-colors"
+                >
+                  Add {p.missing}
+                </button>
+              </div>
             ))}
-          </p>
+          </div>
           <button
             onClick={() => setDismissedPairingNudge(true)}
             className="text-charcoal/40 hover:text-charcoal text-xs shrink-0"
