@@ -17,6 +17,7 @@ import LocationPhotoUpload from '@/components/LocationPhotoUpload';
 import DuplicateItemWarning from '@/components/DuplicateItemWarning';
 import InventoryBracha from '@/components/InventoryBracha';
 import { FilterPill, FilterPillRow } from '@/components/recipes/FilterPill';
+import { compressImageToBlob } from '@/lib/compress-image';
 import { Camera, AlertTriangle, Clock } from 'lucide-react';
 
 type StorageLocation = {
@@ -137,6 +138,11 @@ export default function InventoryClient({
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<ItemFormState | null>(null); // null = form closed
   const [saving, setSaving] = useState(false);
+  // Held here rather than in ItemFormSheet's own state because the
+  // duplicate-item warning flow (handleAddAnyway) can re-invoke performSave
+  // after the sheet's initial onSave call, and needs the same pending file.
+  const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
+  const [pendingPhotoRemoved, setPendingPhotoRemoved] = useState(false);
   const [photoPromptItem, setPhotoPromptItem] = useState<{ id: string; name: string } | null>(null);
   // Arrived here via a location QR scan — start filtered to that area, but
   // let the user clear it to see everything.
@@ -319,9 +325,13 @@ export default function InventoryClient({
     const defaultLocationId =
       locationFilter && locationFilter !== FAVORITES ? locationFilter : locations[0]?.id ?? '';
     setForm({ ...EMPTY_FORM, location_id: defaultLocationId });
+    setPendingPhotoFile(null);
+    setPendingPhotoRemoved(false);
   }
 
   function openEditForm(item: InventoryItem) {
+    setPendingPhotoFile(null);
+    setPendingPhotoRemoved(false);
     setForm({
       id: item.id,
       name: item.name,
@@ -413,6 +423,33 @@ export default function InventoryClient({
     setSaving(true);
     setError(null);
 
+    // Computed up front (rather than only on insert, as before) so the
+    // photo upload path below has a stable id to key its storage path on
+    // whether this is a new item or an edit.
+    const id = form.id ?? crypto.randomUUID();
+
+    let photoUrl = form.photo_url.trim() || null;
+    let photoUploadError: string | null = null;
+    if (pendingPhotoFile) {
+      const path = `${propertyId}/${id}-${Date.now()}.jpg`;
+      try {
+        const compressed = await compressImageToBlob(pendingPhotoFile);
+        const { error: uploadError } = await supabase.storage
+          .from('item-photos')
+          .upload(path, compressed, { contentType: 'image/jpeg' });
+        if (!uploadError) {
+          const { data } = supabase.storage.from('item-photos').getPublicUrl(path);
+          photoUrl = data.publicUrl;
+        } else {
+          photoUploadError = uploadError.message;
+        }
+      } catch (err) {
+        photoUploadError = err instanceof Error ? err.message : 'Unknown error';
+      }
+    } else if (pendingPhotoRemoved) {
+      photoUrl = null;
+    }
+
     const payload = {
       property_id: propertyId,
       name: form.name.trim(),
@@ -424,34 +461,38 @@ export default function InventoryClient({
       supplier: form.supplier.trim() || null,
       unit_cost: form.unit_cost.trim() ? Number(form.unit_cost) : null,
       reorder_link: form.reorder_link.trim() || null,
-      photo_url: form.photo_url.trim() || null,
+      photo_url: photoUrl,
       expiration_date: form.expiration_date || null,
       opened_date: form.opened_date || null,
       print_label: form.print_label,
     };
 
     if (form.id) {
-      const result = await resilientUpdate(supabase, 'inventory_items', { id: form.id }, payload);
+      const result = await resilientUpdate(supabase, 'inventory_items', { id }, payload);
       setSaving(false);
       if (!result.ok) {
         setError(result.error);
         showToast('Failed to save item.', { variant: 'error' });
         return;
       }
-      setItems((prev) =>
-        prev.map((i) => (i.id === form.id ? { ...i, ...payload, id: form.id! } : i))
-      );
-      showToast(result.queued ? 'Saved — will sync when back online.' : 'Item saved.', {
-        variant: 'success',
-      });
+      setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...payload, id } : i)));
+      if (photoUploadError) {
+        showToast(`Item saved, but the photo failed to upload: ${photoUploadError}`, {
+          variant: 'error',
+          durationMs: 8000,
+        });
+      } else {
+        showToast(result.queued ? 'Saved — will sync when back online.' : 'Item saved.', {
+          variant: 'success',
+        });
+      }
     } else {
       // Supplying the id ourselves (rather than letting the DB default
       // generate one) means the local optimistic row and the real server
       // row share the same id from the start — no separate id-reconciling
       // re-fetch needed afterward, and no risk of that re-fetch matching
       // the wrong row when another item shares the same name.
-      const newId = crypto.randomUUID();
-      const result = await resilientInsert(supabase, 'inventory_items', { ...payload, id: newId });
+      const result = await resilientInsert(supabase, 'inventory_items', { ...payload, id });
       setSaving(false);
       if (!result.ok) {
         setError(result.error);
@@ -460,16 +501,25 @@ export default function InventoryClient({
       }
       // qr_code is DB-trigger-generated on insert — unknown here until the
       // next reload; null is accurate, not a placeholder to fix later.
-      setItems((prev) => [...prev, { ...payload, id: newId, qr_code: null }]);
-      showToast(result.queued ? 'Added — will sync when back online.' : 'Item added.', {
-        variant: 'success',
-      });
+      setItems((prev) => [...prev, { ...payload, id, qr_code: null }]);
+      if (photoUploadError) {
+        showToast(`Item added, but the photo failed to upload: ${photoUploadError}`, {
+          variant: 'error',
+          durationMs: 8000,
+        });
+      } else {
+        showToast(result.queued ? 'Added — will sync when back online.' : 'Item added.', {
+          variant: 'success',
+        });
+      }
 
       if (!result.queued && !payload.photo_url) {
-        setPhotoPromptItem({ id: newId, name: payload.name });
+        setPhotoPromptItem({ id, name: payload.name });
       }
     }
 
+    setPendingPhotoFile(null);
+    setPendingPhotoRemoved(false);
     setForm(null);
   }
 
@@ -994,10 +1044,12 @@ export default function InventoryClient({
             <a
               key={tool.slug}
               href={`/properties/${propertyId}/tools/${tool.slug}`}
-              className="flex items-center gap-1.5 bg-white rounded-xl border border-gold-light/40 px-3 py-2 text-xs text-charcoal hover:border-gold transition-colors"
+              className="flex flex-col items-center text-center gap-2 bg-white rounded-xl2 shadow-sm shadow-charcoal/5 px-3 py-4 hover:shadow-md hover:shadow-charcoal/10 transition-shadow"
             >
-              <span aria-hidden="true">{tool.icon}</span>
-              <span className="truncate">{tool.title}</span>
+              <span className="w-11 h-11 shrink-0 flex items-center justify-center rounded-full bg-gold/15 text-lg" aria-hidden="true">
+                {tool.icon}
+              </span>
+              <span className="text-xs font-bold text-charcoal">{tool.title}</span>
             </a>
           ))}
         </div>
@@ -1017,6 +1069,10 @@ export default function InventoryClient({
           historyLoading={historyLoading}
           categoryDatalistId={categoryDatalistId}
           propertyId={propertyId}
+          onPhotoChange={(file, removed) => {
+            setPendingPhotoFile(file);
+            setPendingPhotoRemoved(removed);
+          }}
         />
       )}
 
@@ -1148,6 +1204,7 @@ function ItemFormSheet({
   historyLoading,
   categoryDatalistId,
   propertyId,
+  onPhotoChange,
 }: {
   form: ItemFormState;
   locations: StorageLocation[];
@@ -1161,9 +1218,29 @@ function ItemFormSheet({
   historyLoading: boolean;
   categoryDatalistId: string;
   propertyId: string;
+  onPhotoChange: (file: File | null, removed: boolean) => void;
 }) {
   const restockInterval = restockIntervalDays(history);
   const lastPurchased = lastPurchasedDate(history);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoRemoved, setPhotoRemoved] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function handlePhotoSelected(fileList: FileList | null) {
+    const file = fileList?.[0];
+    if (!file) return;
+    setPhotoPreview(URL.createObjectURL(file));
+    setPhotoRemoved(false);
+    onPhotoChange(file, false);
+  }
+
+  function removePhoto() {
+    setPhotoPreview(null);
+    setPhotoRemoved(true);
+    onPhotoChange(null, true);
+  }
+
+  const displayedPhoto = photoPreview ?? (photoRemoved ? null : form.photo_url || null);
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4" onClick={onCancel}>
@@ -1280,12 +1357,47 @@ function ItemFormSheet({
           </div>
 
           <div>
-            <FieldLabel>Photo URL</FieldLabel>
+            <FieldLabel>Photo</FieldLabel>
             <input
-              className={fieldClass}
-              value={form.photo_url}
-              onChange={(e) => onChange({ ...form, photo_url: e.target.value })}
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handlePhotoSelected(e.target.files)}
             />
+            {displayedPhoto ? (
+              <div>
+                <img
+                  src={displayedPhoto}
+                  alt=""
+                  className="w-full h-40 object-cover rounded-2xl border border-gold-light/60"
+                />
+                <div className="flex gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-xs font-medium"
+                  >
+                    Replace photo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    className="flex-1 py-2 rounded-full bg-cream border border-rust/40 text-rust text-xs font-medium"
+                  >
+                    Remove photo
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full h-24 rounded-2xl border-2 border-dashed border-gold-light/60 text-charcoal/50 text-sm font-medium hover:bg-gold-light/10 transition"
+              >
+                + Add a photo
+              </button>
+            )}
           </div>
 
           <div>
