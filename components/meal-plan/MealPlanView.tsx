@@ -666,6 +666,35 @@ export default function MealPlanView({
       .lte('plan_date', fmt(nextWeekEnd));
     const existingKeys = new Set((existing ?? []).map((e) => `${e.plan_date}:${e.course}`));
 
+    // Kids Platter/dip/dessert re-roll from the pool instead of cloning
+    // verbatim (every other course still clones as-is). A verbatim copy let
+    // a single "stuck" historical pick (e.g. Grapes) propagate forward
+    // indefinitely, since repeat-forward was the only path in the app that
+    // never consulted least-recently-used. Needs the real recipe-use
+    // history to rotate correctly -- same pagination as extendMealPlan,
+    // since this table is past PostgREST's 1000-row cap for this property.
+    const ROTATION_ELIGIBLE_COURSES: Course[] = ['kids_platter', 'dip', 'dessert'];
+    const lastUsedMap = new Map<string, string>();
+    {
+      const PAGE = 1000;
+      let from = 0;
+      while (true) {
+        const { data: page, error: pageError } = await supabase
+          .from('meal_plan_entries')
+          .select('plan_date, recipe_id')
+          .eq('property_id', propertyId)
+          .range(from, from + PAGE - 1);
+        if (pageError || !page) break;
+        for (const e of page) {
+          if (!e.recipe_id) continue;
+          const prev = lastUsedMap.get(e.recipe_id);
+          if (!prev || e.plan_date > prev) lastUsedMap.set(e.recipe_id, e.plan_date);
+        }
+        if (page.length < PAGE) break;
+        from += PAGE;
+      }
+    }
+
     // Tracks the next free sequence per (date, course) within this run so
     // copying a source day with 2 dips doesn't insert both at the default
     // sequence (1) and collide with each other.
@@ -683,13 +712,30 @@ export default function MealPlanView({
       if (existingKeys.has(`${newDateStr}:${entry.course}`)) continue;
       // Standing rule: Kids Platter never appears Fri/Sat/Sun.
       if (entry.course === 'kids_platter' && (newDow === 0 || newDow === 5 || newDow === 6)) continue;
-      // Nine Days: repeatWeekForward copies recipe_id verbatim rather than
-      // re-selecting from a pool (unlike extendMealPlan), so a meat entry
-      // landing on a non-Shabbos date in the window gets skipped here
-      // instead of filtered out beforehand -- leaves a real gap rather than
-      // copying it through.
+
       const isShabbosDay = newDow === 5 || newDow === 6;
-      if (!isShabbosDay && isInNineDays(newDateStr, nineDaysWindows) && isMeat(entry.recipes?.kosher_type)) {
+      const rotationEligible = !!entry.recipe_id && ROTATION_ELIGIBLE_COURSES.includes(entry.course);
+
+      let recipeId: string | null = entry.recipe_id;
+      if (rotationEligible) {
+        const pool = recipes.filter((r) => {
+          if (r.course !== entry.course) return false;
+          if (r.is_shabbos_only && !isShabbosDay) return false;
+          // Nine Days: no meat on a non-Shabbos date inside 1-9 Av.
+          if (isMeat(r.kosher_type) && !isShabbosDay && isInNineDays(newDateStr, nineDaysWindows)) return false;
+          return true;
+        });
+        const picked = pickLeastRecentlyUsed(pool, lastUsedMap, newDateStr, favoriteRecipeIds);
+        // No eligible replacement (e.g. every candidate is meat inside the
+        // Nine Days) -- leave a real gap rather than cloning a pick that
+        // might violate the rule the pool was just filtered for.
+        if (!picked) continue;
+        recipeId = picked.id;
+      } else if (!isShabbosDay && isInNineDays(newDateStr, nineDaysWindows) && isMeat(entry.recipes?.kosher_type)) {
+        // Nine Days: non-rotation courses still clone recipe_id verbatim,
+        // so a meat entry landing on a non-Shabbos date in the window gets
+        // skipped here instead of filtered out beforehand -- leaves a real
+        // gap rather than copying it through.
         continue;
       }
 
@@ -697,12 +743,12 @@ export default function MealPlanView({
       const sequence = (seqByDateCourse[seqKey] ?? 0) + 1;
       seqByDateCourse[seqKey] = sequence;
 
-      const payload = entry.recipe_id
+      const payload = recipeId
         ? {
             property_id: propertyId,
             plan_date: newDateStr,
             course: entry.course,
-            recipe_id: entry.recipe_id,
+            recipe_id: recipeId,
             meal_slot: entry.meal_slot,
             sequence,
           }
