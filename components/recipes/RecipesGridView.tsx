@@ -391,6 +391,11 @@ export default function RecipesGridView({
     return [...recipes].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 3);
   }, [recipes]);
 
+  // ExpiringSoonRecipe comes from a separate RPC (get_expiring_soon_recipes)
+  // that doesn't return is_pesach -- rather than widen that RPC, look it up
+  // against the recipe list already loaded for this page, which does.
+  const pesachIds = useMemo(() => new Set(recipes.filter((r) => r.is_pesach).map((r) => r.id)), [recipes]);
+
   const kosherCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     // Parve counts every recipe whose kosher_type starts with "Parve" (that
@@ -814,7 +819,9 @@ export default function RecipesGridView({
                     <Link
                       key={r.recipe_id}
                       href={`/properties/${propertyId}/recipes/${r.recipe_id}`}
-                      className="shrink-0 w-28 flex items-center gap-1.5 bg-white rounded-lg border border-gold-light/40 shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors p-1.5"
+                      className={`shrink-0 w-28 flex items-center gap-1.5 rounded-lg border shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors p-1.5 ${
+                        pesachIds.has(r.recipe_id) ? 'bg-gold/[0.08] border-gold/40' : 'bg-white border-gold-light/40'
+                      }`}
                     >
                       <div className="w-8 h-8 rounded bg-cream flex items-center justify-center shrink-0">
                         {r.photo_url ? (
@@ -834,7 +841,9 @@ export default function RecipesGridView({
                     <Link
                       key={r.recipe_id}
                       href={`/properties/${propertyId}/recipes/${r.recipe_id}`}
-                      className="shrink-0 w-40 bg-white rounded-xl border border-gold-light/40 shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors"
+                      className={`shrink-0 w-40 rounded-xl border shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors ${
+                        pesachIds.has(r.recipe_id) ? 'bg-gold/[0.08] border-gold/40' : 'bg-white border-gold-light/40'
+                      }`}
                     >
                       <div className="w-full h-20 bg-cream flex items-center justify-center">
                         {r.photo_url ? (
@@ -870,7 +879,9 @@ export default function RecipesGridView({
                   <Link
                     key={r.id}
                     href={`/properties/${propertyId}/recipes/${r.id}`}
-                    className="shrink-0 lg:shrink lg:flex lg:items-center lg:gap-2 w-32 lg:w-full bg-white rounded-xl border border-gold-light/40 shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors"
+                    className={`shrink-0 lg:shrink lg:flex lg:items-center lg:gap-2 w-32 lg:w-full rounded-xl border shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors ${
+                      r.is_pesach ? 'bg-gold/[0.08] border-gold/40' : 'bg-white border-gold-light/40'
+                    }`}
                   >
                     <div className="w-full lg:w-12 h-20 lg:h-12 bg-cream flex items-center justify-center shrink-0">
                       {r.photo_url ? (
@@ -917,7 +928,9 @@ export default function RecipesGridView({
                       <Link
                         key={recipe.id}
                         href={`/properties/${propertyId}/recipes/${recipe.id}`}
-                        className="block rounded-xl2 overflow-hidden border border-gold-light/40 bg-white shadow-sm shadow-charcoal/5 hover:border-gold transition-colors"
+                        className={`block rounded-xl2 overflow-hidden border shadow-sm shadow-charcoal/5 hover:border-gold transition-colors ${
+                          recipe.is_pesach ? 'bg-gold/[0.08] border-gold/40' : 'bg-white border-gold-light/40'
+                        }`}
                       >
                         <div className="relative w-full aspect-[4/3] bg-cream">
                           {recipe.photo_url && isDirectImageUrl(recipe.photo_url) ? (
