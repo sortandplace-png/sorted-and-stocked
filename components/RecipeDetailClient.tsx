@@ -23,6 +23,7 @@ import IngredientShoppingLink from '@/components/IngredientShoppingLink';
 import { fetchRecipeWithIngredients } from '@/lib/recipe-actions';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
+import { checkRecipeDeletable } from '@/lib/recipe-delete-guard';
 
 // Confirmed each of these has a real page + component before linking to it
 // (checked directly against the file system, not assumed) — Kitchen Timer,
@@ -155,6 +156,8 @@ export default function RecipeDetailClient({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [checkingDelete, setCheckingDelete] = useState(false);
+  const [deleteBlockMessage, setDeleteBlockMessage] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -503,13 +506,21 @@ export default function RecipeDetailClient({
                   </button>
                   {canManage(role) && (
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         setShowMenu(false);
-                        setConfirmingDelete(true);
+                        setCheckingDelete(true);
+                        const check = await checkRecipeDeletable(supabase, recipeId);
+                        setCheckingDelete(false);
+                        if (!check.deletable) {
+                          setDeleteBlockMessage(check.message);
+                        } else {
+                          setConfirmingDelete(true);
+                        }
                       }}
-                      className="w-full min-h-11 flex items-center gap-2 px-4 text-sm text-rust hover:bg-rust/5 transition border-t border-gold-light/40"
+                      disabled={checkingDelete}
+                      className="w-full min-h-11 flex items-center gap-2 px-4 text-sm text-rust hover:bg-rust/5 transition border-t border-gold-light/40 disabled:opacity-40"
                     >
-                      <Trash2 size={14} strokeWidth={1.75} /> Delete
+                      <Trash2 size={14} strokeWidth={1.75} /> {checkingDelete ? 'Checking…' : 'Delete'}
                     </button>
                   )}
                 </div>
@@ -518,6 +529,21 @@ export default function RecipeDetailClient({
           </div>
         </div>
       </div>
+
+      {deleteBlockMessage && (
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4" onClick={() => setDeleteBlockMessage(null)}>
+          <div className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-sm mx-auto" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-display text-xl text-charcoal mb-1">Can't delete this recipe</h2>
+            <p className="text-sm text-charcoal/60 mb-4">{deleteBlockMessage}</p>
+            <button
+              onClick={() => setDeleteBlockMessage(null)}
+              className="w-full py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
 
       {confirmingDelete && (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4" onClick={() => setConfirmingDelete(false)}>
@@ -558,6 +584,17 @@ export default function RecipeDetailClient({
             unit: i.unit ?? '',
             category: i.category ?? '',
           }))}
+          initialNameEs={recipe.name_es}
+          initialKosherType={recipe.kosher_type}
+          initialInstructionsEn={recipe.instructions_en}
+          initialTags={recipe.tags}
+          initialEquipment={recipe.equipment}
+          initialApproxTotalMinutes={recipe.approx_total_minutes}
+          initialPrepLeadDays={recipe.prep_lead_days}
+          initialIsShabbosOnly={recipe.is_shabbos_only}
+          initialIsYomTov={recipe.is_yom_tov}
+          initialIsPesach={recipe.is_pesach}
+          initialPhotoUrl={recipe.photo_url}
           onClose={() => setShowEditModal(false)}
           onSaved={() => {
             setShowEditModal(false);

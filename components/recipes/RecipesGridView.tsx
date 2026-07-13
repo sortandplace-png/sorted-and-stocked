@@ -38,6 +38,7 @@ import { getRecipeIcon } from '@/lib/recipe-icons';
 import { COURSES, type Course } from '@/lib/course-constants';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { createClient } from '@/lib/supabase/client';
+import { checkRecipeDeletable } from '@/lib/recipe-delete-guard';
 import NewRecipeModal from '@/components/NewRecipeModal';
 import FloatingKitchenTimerButton from '@/components/FloatingKitchenTimerButton';
 import { useToast } from '@/components/Toast';
@@ -227,6 +228,8 @@ export default function RecipesGridView({
   const [cardMenuOpenId, setCardMenuOpenId] = useState<string | null>(null);
   const [cardActionBusy, setCardActionBusy] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [checkingDeleteId, setCheckingDeleteId] = useState<string | null>(null);
+  const [deleteBlockMessage, setDeleteBlockMessage] = useState<string | null>(null);
 
   // Per-person favorites (recipe_favorites.user_id) — not shared across the
   // household, same convention as inventory_item_favorites.
@@ -980,15 +983,23 @@ export default function RecipesGridView({
                                       {cardActionBusy === recipe.id ? 'Duplicating…' : 'Duplicate'}
                                     </button>
                                     <button
-                                      onClick={(e) => {
+                                      onClick={async (e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         setCardMenuOpenId(null);
-                                        setConfirmDeleteId(recipe.id);
+                                        setCheckingDeleteId(recipe.id);
+                                        const check = await checkRecipeDeletable(supabase, recipe.id);
+                                        setCheckingDeleteId(null);
+                                        if (!check.deletable) {
+                                          setDeleteBlockMessage(check.message);
+                                        } else {
+                                          setConfirmDeleteId(recipe.id);
+                                        }
                                       }}
-                                      className="w-full min-h-11 flex items-center gap-2 px-3 text-sm text-rust hover:bg-rust/5 transition border-t border-gold-light/40"
+                                      disabled={checkingDeleteId === recipe.id}
+                                      className="w-full min-h-11 flex items-center gap-2 px-3 text-sm text-rust hover:bg-rust/5 transition border-t border-gold-light/40 disabled:opacity-40"
                                     >
-                                      <Trash2 size={14} strokeWidth={1.75} /> Delete
+                                      <Trash2 size={14} strokeWidth={1.75} /> {checkingDeleteId === recipe.id ? 'Checking…' : 'Delete'}
                                     </button>
                                   </div>
                                 </>
@@ -1054,6 +1065,27 @@ export default function RecipesGridView({
             router.refresh();
           }}
         />
+      )}
+
+      {deleteBlockMessage && (
+        <div
+          className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4"
+          onClick={() => setDeleteBlockMessage(null)}
+        >
+          <div
+            className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-sm mx-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="font-display text-xl text-charcoal mb-1">Can't delete this recipe</h2>
+            <p className="text-sm text-charcoal/60 mb-4">{deleteBlockMessage}</p>
+            <button
+              onClick={() => setDeleteBlockMessage(null)}
+              className="w-full py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
       )}
 
       {confirmDeleteId && (
