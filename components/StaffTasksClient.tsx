@@ -102,6 +102,24 @@ export default function StaffTasksClient({ propertyId }: { propertyId: string })
       return;
     }
     showToast(result.queued ? 'Saved — will sync when back online.' : 'Task added.', { variant: 'success' });
+
+    // Only fire when the write actually went through -- a queued (offline)
+    // insert has no real row yet, and there's no connection to reach this
+    // route with anyway. Fire-and-forget: a failed/skipped text shouldn't
+    // block or error out the task-creation flow itself.
+    if (!result.queued && assignedTo) {
+      fetch('/api/sms/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          propertyId,
+          trigger: 'task_assigned',
+          assignedToMembershipId: assignedTo,
+          taskTitle: title.trim(),
+        }),
+      }).catch(() => {});
+    }
+
     setTitle('');
     setAssignedTo('');
     setDueDate('');

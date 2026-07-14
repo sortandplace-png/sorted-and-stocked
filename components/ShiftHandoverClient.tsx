@@ -211,6 +211,21 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
       result.queued ? 'Saved — will sync when back online.' : 'Handover note left for the next shift.',
       { variant: 'success' }
     );
+
+    // Same fire-and-forget precedent as the task-assignment hook -- only
+    // when the write actually landed, never blocks the handover flow itself.
+    if (!result.queued) {
+      fetch('/api/sms/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          propertyId,
+          trigger: 'shift_handover',
+          noteText: noteText.trim() || 'New shift handover (photo/audio) added.',
+        }),
+      }).catch(() => {});
+    }
+
     resetForm();
     loadHandovers();
   }
