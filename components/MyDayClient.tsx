@@ -14,7 +14,9 @@ import { resilientUpdate } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import ShiftHandoverClient from '@/components/ShiftHandoverClient';
-import { Package, ShoppingCart } from 'lucide-react';
+import ToolModal from '@/components/ToolModal';
+import KitchenOpsToolModal from '@/components/KitchenOpsToolModal';
+import { Camera, ShoppingCart, Timer } from 'lucide-react';
 
 type Status = 'open' | 'in_progress' | 'done';
 type Priority = 'low' | 'medium' | 'high';
@@ -43,6 +45,8 @@ const PRIORITY_STYLE: Record<Priority, string> = {
 export default function MyDayClient({ propertyId }: { propertyId: string }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCapture, setShowCapture] = useState(false);
+  const [showKitchenTimer, setShowKitchenTimer] = useState(false);
   const supabase = createClient();
   const showToast = useToast();
 
@@ -113,20 +117,37 @@ export default function MyDayClient({ propertyId }: { propertyId: string }) {
         {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
       </p>
 
+      {/* Today's Tasks, Capture, Shopping List, Kitchen Timer -- the whole
+          staff home view. Capture and Kitchen Timer open as modals right
+          here (same ToolModal every other simple tool uses) rather than
+          navigating away, since both are quick, in-and-out actions. */}
       <div className="flex gap-2 mb-6">
-        <Link
-          href={`/properties/${propertyId}/inventory`}
+        <button
+          onClick={() => setShowCapture(true)}
           className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-gold-dark text-white px-4 py-2.5 text-sm font-medium hover:opacity-90 transition"
         >
-          <Package size={16} aria-hidden="true" /> Update Inventory
-        </Link>
+          <Camera size={16} aria-hidden="true" /> Capture
+        </button>
         <Link
           href={`/properties/${propertyId}/shopping-list`}
           className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-white border border-gold-light/60 text-charcoal px-4 py-2.5 text-sm font-medium hover:bg-gold-light/10 transition"
         >
           <ShoppingCart size={16} className="text-gold-dark" aria-hidden="true" /> Shopping List
         </Link>
+        <button
+          onClick={() => setShowKitchenTimer(true)}
+          className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-white border border-gold-light/60 text-charcoal px-4 py-2.5 text-sm font-medium hover:bg-gold-light/10 transition"
+        >
+          <Timer size={16} className="text-gold-dark" aria-hidden="true" /> Kitchen Timer
+        </button>
       </div>
+
+      {showCapture && (
+        <ToolModal slug="capture-photo" propertyId={propertyId} onClose={() => setShowCapture(false)} />
+      )}
+      {showKitchenTimer && (
+        <KitchenOpsToolModal slug="kitchen-timer" propertyId={propertyId} onClose={() => setShowKitchenTimer(false)} />
+      )}
 
       <h2 className="font-display text-lg text-charcoal mb-2">Today's Tasks</h2>
       {loading ? (
@@ -162,7 +183,7 @@ export default function MyDayClient({ propertyId }: { propertyId: string }) {
                 <select
                   value={task.status}
                   onChange={(e) => setStatus(task, e.target.value as Status)}
-                  className="w-full text-xs border border-gold-light/60 rounded-full px-2 py-1 bg-cream/40"
+                  className="w-full text-xs border border-gold-light/60 rounded-full px-3 py-2 min-h-[44px] bg-cream/40"
                 >
                   {STATUS_OPTIONS.map((s) => (
                     <option key={s.key} value={s.key}>

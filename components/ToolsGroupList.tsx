@@ -11,14 +11,6 @@ type Tool = { slug: string; icon: string; title: string; description: string; co
 type Subgroup = { key: string; label: string; lockIcon: boolean; tools: Tool[] };
 type Group = { key: string; label: string; tools: Tool[]; subgroups: Subgroup[] };
 
-// Bulk Photo Upload already has a real full-page route of its own
-// (app/properties/[id]/bulk-photos) predating the Tools Hub — everything
-// else here resolves to /tools/{slug} by convention, so this is a one-off
-// override rather than a reason to change that convention.
-const CUSTOM_HREF: Record<string, (propertyId: string) => string> = {
-  'bulk-photos': (propertyId) => `/properties/${propertyId}/bulk-photos`,
-};
-
 // Same modal treatment already proven for Kitchen Ops (opened from a
 // recipe, via KitchenOpsToolModal) applied here to the tools that are
 // simple enough to fit -- getting "stuck" on a full-page tool with no way
@@ -37,6 +29,8 @@ const MODAL_SLUGS = new Set<ToolModalSlug>([
   'contacts',
   'takeout-directory',
   'halachic-calendar',
+  'capture-photo',
+  'link-captured-photos',
 ]);
 
 export default function ToolsGroupList({ propertyId, groups }: { propertyId: string; groups: Group[] }) {
@@ -83,7 +77,7 @@ export default function ToolsGroupList({ propertyId, groups }: { propertyId: str
             {cardInner}
           </button>
         ) : (
-          <Link href={CUSTOM_HREF[tool.slug]?.(propertyId) ?? `/properties/${propertyId}/tools/${tool.slug}`} className={cardClass}>
+          <Link href={`/properties/${propertyId}/tools/${tool.slug}`} className={cardClass}>
             {cardInner}
           </Link>
         )}

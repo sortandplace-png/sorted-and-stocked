@@ -12,6 +12,8 @@ import HouseholdKnowledgeClient from '@/components/HouseholdKnowledgeClient';
 import HouseholdContactsClient from '@/components/HouseholdContactsClient';
 import LocalFoodDirectoryClient from '@/components/LocalFoodDirectoryClient';
 import HalachicCalendarClient from '@/components/HalachicCalendarClient';
+import CapturePhotoClient from '@/components/CapturePhotoClient';
+import LinkCapturedPhotosClient from '@/components/LinkCapturedPhotosClient';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 
 export type ToolModalSlug =
@@ -25,7 +27,9 @@ export type ToolModalSlug =
   | 'knowledge-base'
   | 'contacts'
   | 'takeout-directory'
-  | 'halachic-calendar';
+  | 'halachic-calendar'
+  | 'capture-photo'
+  | 'link-captured-photos';
 
 // Same modal shell as KitchenOpsToolModal (its own established, verified
 // pattern) applied to the Scanners / Inventory Ops / Household groups --
@@ -92,6 +96,13 @@ export default function ToolModal({
         {slug === 'contacts' && <HouseholdContactsClient propertyId={propertyId} />}
         {slug === 'takeout-directory' && <LocalFoodDirectoryClient propertyId={propertyId} />}
         {slug === 'halachic-calendar' && <HalachicCalendarClient />}
+        {slug === 'capture-photo' && <CapturePhotoClient propertyId={propertyId} />}
+        {slug === 'link-captured-photos' &&
+          (canManage(role) ? (
+            <LinkCapturedPhotosClient propertyId={propertyId} />
+          ) : (
+            <p className="p-5 text-sm text-charcoal/50">Only an owner or manager can use this tool.</p>
+          ))}
       </div>
     </div>
   );

@@ -124,10 +124,16 @@ const TOOLS = [
     description: 'Every Yom Tov date on the calendar, at a glance.',
   },
   {
-    slug: 'bulk-photos',
+    slug: 'capture-photo',
     icon: '📸',
-    title: 'Bulk Photo Upload',
-    description: 'Batch-upload house photos and match each to inventory.',
+    title: 'Capture Photo',
+    description: 'Snap a photo — match it to a room or item later.',
+  },
+  {
+    slug: 'link-captured-photos',
+    icon: '🔗',
+    title: 'Link Captured Photos',
+    description: 'Match photos staff took to a real inventory item or room.',
   },
 ];
 
@@ -170,8 +176,13 @@ const GROUPS: {
       // Location-based pair first (House Manual, Pantry Zone Map), then the
       // people/contact-based pair (Contacts & Vendors, Borrowed & Lent).
       { key: 'reference', label: 'Reference', slugs: ['knowledge-base', 'pantry-zones', 'contacts', 'borrowed-items'] },
-      { key: 'capture-tools', label: 'Capture Tools', slugs: ['capture-inbox', 'bulk-photos', 'photo-review'] },
-      { key: 'admin-cleanup', label: 'Admin Cleanup', slugs: ['duplicate-ingredients', 'needs-linking'], lockIcon: true },
+      { key: 'capture-tools', label: 'Capture Tools', slugs: ['capture-inbox', 'capture-photo', 'photo-review'] },
+      {
+        key: 'admin-cleanup',
+        label: 'Admin Cleanup',
+        slugs: ['duplicate-ingredients', 'needs-linking', 'link-captured-photos'],
+        lockIcon: true,
+      },
     ],
   },
 ];

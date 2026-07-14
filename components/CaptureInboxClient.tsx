@@ -22,6 +22,7 @@ import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import Link from 'next/link';
 import { COURSES } from '@/lib/course-constants';
+import CapturePhotoClient from '@/components/CapturePhotoClient';
 
 type CaptureType = 'recipe' | 'inventory' | 'meal_plan';
 
@@ -53,15 +54,21 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
   const [borrowedOutCount, setBorrowedOutCount] = useState<number | null>(null);
   const [locations, setLocations] = useState<{ id: string; name: string }[]>([]);
   const [recipes, setRecipes] = useState<{ id: string; name: string }[]>([]);
+  const [showCapture, setShowCapture] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     const [captureRes, locRes, recipeRes, borrowedRes] = await Promise.all([
+      // 'photo' captures (migration 083) have their own dedicated review UI
+      // (Admin Cleanup's Link Captured Photos) -- excluded here so they
+      // don't show up half-supported in a tab this component never learned
+      // to render (TYPE_LABEL/writeApproved only know the original 3 types).
       supabase
         .from('capture_staging')
         .select('id, capture_type, raw_payload, submitted_by, created_at, profiles(full_name)')
         .eq('property_id', propertyId)
         .eq('status', 'pending')
+        .in('capture_type', ['recipe', 'inventory', 'meal_plan'])
         .order('created_at'),
       supabase.from('locations').select('id, name').eq('property_id', propertyId),
       supabase
@@ -241,10 +248,23 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
         ))}
       </div>
 
-      {filtered.length === 0 ? (
-        <p className="text-sm text-charcoal/40 text-center py-12">
-          Nothing waiting for review right now.
-        </p>
+      {showCapture ? (
+        <div>
+          <button onClick={() => setShowCapture(false)} className="text-sm text-charcoal/50 underline mb-3">
+            ← Back to Inbox
+          </button>
+          <CapturePhotoClient propertyId={propertyId} />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-2xl shadow-sm shadow-charcoal/5">
+          <p className="text-sm text-charcoal/50 mb-3">Nothing waiting for review right now.</p>
+          <button
+            onClick={() => setShowCapture(true)}
+            className="text-sm font-medium text-white bg-gold-dark px-4 py-2 rounded-full"
+          >
+            Snap a photo to start
+          </button>
+        </div>
       ) : (
         <div className="space-y-3">
           {filtered.map((capture) => {
