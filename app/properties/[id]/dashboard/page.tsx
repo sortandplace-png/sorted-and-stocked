@@ -2,8 +2,10 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { format, isFriday, isSaturday, parseISO } from 'date-fns'
-import { Calendar, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square, Circle, Triangle, BookOpen } from 'lucide-react'
+import { Calendar, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, UtensilsCrossed } from 'lucide-react'
 import FloatingScanButton from '@/components/FloatingScanButton'
+import { COURSES } from '@/lib/course-constants'
+import { getUpcomingEruvTavshilin } from '@/lib/eruv-tavshilin'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -87,7 +89,7 @@ async function getData(propertyId: string) {
     .maybeSingle()
 
   const [meals, inventory, shopping] = await Promise.all([
-    supabase.from('meal_plan_entries').select('plan_date, recipe_id, recipes(name)').eq('property_id', propertyId).gte('plan_date', startStr).lte('plan_date', endStr).order('plan_date'),
+    supabase.from('meal_plan_entries').select('plan_date, recipe_id, course, recipes(name)').eq('property_id', propertyId).gte('plan_date', startStr).lte('plan_date', endStr).order('plan_date'),
     supabase.from('inventory_items').select('category, name, current_qty, min_qty, photo_url, reorder_link').eq('property_id', propertyId).order('category'),
     list
       ? supabase.from('shopping_list_items').select('name, category, qty_needed, status, inventory_items(photo_url, reorder_link)').eq('shopping_list_id', list.id).eq('status', 'pending').order('category')
@@ -210,6 +212,24 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const now = new Date()
   const isShabbos = (isFriday(now) && hebcal.candleDate && now > new Date(new Date(hebcal.candleDate).getTime() - 3600000)) ||
                     (isSaturday(now) && hebcal.havdalahDate && now < new Date(hebcal.havdalahDate))
+
+  // Motzei Shabbos casual-suggestions banner: Saturday evening, no backend --
+  // just a time-of-week nudge toward the easiest post-Shabbos dinner options.
+  // 6pm flat cutoff rather than the real (seasonal) Havdalah time since this
+  // is a casual suggestion, not a halachic determination.
+  const isMotzeiShabbos = isSaturday(now) && now.getHours() >= 18
+
+  const eruvTavshilin = getUpcomingEruvTavshilin(now)
+
+  // Canonical course order (Dip/Kids Platter/Soup/Protein/Starch/Vege/Salad/
+  // Dessert-last) applied as a secondary sort after plan_date -- the raw
+  // query only orders by date, so entries within the same day previously
+  // came back in whatever order Postgres happened to return them.
+  const courseOrderIndex = new Map(COURSES.map((c, i) => [c.key, i]))
+  const sortedMeals = [...meals].sort((a: any, b: any) => {
+    if (a.plan_date !== b.plan_date) return a.plan_date < b.plan_date ? -1 : 1
+    return (courseOrderIndex.get(a.course) ?? 99) - (courseOrderIndex.get(b.course) ?? 99)
+  })
 
   const categories = ['Produce', 'Meat', 'Dairy', 'Pantry', 'Bakery', 'Frozen']
   const shoppingByCat = categories.map(cat => ({
@@ -362,6 +382,32 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           </div>
         )}
 
+        {eruvTavshilin && (
+          <div className="rounded-2xl p-4 mb-8 bg-gold-light/15 border border-gold-light/40">
+            <h2 className="text-sm font-display text-charcoal mb-2 flex items-center gap-1.5">
+              <Flame size={16} strokeWidth={1.75} className="text-gold-dark" aria-hidden="true" /> Eruv Tavshilin reminder
+            </h2>
+            <p className="text-sm text-charcoal/80">
+              Make Eruv Tavshilin on <span className="font-medium">{format(parseISO(eruvTavshilin.eruvDate), 'EEEE, MMM d')}</span>, before {eruvTavshilin.holidayName} begins.
+            </p>
+          </div>
+        )}
+
+        {isMotzeiShabbos && (
+          <div className="rounded-2xl p-4 mb-8 bg-gold-light/15 border border-gold-light/40">
+            <h2 className="text-sm font-display text-charcoal mb-2 flex items-center gap-1.5">
+              <UtensilsCrossed size={16} strokeWidth={1.75} className="text-gold-dark" aria-hidden="true" /> Motzei Shabbos — easy dinner?
+            </h2>
+            <div className="flex gap-2 flex-wrap">
+              {['Pizza', 'Pasta', 'Salad'].map((suggestion) => (
+                <span key={suggestion} className="text-sm px-3 py-1.5 bg-white border border-gold-light/40 rounded-full text-charcoal">
+                  {suggestion}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* LEFT */}
           <div className="lg:col-span-2">
@@ -400,7 +446,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             </div>
 
             <div className="space-y-2.5">
-              {meals.slice(0, 7).map((meal: any, i) => {
+              {sortedMeals.slice(0, 7).map((meal: any, i) => {
                 const k = getKashrut(meal.recipes?.name)
                 const info = KASHRUT_INFO[k]
                 return (
