@@ -24,9 +24,12 @@ export default async function PropertiesPage() {
     .eq('user_id', user.id);
 
   // Single-property households shouldn't have to pick — skip straight in.
-  // Dashboard, not Inventory -- the universal post-login landing spot.
+  // Dashboard, not Inventory -- the universal post-login landing spot,
+  // except staff, who land on their dedicated My Day page instead.
   if (memberships && memberships.length === 1 && memberships[0].properties) {
-    redirect(`/properties/${(memberships[0].properties as any).id}/dashboard`);
+    const propertyId = (memberships[0].properties as any).id;
+    const destination = memberships[0].role === 'staff' ? 'my-day' : 'dashboard';
+    redirect(`/properties/${propertyId}/${destination}`);
   }
 
   // Grouped by household so multi-property households show one box that

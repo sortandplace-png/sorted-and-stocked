@@ -8,14 +8,27 @@ import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import Avatar from '@/components/Avatar';
 import FieldLabel from '@/components/FieldLabel';
-import ShiftHandoverClient from '@/components/ShiftHandoverClient';
 
 type Member = {
   id: string; // property_members row id
   user_id: string;
   role: PropertyRole;
   full_name: string | null;
+  email: string | null;
+  lastActive: string | null; // real auth.users.last_sign_in_at, null if never signed in
 };
+
+function formatLastActive(iso: string | null): string {
+  if (!iso) return 'Never';
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.round(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
 
 type PendingInvite = { userId: string; email: string; role: string; invitedAt: string };
 
@@ -60,8 +73,6 @@ function describeActivity(a: ActivityEntry): string {
 }
 
 export default function StaffClient({ propertyId }: { propertyId: string }) {
-  const [activeTab, setActiveTab] = useState<'team' | 'handover'>('team');
-  const [unreadHandovers, setUnreadHandovers] = useState(0);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -105,35 +116,12 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
         user_id: m.user_id,
         role: m.role as PropertyRole,
         full_name: (m.profiles as unknown as { full_name: string | null } | null)?.full_name ?? null,
+        email: null,
+        lastActive: null,
       }))
     );
     setLoading(false);
   }, [propertyId, supabase]);
-
-  const loadUnreadHandoverCount = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: readRow } = await supabase
-      .from('shift_handover_reads')
-      .select('last_read_at')
-      .eq('property_id', propertyId)
-      .eq('user_id', user.id)
-      .maybeSingle();
-    const since = readRow?.last_read_at ?? '1970-01-01T00:00:00Z';
-    const { count } = await supabase
-      .from('shift_handovers')
-      .select('id', { count: 'exact', head: true })
-      .eq('property_id', propertyId)
-      .gt('created_at', since)
-      .neq('created_by', user.id);
-    setUnreadHandovers(count ?? 0);
-  }, [propertyId, supabase]);
-
-  useEffect(() => {
-    loadUnreadHandoverCount();
-  }, [loadUnreadHandoverCount]);
 
   useEffect(() => {
     loadMembers();
@@ -143,7 +131,24 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     if (!canManage(viewerRole)) return;
     const res = await fetch(`/api/staff/pending-invites?propertyId=${propertyId}`);
     const body = await res.json();
-    if (res.ok) setPendingInvites(body.pending ?? []);
+    if (!res.ok) return;
+    setPendingInvites(body.pending ?? []);
+    // Same admin-privileged lookup this route already does for the pending
+    // check also resolves every member's email — reused here as the Team
+    // card fallback when full_name is null, instead of a second mechanism.
+    const emailByUserId = new Map<string, string>(
+      (body.emails ?? []).map((e: { userId: string; email: string }) => [e.userId, e.email])
+    );
+    const lastActiveByUserId = new Map<string, string | null>(
+      (body.lastActive ?? []).map((e: { userId: string; lastSignInAt: string | null }) => [e.userId, e.lastSignInAt])
+    );
+    setMembers((prev) =>
+      prev.map((m) => ({
+        ...m,
+        email: emailByUserId.get(m.user_id) ?? m.email,
+        lastActive: lastActiveByUserId.has(m.user_id) ? lastActiveByUserId.get(m.user_id)! : m.lastActive,
+      }))
+    );
   }, [propertyId, viewerRole]);
 
   const loadActivity = useCallback(async () => {
@@ -188,7 +193,9 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     setError(null);
 
     // Step 1: resolve email → user_id via the narrow lookup function
-    // (004_invite_by_email.sql).
+    // (004_invite_by_email.sql, re-scoped in 078_audit_hardening.sql to
+    // require the caller actually be owner/manager of THIS property --
+    // p_property_id is required now, not optional).
     const { data: userId, error: lookupError } = await supabase.rpc('get_user_id_by_email', {
       p_email: email,
       p_property_id: propertyId,
@@ -316,35 +323,6 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     <div className="max-w-md mx-auto p-4">
       <h1 className="text-2xl font-display text-charcoal mb-4">Staff</h1>
 
-      <div className="inline-flex rounded-full border border-gold-light/60 bg-white p-0.5 text-sm mb-4">
-        <button
-          onClick={() => setActiveTab('team')}
-          className={`rounded-full px-4 py-1.5 ${activeTab === 'team' ? 'bg-gold-dark text-white' : 'text-charcoal/60'}`}
-        >
-          Team
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab('handover');
-            setUnreadHandovers(0); // ShiftHandoverClient persists the real read-marker on mount
-          }}
-          className={`relative rounded-full px-4 py-1.5 ${activeTab === 'handover' ? 'bg-gold-dark text-white' : 'text-charcoal/60'}`}
-        >
-          Handover
-          {unreadHandovers > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center rounded-full bg-rust text-white text-[10px] font-medium">
-              {unreadHandovers}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {activeTab === 'handover' ? (
-        <div className="-mx-4">
-          <ShiftHandoverClient propertyId={propertyId} />
-        </div>
-      ) : (
-        <>
       {error && (
         <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2 mb-3">{error}</p>
       )}
@@ -354,7 +332,9 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
           <div key={member.id} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
             <div className="flex items-center gap-3 mb-2">
               <Avatar fullName={member.full_name} size="md" />
-              <span className="flex-1 truncate text-charcoal font-medium">{member.full_name ?? 'Unnamed user'}</span>
+              <span className="flex-1 truncate text-charcoal font-medium">
+                {member.full_name ?? member.email ?? 'Unnamed user'}
+              </span>
               <span
                 className={`text-[10px] font-medium px-2.5 py-1 rounded-full shrink-0 ${
                   member.role === 'owner'
@@ -385,13 +365,14 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
               </select>
               {member.role !== 'owner' && canManage(viewerRole) && (
                 <button
-                  onClick={() => removeMember(member.id, member.full_name)}
+                  onClick={() => removeMember(member.id, member.full_name ?? member.email)}
                   className="text-rust text-sm"
                 >
                   Remove
                 </button>
               )}
             </div>
+            <p className="text-[11px] text-charcoal/40 mt-2">Last active: {formatLastActive(member.lastActive)}</p>
           </div>
         ))}
       </div>
@@ -495,8 +476,6 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
             ))}
           </ul>
         </div>
-      )}
-        </>
       )}
         </>
       )}

@@ -13,9 +13,12 @@ export type PropertyEntry = { id: string; name: string; role: string };
 export type HouseholdGroup = { key: string; householdName: string | null; properties: PropertyEntry[] };
 
 function PropertyLink({ property, compact }: { property: PropertyEntry; compact?: boolean }) {
+  // Staff land on their dedicated My Day page instead of Dashboard --
+  // owner/manager's landing page is unchanged.
+  const destination = property.role === 'staff' ? 'my-day' : 'dashboard';
   return (
     <Link
-      href={`/properties/${property.id}/dashboard`}
+      href={`/properties/${property.id}/${destination}`}
       className={`flex items-center justify-between bg-white rounded-2xl shadow-sm shadow-charcoal/5 hover:bg-gold-light/15 transition-colors ${
         compact ? 'px-4 py-2.5' : 'px-4 py-3'
       }`}

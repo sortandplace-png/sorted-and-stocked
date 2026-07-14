@@ -9,6 +9,16 @@ import { createAdminClient } from '@/lib/supabase/admin';
 // only real signal for "invited but never signed in" is auth.users'
 // last_sign_in_at, which isn't queryable from the client — hence a
 // dedicated admin-privileged route instead of a plain client-side query.
+//
+// This route also returns EVERY member's email (not just the pending ones)
+// so the Team list can fall back to email instead of "Unnamed user" when
+// full_name is null — profiles has no email column and the client can't
+// read auth.users directly, so this admin-privileged lookup (already
+// looping every member for the pending check) is the one place that can
+// resolve it. Reused rather than adding a second admin-lookup route or a
+// new invites table. Same reasoning for last_sign_in_at -- it's the real
+// source for the Team list's "Last active" display, not a second tracking
+// mechanism.
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const propertyId = searchParams.get('propertyId');
@@ -43,21 +53,22 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient();
   const pending: { userId: string; email: string; role: string; invitedAt: string }[] = [];
+  const emails: { userId: string; email: string }[] = [];
+  const lastActive: { userId: string; lastSignInAt: string | null }[] = [];
 
   // No bulk "get users by id list" exists in the admin API — this is
   // fine at real household-membership scale (single digits), not something
   // that needs to hold up at thousands of rows.
   for (const m of members) {
     const { data: authUser } = await admin.auth.admin.getUserById(m.user_id);
-    if (authUser?.user && !authUser.user.last_sign_in_at) {
-      pending.push({
-        userId: m.user_id,
-        email: authUser.user.email ?? '(no email on file)',
-        role: m.role,
-        invitedAt: m.joined_at,
-      });
+    if (!authUser?.user) continue;
+    const email = authUser.user.email ?? '(no email on file)';
+    emails.push({ userId: m.user_id, email });
+    lastActive.push({ userId: m.user_id, lastSignInAt: authUser.user.last_sign_in_at ?? null });
+    if (!authUser.user.last_sign_in_at) {
+      pending.push({ userId: m.user_id, email, role: m.role, invitedAt: m.joined_at });
     }
   }
 
-  return NextResponse.json({ pending });
+  return NextResponse.json({ pending, emails, lastActive });
 }

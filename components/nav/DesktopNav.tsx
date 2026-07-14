@@ -1,8 +1,10 @@
 // components/nav/DesktopNav.tsx
-// Collapses the flat 10-item nav into 5 groups (Dashboard / Plan / Shop /
+// Collapses the flat nav into groups (Dashboard / Plan / Shop / Staff /
 // Scan / More) to cut decision fatigue — dropdowns open as a small floating
 // panel, same ivory background + 0.5px border style used elsewhere in the
 // app. Desktop only; see MobileBottomNav.tsx for the small-screen equivalent.
+// Staff Task Center and Shift Handover live here (not buried in the generic
+// Tools grid) since staff themselves need direct access to both.
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -13,9 +15,21 @@ import { ChevronDown, Scan as ScanIcon } from 'lucide-react';
 import type { PropertyRole } from '@/components/PropertyRoleContext';
 import ScanModal from '@/components/nav/ScanModal';
 
-type GroupKey = 'plan' | 'shop' | 'more';
+type GroupKey = 'plan' | 'shop' | 'staff' | 'more';
 
-const GROUPS: { key: GroupKey; labelKey: string; items: { segment: string; labelKey: string; managerOnly?: boolean }[] }[] = [
+type NavItem = {
+  segment: string;
+  labelKey: string;
+  managerOnly?: boolean;
+  // A segment that's a sub-path of another group's own segment (here,
+  // 'tools/tasks' is a sub-path of the More group's 'tools') would
+  // otherwise highlight both groups active at once on that page — this
+  // lists segments to exclude from THIS item's own active check so the
+  // more specific group wins.
+  excludeFromActive?: string[];
+};
+
+const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
   {
     key: 'plan',
     labelKey: 'plan',
@@ -33,20 +47,43 @@ const GROUPS: { key: GroupKey; labelKey: string; items: { segment: string; label
     ],
   },
   {
+    key: 'staff',
+    labelKey: 'staff',
+    items: [
+      // Staff Task Center stays reachable by every role -- no page-level
+      // gate, staff need real access to their own task board.
+      { segment: 'tools/tasks', labelKey: 'staffTasks' },
+      // Handover is owner/manager-only here on purpose: staff get it
+      // embedded directly in My Day, not as a second separate tap target.
+      // Was visible to every role before, which duplicated the My Day
+      // embed for exactly the users it shouldn't have.
+      { segment: 'shift-handover', labelKey: 'handover', managerOnly: true },
+      // Team management (invite/role-change/remove) stays owner/manager
+      // only, same as it's always been.
+      { segment: 'staff', labelKey: 'team', managerOnly: true },
+    ],
+  },
+  {
     key: 'more',
     labelKey: 'more',
     items: [
-      { segment: 'tools', labelKey: 'tools' },
-      // print-labels now lives inside Inventory, shift-handover inside
-      // Staff's Handover tab — no longer separate top-level entries here.
-      { segment: 'staff', labelKey: 'staff', managerOnly: true },
+      // print-labels now lives inside Inventory. Staff Task Center and
+      // Shift Handover moved to their own Staff group above -- excluded
+      // here so this doesn't ALSO light up "More" while on those pages.
+      { segment: 'tools', labelKey: 'tools', excludeFromActive: ['tools/tasks'] },
+      { segment: 'shopping-rules', labelKey: 'shoppingRules', managerOnly: true },
       // Not managerOnly -- every role needs this for their own SMS opt-in;
-      // the Invite Codes section inside is what's actually gated, per-role,
-      // by the page itself.
+      // the Invite Codes/Broadcast sections inside are what's actually
+      // gated, per-role, by the page itself.
       { segment: 'settings', labelKey: 'settings' },
     ],
   },
 ];
+
+function segmentIsActive(pathname: string, item: NavItem): boolean {
+  if (!pathname.includes(`/${item.segment}`)) return false;
+  return !(item.excludeFromActive ?? []).some((ex) => pathname.includes(`/${ex}`));
+}
 
 export default function DesktopNav({
   propertyId,
@@ -96,7 +133,7 @@ export default function DesktopNav({
       {GROUPS.map((group) => {
         const visibleItems = group.items.filter((i) => !i.managerOnly || role === 'owner' || role === 'manager');
         if (visibleItems.length === 0) return null;
-        const groupActive = visibleItems.some((i) => pathname.includes(`/${i.segment}`));
+        const groupActive = visibleItems.some((i) => segmentIsActive(pathname, i));
         const isOpen = openGroup === group.key;
 
         return (
@@ -122,7 +159,7 @@ export default function DesktopNav({
                 className="absolute top-full left-0 mt-1 min-w-[10rem] bg-cream border border-gold-light/40 rounded-2xl shadow-md py-1.5 z-40"
               >
                 {visibleItems.map((item) => {
-                  const active = pathname.includes(`/${item.segment}`);
+                  const active = segmentIsActive(pathname, item);
                   return (
                     <Link
                       key={item.segment}

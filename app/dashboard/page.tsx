@@ -18,11 +18,14 @@ export default async function DashboardRedirect() {
 
   const { data: memberships } = await supabase
     .from('property_members')
-    .select('property_id')
+    .select('property_id, role')
     .eq('user_id', user.id);
 
+  // Staff don't land on Dashboard even via this old bookmarked route --
+  // same My Day redirect as the real landing flow in /properties/page.tsx.
   if (memberships && memberships.length === 1) {
-    redirect(`/properties/${memberships[0].property_id}/dashboard`);
+    const destination = memberships[0].role === 'staff' ? 'my-day' : 'dashboard';
+    redirect(`/properties/${memberships[0].property_id}/${destination}`);
   }
 
   // No membership, or more than one property to choose from — send to the
