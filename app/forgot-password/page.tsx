@@ -5,6 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import Footer from '@/components/Footer';
+import { SITE_URL } from '@/lib/site-url';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -20,9 +21,12 @@ export default function ForgotPasswordPage() {
 
     // Routes through the existing /auth/callback code-exchange handler,
     // which then forwards to /reset-password once the recovery session
-    // is established.
+    // is established. SITE_URL, not window.location.origin -- local dev
+    // and production share the same Supabase project, so triggering this
+    // from a local dev server previously sent a real person a real email
+    // with a localhost link they couldn't open.
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?redirectTo=/reset-password`,
+      redirectTo: `${SITE_URL}/auth/callback?redirectTo=/reset-password`,
     });
 
     setLoading(false);

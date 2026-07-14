@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { emailShell, escapeHtml } from '@/lib/email-template';
+import { SITE_URL } from '@/lib/site-url';
 
 const RESEND_FROM = 'Sorted & Stocked <invites@sortandplace.com>';
 
@@ -109,18 +110,17 @@ export async function POST(request: Request) {
   // returns the action link without sending anything itself, so the branded
   // Resend email below is the only one that goes out.
   const admin = createAdminClient();
-  // request.url reflects the internal host when running behind a reverse
-  // proxy, not the public-facing domain — prefer the standard forwarded
-  // headers when present, falling back to request.url's own origin for
-  // local dev / hosts that don't set them.
-  const forwardedHost = request.headers.get('x-forwarded-host');
-  const forwardedProto = request.headers.get('x-forwarded-proto');
-  const origin = forwardedHost ? `${forwardedProto ?? 'https'}://${forwardedHost}` : new URL(request.url).origin;
-
+  // SITE_URL, not the request's own host -- local dev and production share
+  // the same Supabase project, so an invite triggered from someone's local
+  // dev server previously produced a real invite email with a localhost
+  // link (confirmed: this is what happened to Blimie's invite). The
+  // request's host is never the right signal here regardless of forwarded
+  // headers, since the recipient's browser has nothing to do with whichever
+  // machine happened to call this route.
   const { data: linkData, error: inviteError } = await admin.auth.admin.generateLink({
     type: 'invite',
     email,
-    options: { redirectTo: `${origin}/auth/callback?redirectTo=/properties` },
+    options: { redirectTo: `${SITE_URL}/auth/callback?redirectTo=/properties` },
   });
 
   if (inviteError) {

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { SITE_URL } from '@/lib/site-url';
 
 // For an already-invited-but-not-yet-accepted user — property_members
 // already has their row (created at original invite time), so this only
@@ -40,12 +41,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Could not find that invite.' }, { status: 404 });
   }
 
-  const forwardedHost = request.headers.get('x-forwarded-host');
-  const forwardedProto = request.headers.get('x-forwarded-proto');
-  const origin = forwardedHost ? `${forwardedProto ?? 'https'}://${forwardedHost}` : new URL(request.url).origin;
-
+  // SITE_URL, not the request's own host -- same reasoning as app/api/
+  // invite/route.ts: the recipient's browser has nothing to do with
+  // whichever machine happened to call this route.
   const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(authUser.user.email, {
-    redirectTo: `${origin}/auth/callback?redirectTo=/properties`,
+    redirectTo: `${SITE_URL}/auth/callback?redirectTo=/properties`,
   });
 
   if (inviteError) {
