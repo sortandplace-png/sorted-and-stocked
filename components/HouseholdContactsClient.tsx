@@ -19,6 +19,70 @@ type Contact = {
   notes: string | null;
 };
 
+type ImportRow = { name: string; role: string | null; phone: string | null; email: string | null; tags: string[] };
+
+// Minimal RFC4180-ish CSV parser -- handles quoted fields containing commas,
+// not a full spec implementation (no embedded newlines inside quotes), which
+// is enough for a contacts export/import roundtrip. Expected columns: name
+// (required), role, phone, email, tags (semicolon-separated within the
+// cell, since commas are already the column delimiter).
+function parseContactsCsv(text: string): ImportRow[] {
+  const lines = text.split(/\r\n|\n|\r/).filter((l) => l.trim() !== '');
+  if (lines.length < 2) return [];
+
+  function parseLine(line: string): string[] {
+    const cells: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (inQuotes) {
+        if (char === '"' && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else if (char === '"') {
+          inQuotes = false;
+        } else {
+          current += char;
+        }
+      } else if (char === '"') {
+        inQuotes = true;
+      } else if (char === ',') {
+        cells.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    cells.push(current);
+    return cells.map((c) => c.trim());
+  }
+
+  const headers = parseLine(lines[0]).map((h) => h.toLowerCase());
+  const nameIdx = headers.indexOf('name');
+  if (nameIdx === -1) return [];
+  const roleIdx = headers.indexOf('role');
+  const phoneIdx = headers.indexOf('phone');
+  const emailIdx = headers.indexOf('email');
+  const tagsIdx = headers.indexOf('tags');
+
+  return lines
+    .slice(1)
+    .map((line) => {
+      const cells = parseLine(line);
+      const name = cells[nameIdx]?.trim() ?? '';
+      if (!name) return null;
+      return {
+        name,
+        role: roleIdx >= 0 ? cells[roleIdx]?.trim() || null : null,
+        phone: phoneIdx >= 0 ? cells[phoneIdx]?.trim() || null : null,
+        email: emailIdx >= 0 ? cells[emailIdx]?.trim() || null : null,
+        tags: tagsIdx >= 0 ? (cells[tagsIdx]?.split(';').map((t) => t.trim()).filter(Boolean) ?? []) : [],
+      };
+    })
+    .filter((row): row is ImportRow => row !== null);
+}
+
 export default function HouseholdContactsClient({ propertyId }: { propertyId: string }) {
   const role = usePropertyRole();
   const supabase = createClient();
@@ -35,6 +99,11 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
   const [tagsInput, setTagsInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  const [importRows, setImportRows] = useState<ImportRow[] | null>(null);
+  const [importFileName, setImportFileName] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -111,6 +180,52 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
     setContacts((prev) => prev.filter((c) => c.id !== id));
   }
 
+  function handleCsvFile(file: File) {
+    setImportError(null);
+    setImportFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const rows = parseContactsCsv(String(reader.result ?? ''));
+      if (rows.length === 0) {
+        setImportRows(null);
+        setImportError('No valid rows found — the CSV needs a "name" column, at minimum.');
+        return;
+      }
+      setImportRows(rows);
+    };
+    reader.readAsText(file);
+  }
+
+  async function confirmImport() {
+    if (!importRows || importRows.length === 0) return;
+    setImporting(true);
+    const { error } = await supabase.from('household_contacts').insert(
+      importRows.map((r) => ({
+        property_id: propertyId,
+        name: r.name,
+        role: r.role,
+        phone: r.phone,
+        email: r.email,
+        tags: r.tags,
+      }))
+    );
+    setImporting(false);
+    if (error) {
+      setImportError(error.message);
+      return;
+    }
+    showToast(`Imported ${importRows.length} contact${importRows.length === 1 ? '' : 's'}.`, { variant: 'success' });
+    setImportRows(null);
+    setImportFileName('');
+    load();
+  }
+
+  function cancelImport() {
+    setImportRows(null);
+    setImportFileName('');
+    setImportError(null);
+  }
+
   const filtered = contacts.filter((c) => {
     const q = search.trim().toLowerCase();
     if (!q) return true;
@@ -136,6 +251,57 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
         placeholder="Search name, role, phone, email, or tag…"
         className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2.5 bg-white mb-4 text-sm"
       />
+
+      {canManage(role) && (
+        <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-4">
+          <h2 className="font-display text-lg text-charcoal mb-1">Import from CSV</h2>
+          <p className="text-xs text-charcoal/50 mb-2">
+            Columns: name (required), role, phone, email, tags (semicolon-separated).
+          </p>
+          {importRows ? (
+            <div className="space-y-2">
+              <p className="text-sm text-charcoal">
+                {importFileName} — {importRows.length} contact{importRows.length === 1 ? '' : 's'} ready to import.
+              </p>
+              <ul className="max-h-32 overflow-y-auto text-xs text-charcoal/60 space-y-0.5">
+                {importRows.slice(0, 8).map((r, i) => (
+                  <li key={i}>{r.name}{r.role ? ` — ${r.role}` : ''}</li>
+                ))}
+                {importRows.length > 8 && <li>…and {importRows.length - 8} more</li>}
+              </ul>
+              {importError && <p className="text-sm text-rust">{importError}</p>}
+              <div className="flex gap-2">
+                <button
+                  onClick={confirmImport}
+                  disabled={importing}
+                  className="flex-1 py-2 rounded-full bg-charcoal text-cream font-medium text-sm disabled:opacity-40"
+                >
+                  {importing ? 'Importing…' : `Import ${importRows.length} contact${importRows.length === 1 ? '' : 's'}`}
+                </button>
+                <button
+                  onClick={cancelImport}
+                  className="px-4 py-2 rounded-full border border-charcoal/30 text-charcoal text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {importError && <p className="text-sm text-rust mb-2">{importError}</p>}
+              <label className="block text-center py-2.5 rounded-full border border-charcoal/30 text-charcoal text-sm font-medium cursor-pointer">
+                Choose CSV file
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(e) => e.target.files?.[0] && handleCsvFile(e.target.files[0])}
+                  className="hidden"
+                />
+              </label>
+            </>
+          )}
+        </div>
+      )}
 
       {canManage(role) && (
         <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-2">

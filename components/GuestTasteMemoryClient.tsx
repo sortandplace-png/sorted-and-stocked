@@ -19,6 +19,8 @@ type Person = {
   person_type: PersonType;
   active: boolean;
   notes: string | null;
+  contact_id: string | null;
+  contact: { name: string; phone: string | null; email: string | null } | null;
 };
 
 type Preference = {
@@ -62,6 +64,10 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
   const [personNotes, setPersonNotes] = useState('');
   const [savingPerson, setSavingPerson] = useState(false);
 
+  const [contactLinkSearch, setContactLinkSearch] = useState('');
+  const [linkedContact, setLinkedContact] = useState<LookupRow | null>(null);
+  const [contacts, setContacts] = useState<LookupRow[] | null>(null);
+
   const [openPrefFor, setOpenPrefFor] = useState<string | null>(null);
   const [prefType, setPrefType] = useState<PreferenceType>('like');
   const [subject, setSubject] = useState('');
@@ -78,7 +84,7 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
     const [{ data: peopleData }, { data: prefData }] = await Promise.all([
       supabase
         .from('household_people')
-        .select('id, name, person_type, active, notes')
+        .select('id, name, person_type, active, notes, contact_id, contact:household_contacts(name, phone, email)')
         .eq('property_id', propertyId)
         .order('active', { ascending: false })
         .order('name'),
@@ -87,7 +93,7 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
         .select('id, person_id, preference_type, subject, notes, recipe:recipes(name), inventory_item:inventory_items(name)')
         .eq('property_id', propertyId),
     ]);
-    setPeople(peopleData ?? []);
+    setPeople((peopleData as unknown as Person[]) ?? []);
     setPreferences((prefData as unknown as Preference[]) ?? []);
     setLoading(false);
   }, [propertyId, supabase]);
@@ -105,6 +111,7 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
       person_type: personType,
       active,
       notes: personNotes.trim() || null,
+      contact_id: linkedContact?.id ?? null,
     });
     setSavingPerson(false);
 
@@ -117,7 +124,20 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
     setPersonType('family');
     setActive(true);
     setPersonNotes('');
+    setLinkedContact(null);
+    setContactLinkSearch('');
     load();
+  }
+
+  async function ensureContactsLoaded() {
+    if (contacts === null) {
+      const { data } = await supabase
+        .from('household_contacts')
+        .select('id, name')
+        .eq('property_id', propertyId)
+        .order('name');
+      setContacts(data ?? []);
+    }
   }
 
   async function removePerson(id: string) {
@@ -265,6 +285,50 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
               className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
             />
           </div>
+          <div>
+            <FieldLabel>Link to a Contacts &amp; Vendors entry (optional)</FieldLabel>
+            {linkedContact ? (
+              <div className="flex items-center justify-between border border-gold-light/60 rounded-xl px-3 py-2 text-sm">
+                <span className="text-charcoal truncate">{linkedContact.name}</span>
+                <button
+                  onClick={() => setLinkedContact(null)}
+                  className="text-charcoal/30 hover:text-rust shrink-0 ml-2"
+                  aria-label="Clear linked contact"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <>
+                <input
+                  value={contactLinkSearch}
+                  onFocus={ensureContactsLoaded}
+                  onChange={(e) => setContactLinkSearch(e.target.value)}
+                  placeholder="Search contacts…"
+                  className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm mb-1"
+                />
+                {contactLinkSearch.trim() && (
+                  <div className="max-h-36 overflow-y-auto border border-gold-light/40 rounded-xl divide-y divide-gold-light/20">
+                    {(contacts ?? [])
+                      .filter((c) => c.name.toLowerCase().includes(contactLinkSearch.toLowerCase()))
+                      .slice(0, 20)
+                      .map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => {
+                            setLinkedContact(c);
+                            setContactLinkSearch('');
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gold-light/10 truncate"
+                        >
+                          {c.name}
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
           <button
             onClick={addPerson}
             disabled={savingPerson || !name.trim()}
@@ -301,6 +365,12 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
                     </span>
                   </p>
                   {person.notes && <p className="text-xs text-charcoal/50 mt-0.5">{person.notes}</p>}
+                  {person.contact && (
+                    <div className="flex flex-wrap gap-2 mt-1 text-xs text-charcoal/60">
+                      {person.contact.phone && <a href={`tel:${person.contact.phone}`} className="hover:text-charcoal">📞 {person.contact.phone}</a>}
+                      {person.contact.email && <a href={`mailto:${person.contact.email}`} className="hover:text-charcoal">✉️ {person.contact.email}</a>}
+                    </div>
+                  )}
                 </div>
                 {canManage(role) && (
                   <button
