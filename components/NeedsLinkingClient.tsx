@@ -7,6 +7,7 @@ import { resilientUpdate } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import { findAutoLinkMatch, AUTO_LINK_CONFIDENCE_THRESHOLD } from '@/lib/inventory-matching';
+import { friendlyKosherConflictMessage } from '@/lib/kosher-conflict-error';
 
 type UnlinkedGroup = {
   name: string;
@@ -88,6 +89,7 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
     // covers this phase (it runs before setLoading(false) below).
     const stillUnlinked: UnlinkedGroup[] = [];
     let linkedCount = 0;
+    let kosherConflictCount = 0;
     for (const group of allGroups) {
       const match = await findAutoLinkMatch(supabase, propertyId, group.name);
       if (match) {
@@ -95,6 +97,15 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
         if (result.ok) {
           linkedCount++;
           continue;
+        }
+        // enforce_recipe_kosher_type rejected this one -- at least one
+        // recipe using this ingredient name has a conflicting kosher_type
+        // (e.g. this name auto-matched a Dairy item, but one recipe that
+        // calls for it is Meat). A bulk update by name can't apply
+        // per-recipe, so the whole name stays unlinked and falls through to
+        // manual review below, same as any other unresolved match.
+        if (!result.ok && friendlyKosherConflictMessage(result.error, match.name)) {
+          kosherConflictCount++;
         }
       }
       stillUnlinked.push(group);
@@ -104,7 +115,9 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
       showToast(
         `Auto-linked ${linkedCount} ingredient${linkedCount === 1 ? '' : 's'} at ${Math.round(
           AUTO_LINK_CONFIDENCE_THRESHOLD * 100
-        )}%+ confidence. ${stillUnlinked.length} still need review.`,
+        )}%+ confidence. ${stillUnlinked.length} still need review${
+          kosherConflictCount > 0 ? ` (${kosherConflictCount} skipped for a kosher type conflict)` : ''
+        }.`,
         { variant: 'success' }
       );
     } else {
@@ -173,17 +186,24 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
     return () => clearTimeout(handle);
   }, [bulkSearch, bulkLinkTarget, propertyId, supabase]);
 
-  async function linkNamesTo(names: string[], inventoryItemId: string) {
+  async function linkNamesTo(names: string[], inventoryItemId: string, inventoryItemName: string) {
     setWorking(true);
     let failed = 0;
+    let kosherConflictMessage: string | null = null;
     for (const name of names) {
       const result = await resilientUpdate(supabase, 'recipe_ingredients', { name }, { inventory_item_id: inventoryItemId });
-      if (!result.ok) failed++;
+      if (!result.ok) {
+        failed++;
+        kosherConflictMessage ??= friendlyKosherConflictMessage(result.error, inventoryItemName);
+      }
     }
     setWorking(false);
 
     if (failed > 0) {
-      showToast(`Linked ${names.length - failed} of ${names.length} — ${failed} failed.`, { variant: 'error' });
+      showToast(
+        kosherConflictMessage ?? `Linked ${names.length - failed} of ${names.length} — ${failed} failed.`,
+        { variant: 'error', durationMs: kosherConflictMessage ? 8000 : undefined }
+      );
     } else {
       showToast(`Linked ${names.length} ingredient${names.length === 1 ? '' : 's'}.`, { variant: 'success' });
     }
@@ -290,7 +310,7 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
               {inventoryOptions.map((opt) => (
                 <button
                   key={opt.id}
-                  onClick={() => linkNamesTo([active.name], opt.id)}
+                  onClick={() => linkNamesTo([active.name], opt.id, opt.name)}
                   disabled={working}
                   className="w-full text-left px-3 py-2 text-sm hover:bg-gold-light/10 disabled:opacity-40"
                 >
@@ -358,7 +378,7 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
                 <div className="flex flex-wrap gap-2">
                   {waterSuggestion && (
                     <button
-                      onClick={() => linkNamesTo(waterGroups.map((g) => g.name), waterSuggestion.id)}
+                      onClick={() => linkNamesTo(waterGroups.map((g) => g.name), waterSuggestion.id, waterSuggestion.name)}
                       disabled={working}
                       className="text-xs font-medium bg-gold-dark text-white px-3 py-1.5 rounded-full disabled:opacity-40"
                     >
@@ -398,7 +418,7 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
                         {bulkOptions.map((opt) => (
                           <button
                             key={opt.id}
-                            onClick={() => linkNamesTo(waterGroups.map((g) => g.name), opt.id)}
+                            onClick={() => linkNamesTo(waterGroups.map((g) => g.name), opt.id, opt.name)}
                             disabled={working}
                             className="w-full text-left px-3 py-2 text-sm hover:bg-gold-light/10 disabled:opacity-40"
                           >
@@ -493,7 +513,7 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
                       {bulkOptions.map((opt) => (
                         <button
                           key={opt.id}
-                          onClick={() => linkNamesTo([...selectedNames], opt.id)}
+                          onClick={() => linkNamesTo([...selectedNames], opt.id, opt.name)}
                           disabled={working}
                           className="w-full text-left px-3 py-2 text-sm hover:bg-gold-light/10 disabled:opacity-40"
                         >

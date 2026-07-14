@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { resilientUpdate } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
+import { friendlyKosherConflictMessage } from '@/lib/kosher-conflict-error';
 
 type Variant = { name: string; count: number; inventory_item_id: string | null };
 type Cluster = { key: string; variants: Variant[] };
@@ -92,7 +93,8 @@ export default function DuplicateIngredientsClient({ propertyId }: { propertyId:
         }
       );
       if (!result.ok) {
-        showToast(`Failed to merge "${other.name}".`, { variant: 'error' });
+        const friendly = friendlyKosherConflictMessage(result.error, canonical.name);
+        showToast(friendly ?? `Failed to merge "${other.name}".`, { variant: 'error', durationMs: friendly ? 8000 : undefined });
         setMerging(null);
         return;
       }

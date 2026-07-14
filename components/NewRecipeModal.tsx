@@ -7,6 +7,7 @@ import { COURSES, type Course } from '@/lib/course-constants';
 import { useDraftAutosave } from '@/hooks/useDraftAutosave';
 import { findAutoLinkMatch } from '@/lib/inventory-matching';
 import { compressImageToBlob } from '@/lib/compress-image';
+import { friendlyKosherConflictMessage } from '@/lib/kosher-conflict-error';
 import FieldLabel from '@/components/FieldLabel';
 
 type IngredientRow = { name: string; quantity: string; unit: string; category: string };
@@ -235,19 +236,72 @@ export default function NewRecipeModal({
       const matches = await Promise.all(
         validRows.map((r) => findAutoLinkMatch(supabase, propertyId, r.name.trim()))
       );
-      await supabase.from('recipe_ingredients').insert(
+
+      // enforce_recipe_kosher_type (DB trigger) rejects linking a
+      // conflicting-kosher-type item (e.g. Dairy on a Meat recipe) -- and
+      // since every ingredient inserts in one statement, a single rejected
+      // row would fail the WHOLE batch, silently leaving this recipe with
+      // no ingredients at all. Checked here first so an auto-match that
+      // would conflict is simply left unlinked (same fallback already used
+      // for a low-confidence match), not something that blows up the save.
+      const matchedIds = [...new Set(matches.map((m) => m?.id).filter((id): id is string => !!id))];
+      const kosherTypeById = new Map<string, string | null>();
+      if (matchedIds.length > 0 && kosherType) {
+        const { data: matchedItems } = await supabase
+          .from('inventory_items')
+          .select('id, kosher_type')
+          .in('id', matchedIds);
+        for (const mi of matchedItems ?? []) kosherTypeById.set(mi.id, mi.kosher_type);
+      }
+      const conflicts: string[] = [];
+      function conflictsWithRecipe(itemKosherType: string | null | undefined): boolean {
+        if (!kosherType || !itemKosherType) return false;
+        // recipes.kosher_type is capitalized ('Meat'/'Dairy'/'Parve');
+        // inventory_items.kosher_type is lowercase per its own CHECK
+        // constraint ('meat'/'dairy'/'parve') -- normalize before comparing.
+        const recipeKt = kosherType.toLowerCase();
+        const itemKt = itemKosherType.toLowerCase();
+        return (
+          (recipeKt === 'meat' && itemKt === 'dairy') ||
+          (recipeKt === 'dairy' && itemKt === 'meat') ||
+          (recipeKt === 'parve' && (itemKt === 'meat' || itemKt === 'dairy'))
+        );
+      }
+
+      const { error: ingredientsError } = await supabase.from('recipe_ingredients').insert(
         validRows.map((r, i) => {
           const parsed = r.quantity ? parseFloat(r.quantity) : NaN;
+          const matchId = matches[i]?.id ?? null;
+          const conflict = matchId ? conflictsWithRecipe(kosherTypeById.get(matchId)) : false;
+          if (conflict && matches[i]) conflicts.push(matches[i]!.name);
           return {
             recipe_id: recipeId,
             name: r.name.trim(),
             quantity: Number.isFinite(parsed) ? parsed : null,
             unit: r.unit.trim() || null,
             category: r.category.trim() || null,
-            inventory_item_id: matches[i]?.id ?? null,
+            inventory_item_id: conflict ? null : matchId,
           };
         })
       );
+
+      if (conflicts.length > 0) {
+        showToast(
+          `Didn't auto-link ${conflicts.join(', ')} — kosher type conflicts with this ${kosherType} recipe. Link manually if that's not right.`,
+          { variant: 'default', durationMs: 8000 }
+        );
+      }
+
+      // Defense in depth -- if the trigger still rejects something this
+      // client-side check didn't catch, show the real reason instead of a
+      // raw database error.
+      if (ingredientsError) {
+        const friendly = friendlyKosherConflictMessage(ingredientsError.message, 'an ingredient');
+        showToast(friendly ?? 'Some ingredients failed to save — check the recipe and try again.', {
+          variant: 'error',
+          durationMs: 8000,
+        });
+      }
     }
 
     setSaving(false);
