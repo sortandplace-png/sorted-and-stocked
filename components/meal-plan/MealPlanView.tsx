@@ -215,6 +215,16 @@ export default function MealPlanView({
   const [saving, setSaving] = useState(false);
   const [nineDaysWindows, setNineDaysWindows] = useState<DateWindow[]>([]);
   const [favoriteRecipeIds, setFavoriteRecipeIds] = useState<Set<string>>(new Set());
+  // Live is_recipe_eligible_for_date() warnings -- only computed for entries
+  // actually saved this session (checking every entry in a full month view
+  // up front would mean dozens of extra DB calls for rows nobody's looking
+  // at). Not persisted; a fresh page load won't show a flag on an entry
+  // saved in an earlier session, same honest limitation as any other
+  // client-only derived state in this app. Keyed by date+course+sequence,
+  // not entry id -- the real id doesn't exist yet at the point this is set
+  // (right before the insert that creates it).
+  const [entryWarnings, setEntryWarnings] = useState<Record<string, string[]>>({});
+  const entryWarningKey = (date: string, course: string, sequence: number) => `${date}::${course}::${sequence}`;
 
   const range = viewMode === 'week' ? weekRange(anchor) : monthRange(anchor);
 
@@ -497,6 +507,37 @@ export default function MealPlanView({
     if (!editing) return;
     setSaving(true);
 
+    // Hard stop, not a suggestion -- is_recipe_eligible_for_date() is the
+    // real, authoritative halachic/inventory eligibility check (kosher-type
+    // buffers, Nine Days, Pesach clearance, etc.), checked here before any
+    // write happens. blocking_reasons means the assignment is refused
+    // outright; warnings alone (e.g. most inventory pesach_status is still
+    // 'needs_review', so this is common right now) still save, just flagged
+    // on the card below once the row's real sequence is known.
+    let pendingWarnings: string[] = [];
+    if (pickerMode === 'existing' && pickedRecipeId) {
+      const { data: eligibility, error: eligibilityError } = (await supabase
+        .rpc('is_recipe_eligible_for_date', {
+          p_recipe_id: pickedRecipeId,
+          p_date: editing.date,
+          p_property_id: propertyId,
+        })
+        .maybeSingle()) as {
+        data: { eligible: boolean; blocking_reasons: string[]; warnings: string[] } | null;
+        error: { message: string } | null;
+      };
+
+      if (!eligibilityError && eligibility && eligibility.blocking_reasons?.length > 0) {
+        setSaving(false);
+        showToast(eligibility.blocking_reasons.join(' '), { variant: 'error', durationMs: 8000 });
+        return;
+      }
+      if (!eligibilityError && eligibility && eligibility.warnings?.length > 0) {
+        pendingWarnings = eligibility.warnings;
+        showToast(eligibility.warnings.join(' '), { variant: 'default', durationMs: 6000 });
+      }
+    }
+
     // Only delete the specific row being replaced (a real "Change") --
     // deleting "the first entry for this course" would be wrong now that
     // dip/salad can have more than one row; adding a new one (no entryId)
@@ -515,6 +556,14 @@ export default function MealPlanView({
       : existingEntries.length > 0
       ? Math.max(...existingEntries.map((e) => e.sequence)) + 1
       : 1;
+
+    const warningKey = entryWarningKey(editing.date, editing.course, sequence);
+    setEntryWarnings((prev) => {
+      const next = { ...prev };
+      if (pendingWarnings.length > 0) next[warningKey] = pendingWarnings;
+      else delete next[warningKey];
+      return next;
+    });
 
     if (editing.entryId) {
       await resilientDelete(supabase, 'meal_plan_entries', { id: editing.entryId });
@@ -1412,6 +1461,19 @@ export default function MealPlanView({
                     ) : (
                       <span className="flex-1 min-w-0 text-sm text-charcoal truncate">{name}</span>
                     )}
+                    {(() => {
+                      const warnings = entryWarnings[entryWarningKey(dayDrawerOpen, key, entry.sequence)];
+                      if (!warnings || warnings.length === 0) return null;
+                      return (
+                        <AlertTriangle
+                          className="h-3.5 w-3.5 text-gold-dark shrink-0"
+                          strokeWidth={2}
+                          aria-label={warnings.join(' ')}
+                        >
+                          <title>{warnings.join(' ')}</title>
+                        </AlertTriangle>
+                      );
+                    })()}
                     {canEdit && (
                       <div className="relative shrink-0">
                         <button
