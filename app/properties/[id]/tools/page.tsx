@@ -117,6 +117,18 @@ const TOOLS = [
     title: 'Home Memory Timeline',
     description: 'A running record of photos, milestones, and moments.',
   },
+  {
+    slug: 'yom-tov-year-view',
+    icon: '🗓️',
+    title: 'Yom Tov Year View',
+    description: 'Every Yom Tov date on the calendar, at a glance.',
+  },
+  {
+    slug: 'bulk-photos',
+    icon: '📸',
+    title: 'Bulk Photo Upload',
+    description: 'Batch-upload house photos and match each to inventory.',
+  },
 ];
 
 const TASTE_MEMORY_TOOL = {
@@ -126,18 +138,41 @@ const TASTE_MEMORY_TOOL = {
   description: 'Likes, dislikes, allergies, and sensitivities — kept with the person.',
 };
 
-// Grouped per the approved Tools Hub redesign. The design brief named ~13
-// of the real 17 tools explicitly; the rest (tasks, halachic-calendar,
-// prep-timeline, memory-timeline, taste-memory) are placed into whichever
-// of the 4 named groups fits them best rather than left ungrouped.
-const GROUPS: { key: string; label: string; slugs: string[] }[] = [
+// Grouped per the finalized nav restructure spec (2026-07-14): Kitchen and
+// House each keep their existing loose items and gain named subgroups so
+// the previously-unplaced pages (Prep Timeline, Yom Tov Year View, Pantry
+// Zone Map, Borrowed & Lent, Duplicate Ingredients, Needs Linking, Room
+// Photo Review, Bulk Photo Upload) all get a real home. Inventory Ops fully
+// dissolves into House's three new subgroups — every one of its items moved,
+// none left loose. Halachic Calendar moved out of Household into Kitchen's
+// new Calendar subgroup, next to the new Yom Tov Year View entry.
+const GROUPS: {
+  key: string;
+  label: string;
+  slugs: string[];
+  subgroups?: { key: string; label: string; slugs: string[]; lockIcon?: boolean }[];
+}[] = [
   { key: 'scanners', label: 'Scanners', slugs: ['price-scanner', 'ingredient-scanner', 'recipe-stealer'] },
-  { key: 'kitchen-ops', label: 'Kitchen Ops', slugs: ['kitchen-timer', 'guest-scaler', 'reset-checklist', 'prep-timeline'] },
-  { key: 'inventory-ops', label: 'Inventory Ops', slugs: ['pantry-zones', 'borrowed-items', 'duplicate-ingredients', 'needs-linking', 'photo-review', 'capture-inbox'] },
   {
-    key: 'household',
-    label: 'Household',
-    slugs: ['knowledge-base', 'tasks', 'contacts', 'takeout-directory', 'halachic-calendar', 'memory-timeline', 'taste-memory'],
+    key: 'kitchen',
+    label: 'Kitchen',
+    slugs: ['kitchen-timer', 'guest-scaler'],
+    subgroups: [
+      { key: 'prep-reset', label: 'Prep & Reset', slugs: ['prep-timeline', 'reset-checklist'] },
+      { key: 'calendar', label: 'Calendar', slugs: ['halachic-calendar', 'yom-tov-year-view'] },
+    ],
+  },
+  {
+    key: 'house',
+    label: 'House',
+    slugs: ['tasks', 'takeout-directory', 'memory-timeline', 'taste-memory'],
+    subgroups: [
+      // Location-based pair first (House Manual, Pantry Zone Map), then the
+      // people/contact-based pair (Contacts & Vendors, Borrowed & Lent).
+      { key: 'reference', label: 'Reference', slugs: ['knowledge-base', 'pantry-zones', 'contacts', 'borrowed-items'] },
+      { key: 'capture-tools', label: 'Capture Tools', slugs: ['capture-inbox', 'bulk-photos', 'photo-review'] },
+      { key: 'admin-cleanup', label: 'Admin Cleanup', slugs: ['duplicate-ingredients', 'needs-linking'], lockIcon: true },
+    ],
   },
 ];
 
@@ -165,7 +200,15 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
     key: group.key,
     label: group.label,
     tools: group.slugs.map((slug) => bySlug.get(slug)).filter((t): t is (typeof TOOLS)[number] => !!t),
-  })).filter((group) => group.tools.length > 0);
+    subgroups: (group.subgroups ?? [])
+      .map((sg) => ({
+        key: sg.key,
+        label: sg.label,
+        lockIcon: !!sg.lockIcon,
+        tools: sg.slugs.map((slug) => bySlug.get(slug)).filter((t): t is (typeof TOOLS)[number] => !!t),
+      }))
+      .filter((sg) => sg.tools.length > 0),
+  })).filter((group) => group.tools.length > 0 || group.subgroups.length > 0);
 
   return (
     <div className="max-w-md lg:max-w-4xl mx-auto p-4">
