@@ -231,6 +231,18 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     return (courseOrderIndex.get(a.course) ?? 99) - (courseOrderIndex.get(b.course) ?? 99)
   })
 
+  // One card per day (its full course lineup underneath) rather than one
+  // card per course -- previously every course on the same day rendered as
+  // its own separate, identically-dated card.
+  const mealsByDay = Object.entries(
+    sortedMeals.reduce((acc: Record<string, any[]>, meal: any) => {
+      (acc[meal.plan_date] ??= []).push(meal)
+      return acc
+    }, {})
+  )
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([date, entries]) => ({ date, entries }))
+
   const categories = ['Produce', 'Meat', 'Dairy', 'Pantry', 'Bakery', 'Frozen']
   const shoppingByCat = categories.map(cat => ({
     cat,
@@ -445,24 +457,31 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               ))}
             </div>
 
-            <div className="space-y-2.5">
-              {sortedMeals.slice(0, 7).map((meal: any, i) => {
-                const k = getKashrut(meal.recipes?.name)
-                const info = KASHRUT_INFO[k]
-                return (
-                  <div key={i} className="flex items-center justify-between p-4 bg-white border border-gold-light/40 rounded-xl hover:bg-gold-light/10 transition">
-                    <div className="flex items-center gap-3">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs text-white rounded-md font-medium ${info.bg}`}>
-                        <info.Icon className="w-3 h-3" fill="currentColor" aria-hidden="true" />
-                        {k}
-                      </span>
-                      <div>
-                        <div className="font-medium text-charcoal">{format(parseISO(meal.plan_date), 'EEE • MMM d')} • {meal.recipes?.name || 'Meal'}</div>
-                      </div>
-                    </div>
+            <div className="space-y-3">
+              {mealsByDay.map(({ date, entries }) => (
+                <div key={date} className="p-4 bg-white border border-gold-light/40 rounded-xl">
+                  <div className="font-medium text-charcoal mb-2">{format(parseISO(date), 'EEEE • MMM d')}</div>
+                  <div className="space-y-1.5">
+                    {entries.map((meal: any, i) => {
+                      const k = getKashrut(meal.recipes?.name)
+                      const info = KASHRUT_INFO[k]
+                      const courseLabel = COURSES.find((c) => c.key === meal.course)?.label
+                      return (
+                        <div key={i} className="flex items-center gap-2 pl-1">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[11px] text-white rounded-md font-medium shrink-0 ${info.bg}`}>
+                            <info.Icon className="w-2.5 h-2.5" fill="currentColor" aria-hidden="true" />
+                            {k}
+                          </span>
+                          <span className="text-sm text-charcoal">
+                            {courseLabel && <span className="text-charcoal/50">{courseLabel}: </span>}
+                            {meal.recipes?.name || 'Meal'}
+                          </span>
+                        </div>
+                      )
+                    })}
                   </div>
-                )
-              })}
+                </div>
+              ))}
               {meals.length === 0 && (
                 <p className="text-sm text-charcoal/40 italic py-4">Nothing planned yet this week.</p>
               )}
