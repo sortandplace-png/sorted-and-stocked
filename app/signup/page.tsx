@@ -71,6 +71,7 @@ function SignupForm() {
           <LogoMark className="w-24 h-24" />
         </div>
         <h1 className="font-display text-3xl text-charcoal mb-1 text-center">Create your account</h1>
+        <p className="text-sm text-charcoal/50 mb-1 tracking-wide text-center">Sorted &amp; Stocked</p>
         <p className="text-sm text-charcoal/50 mb-6 tracking-wide text-center">
           You'll need the signup code you were given.
         </p>

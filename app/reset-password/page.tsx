@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Footer from '@/components/Footer';
+import { LogoMark } from '@/components/Logo';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -38,8 +39,12 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen bg-cream flex items-center justify-center px-6">
       <div className="max-w-sm w-full">
-        <h1 className="font-display text-2xl text-charcoal mb-1">Set a new password</h1>
-        <p className="text-sm text-charcoal/50 mb-6">Choose something you haven't used before.</p>
+        <div className="flex justify-center mb-4">
+          <LogoMark className="w-24 h-24" />
+        </div>
+        <h1 className="font-display text-2xl text-charcoal mb-1 text-center">Set a new password</h1>
+        <p className="text-sm text-charcoal/50 mb-1 tracking-wide text-center">Sorted &amp; Stocked</p>
+        <p className="text-sm text-charcoal/50 mb-6 text-center">Choose something you haven't used before.</p>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
