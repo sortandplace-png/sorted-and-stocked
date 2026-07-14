@@ -655,16 +655,8 @@ export default function InventoryClient({
   if (loading) return <SkeletonList />;
 
   // Stat cards — real counts from the real fetched data, not placeholders.
-  // Total Value is current_qty × unit_cost summed across items with both
-  // populated; right now current_qty is 0 for literally every item in this
-  // property (confirmed live — a pre-physical-count state, not a bug), so
-  // this will read $0.00 until that count happens regardless of unit_cost.
   const totalItemsCount = items.length;
   const lowStockCount = items.filter((i) => i.current_qty < i.min_qty).length;
-  const totalValue = items.reduce(
-    (sum, i) => (i.unit_cost !== null ? sum + i.current_qty * i.unit_cost : sum),
-    0
-  );
 
   // Room summaries for the grid view — one card per real room (a location
   // one level below a top-level group like Basement/Main Floor/Upstairs),
@@ -836,7 +828,7 @@ export default function InventoryClient({
         <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2 mb-3">{error}</p>
       )}
 
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="rounded-2xl p-3 bg-white border border-gold-light/40 text-center">
           <div className="text-xl font-display text-charcoal">{totalItemsCount}</div>
           <div className="text-[11px] text-charcoal/50">Total Items</div>
@@ -846,12 +838,6 @@ export default function InventoryClient({
             {lowStockCount}
           </div>
           <div className="text-[11px] text-charcoal/50">Low Stock</div>
-        </div>
-        <div className="rounded-2xl p-3 bg-white border border-gold-light/40 text-center">
-          <div className="text-xl font-display text-charcoal">
-            ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-          </div>
-          <div className="text-[11px] text-charcoal/50">Total Value</div>
         </div>
       </div>
 
