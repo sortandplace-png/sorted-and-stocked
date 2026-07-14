@@ -18,7 +18,7 @@ import RecipeBracha from '@/components/RecipeBracha';
 import RecipePrepLeadDays from '@/components/RecipePrepLeadDays';
 import KitchenOpsToolModal, { type KitchenOpsSlug } from '@/components/KitchenOpsToolModal';
 import AddToMealPlanButton from '@/components/AddToMealPlanButton';
-import type { Course } from '@/lib/course-constants';
+import { COURSES, type Course } from '@/lib/course-constants';
 import IngredientShoppingLink from '@/components/IngredientShoppingLink';
 import { fetchRecipeWithIngredients } from '@/lib/recipe-actions';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
@@ -44,6 +44,7 @@ import { formatScaledNumber } from '@/lib/scale-quantity';
 import { formatMinutes } from '@/lib/format-time';
 import { approxGrams } from '@/lib/metric-conversion';
 import { useToast } from '@/components/Toast';
+import { SITE_URL } from '@/lib/site-url';
 
 interface Ingredient {
   id: string;
@@ -214,11 +215,20 @@ export default function RecipeDetailClient({
       }
 
       // Shuffle so repeat visits surface variety instead of always the
-      // same alphabetically-first 4 (e.g. desserts) out of a larger pool.
-      const shuffled = [...pool].sort(() => Math.random() - 0.5);
-      setPairsWellWith(
-        shuffled.slice(0, 4).map((c) => ({ id: c.id, name: c.name, photo_url: c.photo_url, course: c.course }))
+      // same alphabetically-first 4 (e.g. desserts) out of a larger pool --
+      // but the shuffle picked WHICH 4 show up, it shouldn't also decide
+      // the order they're displayed in. Real bug confirmed live: two soups
+      // landing adjacent, protein/salad appearing before soup. Re-sorted
+      // into the same canonical course order (Dip/Kids Platter/Soup/
+      // Protein/Starch/Vege/Salad/Dessert-last) already used on the
+      // Dashboard's This Week's Meals, after the random pick, not instead
+      // of it.
+      const courseOrderIndex = new Map(COURSES.map((c, i) => [c.key, i]));
+      const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 4);
+      const ordered = shuffled.sort(
+        (a, b) => (courseOrderIndex.get(a.course as Course) ?? 99) - (courseOrderIndex.get(b.course as Course) ?? 99)
       );
+      setPairsWellWith(ordered.map((c) => ({ id: c.id, name: c.name, photo_url: c.photo_url, course: c.course })));
     })();
   }, [recipe, recipeId, propertyId, supabase]);
 
@@ -431,7 +441,10 @@ export default function RecipeDetailClient({
           )}
           <button
             onClick={async () => {
-              const url = `${window.location.origin}/properties/${propertyId}/recipes/${recipeId}`;
+              // SITE_URL, not window.location.origin -- a recipe shared from
+              // a local dev session would otherwise hand someone a
+              // localhost link that fails to open for them.
+              const url = `${SITE_URL}/properties/${propertyId}/recipes/${recipeId}`;
               if (navigator.share) {
                 await navigator.share({ title: recipe.name, url });
               } else {
