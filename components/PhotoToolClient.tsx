@@ -68,8 +68,20 @@ export default function PhotoToolClient({
     if (!file) return;
     if (preview) URL.revokeObjectURL(preview);
     setPreview(URL.createObjectURL(file));
-    const { data, mediaType } = await fileToBase64(file);
-    runAnalysis({ imageBase64: data, mediaType });
+    // Previously unguarded -- a decode failure here (corrupt file, an
+    // unsupported format like HEIC in some browsers, no canvas 2d context)
+    // threw inside an event handler with no catch anywhere in the call
+    // chain. That's a silent, uncaught promise rejection: the UI shows the
+    // preview image, then just sits there forever with no loading state,
+    // no error, and runAnalysis() -- which holds the actual fetch() call --
+    // never runs at all. Indistinguishable from "does nothing" to whoever's
+    // using it.
+    try {
+      const { data, mediaType } = await fileToBase64(file);
+      runAnalysis({ imageBase64: data, mediaType });
+    } catch {
+      setError("Couldn't read that photo — try a different one.");
+    }
   }
 
   function handleTextSubmit() {

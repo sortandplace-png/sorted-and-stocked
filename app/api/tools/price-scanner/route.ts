@@ -60,6 +60,13 @@ export async function POST(request: Request) {
         });
     return NextResponse.json({ result: text });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Unknown error' }, { status: 500 });
+    // Same fix as recipe-stealer's route (shares this Anthropic client and
+    // the same raw-error-leak bug) -- log the real reason server-side,
+    // never send it to the client.
+    console.error('price-scanner failed:', err);
+    return NextResponse.json(
+      { error: "We couldn't process that right now — try again in a moment." },
+      { status: 500 }
+    );
   }
 }

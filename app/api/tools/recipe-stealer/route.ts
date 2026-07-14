@@ -54,6 +54,15 @@ export async function POST(request: Request) {
         });
     return NextResponse.json({ result: text });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Unknown error' }, { status: 500 });
+    // Log the real error server-side (Vercel function logs) -- the raw
+    // message (e.g. "Anthropic API error (401): invalid x-api-key") was
+    // previously sent straight to the client and rendered verbatim in the
+    // modal. A caller has no use for that detail and it isn't safe to show
+    // a stranger a live API failure reason.
+    console.error('recipe-stealer failed:', err);
+    return NextResponse.json(
+      { error: "We couldn't process that right now — try again in a moment." },
+      { status: 500 }
+    );
   }
 }
