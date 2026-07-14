@@ -1,7 +1,7 @@
 // app/properties/[id]/dashboard/page.tsx
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { format, isFriday, isSaturday, parseISO } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { Calendar, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, UtensilsCrossed } from 'lucide-react'
 import FloatingScanButton from '@/components/FloatingScanButton'
 import { COURSES } from '@/lib/course-constants'
@@ -89,7 +89,7 @@ async function getData(propertyId: string) {
     .maybeSingle()
 
   const [meals, inventory, shopping] = await Promise.all([
-    supabase.from('meal_plan_entries').select('plan_date, recipe_id, course, recipes(name)').eq('property_id', propertyId).gte('plan_date', startStr).lte('plan_date', endStr).order('plan_date'),
+    supabase.from('meal_plan_entries').select('plan_date, recipe_id, course, recipes(name, kosher_type)').eq('property_id', propertyId).gte('plan_date', startStr).lte('plan_date', endStr).order('plan_date'),
     supabase.from('inventory_items').select('category, name, current_qty, min_qty, photo_url, reorder_link').eq('property_id', propertyId).order('category'),
     list
       ? supabase.from('shopping_list_items').select('name, category, qty_needed, status, inventory_items(photo_url, reorder_link)').eq('shopping_list_id', list.id).eq('status', 'pending').order('category')
@@ -154,10 +154,15 @@ const KASHRUT_INFO = {
   Parve: { color: 'text-sage', bg: 'bg-sage', Icon: Circle },
 } as const
 
-function getKashrut(name: string): keyof typeof KASHRUT_INFO {
-  const n = name?.toLowerCase() || ''
-  if (n.includes('cheese') || n.includes('milk') || n.includes('yogurt') || n.includes('butter')) return 'Milchig'
-  if (n.includes('chicken') || n.includes('beef') || n.includes('steak') || n.includes('meat') || n.includes('brisket')) return 'Fleishig'
+// Was guessing kashrut from the recipe NAME via substring match (e.g.
+// "cheese"/"milk"/"butter") -- real bug confirmed live: "Butternut Squash
+// and Apple Soup" (real kosher_type: Parve) matched "butter" inside
+// "Butternut" and showed Milchig. recipes.kosher_type already holds the
+// real value ('Meat' | 'Dairy' | 'Parve', confirmed live against every
+// distinct value in the table) -- read that directly instead of guessing.
+function getKashrut(kosherType: string | null | undefined): keyof typeof KASHRUT_INFO {
+  if (kosherType === 'Meat') return 'Fleishig'
+  if (kosherType === 'Dairy') return 'Milchig'
   return 'Parve'
 }
 
@@ -210,14 +215,35 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   )
 
   const now = new Date()
-  const isShabbos = (isFriday(now) && hebcal.candleDate && now > new Date(new Date(hebcal.candleDate).getTime() - 3600000)) ||
-                    (isSaturday(now) && hebcal.havdalahDate && now < new Date(hebcal.havdalahDate))
+
+  // isFriday(now)/isSaturday(now)/now.getHours() all read the JS Date in
+  // whatever timezone the server process itself runs in -- Vercel's
+  // serverless functions default to UTC, not Lakewood, NJ. Real bug found
+  // while re-verifying the Motzei Shabbos banner (reported as "doesn't look
+  // present"): at a real Eastern-time Saturday evening, UTC has usually
+  // already rolled over to Sunday, so isSaturday(now) was false exactly
+  // when it needed to be true. Same root cause would have affected the
+  // pre-existing isShabbos flag too (Shabbos Mode styling), not just the
+  // new banner -- fixed both via the actual Lakewood-local weekday/hour.
+  const easternParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'short',
+    hour: 'numeric',
+    hourCycle: 'h23',
+  }).formatToParts(now)
+  const easternWeekday = easternParts.find((p) => p.type === 'weekday')?.value ?? ''
+  const easternHour = parseInt(easternParts.find((p) => p.type === 'hour')?.value ?? '0', 10)
+  const isEasternFriday = easternWeekday === 'Fri'
+  const isEasternSaturday = easternWeekday === 'Sat'
+
+  const isShabbos = (isEasternFriday && hebcal.candleDate && now > new Date(new Date(hebcal.candleDate).getTime() - 3600000)) ||
+                    (isEasternSaturday && hebcal.havdalahDate && now < new Date(hebcal.havdalahDate))
 
   // Motzei Shabbos casual-suggestions banner: Saturday evening, no backend --
   // just a time-of-week nudge toward the easiest post-Shabbos dinner options.
   // 6pm flat cutoff rather than the real (seasonal) Havdalah time since this
   // is a casual suggestion, not a halachic determination.
-  const isMotzeiShabbos = isSaturday(now) && now.getHours() >= 18
+  const isMotzeiShabbos = isEasternSaturday && easternHour >= 18
 
   const eruvTavshilin = getUpcomingEruvTavshilin(now)
 
@@ -463,7 +489,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                   <div className="font-medium text-charcoal mb-2">{format(parseISO(date), 'EEEE • MMM d')}</div>
                   <div className="space-y-1.5">
                     {entries.map((meal: any, i) => {
-                      const k = getKashrut(meal.recipes?.name)
+                      const k = getKashrut(meal.recipes?.kosher_type)
                       const info = KASHRUT_INFO[k]
                       const courseLabel = COURSES.find((c) => c.key === meal.course)?.label
                       return (
