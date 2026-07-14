@@ -23,7 +23,19 @@ export default function Footer({ propertyId }: { propertyId?: string }) {
             <span className="mx-2">·</span>
           </>
         )}
-        <a href="mailto:sortandplace@gmail.com" className="hover:text-charcoal underline underline-offset-2">
+        {/* mailto: silently does nothing on a device with no registered
+            mail handler (confirmed: fails even with Gmail open in another
+            tab -- that's not the same as being the registered handler).
+            Every real account in this app is a Gmail address, so a Gmail
+            compose URL works everywhere a browser does, regardless of
+            device mail-client setup. Still just "Contact" as the visible
+            text, not the raw address. */}
+        <a
+          href="https://mail.google.com/mail/?view=cm&fs=1&to=sortandplace@gmail.com&su=Sorted%20%26%20Stocked%20Support"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-charcoal underline underline-offset-2"
+        >
           Contact
         </a>
       </div>
