@@ -102,6 +102,10 @@ export default function LoginPage() {
           </button>
         </form>
 
+        <a href="/signup" className="block text-center text-sm text-charcoal/60 mt-4">
+          Have a signup code? Create an account
+        </a>
+
         <Footer />
       </div>
     </div>
