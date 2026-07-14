@@ -11,6 +11,7 @@ import { List, type RowComponentProps } from 'react-window';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
+import { SITE_URL } from '@/lib/site-url';
 
 type Item = {
   id: string;
@@ -216,10 +217,11 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
         // scanned with whatever camera app staff have open, not necessarily
         // this app's own in-app scanner. /scan/[code] looks the code up and
         // redirects straight into the item's Scan screen (reorder link one
-        // tap away). window.location.origin is the best available base until
-        // a fixed production domain exists (still localhost-only as of this
-        // build) — regenerate labels after deploying to a real domain.
-        const qrUrl = `${window.location.origin}/scan/${encodeURIComponent(item.qr_code)}`;
+        // tap away). SITE_URL, not window.location.origin -- a label printed
+        // from a local dev session would otherwise encode a localhost URL
+        // that fails the moment it's scanned on a real phone (same bug
+        // class as the auth-email redirect issue).
+        const qrUrl = `${SITE_URL}/scan/${encodeURIComponent(item.qr_code)}`;
         const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 0 });
         const qrSize = 0.6;
 
