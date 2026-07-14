@@ -32,7 +32,10 @@ export default async function PropertiesPage() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
             <LogoMark className="w-8 h-8" />
-            <h1 className="font-display text-2xl text-charcoal">Your properties</h1>
+            <div>
+              <h1 className="font-display text-2xl text-charcoal leading-tight">Your properties</h1>
+              <p className="text-xs text-charcoal/50">Strauss Residence</p>
+            </div>
           </div>
           <LogoutButton variant="light" />
         </div>
