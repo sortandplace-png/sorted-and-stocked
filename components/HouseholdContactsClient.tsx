@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { resilientInsert, resilientDelete } from '@/lib/resilient-write';
+import { resilientInsert, resilientUpdate, resilientDelete } from '@/lib/resilient-write';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
@@ -34,6 +34,7 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
   const [email, setEmail] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -50,34 +51,53 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
     load();
   }, [load]);
 
-  async function addContact() {
+  function resetForm() {
+    setEditingId(null);
+    setName('');
+    setContactRole('');
+    setPhone('');
+    setEmail('');
+    setTagsInput('');
+  }
+
+  function startEdit(c: Contact) {
+    setEditingId(c.id);
+    setName(c.name);
+    setContactRole(c.role ?? '');
+    setPhone(c.phone ?? '');
+    setEmail(c.email ?? '');
+    setTagsInput((c.tags ?? []).join(', '));
+  }
+
+  async function saveContact() {
     if (!name.trim()) return;
     setSaving(true);
     const tags = tagsInput
       .split(',')
       .map((t) => t.trim())
       .filter(Boolean);
-
-    const result = await resilientInsert(supabase, 'household_contacts', {
-      property_id: propertyId,
+    const values = {
       name: name.trim(),
       role: contactRole.trim() || null,
       phone: phone.trim() || null,
       email: email.trim() || null,
       tags,
-    });
+    };
+
+    const result = editingId
+      ? await resilientUpdate(supabase, 'household_contacts', { id: editingId }, values)
+      : await resilientInsert(supabase, 'household_contacts', { property_id: propertyId, ...values });
     setSaving(false);
 
     if (!result.ok) {
       showToast('Failed to save.', { variant: 'error' });
       return;
     }
-    showToast(result.queued ? 'Saved — will sync when back online.' : 'Added.', { variant: 'success' });
-    setName('');
-    setContactRole('');
-    setPhone('');
-    setEmail('');
-    setTagsInput('');
+    showToast(
+      result.queued ? 'Saved — will sync when back online.' : editingId ? 'Saved.' : 'Added.',
+      { variant: 'success' }
+    );
+    resetForm();
     load();
   }
 
@@ -87,6 +107,7 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
       showToast('Failed to delete.', { variant: 'error' });
       return;
     }
+    if (editingId === id) resetForm();
     setContacts((prev) => prev.filter((c) => c.id !== id));
   }
 
@@ -96,6 +117,8 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
     return (
       c.name.toLowerCase().includes(q) ||
       c.role?.toLowerCase().includes(q) ||
+      c.phone?.toLowerCase().includes(q) ||
+      c.email?.toLowerCase().includes(q) ||
       c.tags?.some((t) => t.toLowerCase().includes(q))
     );
   });
@@ -110,13 +133,13 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search name, role, or tag…"
+        placeholder="Search name, role, phone, email, or tag…"
         className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2.5 bg-white mb-4 text-sm"
       />
 
       {canManage(role) && (
         <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-2">
-          <h2 className="font-display text-lg text-charcoal mb-1">Add a contact</h2>
+          <h2 className="font-display text-lg text-charcoal mb-1">{editingId ? 'Edit contact' : 'Add a contact'}</h2>
           <div>
             <FieldLabel>Name</FieldLabel>
             <input
@@ -164,13 +187,23 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
               className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
             />
           </div>
-          <button
-            onClick={addContact}
-            disabled={saving || !name.trim()}
-            className="w-full py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
-          >
-            {saving ? 'Saving…' : 'Add contact'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={saveContact}
+              disabled={saving || !name.trim()}
+              className="flex-1 py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
+            >
+              {saving ? 'Saving…' : editingId ? 'Save changes' : 'Add contact'}
+            </button>
+            {editingId && (
+              <button
+                onClick={resetForm}
+                className="px-4 py-2.5 rounded-full border border-charcoal/30 text-charcoal font-medium"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -193,13 +226,22 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
                 {c.role && <p className="text-xs text-gold-dark">{c.role}</p>}
               </div>
               {canManage(role) && (
-                <button
-                  onClick={() => removeContact(c.id)}
-                  className="text-xs text-charcoal/30 hover:text-rust shrink-0"
-                  aria-label="Delete contact"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => startEdit(c)}
+                    className="text-xs text-charcoal/40 hover:text-charcoal"
+                    aria-label="Edit contact"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => removeContact(c.id)}
+                    className="text-xs text-charcoal/30 hover:text-rust"
+                    aria-label="Delete contact"
+                  >
+                    ✕
+                  </button>
+                </div>
               )}
             </div>
             <div className="flex flex-wrap gap-3 mt-1.5 text-sm">
