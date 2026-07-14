@@ -19,7 +19,7 @@ export default function Footer({ propertyId }: { propertyId?: string }) {
         </>
       )}
       <a href="mailto:sortandplace@gmail.com" className="hover:text-charcoal underline underline-offset-2">
-        sortandplace@gmail.com
+        Contact
       </a>
     </footer>
   );
