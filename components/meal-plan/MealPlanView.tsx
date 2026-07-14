@@ -1202,9 +1202,9 @@ export default function MealPlanView({
                           <div key={`${key}-${entry?.id ?? 'empty'}`} className="flex items-center gap-2.5 px-4 py-2">
                             {photo && isDirectImageUrl(photo) ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={photo} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                              <img src={photo} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
                             ) : (
-                              <span className="w-9 h-9 rounded-lg bg-gold-light/25 shrink-0 flex items-center justify-center text-base">
+                              <span className="w-12 h-12 rounded-lg bg-gold-light/25 shrink-0 flex items-center justify-center text-lg">
                                 {icon}
                               </span>
                             )}
