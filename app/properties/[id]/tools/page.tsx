@@ -30,7 +30,7 @@ const TOOLS = [
   {
     slug: 'knowledge-base',
     icon: '📚',
-    title: 'Household Knowledge Base',
+    title: 'House Manual',
     description: 'The answers staff and family keep asking for.',
   },
   {
@@ -151,7 +151,14 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
     .single();
   const flags = (property?.feature_flags ?? {}) as Record<string, boolean>;
 
-  const tools = flags.guest_taste_memory ? [...TOOLS, TASTE_MEMORY_TOOL] : TOOLS;
+  const { count: knowledgeCount } = await supabase
+    .from('household_knowledge')
+    .select('id', { count: 'exact', head: true })
+    .eq('property_id', id);
+
+  const tools = (flags.guest_taste_memory ? [...TOOLS, TASTE_MEMORY_TOOL] : TOOLS).map((t) =>
+    t.slug === 'knowledge-base' ? { ...t, count: knowledgeCount ?? 0 } : t
+  );
   const bySlug = new Map(tools.map((t) => [t.slug, t]));
 
   const groups = GROUPS.map((group) => ({

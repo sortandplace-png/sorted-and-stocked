@@ -5,7 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import ToolModal, { type ToolModalSlug } from '@/components/ToolModal';
 
-type Tool = { slug: string; icon: string; title: string; description: string };
+type Tool = { slug: string; icon: string; title: string; description: string; count?: number };
 type Group = { key: string; label: string; tools: Tool[] };
 
 // Same modal treatment already proven for Kitchen Ops (opened from a
@@ -68,7 +68,14 @@ export default function ToolsGroupList({ propertyId, groups }: { propertyId: str
                       <span className="w-11 h-11 flex items-center justify-center rounded-full bg-gold/15 text-lg">
                         {tool.icon}
                       </span>
-                      <span className="block font-display font-semibold text-charcoal">{tool.title}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="font-display font-semibold text-charcoal">{tool.title}</span>
+                        {typeof tool.count === 'number' && (
+                          <span className="text-xs font-medium text-charcoal/40 bg-cream px-1.5 py-0.5 rounded-full">
+                            {tool.count}
+                          </span>
+                        )}
+                      </span>
                       <span className="block text-sm text-charcoal/50">{tool.description}</span>
                     </>
                   );

@@ -19,7 +19,7 @@ type Entry = {
 
 type KnowledgeDraft = { question: string; answer: string; category: string };
 
-const CATEGORIES = ['General', 'Kitchen', 'Guests', 'Maintenance', 'Shabbos/Yom Tov'];
+const CATEGORIES = ['WiFi & Codes', 'Appliances', 'House Rules', 'Kitchen', 'Guests', 'Maintenance', 'Shabbos/Yom Tov', 'General'];
 
 export default function HouseholdKnowledgeClient({ propertyId }: { propertyId: string }) {
   const role = usePropertyRole();
@@ -120,7 +120,7 @@ export default function HouseholdKnowledgeClient({ propertyId }: { propertyId: s
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Household Knowledge Base</h1>
+      <h1 className="text-2xl font-display text-charcoal mb-1">House Manual</h1>
       <p className="text-sm text-charcoal/50 mb-4">
         The answers staff and family keep asking for — where things are, how things are done.
       </p>
