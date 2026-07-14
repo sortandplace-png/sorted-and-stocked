@@ -9,6 +9,7 @@ import LogoutButton from '@/components/LogoutButton';
 import HeaderAvatarUpload from '@/components/HeaderAvatarUpload';
 import CommandPalette from '@/components/CommandPalette';
 import CommandPaletteTrigger from '@/components/CommandPaletteTrigger';
+import AskTheHouseClient from '@/components/AskTheHouseClient';
 import { LogoMark } from '@/components/Logo';
 import LocaleToggle from '@/components/LocaleToggle';
 import { PropertyRoleProvider, type PropertyRole } from '@/components/PropertyRoleContext';
@@ -133,6 +134,7 @@ export default async function PropertyLayout({
                 </span>
               </div>
             )}
+            <AskTheHouseClient propertyId={id} />
             <CommandPaletteTrigger />
             <LocaleToggle />
             <HeaderAvatarUpload
