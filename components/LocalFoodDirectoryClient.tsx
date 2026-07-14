@@ -74,6 +74,7 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [hashgachaFilter, setHashgachaFilter] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -104,10 +105,16 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
     [restaurants]
   );
 
+  const hashgachas = useMemo(
+    () => [...new Set(restaurants.map((r) => r.hashgacha).filter(Boolean))] as string[],
+    [restaurants]
+  );
+
   const filtered = restaurants.filter((r) => {
     const q = search.trim().toLowerCase();
     if (q && !r.name.toLowerCase().includes(q)) return false;
     if (categoryFilter && r.category !== categoryFilter) return false;
+    if (hashgachaFilter && r.hashgacha !== hashgachaFilter) return false;
     return true;
   });
 
@@ -315,7 +322,7 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
       />
 
       {categories.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-4">
+        <div className="flex flex-wrap gap-1.5 mb-3">
           {categories.map((c) => (
             <button
               key={c}
@@ -325,6 +332,25 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
               }`}
             >
               {c}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* "with hashgacha noted" was only ever description text -- this is
+          the real filter, same single-select toggle pattern as category
+          just above, not a second UI paradigm. */}
+      {hashgachas.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {hashgachas.map((h) => (
+            <button
+              key={h}
+              onClick={() => setHashgachaFilter(hashgachaFilter === h ? null : h)}
+              className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+                hashgachaFilter === h ? 'bg-sage text-white' : 'bg-white border border-sage/40 text-sage'
+              }`}
+            >
+              {h}
             </button>
           ))}
         </div>
