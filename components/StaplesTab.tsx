@@ -18,6 +18,7 @@ type Staple = {
   photo_url: string | null;
   is_low: boolean;
   already_on_list: boolean;
+  hechsher: string | null;
 };
 
 export default function StaplesTab({ propertyId, shoppingListId }: { propertyId: string; shoppingListId: string }) {
@@ -140,6 +141,11 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
               {staple.staple_category}
             </span>
             <span>{staple.default_unit}</span>
+            {staple.hechsher && (
+              <span className="bg-dairy/20 px-2 py-0.5 rounded-full text-charcoal/70 truncate max-w-[10rem]">
+                {staple.hechsher}
+              </span>
+            )}
           </div>
         </div>
 
@@ -280,6 +286,12 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
           ))}
         </div>
       </div>
+
+      {staples.some((s) => s.hechsher) && (
+        <p className="text-[11px] text-charcoal/40 px-1">
+          Hechsher shown here is a starting reference — always confirm against the actual product label before use.
+        </p>
+      )}
 
       {/* Staples Grid */}
       {filteredStaples.length === 0 ? (

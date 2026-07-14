@@ -14,6 +14,7 @@ export interface StaplesWithInventory {
   photo_url: string | null;
   is_low: boolean;
   already_on_list: boolean;
+  hechsher: string | null;
 }
 
 /**
