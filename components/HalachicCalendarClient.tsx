@@ -7,7 +7,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { format, parseISO } from 'date-fns';
 import { SkeletonList } from '@/components/Skeleton';
+import { createClient } from '@/lib/supabase/client';
+import { groupYomTovOccasions, type YomTovOccasion } from '@/lib/yom-tov';
 
 const BEDIKAS_TOLAIM_ITEMS = [
   { item: 'Romaine lettuce', note: 'Check leaves individually against light, or use pre-checked bagged romaine.' },
@@ -28,12 +31,27 @@ type CalendarData = {
 export default function HalachicCalendarClient() {
   const [data, setData] = useState<CalendarData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [upcoming, setUpcoming] = useState<YomTovOccasion[] | null>(null);
 
   useEffect(() => {
     fetch('/api/tools/halachic-calendar')
       .then((res) => res.json())
       .then(setData)
       .finally(() => setLoading(false));
+
+    // Separate from the Hebcal-backed Erev Pesach countdown above — this
+    // reuses the existing yom_tov_dates table (same source as the Dashboard
+    // card), no second date engine.
+    const supabase = createClient();
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    supabase
+      .from('yom_tov_dates')
+      .select('date, holiday_name')
+      .gte('date', todayStr)
+      .order('date')
+      .then(({ data: rows }) => {
+        setUpcoming(groupYomTovOccasions(rows || [], todayStr).slice(0, 3));
+      });
   }, []);
 
   if (loading) return <SkeletonList rows={3} />;
@@ -43,6 +61,22 @@ export default function HalachicCalendarClient() {
   return (
     <div className="max-w-md mx-auto p-4 space-y-4">
       <h1 className="text-2xl font-display text-charcoal mb-1">Halachic Calendar</h1>
+
+      {upcoming && upcoming.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+          <h2 className="font-display text-lg text-charcoal mb-2">Upcoming</h2>
+          <ul className="space-y-1.5">
+            {upcoming.map((occ) => (
+              <li key={occ.name + occ.date} className="flex items-center justify-between text-sm">
+                <span className="font-medium text-charcoal">{occ.name}</span>
+                <span className="text-charcoal/60">
+                  {format(parseISO(occ.date), 'MMM d')} · {occ.daysUntil === 0 ? 'today' : `${occ.daysUntil} day${occ.daysUntil === 1 ? '' : 's'}`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
         <h2 className="font-display text-lg text-charcoal mb-1">Sefiras HaOmer</h2>

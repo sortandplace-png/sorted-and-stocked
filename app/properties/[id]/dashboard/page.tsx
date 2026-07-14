@@ -5,7 +5,7 @@ import { format, parseISO } from 'date-fns'
 import { Calendar, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, UtensilsCrossed, BookMarked } from 'lucide-react'
 import FloatingScanButton from '@/components/FloatingScanButton'
 import { COURSES } from '@/lib/course-constants'
-import { getUpcomingEruvTavshilin } from '@/lib/eruv-tavshilin'
+import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -82,6 +82,96 @@ async function getIsErevYomTov(tomorrowStr: string): Promise<boolean> {
   const supabase = await createClient()
   const { data } = await supabase.from('yom_tov_dates').select('date').eq('date', tomorrowStr).maybeSingle()
   return !!data
+}
+
+// Reuses getUpcomingEruvTavshilin (lib/yom-tov.ts) rather than a second
+// date engine -- that function already accounts for the real halachic rule
+// (Erev Yom Tov = the day before the WHOLE occasion starts, not "the day
+// before Friday", which breaks for a 2-day Yom Tov starting Thursday).
+// Same 7-day reminder window the old hardcoded lib/eruv-tavshilin.ts used.
+type EruvBanner = { name: string; eruvDate: string } | null
+
+async function getEruvTavshilinBanner(todayIso: string): Promise<EruvBanner> {
+  const supabase = await createClient()
+  const { data: rows } = await supabase.from('yom_tov_dates').select('date, holiday_name').gte('date', todayIso)
+  const alerts = getUpcomingEruvTavshilin(rows || [], todayIso).filter((a) => a.daysUntil <= 7)
+  const next = alerts[0]
+  return next ? { name: next.name, eruvDate: next.eruvDate } : null
+}
+
+// Real, live Reset Checklists already exist (ResetChecklistClient.tsx,
+// task_templates + reset_checklist_progress, reachable at
+// /tools/reset-checklist) -- confirmed both "Erev Shabbos Prep" and
+// "Post-Shabbos Deep Reset" templates are real rows for this property, not
+// something to build. This only decides WHEN to surface a Dashboard
+// reminder pointing at that already-real page.
+//
+// Reuses the exact same candleDate the existing Erev-Shabbos-window check
+// needs (safe: it's always looking forward to a not-yet-passed Friday, no
+// ambiguity). Deliberately does NOT reuse havdalahDate for the Post-Shabbos
+// window -- once Havdalah has actually passed, a fresh dateless Hebcal
+// fetch may already flip to referencing *next* week's Shabbos (the same
+// fetch this page's own isShabbos check relies on), so "now > havdalahDate"
+// stops being reliable exactly when this needs it most. Sunday/Saturday-
+// night detection uses plain day-of-week instead (date-fns, same library
+// already used for isShabbos), and "has this cycle been started" is judged
+// against the most recent real Friday via simple calendar math -- not a
+// second Hebcal-based date engine, just Date arithmetic.
+function mostRecentFriday(now: Date): Date {
+  const d = new Date(now)
+  const diff = (d.getDay() + 2) % 7 // days since the most recent Friday (getDay: 0=Sun..6=Sat)
+  d.setDate(d.getDate() - diff)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+type ResetBanner = { type: 'post-shabbos' | 'erev-shabbos'; templateName: string } | null
+
+async function getResetBannerInfo(propertyId: string, candleDate: string | null, isEasternSaturday: boolean, easternHour: number, isEasternSunday: boolean): Promise<ResetBanner> {
+  const supabase = await createClient()
+  const now = new Date()
+
+  const { data: templates } = await supabase
+    .from('task_templates')
+    .select('id, template_name')
+    .eq('property_id', propertyId)
+    .in('template_name', ['Erev Shabbos Prep', 'Post-Shabbos Deep Reset'])
+
+  const erevTemplate = templates?.find((t) => t.template_name === 'Erev Shabbos Prep')
+  const postTemplate = templates?.find((t) => t.template_name === 'Post-Shabbos Deep Reset')
+
+  async function startedThisCycle(templateId: string | undefined): Promise<boolean> {
+    if (!templateId) return true // no real template row -- don't show a banner pointing at nothing
+    const { count } = await supabase
+      .from('reset_checklist_progress')
+      .select('id', { count: 'exact', head: true })
+      .eq('template_id', templateId)
+      .gt('updated_at', mostRecentFriday(now).toISOString())
+    return (count ?? 0) > 0
+  }
+
+  // Post-Shabbos: Saturday night after Havdalah roughly-ish (start of
+  // Saturday evening, taken as sundown-adjacent -- real precision isn't
+  // critical for a reminder banner) through the end of Sunday.
+  if ((isEasternSaturday && easternHour >= 18) || isEasternSunday) {
+    if (!(await startedThisCycle(postTemplate?.id))) {
+      return { type: 'post-shabbos', templateName: postTemplate!.template_name }
+    }
+  }
+
+  // Erev Shabbos Prep: 2 days before real candle-lighting through
+  // candle-lighting itself (roughly Wednesday/Thursday through Friday).
+  if (candleDate) {
+    const candle = new Date(candleDate)
+    const windowStart = new Date(candle.getTime() - 2 * 24 * 60 * 60 * 1000)
+    if (now >= windowStart && now < candle) {
+      if (!(await startedThisCycle(erevTemplate?.id))) {
+        return { type: 'erev-shabbos', templateName: erevTemplate!.template_name }
+      }
+    }
+  }
+
+  return null
 }
 
 function weekBounds(today: Date) {
@@ -267,6 +357,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const easternHour = parseInt(easternPartsMap.hour ?? '0', 10)
   const isEasternFriday = easternWeekday === 'Fri'
   const isEasternSaturday = easternWeekday === 'Sat'
+  const isEasternSunday = easternWeekday === 'Sun'
 
   const isShabbos = (isEasternFriday && hebcal.candleDate && now > new Date(new Date(hebcal.candleDate).getTime() - 3600000)) ||
                     (isEasternSaturday && hebcal.havdalahDate && now < new Date(hebcal.havdalahDate))
@@ -277,25 +368,28 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   // is a casual suggestion, not a halachic determination.
   const isMotzeiShabbos = isEasternSaturday && easternHour >= 18
 
-  const eruvTavshilin = getUpcomingEruvTavshilin(now)
-
-  // Tomorrow's real Eastern calendar date, built from Date.UTC + UTC getters
-  // (not date-fns format(), which reads local-runtime parts) so this stays
-  // correct regardless of what timezone the server process itself runs in.
+  // Tomorrow's (and today's) real Eastern calendar date, built from
+  // Date.UTC + UTC getters (not date-fns format(), which reads
+  // local-runtime parts) so this stays correct regardless of what timezone
+  // the server process itself runs in.
   const easternTodayUTC = Date.UTC(
     parseInt(easternPartsMap.year ?? '1970', 10),
     parseInt(easternPartsMap.month ?? '1', 10) - 1,
     parseInt(easternPartsMap.day ?? '1', 10)
   )
+  const easternTodayDate = new Date(easternTodayUTC)
+  const easternTodayStr = `${easternTodayDate.getUTCFullYear()}-${String(easternTodayDate.getUTCMonth() + 1).padStart(2, '0')}-${String(easternTodayDate.getUTCDate()).padStart(2, '0')}`
   const tomorrowUTC = new Date(easternTodayUTC + 24 * 60 * 60 * 1000)
   const easternTomorrowStr = `${tomorrowUTC.getUTCFullYear()}-${String(tomorrowUTC.getUTCMonth() + 1).padStart(2, '0')}-${String(tomorrowUTC.getUTCDate()).padStart(2, '0')}`
 
   // Persistent Halachic Calendar widget (separate from the existing Tools
   // Hub card, which stays as-is): Sefira count + candle-lighting time,
   // shown on Friday or Erev Yom Tov specifically.
-  const [omerTitle, isErevYomTov] = await Promise.all([
+  const [omerTitle, isErevYomTov, eruvTavshilin, resetBanner] = await Promise.all([
     getOmerStatus(),
     getIsErevYomTov(easternTomorrowStr),
+    getEruvTavshilinBanner(easternTodayStr),
+    getResetBannerInfo(propertyId, hebcal.candleDate ?? null, isEasternSaturday, easternHour, isEasternSunday),
   ])
   const showHalachicWidget = isEasternFriday || isErevYomTov
 
@@ -490,9 +584,24 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               <Flame size={16} strokeWidth={1.75} className="text-gold-dark" aria-hidden="true" /> Eruv Tavshilin reminder
             </h2>
             <p className="text-sm text-charcoal/80">
-              Make Eruv Tavshilin on <span className="font-medium">{format(parseISO(eruvTavshilin.eruvDate), 'EEEE, MMM d')}</span>, before {eruvTavshilin.holidayName} begins.
+              Make Eruv Tavshilin on <span className="font-medium">{format(parseISO(eruvTavshilin.eruvDate), 'EEEE, MMM d')}</span>, before {eruvTavshilin.name} begins.
             </p>
           </div>
+        )}
+
+        {resetBanner && (
+          <Link
+            href={`/properties/${propertyId}/tools/reset-checklist`}
+            className="block rounded-2xl p-4 mb-8 bg-gold-light/15 border border-gold-light/40 hover:bg-gold-light/25 transition-colors"
+          >
+            <h2 className="text-sm font-display text-charcoal mb-1 flex items-center gap-1.5">
+              <BookMarked size={16} strokeWidth={1.75} className="text-gold-dark" aria-hidden="true" />
+              {resetBanner.type === 'post-shabbos' ? 'Post-Shabbos reset' : 'Erev Shabbos prep'}
+            </h2>
+            <p className="text-sm text-charcoal/80">
+              {resetBanner.templateName} hasn't been started yet — tap to open the checklist.
+            </p>
+          </Link>
         )}
 
         {isMotzeiShabbos && (
