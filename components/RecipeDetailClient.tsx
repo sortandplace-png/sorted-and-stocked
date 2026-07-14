@@ -23,6 +23,7 @@ import { COURSES, type Course } from '@/lib/course-constants';
 import IngredientShoppingLink from '@/components/IngredientShoppingLink';
 import { fetchRecipeWithIngredients } from '@/lib/recipe-actions';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
+import { classifyProvenance, PROVENANCE_INFO } from '@/lib/recipe-provenance';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
 import { checkRecipeDeletable } from '@/lib/recipe-delete-guard';
 
@@ -694,6 +695,18 @@ export default function RecipeDetailClient({
             ⏱ {formatMinutes(recipe.approx_total_minutes)}
           </span>
         )}
+        {/* Manager-only: real content provenance, derived from the recipes
+            already-populated notes field (see lib/recipe-provenance.ts) --
+            not a new audit, just surfacing what real recipe-import work
+            already left behind. Staff don't need to see this. */}
+        {canManage(role) &&
+          (() => {
+            const category = classifyProvenance(recipe.notes);
+            const info = PROVENANCE_INFO[category];
+            return (
+              <span className={`text-xs px-2.5 py-1 rounded-full ${info.badgeClass}`}>{info.label}</span>
+            );
+          })()}
       </div>
       {recipe.tags && recipe.tags.length > 0 && (
         <div className="flex items-center gap-1 flex-wrap mb-4">

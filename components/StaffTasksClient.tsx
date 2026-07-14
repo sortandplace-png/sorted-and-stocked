@@ -196,7 +196,7 @@ export default function StaffTasksClient({ propertyId }: { propertyId: string })
         <select
           value={task.status}
           onChange={(e) => setStatus(task, e.target.value as Status)}
-          className="w-full text-xs border border-gold-light/60 rounded-full px-2 py-1 bg-cream/40"
+          className="w-full text-xs border border-gold-light/60 rounded-full px-3 py-2 min-h-[44px] bg-cream/40"
         >
           {COLUMNS.map((c) => (
             <option key={c.key} value={c.key}>
@@ -282,6 +282,12 @@ export default function StaffTasksClient({ propertyId }: { propertyId: string })
           {saving ? 'Saving…' : 'Add task'}
         </button>
       </div>
+
+      {tasks.length === 0 && (
+        <p className="text-sm text-charcoal/50 text-center py-4 mb-4 bg-white rounded-2xl shadow-sm shadow-charcoal/5">
+          No tasks yet — add one above.
+        </p>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {COLUMNS.map((col) => {

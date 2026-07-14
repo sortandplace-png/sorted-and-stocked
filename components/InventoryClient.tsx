@@ -884,7 +884,7 @@ export default function InventoryClient({
         </div>
         <button
           onClick={(e) => toggleFavorite(item.id, e)}
-          className="text-xl shrink-0 self-start"
+          className="text-xl shrink-0 self-start w-11 h-11 -m-2.5 flex items-center justify-center"
           aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
         >
           {isFav ? '⭐' : '☆'}
