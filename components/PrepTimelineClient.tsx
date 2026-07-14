@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { SkeletonList } from '@/components/Skeleton';
 import { formatMinutes } from '@/lib/format-time';
@@ -96,7 +97,12 @@ export default function PrepTimelineClient({ propertyId }: { propertyId: string 
       </div>
 
       {entries.length === 0 && (
-        <p className="text-sm text-charcoal/40 text-center py-8">Nothing planned for this day yet.</p>
+        <div className="text-center py-8">
+          <p className="text-sm text-charcoal/50 mb-2">Nothing planned for this day yet.</p>
+          <Link href={`/properties/${propertyId}/meal-plan`} className="text-sm font-medium text-gold-dark underline">
+            Plan a meal for this day →
+          </Link>
+        </div>
       )}
 
       {kidsPlatterEntries.length > 0 && (

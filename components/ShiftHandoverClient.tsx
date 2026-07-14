@@ -49,6 +49,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
 
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
+  const noteTextareaRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -264,6 +265,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
         </div>
 
         <textarea
+          ref={noteTextareaRef}
           value={noteText}
           onChange={(e) => setNoteText(e.target.value)}
           placeholder="e.g. Dinner prep is staged in the fridge, just needs reheating…"
@@ -337,7 +339,15 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
       {loading ? (
         <SkeletonList rows={3} />
       ) : handovers.length === 0 ? (
-        <p className="text-sm text-charcoal/40 text-center mt-4">No handover notes yet.</p>
+        <div className="text-center mt-4 py-6 bg-white rounded-2xl shadow-sm shadow-charcoal/5">
+          <p className="text-sm text-charcoal/50 mb-3">No handovers yet.</p>
+          <button
+            onClick={() => noteTextareaRef.current?.focus()}
+            className="text-sm font-medium text-white bg-gold-dark px-4 py-2 rounded-full"
+          >
+            Create end of day note
+          </button>
+        </div>
       ) : (
         <ul className="space-y-3">
           {handovers.map((h) => {

@@ -5,6 +5,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 import { List, type RowComponentProps } from 'react-window';
@@ -352,9 +353,18 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
           )}
 
           {groupedItems.length === 0 && (
-            <p className="text-sm text-charcoal/40 text-center mt-8">
-              {items.length === 0 ? 'No items yet — add some in Inventory first.' : 'No items match these filters.'}
-            </p>
+            <div className="text-center mt-8">
+              {items.length === 0 ? (
+                <>
+                  <p className="text-sm text-charcoal/50 mb-2">No items yet.</p>
+                  <Link href={`/properties/${propertyId}/inventory`} className="text-sm font-medium text-gold-dark underline">
+                    Add items in Inventory →
+                  </Link>
+                </>
+              ) : (
+                <p className="text-sm text-charcoal/40">No items match these filters.</p>
+              )}
+            </div>
           )}
         </div>
 
