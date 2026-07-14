@@ -28,6 +28,30 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // Google sign-in (the only OAuth provider) auto-creates a brand-new
+      // auth.users row for any Google email that doesn't already have an
+      // account -- there's no built-in "existing users only" toggle on
+      // Supabase's side. Every legitimate account in this app (password
+      // signup via app/api/signup/route.ts, or an accepted invite via
+      // app/api/invite/route.ts) always has at least one real
+      // property_members row by the time this callback runs. Zero rows
+      // means a Google sign-in just minted a new account with no invite
+      // behind it -- exactly the gate the invite-code signup flow exists
+      // to enforce, applied here after the OAuth redirect instead of
+      // before it.
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const { count } = await supabase
+          .from('property_members')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+        if (!count) {
+          await supabase.auth.signOut();
+          return NextResponse.redirect(`${origin}/login?error=no-invite`);
+        }
+      }
       return NextResponse.redirect(`${origin}${redirectTo}`);
     }
   }
