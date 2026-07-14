@@ -21,6 +21,10 @@ export interface EnhancedShoppingItem {
   // UI flags for conditional rendering
   is_rich_item: boolean;
   is_staple_origin: boolean;
+  // Pesach Mode: null for items with no linked inventory row (nothing to
+  // flag against) or before the Pesach status column existed on old cached
+  // callers -- the RPC itself never returns null for a real linked item.
+  pesach_status: 'kosher_for_pesach' | 'not_kosher_for_pesach' | 'needs_review' | null;
 }
 
 /**
@@ -71,8 +75,12 @@ export interface ShoppingItemSource {
   recipe_id: string;
   recipe_name: string;
   recipe_name_es: string | null;
+  recipe_photo_url: string | null;
   quantity: number | null;
   unit: string | null;
+  // Pesach Mode: whether the source recipe is tagged Pesach -- powers the
+  // inline "not cleared for Pesach" flag on shopping list items.
+  is_pesach: boolean;
 }
 
 /**
@@ -91,7 +99,7 @@ export async function fetchItemSources(shoppingListId: string): Promise<Shopping
 
   const { data, error } = await supabase
     .from('shopping_list_item_sources')
-    .select('shopping_list_item_id, recipe_id, quantity, unit, recipes(name, name_es), shopping_list_items!inner(shopping_list_id)')
+    .select('shopping_list_item_id, recipe_id, quantity, unit, recipes(name, name_es, is_pesach, photo_url), shopping_list_items!inner(shopping_list_id)')
     .eq('shopping_list_items.shopping_list_id', shoppingListId);
 
   if (error) {
@@ -104,8 +112,10 @@ export async function fetchItemSources(shoppingListId: string): Promise<Shopping
     recipe_id: row.recipe_id,
     recipe_name: row.recipes?.name ?? 'Unknown recipe',
     recipe_name_es: row.recipes?.name_es ?? null,
+    recipe_photo_url: row.recipes?.photo_url ?? null,
     quantity: row.quantity,
     unit: row.unit,
+    is_pesach: !!row.recipes?.is_pesach,
   }));
 }
 

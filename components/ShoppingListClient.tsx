@@ -27,10 +27,27 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
   const [activeTab, setActiveTab] = useState<'recipes' | 'staples'>('recipes');
   const [pairingRules, setPairingRules] = useState<PairingRule[]>([]);
   const [dismissedPairingNudge, setDismissedPairingNudge] = useState(false);
+  const [pesachModeEnabled, setPesachModeEnabled] = useState(false);
 
   const supabase = createClient();
   const showToast = useToast();
   const t = useTranslations('shopping');
+
+  // Same feature_flags.pesach_mode toggled on the Inventory page -- when
+  // on, ShoppingListViewEnhanced flags (not silently includes) items
+  // sourced from a Pesach recipe that aren't cleared yet.
+  useEffect(() => {
+    supabase
+      .from('properties')
+      .select('feature_flags')
+      .eq('id', propertyId)
+      .single()
+      .then(({ data }) => {
+        const flags = (data?.feature_flags ?? {}) as Record<string, boolean>;
+        setPesachModeEnabled(!!flags.pesach_mode);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyId]);
 
   // Reference table, not property-scoped -- fetched once, same pattern as
   // other curated reference data elsewhere in this app.
@@ -292,7 +309,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
 
           <div className="max-w-md lg:max-w-6xl mx-auto px-4">
             {listId ? (
-              <ShoppingListViewEnhanced propertyId={propertyId} shoppingListId={listId} />
+              <ShoppingListViewEnhanced propertyId={propertyId} shoppingListId={listId} pesachModeEnabled={pesachModeEnabled} />
             ) : (
               <p className="text-sm text-charcoal/40 text-center mt-8">{t('loadingList')}</p>
             )}

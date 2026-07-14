@@ -18,6 +18,7 @@ type Staple = {
   photo_url: string | null;
   is_low: boolean;
   already_on_list: boolean;
+  last_counted_at: string | null;
   hechsher: string | null;
 };
 
@@ -45,6 +46,13 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
     try {
       const data = await fetchStaplesWithInventory(propertyId, shoppingListId);
       setStaples(data);
+      // collapsedGroups previously stayed an empty Set forever -- the
+      // toggle mechanism (arrows, per-group show/hide) was real, but
+      // nothing ever populated it on load, so every category rendered
+      // expanded by default despite that being the actual point. Default
+      // sort is 'category', so pre-collapse by real category name here to
+      // match Recipe Ingredients' already-live default-collapsed pattern.
+      setCollapsedGroups(new Set(data.map((s) => s.staple_category)));
     } catch (error) {
       console.error('Error loading staples:', error);
       showToast('Failed to load staples.', { variant: 'error' });
@@ -153,14 +161,14 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
         <div className="flex flex-col items-end gap-1">
           <div
             className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-              staple.current_qty === 0 && !staple.is_low
+              staple.last_counted_at === null
                 ? 'bg-slate-200 text-slate-700'
                 : staple.is_low
                   ? 'bg-rust/15 text-rust'
                   : 'bg-emerald-100/50 text-emerald-700'
             }`}
           >
-            {staple.current_qty === 0 && !staple.is_low
+            {staple.last_counted_at === null
               ? 'Not Yet Audited'
               : staple.is_low
                 ? 'Low Stock'

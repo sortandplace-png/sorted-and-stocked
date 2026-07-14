@@ -125,15 +125,16 @@ serve(async (req) => {
 
     const { data: lowStockRows } = await supabase
       .from('inventory_items')
-      .select('name, current_qty, min_qty')
+      .select('name, current_qty, min_qty, last_counted_at')
       .eq('property_id', propertyId);
     // filter() in JS, not a query filter -- current_qty/min_qty comparisons
     // between two columns aren't expressible as a simple Supabase filter.
-    // Strictly "<", matching InventoryClient.tsx's real low-stock badge --
-    // this property's data has every item at current_qty = min_qty = 0
-    // right now, so "<=" would flag all 697 items as a false positive
-    // (confirmed live, caught in an earlier pass of this same session).
-    const lowStock = (lowStockRows ?? []).filter((i) => i.current_qty < i.min_qty);
+    // Strictly "<", matching InventoryClient.tsx's real low-stock badge.
+    // Also requires last_counted_at -- current_qty defaults to 0 and most
+    // items have never had a real physical count, so an uncounted 0 isn't
+    // a real low-stock signal, just an unknown one (same guard as
+    // InventoryClient.tsx's isLowStock() and handle_low_stock()).
+    const lowStock = (lowStockRows ?? []).filter((i) => i.last_counted_at !== null && i.current_qty < i.min_qty);
 
     const { data: taskRows } = await supabase
       .from('staff_tasks')

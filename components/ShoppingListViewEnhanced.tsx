@@ -11,7 +11,7 @@ import {
   removeShoppingItem,
   type ShoppingItemSource,
 } from '@/lib/api/shoppingList';
-import { ExternalLink, Trash2, CheckCircle2, Circle, MessageCircle, Printer, Sparkles, MoreVertical, ShoppingCart } from 'lucide-react';
+import { ExternalLink, Trash2, CheckCircle2, Circle, MessageCircle, Printer, Sparkles, MoreVertical, ShoppingCart, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import { createClient } from '@/lib/supabase/client';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
@@ -35,6 +35,7 @@ type ShoppingListItem = {
   // UI flags
   is_rich_item: boolean;
   is_staple_origin: boolean;
+  pesach_status: 'kosher_for_pesach' | 'not_kosher_for_pesach' | 'needs_review' | null;
 };
 
 // Same kashrut color tokens used elsewhere this session (Month view dots,
@@ -56,9 +57,11 @@ type DisplayItem = ShoppingListItem & { _mergedIds?: string[] };
 export default function ShoppingListViewEnhanced({
   propertyId,
   shoppingListId,
+  pesachModeEnabled = false,
 }: {
   propertyId: string;
   shoppingListId: string;
+  pesachModeEnabled?: boolean;
 }) {
   const [items, setItems] = useState<ShoppingListItem[]>([]);
   const [sources, setSources] = useState<Record<string, ShoppingItemSource[]>>({});
@@ -351,6 +354,18 @@ export default function ShoppingListViewEnhanced({
     return locale === 'es' && item.name_es ? item.name_es : item.name;
   }
 
+  // Pesach Mode: flag inline rather than silently including -- true only
+  // when a real Pesach-tagged recipe pulled this item in AND the linked
+  // inventory item isn't cleared (not_kosher_for_pesach or still
+  // needs_review). An item with no inventory link at all (pesach_status
+  // null) has nothing to flag against.
+  function pesachFlag(item: DisplayItem): boolean {
+    if (!pesachModeEnabled || !item.pesach_status || item.pesach_status === 'kosher_for_pesach') return false;
+    const ids = item._mergedIds ?? [item.item_id];
+    const itemSources = ids.flatMap((id) => sources[id] ?? []);
+    return itemSources.some((s) => s.is_pesach);
+  }
+
   function secondaryName(item: DisplayItem) {
     return locale === 'es' ? item.name : item.name_es;
   }
@@ -372,7 +387,10 @@ export default function ShoppingListViewEnhanced({
   // active groupBy mode's real groups. Shared by both buckets below so
   // checked items land in the *same* named group as their pending
   // counterparts instead of one global "Completed" pile.
-  function bucketByMode(rawItems: DisplayItem[], mode: GroupBy = groupBy): { title: string; items: DisplayItem[] }[] {
+  function bucketByMode(
+    rawItems: DisplayItem[],
+    mode: GroupBy = groupBy
+  ): { title: string; photoUrl?: string | null; items: DisplayItem[] }[] {
     // Aggregating collapses same-name rows from different recipes into one
     // display row, which would make "By Recipe" grouping lose its meaning
     // (a merged row can't cleanly belong to a single recipe group) — so
@@ -411,13 +429,13 @@ export default function ShoppingListViewEnhanced({
       return staples.length > 0 ? [{ title: 'Staples', items: staples }, ...categoryGroups] : categoryGroups;
     }
     if (mode === 'by-recipe') {
-      const groupsMap: Record<string, { title: string; items: DisplayItem[] }> = {};
+      const groupsMap: Record<string, { title: string; photoUrl: string | null; items: DisplayItem[] }> = {};
       for (const item of bucketItems) {
         const itemSources = sources[item.item_id];
         const primary = itemSources?.[0];
         const key = primary?.recipe_id ?? 'unassigned';
         const title = primary ? sourceTitle(primary) : 'Other';
-        (groupsMap[key] ??= { title, items: [] }).items.push(item);
+        (groupsMap[key] ??= { title, photoUrl: primary?.recipe_photo_url ?? null, items: [] }).items.push(item);
       }
       return Object.values(groupsMap).sort((a, b) => {
         if (a.title === 'Other') return 1;
@@ -447,7 +465,7 @@ export default function ShoppingListViewEnhanced({
   // checked-off items move out entirely into the one global Completed
   // section at the page bottom (see the render below), so a crossed-off
   // item stops competing for attention next to what's still left to buy.
-  const groupItems = (): { title: string; items: DisplayItem[] }[] => {
+  const groupItems = (): { title: string; photoUrl?: string | null; items: DisplayItem[] }[] => {
     const pendingRaw = items.filter((i) => i.status !== 'purchased');
     return bucketByMode(pendingRaw);
   };
@@ -520,6 +538,13 @@ export default function ShoppingListViewEnhanced({
             )}
 
             {recipePills(item)}
+
+            {pesachFlag(item) && (
+              <div className="flex items-center gap-1.5 mt-1.5 text-xs text-rust bg-rust/10 px-2.5 py-1 rounded-full w-fit">
+                <AlertTriangle className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden="true" />
+                {item.pesach_status === 'needs_review' ? 'Pesach status not yet reviewed' : 'Not cleared for Pesach'}
+              </div>
+            )}
 
             {item.is_rich_item ? (
               <>
@@ -673,7 +698,13 @@ export default function ShoppingListViewEnhanced({
                 : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
             }`}
           >
-            {option === 'staples-first' ? 'Staples First' : option === 'category' ? 'By Aisle' : 'By Recipe'}
+            {/* Renamed per request -- confirmed this toggle and the
+                resulting "Staples (N)" group card below are the exact same
+                mechanism (is_staple_origin), not a collision with a
+                separate concept. Already visually distinct from that card
+                (small pill button here vs. font-display text-lg card
+                header there), so no further separation needed. */}
+            {option === 'staples-first' ? 'Staples' : option === 'category' ? 'By Aisle' : 'By Recipe'}
           </button>
         ))}
       </div>
@@ -697,6 +728,20 @@ export default function ShoppingListViewEnhanced({
                 onClick={() => toggleGroup(group.title)}
                 className="w-full flex items-center gap-2 mb-3 text-left"
               >
+                {/* By Recipe only -- group.photoUrl is undefined in every
+                    other grouping mode (category/aisle titles aren't
+                    recipes and have no photo to show). Same photo-or-
+                    fallback treatment as item cards elsewhere in this file. */}
+                {group.photoUrl !== undefined && (
+                  <span className="w-8 h-8 rounded-md overflow-hidden bg-cream shrink-0 flex items-center justify-center">
+                    {group.photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={group.photoUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-sm" aria-hidden="true">🍽️</span>
+                    )}
+                  </span>
+                )}
                 <span className="font-display text-lg text-charcoal">{group.title}</span>
                 <span className="text-xs text-charcoal/40">({group.items.length})</span>
                 <span className="flex-1 border-t border-gold-light/40" />

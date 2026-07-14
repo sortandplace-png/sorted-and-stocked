@@ -13,6 +13,7 @@ import SubstitutionCallout from '@/components/SubstitutionCallout';
 import SubstitutionEditor from '@/components/SubstitutionEditor';
 import RecipeHistoryModal from '@/components/RecipeHistoryModal';
 import RecipeFamilyNotes from '@/components/RecipeFamilyNotes';
+import RecipeNotes from '@/components/RecipeNotes';
 import RecipeKitchenTools from '@/components/RecipeKitchenTools';
 import RecipeBracha from '@/components/RecipeBracha';
 import RecipePrepLeadDays from '@/components/RecipePrepLeadDays';
@@ -71,6 +72,7 @@ interface Recipe {
   course: string | null;
   servings: number | null;
   family_notes: string | null;
+  notes: string | null;
   equipment: string[] | null;
   bracha_category: string | null;
   bracha_achrona: string | null;
@@ -189,13 +191,42 @@ export default function RecipeDetailClient({
   useEffect(() => {
     if (!recipe) return;
     (async () => {
-      const { data } = await supabase
-        .from('recipes')
-        .select('id, name, photo_url, course, is_shabbos_only, is_yom_tov, is_pesach, recipe_property_links!inner(property_id)')
-        .eq('recipe_property_links.property_id', propertyId)
-        .neq('id', recipeId);
+      // Real bug found live: is_pesach doesn't mean "Pesach-seasonal" the
+      // way is_shabbos_only means "Shabbos-only" -- it means "kosher/
+      // appropriate for Pesach," which a large fraction of ordinary
+      // everyday recipes also carry (confirmed live: "Dried Fruit," a
+      // plain side dish, is genuinely is_pesach=true, same as "Pesach
+      // Chocolate Cupcakes," an actually Pesach-seasonal recipe --
+      // occasionSet() can't tell those two cases apart from the boolean
+      // alone). Suggesting a seasonal Pesach dessert under a July side dish
+      // is wrong regardless of what technically shares the flag. Excluded
+      // from the general pool unless Pesach Mode is on for this property,
+      // or the real next Pesach (yom_tov_dates, not a new date engine) is
+      // within 30 days.
+      const [{ data }, { data: propertyRow }, { data: pesachDates }] = await Promise.all([
+        supabase
+          .from('recipes')
+          .select('id, name, photo_url, course, is_shabbos_only, is_yom_tov, is_pesach, recipe_property_links!inner(property_id)')
+          .eq('recipe_property_links.property_id', propertyId)
+          .neq('id', recipeId),
+        supabase.from('properties').select('feature_flags').eq('id', propertyId).single(),
+        supabase
+          .from('yom_tov_dates')
+          .select('date')
+          .ilike('holiday_name', 'Pesach%')
+          .gte('date', new Date().toISOString().slice(0, 10))
+          .order('date')
+          .limit(1),
+      ]);
 
-      const candidates = data ?? [];
+      const pesachModeOn = !!(propertyRow?.feature_flags as Record<string, boolean> | null)?.pesach_mode;
+      const nextPesach = pesachDates?.[0]?.date ? new Date(pesachDates[0].date) : null;
+      const daysToPesach = nextPesach ? (nextPesach.getTime() - Date.now()) / (1000 * 60 * 60 * 24) : Infinity;
+      const nearPesach = daysToPesach >= 0 && daysToPesach <= 30;
+      const allowPesach = pesachModeOn || nearPesach;
+
+      const rawCandidates = data ?? [];
+      const candidates = allowPesach ? rawCandidates : rawCandidates.filter((c) => !c.is_pesach);
       const currentOccasions = occasionSet(recipe);
 
       const differentCourseMatches = candidates.filter(
@@ -865,16 +896,17 @@ export default function RecipeDetailClient({
           needsSourcing={!!recipe.bracha_needs_sourcing}
         />
         <RecipeFamilyNotes recipeId={recipeId} initialNotes={recipe.family_notes} />
-        <RecipeKitchenTools recipeId={recipeId} propertyId={propertyId} initialEquipment={recipe.equipment ?? []} />
-        {canManage(role) && (
-          <RecipePrepLeadDays recipeId={recipeId} initialDays={recipe.prep_lead_days} />
-        )}
         <SubstitutionEditor
           recipeId={recipeId}
           initialNotes={substitutionNotes || ''}
           lastUpdatedBy={substitutionUpdatedBy}
           lastUpdatedAt={substitutionUpdatedAt ? new Date(substitutionUpdatedAt) : undefined}
         />
+        <RecipeNotes notes={recipe.notes} />
+        <RecipeKitchenTools recipeId={recipeId} propertyId={propertyId} initialEquipment={recipe.equipment ?? []} />
+        {canManage(role) && (
+          <RecipePrepLeadDays recipeId={recipeId} initialDays={recipe.prep_lead_days} />
+        )}
       </div>
       </div>
 

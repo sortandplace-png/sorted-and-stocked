@@ -17,14 +17,31 @@ import LocationPhotoUpload from '@/components/LocationPhotoUpload';
 import DuplicateItemWarning from '@/components/DuplicateItemWarning';
 import InventoryBracha from '@/components/InventoryBracha';
 import { FilterPill, FilterPillRow } from '@/components/recipes/FilterPill';
+import { isFoodCategory } from '@/lib/foodCategories';
 import { compressImageToBlob } from '@/lib/compress-image';
-import { Camera, AlertTriangle, Clock } from 'lucide-react';
+import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle } from 'lucide-react';
 
 type StorageLocation = {
   id: string;
   name: string;
   parent_location_id: string | null;
   photo_url: string | null;
+};
+
+// needs_review is deliberately the loudest of the three -- it's the one
+// that needs a human decision, so it shouldn't blend in next to a cleared
+// item the way a quiet default state would. Deliberately keyed on only the
+// 3 food-relevant statuses (not InventoryItem['pesach_status'] directly) --
+// 'not_applicable' (non-food categories) has no entry here on purpose, so
+// it's naturally excluded from both the per-item badge and the filter row
+// below rather than needing a separate check at every render site.
+const PESACH_STATUS_INFO: Record<
+  'kosher_for_pesach' | 'not_kosher_for_pesach' | 'needs_review',
+  { label: string; icon: typeof CheckCircle2; badgeClass: string }
+> = {
+  kosher_for_pesach: { label: 'Kosher for Pesach', icon: CheckCircle2, badgeClass: 'bg-sage/15 text-sage' },
+  not_kosher_for_pesach: { label: 'Not for Pesach', icon: XCircle, badgeClass: 'bg-rust/15 text-rust' },
+  needs_review: { label: 'Needs Review', icon: HelpCircle, badgeClass: 'bg-gold text-charcoal font-semibold' },
 };
 
 type InventoryItem = {
@@ -43,6 +60,8 @@ type InventoryItem = {
   opened_date: string | null;
   qr_code: string | null;
   print_label: boolean;
+  pesach_status: 'kosher_for_pesach' | 'not_kosher_for_pesach' | 'needs_review' | 'not_applicable';
+  last_counted_at: string | null;
 };
 
 type HistoryEntry = {
@@ -113,6 +132,32 @@ function isExpiringSoon(expirationDate: string | null): boolean {
   return new Date(expirationDate) <= cutoff;
 }
 
+// Distinct from isExpiringSoon (4-day window, feeds the existing filter
+// pill) -- the "Expiring Soon" stat card is a real 30-day window and
+// deliberately excludes already-past dates (those are expired, a different
+// concern, not "coming up soon"). Verified against real live data: exactly
+// 73 Main House items match this window as of today.
+// "Not yet counted" (last_counted_at null) is distinct from a real
+// confirmed 0 -- current_qty defaults to 0 at creation and no physical
+// count has happened for most of this property's history, so treating
+// every uncounted item as "critically low" would flag ~all of them as a
+// false positive. Only a real prior count (last_counted_at set, via
+// useShelfAuditor or any other quantity edit -- see the DB trigger that
+// sets it) makes a low reading meaningful.
+function isLowStock(item: Pick<InventoryItem, 'current_qty' | 'min_qty' | 'last_counted_at'>): boolean {
+  return item.last_counted_at !== null && item.current_qty < item.min_qty;
+}
+
+function isExpiringWithin30Days(expirationDate: string | null): boolean {
+  if (!expirationDate) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const cutoff = new Date(today);
+  cutoff.setDate(cutoff.getDate() + 30);
+  const expDate = new Date(expirationDate);
+  return expDate >= today && expDate <= cutoff;
+}
+
 // Matches the real Inventory Ops group + icons already in the Tools Hub
 // (app/properties/[id]/tools/page.tsx) — same 4 tools, same slugs/icons,
 // so this footer and the Tools Hub never drift apart from each other.
@@ -151,6 +196,14 @@ export default function InventoryClient({
   // which rooms exist or how they're grouped by floor.
   const [lowStockFirst, setLowStockFirst] = useState(false);
   const [floorFilter, setFloorFilter] = useState<string | null>(null);
+  // Pesach Mode -- same feature_flags pattern as auto-restock (moved to its
+  // own Shopping Rules settings page). When on,
+  // surfaces pesach_status on item cards/filters here, defaults the
+  // Recipes page's Occasion filter to Pesach, and flags (not silently
+  // includes) uncleared items on the shopping list.
+  const [pesachModeEnabled, setPesachModeEnabled] = useState(false);
+  const [savingPesachMode, setSavingPesachMode] = useState(false);
+  const [pesachStatusFilter, setPesachStatusFilter] = useState<string | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -173,6 +226,9 @@ export default function InventoryClient({
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [belowParOnly, setBelowParOnly] = useState(false);
   const [expiringSoonOnly, setExpiringSoonOnly] = useState(false);
+  // Separate from expiringSoonOnly (4-day filter pill) -- this is the new
+  // stat card's own 30-day filter.
+  const [expiringSoon30Only, setExpiringSoon30Only] = useState(false);
   // 'rooms' = existing location drill-down, unchanged. 'all' = new flat
   // grid of every item regardless of room.
   const [viewMode, setViewMode] = useState<'rooms' | 'all'>('rooms');
@@ -201,11 +257,11 @@ export default function InventoryClient({
     } = await supabase.auth.getUser();
     setCurrentUserId(user?.id ?? null);
 
-    const [itemsRes, locationsRes, categoriesRes, favoritesRes] = await Promise.all([
+    const [itemsRes, locationsRes, categoriesRes, favoritesRes, propertyRes] = await Promise.all([
       supabase
         .from('inventory_items')
         .select(
-          'id, name, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, category, expiration_date, opened_date, qr_code, print_label'
+          'id, name, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at'
         )
         .eq('property_id', propertyId)
         .order('name'),
@@ -226,6 +282,9 @@ export default function InventoryClient({
             .eq('property_id', propertyId)
             .eq('user_id', user.id)
         : Promise.resolve({ data: [] as { inventory_item_id: string }[] }),
+      // feature_flags.pesach_mode -- same jsonb pattern already used for
+      // auto_restock (now on its own Shopping Rules settings page).
+      supabase.from('properties').select('feature_flags').eq('id', propertyId).single(),
     ]);
 
     const loadErrors = [itemsRes.error, locationsRes.error, categoriesRes.error].filter(Boolean);
@@ -237,8 +296,31 @@ export default function InventoryClient({
       Object.fromEntries((categoriesRes.data ?? []).map((c) => [c.name, c.icon_name]).filter(([, icon]) => icon))
     );
     setFavoriteIds(new Set((favoritesRes.data ?? []).map((f) => f.inventory_item_id)));
+    const flags = (propertyRes.data?.feature_flags ?? {}) as Record<string, boolean>;
+    setPesachModeEnabled(!!flags.pesach_mode);
     setLoading(false);
   }, [propertyId, supabase]);
+
+  async function togglePesachMode() {
+    setSavingPesachMode(true);
+    const next = !pesachModeEnabled;
+    // Same read-then-merge as auto-restock -- never blind-overwrite the
+    // shared feature_flags column.
+    const { data: current } = await supabase.from('properties').select('feature_flags').eq('id', propertyId).single();
+    const flags = (current?.feature_flags ?? {}) as Record<string, boolean>;
+    const { error: flagError } = await supabase
+      .from('properties')
+      .update({ feature_flags: { ...flags, pesach_mode: next } })
+      .eq('id', propertyId);
+    setSavingPesachMode(false);
+    if (flagError) {
+      showToast('Failed to update Pesach Mode.', { variant: 'error' });
+      return;
+    }
+    setPesachModeEnabled(next);
+    if (!next) setPesachStatusFilter(null);
+    showToast(next ? 'Pesach Mode enabled.' : 'Pesach Mode disabled.', { variant: 'success' });
+  }
 
   useEffect(() => {
     loadData();
@@ -410,7 +492,7 @@ export default function InventoryClient({
     const { data: existing } = await supabase
       .from('inventory_items')
       .select(
-        'id, name, category, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, expiration_date, opened_date, qr_code, print_label'
+        'id, name, category, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at'
       )
       .eq('id', matchId)
       .single();
@@ -505,7 +587,12 @@ export default function InventoryClient({
       }
       // qr_code is DB-trigger-generated on insert — unknown here until the
       // next reload; null is accurate, not a placeholder to fix later.
-      setItems((prev) => [...prev, { ...payload, id, qr_code: null }]);
+      // pesach_status isn't part of the add-item form (a deliberate separate
+      // classification, not a quick-add field) -- the DB column default
+      // applies server-side, matched here for the optimistic local row.
+      // last_counted_at is never set on INSERT (see the DB trigger) -- a
+      // brand-new item is always "not yet counted."
+      setItems((prev) => [...prev, { ...payload, id, qr_code: null, pesach_status: 'needs_review', last_counted_at: null }]);
       if (photoUploadError) {
         showToast(`Item added, but the photo failed to upload: ${photoUploadError}`, {
           variant: 'error',
@@ -602,13 +689,20 @@ export default function InventoryClient({
       : [];
 
   const hasActiveFilter =
-    searchQuery.trim() !== '' || categoryFilter !== null || belowParOnly || expiringSoonOnly;
+    searchQuery.trim() !== '' ||
+    categoryFilter !== null ||
+    belowParOnly ||
+    expiringSoonOnly ||
+    expiringSoon30Only ||
+    (pesachModeEnabled && pesachStatusFilter !== null);
 
   function matchesFilters(item: InventoryItem) {
     if (searchQuery.trim() && !item.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) return false;
     if (categoryFilter && item.category !== categoryFilter) return false;
-    if (belowParOnly && !(item.current_qty < item.min_qty)) return false;
+    if (expiringSoon30Only && !isExpiringWithin30Days(item.expiration_date)) return false;
+    if (belowParOnly && !isLowStock(item)) return false;
     if (expiringSoonOnly && !isExpiringSoon(item.expiration_date)) return false;
+    if (pesachModeEnabled && pesachStatusFilter && item.pesach_status !== pesachStatusFilter) return false;
     return true;
   }
 
@@ -620,11 +714,16 @@ export default function InventoryClient({
     for (const item of items) if (item.category) counts[item.category] = (counts[item.category] ?? 0) + 1;
     return counts;
   }, [items]);
-  const lowStockPillCount = useMemo(() => items.filter((i) => i.current_qty < i.min_qty).length, [items]);
+  const lowStockPillCount = useMemo(() => items.filter(isLowStock).length, [items]);
   const expiringSoonPillCount = useMemo(
     () => items.filter((i) => isExpiringSoon(i.expiration_date)).length,
     [items]
   );
+  const pesachStatusPillCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const item of items) counts[item.pesach_status] = (counts[item.pesach_status] ?? 0) + 1;
+    return counts;
+  }, [items]);
 
   // Searching/filtering with no room selected searches across every room,
   // not just whatever the room grid happened to be showing.
@@ -656,7 +755,8 @@ export default function InventoryClient({
 
   // Stat cards — real counts from the real fetched data, not placeholders.
   const totalItemsCount = items.length;
-  const lowStockCount = items.filter((i) => i.current_qty < i.min_qty).length;
+  const lowStockCount = items.filter(isLowStock).length;
+  const expiringSoon30Count = items.filter((i) => isExpiringWithin30Days(i.expiration_date)).length;
 
   // Room summaries for the grid view — one card per real room (a location
   // one level below a top-level group like Basement/Main Floor/Upstairs),
@@ -688,7 +788,7 @@ export default function InventoryClient({
       return {
         location: loc.name,
         count: subtreeItems.length,
-        lowCount: subtreeItems.filter((i) => i.current_qty < i.min_qty).length,
+        lowCount: subtreeItems.filter(isLowStock).length,
       };
     });
 
@@ -718,7 +818,8 @@ export default function InventoryClient({
     });
 
   function renderItemCard(item: InventoryItem, showLocation: boolean) {
-    const low = item.current_qty < item.min_qty;
+    const low = isLowStock(item);
+    const notYetCounted = item.last_counted_at === null;
     const hasThumb = !!item.photo_url && isDirectImageUrl(item.photo_url) && !brokenPhotoIds.has(item.id);
     const isFav = favoriteIds.has(item.id);
     return (
@@ -753,16 +854,32 @@ export default function InventoryClient({
               .filter(Boolean)
               .join(' · ')}
           </p>
-          <div className="mt-1.5">
+          <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
             {low ? (
               <span className="text-xs font-medium text-rust bg-rust/10 px-2.5 py-1 rounded-full">
                 {item.current_qty} / {item.min_qty} {item.unit} — low
+              </span>
+            ) : notYetCounted ? (
+              <span className="text-xs font-medium text-gold-dark bg-gold-light/30 px-2.5 py-1 rounded-full">
+                Not yet counted
               </span>
             ) : (
               <span className="text-xs text-charcoal/40">
                 {item.current_qty} / {item.min_qty} {item.unit}
               </span>
             )}
+            {pesachModeEnabled &&
+              item.pesach_status !== 'not_applicable' &&
+              (() => {
+                const info = PESACH_STATUS_INFO[item.pesach_status];
+                const Icon = info.icon;
+                return (
+                  <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full ${info.badgeClass}`}>
+                    <Icon className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
+                    {info.label}
+                  </span>
+                );
+              })()}
           </div>
         </div>
         <button
@@ -828,18 +945,65 @@ export default function InventoryClient({
         <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2 mb-3">{error}</p>
       )}
 
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-3 gap-3 mb-4">
         <div className="rounded-2xl p-3 bg-white border border-gold-light/40 text-center">
           <div className="text-xl font-display text-charcoal">{totalItemsCount}</div>
           <div className="text-[11px] text-charcoal/50">Total Items</div>
         </div>
-        <div className="rounded-2xl p-3 bg-white border border-gold-light/40 text-center">
+        <button
+          type="button"
+          onClick={() => setBelowParOnly((v) => !v)}
+          aria-pressed={belowParOnly}
+          className={`rounded-2xl p-3 bg-white border text-center transition-colors ${
+            belowParOnly ? 'border-rust' : 'border-gold-light/40'
+          }`}
+        >
           <div className={`text-xl font-display ${lowStockCount > 0 ? 'text-rust' : 'text-charcoal'}`}>
             {lowStockCount}
           </div>
           <div className="text-[11px] text-charcoal/50">Low Stock</div>
-        </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => setExpiringSoon30Only((v) => !v)}
+          aria-pressed={expiringSoon30Only}
+          className={`rounded-2xl p-3 bg-white border text-center transition-colors ${
+            expiringSoon30Only ? 'border-gold-dark' : 'border-gold-light/40'
+          }`}
+        >
+          <div className={`text-xl font-display ${expiringSoon30Count > 0 ? 'text-gold-dark' : 'text-charcoal'}`}>
+            {expiringSoon30Count}
+          </div>
+          <div className="text-[11px] text-charcoal/50">Expiring Soon</div>
+        </button>
       </div>
+
+      {/* Auto-restock moved to its own Shopping Rules settings page. Pesach
+          Mode is now the only thing left in this area, so it reads as a
+          lightweight settings row -- no card border/shadow, smaller text,
+          same visual weight as an inline toggle rather than a second
+          feature card competing with the item browser below it. */}
+      {canManage(role) && (
+        <div className="flex items-center justify-between gap-3 px-1 mb-4">
+          <p className="text-xs text-charcoal/60">Pesach Mode</p>
+          <button
+            onClick={togglePesachMode}
+            disabled={savingPesachMode}
+            role="switch"
+            aria-checked={pesachModeEnabled}
+            aria-label="Toggle Pesach Mode"
+            className={`relative shrink-0 w-9 h-5 rounded-full transition-colors disabled:opacity-50 ${
+              pesachModeEnabled ? 'bg-gold-dark' : 'bg-gold-light/50'
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                pesachModeEnabled ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+      )}
 
       <div className="inline-flex rounded-full border border-gold-light/60 bg-white p-0.5 text-sm mb-4">
         <button
@@ -922,6 +1086,23 @@ export default function InventoryClient({
               onClick={() => setExpiringSoonOnly((v) => !v)}
             />
           </FilterPillRow>
+          {pesachModeEnabled && (
+            <FilterPillRow label="Pesach Status">
+              {(Object.keys(PESACH_STATUS_INFO) as (keyof typeof PESACH_STATUS_INFO)[]).map((status) => {
+                const info = PESACH_STATUS_INFO[status];
+                return (
+                  <FilterPill
+                    key={status}
+                    active={pesachStatusFilter === status}
+                    icon={info.icon}
+                    label={info.label}
+                    count={pesachStatusPillCounts[status] ?? 0}
+                    onClick={() => setPesachStatusFilter(pesachStatusFilter === status ? null : status)}
+                  />
+                );
+              })}
+            </FilterPillRow>
+          )}
         </div>
       )}
 
@@ -1586,7 +1767,7 @@ function ItemFormSheet({
           </button>
         )}
 
-        {form.id && (
+        {form.id && isFoodCategory(form.category) && (
           <div className="mt-5 pt-4 border-t border-gold-light/40">
             <InventoryBracha itemId={form.id} itemName={form.name} />
           </div>

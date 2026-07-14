@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -31,6 +31,7 @@ import {
   MoreVertical,
   Copy,
   Trash2,
+  Search,
   type LucideIcon,
 } from 'lucide-react';
 import { kosherIcon } from '@/lib/icon-maps';
@@ -216,6 +217,7 @@ export default function RecipesGridView({
   const supabase = createClient();
   const showToast = useToast();
   const [search, setSearch] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [showNewRecipe, setShowNewRecipe] = useState(false);
   const [collapsedLetters, setCollapsedLetters] = useState<Set<string>>(new Set());
   const [courseFilter, setCourseFilter] = useState<string | null>(null);
@@ -231,6 +233,18 @@ export default function RecipesGridView({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [checkingDeleteId, setCheckingDeleteId] = useState<string | null>(null);
   const [deleteBlockMessage, setDeleteBlockMessage] = useState<string | null>(null);
+
+  // Pesach Mode (properties.feature_flags.pesach_mode, same flag toggled on
+  // the Inventory page) -- when on, default the Occasion filter to Pesach
+  // on load. Only sets the initial value, doesn't force it back if someone
+  // changes the filter afterward -- a default, not a lock.
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('properties').select('feature_flags').eq('id', propertyId).single();
+      const flags = (data?.feature_flags ?? {}) as Record<string, boolean>;
+      if (flags.pesach_mode) setOccasionFilter('pesach');
+    })();
+  }, [propertyId, supabase]);
 
   // Per-person favorites (recipe_favorites.user_id) — not shared across the
   // household, same convention as inventory_item_favorites.
@@ -538,12 +552,29 @@ export default function RecipesGridView({
         </div>
       </div>
 
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder={t('searchPlaceholder')}
-        className="w-full border border-gold-light/60 rounded-xl2 px-4 py-2.5 bg-white mb-3"
-      />
+      {/* Filtering is already live/reactive on every keystroke -- this button
+          isn't a new query mechanism, it's a visible affordance so the field
+          reads as a real search rather than a plain text box (the actual
+          ask: "the search needs an enter button"). Enter keeps working as
+          before; clicking the icon just refocuses the field, giving a real,
+          keyboard-accessible tap target instead of a decorative-only icon. */}
+      <div className="relative mb-3">
+        <input
+          ref={searchInputRef}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t('searchPlaceholder')}
+          className="w-full border border-gold-light/60 rounded-xl2 pl-10 pr-4 py-2.5 bg-white"
+        />
+        <button
+          type="button"
+          onClick={() => searchInputRef.current?.focus()}
+          aria-label={t('searchPlaceholder')}
+          className="absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center text-charcoal/60 hover:text-gold-dark transition-colors"
+        >
+          <Search className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
+        </button>
+      </div>
 
       {hasActiveFilters && (
         <div className="flex justify-end mb-2">
