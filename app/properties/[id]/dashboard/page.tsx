@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { format, parseISO } from 'date-fns'
-import { Calendar, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, UtensilsCrossed } from 'lucide-react'
+import { Calendar, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, UtensilsCrossed, BookMarked } from 'lucide-react'
 import FloatingScanButton from '@/components/FloatingScanButton'
 import { COURSES } from '@/lib/course-constants'
 import { getUpcomingEruvTavshilin } from '@/lib/eruv-tavshilin'
@@ -54,6 +54,34 @@ async function getHebrewInfo(): Promise<{ day: number | null; hebrewText: string
   } catch {
     return { day: null, hebrewText: '' }
   }
+}
+
+// Same real Hebcal omer logic as /api/tools/halachic-calendar (the
+// existing Halachic Calendar tool card) -- duplicated rather than
+// fetched over HTTP since this is already a server component and an
+// internal fetch would need an absolute URL for no real benefit.
+async function getOmerStatus(): Promise<string | null> {
+  try {
+    const now = new Date()
+    const res = await fetch(
+      `https://www.hebcal.com/hebcal?cfg=json&v=1&year=${now.getFullYear()}&month=${now.getMonth() + 1}&o=on`,
+      { next: { revalidate: 3600 } }
+    )
+    const data = await res.json()
+    const today = format(now, 'yyyy-MM-dd')
+    const omerItem = data.items?.find((i: any) => i.category === 'omer' && i.date?.startsWith(today))
+    return omerItem?.title ?? null
+  } catch {
+    return null
+  }
+}
+
+// yom_tov_dates isn't property-scoped (shared calendar data, same table
+// the header countdown pill already reads) -- a plain date match is enough.
+async function getIsErevYomTov(tomorrowStr: string): Promise<boolean> {
+  const supabase = await createClient()
+  const { data } = await supabase.from('yom_tov_dates').select('date').eq('date', tomorrowStr).maybeSingle()
+  return !!data
 }
 
 function weekBounds(today: Date) {
@@ -228,11 +256,15 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const easternParts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',
     weekday: 'short',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
     hour: 'numeric',
     hourCycle: 'h23',
   }).formatToParts(now)
-  const easternWeekday = easternParts.find((p) => p.type === 'weekday')?.value ?? ''
-  const easternHour = parseInt(easternParts.find((p) => p.type === 'hour')?.value ?? '0', 10)
+  const easternPartsMap = Object.fromEntries(easternParts.map((p) => [p.type, p.value]))
+  const easternWeekday = easternPartsMap.weekday ?? ''
+  const easternHour = parseInt(easternPartsMap.hour ?? '0', 10)
   const isEasternFriday = easternWeekday === 'Fri'
   const isEasternSaturday = easternWeekday === 'Sat'
 
@@ -246,6 +278,26 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const isMotzeiShabbos = isEasternSaturday && easternHour >= 18
 
   const eruvTavshilin = getUpcomingEruvTavshilin(now)
+
+  // Tomorrow's real Eastern calendar date, built from Date.UTC + UTC getters
+  // (not date-fns format(), which reads local-runtime parts) so this stays
+  // correct regardless of what timezone the server process itself runs in.
+  const easternTodayUTC = Date.UTC(
+    parseInt(easternPartsMap.year ?? '1970', 10),
+    parseInt(easternPartsMap.month ?? '1', 10) - 1,
+    parseInt(easternPartsMap.day ?? '1', 10)
+  )
+  const tomorrowUTC = new Date(easternTodayUTC + 24 * 60 * 60 * 1000)
+  const easternTomorrowStr = `${tomorrowUTC.getUTCFullYear()}-${String(tomorrowUTC.getUTCMonth() + 1).padStart(2, '0')}-${String(tomorrowUTC.getUTCDate()).padStart(2, '0')}`
+
+  // Persistent Halachic Calendar widget (separate from the existing Tools
+  // Hub card, which stays as-is): Sefira count + candle-lighting time,
+  // shown on Friday or Erev Yom Tov specifically.
+  const [omerTitle, isErevYomTov] = await Promise.all([
+    getOmerStatus(),
+    getIsErevYomTov(easternTomorrowStr),
+  ])
+  const showHalachicWidget = isEasternFriday || isErevYomTov
 
   // Canonical course order (Dip/Kids Platter/Soup/Protein/Starch/Vege/Salad/
   // Dessert-last) applied as a secondary sort after plan_date -- the raw
@@ -417,6 +469,18 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {showHalachicWidget && (
+          <div className="rounded-2xl p-4 mb-8 bg-gold-light/15 border border-gold-light/40">
+            <h2 className="text-sm font-display text-charcoal mb-2 flex items-center gap-1.5">
+              <BookMarked size={16} strokeWidth={1.75} className="text-gold-dark" aria-hidden="true" /> {isErevYomTov ? 'Erev Yom Tov' : 'Erev Shabbos'}
+            </h2>
+            <p className="text-sm text-charcoal/80">
+              {omerTitle && <>{omerTitle} · </>}
+              Hadlakas Neiros <bdi dir="ltr">{hebcal.candleTime}</bdi>
+            </p>
           </div>
         )}
 
