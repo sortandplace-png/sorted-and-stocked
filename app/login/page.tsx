@@ -1,21 +1,13 @@
 // app/login/page.tsx
 'use client';
 
-import { Suspense, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { LogoMark } from '@/components/Logo';
 import Footer from '@/components/Footer';
 
 export default function LoginPage() {
-  return (
-    <Suspense fallback={null}>
-      <LoginForm />
-    </Suspense>
-  );
-}
-
-function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
@@ -23,17 +15,6 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
 
   const router = useRouter();
-  const searchParams = useSearchParams();
-  // Must start with exactly one "/" — rules out "//evil.com" (parsed as a
-  // protocol-relative URL to a third-party host) and rules out an
-  // unprefixed value reaching an external host. Same validation already
-  // applied in app/auth/callback/route.ts; this was the one redirect
-  // point that never got it.
-  const requestedRedirect = searchParams.get('redirectTo');
-  const redirectTo =
-    requestedRedirect && requestedRedirect.startsWith('/') && !requestedRedirect.startsWith('//')
-      ? requestedRedirect
-      : '/properties';
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -56,7 +37,13 @@ function LoginForm() {
     } else {
       sessionStorage.removeItem('sortedandstocked_no_remember');
     }
-    router.push(redirectTo);
+    // Always /properties, never a preserved deep-link -- Dashboard (or the
+    // properties picker, for a multi-household account) should be the
+    // universal landing spot after signing in, no exceptions. Previously
+    // restored whatever page the middleware had bounced the user from
+    // (via a ?redirectTo= param), which is how a login could land back on
+    // a scrolled-mid-page Tools view instead.
+    router.push('/properties');
     router.refresh();
   }
 

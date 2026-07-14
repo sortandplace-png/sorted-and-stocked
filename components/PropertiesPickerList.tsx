@@ -15,7 +15,7 @@ export type HouseholdGroup = { key: string; householdName: string | null; proper
 function PropertyLink({ property, compact }: { property: PropertyEntry; compact?: boolean }) {
   return (
     <Link
-      href={`/properties/${property.id}/inventory`}
+      href={`/properties/${property.id}/dashboard`}
       className={`flex items-center justify-between bg-white rounded-2xl shadow-sm shadow-charcoal/5 hover:bg-gold-light/15 transition-colors ${
         compact ? 'px-4 py-2.5' : 'px-4 py-3'
       }`}

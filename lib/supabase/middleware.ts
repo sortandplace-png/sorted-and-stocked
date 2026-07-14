@@ -43,9 +43,10 @@ export async function updateSession(request: NextRequest) {
   const isPublicPath = PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
 
   if (!user && !isPublicPath) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
-    return NextResponse.redirect(loginUrl);
+    // No ?redirectTo= -- login always lands on /properties (Dashboard, or
+    // the household picker), never back on whatever deep link triggered
+    // the bounce. See app/login/page.tsx.
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   return response;
