@@ -191,6 +191,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     // (004_invite_by_email.sql).
     const { data: userId, error: lookupError } = await supabase.rpc('get_user_id_by_email', {
       p_email: email,
+      p_property_id: propertyId,
     });
 
     if (lookupError) {
