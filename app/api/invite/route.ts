@@ -117,10 +117,21 @@ export async function POST(request: Request) {
   // request's host is never the right signal here regardless of forwarded
   // headers, since the recipient's browser has nothing to do with whichever
   // machine happened to call this route.
+  //
+  // /auth/confirm, not /auth/callback -- generateLink never uses PKCE
+  // (confirmed against Supabase's own docs: an admin-generated link can't
+  // guarantee the same browser that requested it is the one accepting it,
+  // which PKCE requires), so the session comes back as a #access_token=...
+  // hash fragment that only a client-side page can read. /auth/callback is
+  // a plain server route and can never see it -- confirmed live: invited
+  // accounts got confirmation_sent_at set but never a working session.
+  // Redirects to /reset-password, not /properties -- the invited person has
+  // never set a real password yet; landing them in the app with an unusable
+  // placeholder password stranded them with no way back in later.
   const { data: linkData, error: inviteError } = await admin.auth.admin.generateLink({
     type: 'invite',
     email,
-    options: { redirectTo: `${SITE_URL}/auth/callback?redirectTo=/properties` },
+    options: { redirectTo: `${SITE_URL}/auth/confirm?redirectTo=/reset-password` },
   });
 
   if (inviteError) {

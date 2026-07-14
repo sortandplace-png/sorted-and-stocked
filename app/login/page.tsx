@@ -11,6 +11,7 @@ import { SITE_URL } from '@/lib/site-url';
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   'no-invite': "No account found for that Google sign-in — you'll need an invite first.",
   'auth-callback-failed': 'Sign-in failed. Please try again.',
+  'auth-link-failed': "That link didn't work or has expired — request a new one and try again.",
 };
 
 function LoginForm() {

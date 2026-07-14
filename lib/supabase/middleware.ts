@@ -2,7 +2,11 @@
 import { createServerClient, type SetAllCookies } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/login', '/auth/callback', '/forgot-password', '/signup'];
+// /auth/confirm and /reset-password: someone clicking an invite link is by
+// definition not signed in yet, and the session it establishes is set
+// client-side (via the Supabase SDK reading the URL) a moment after the
+// initial navigation -- both need to be reachable before that lands.
+const PUBLIC_PATHS = ['/login', '/auth/callback', '/auth/confirm', '/forgot-password', '/reset-password', '/signup'];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
