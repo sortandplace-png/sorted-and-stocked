@@ -18,12 +18,22 @@ const withPWA = require('next-pwa')({
         expiration: { maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 },
       },
     },
-    // App shell / pages: stale-while-revalidate so navigation works offline
-    // and updates silently in the background when signal returns.
+    // App shell / pages: network-first, falling back to cache only when
+    // actually offline. StaleWhileRevalidate was here before, but Workbox's
+    // Cache Storage keys purely by request URL with no session/cookie
+    // awareness — for these per-account server-rendered pages (e.g.
+    // /properties), that meant a page cached for one logged-in account
+    // could get served to a different account on the same device before
+    // the background revalidation caught up. Network-first still supports
+    // offline navigation in a dead-zone pantry, it just never prefers a
+    // stale cross-account response while online.
     {
       urlPattern: ({ request }) => request.mode === 'navigate',
-      handler: 'StaleWhileRevalidate',
-      options: { cacheName: 'pages' },
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'pages',
+        networkTimeoutSeconds: 3,
+      },
     },
     // Supabase REST reads: network-first with a short timeout, falling back
     // to the last cached response when offline (e.g. viewing inventory in
