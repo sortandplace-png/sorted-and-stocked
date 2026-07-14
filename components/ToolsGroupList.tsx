@@ -31,6 +31,7 @@ const MODAL_SLUGS = new Set<ToolModalSlug>([
   'halachic-calendar',
   'capture-photo',
   'link-captured-photos',
+  'hechsher-verification',
 ]);
 
 export default function ToolsGroupList({ propertyId, groups }: { propertyId: string; groups: Group[] }) {

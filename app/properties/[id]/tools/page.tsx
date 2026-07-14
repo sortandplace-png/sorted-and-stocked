@@ -135,6 +135,12 @@ const TOOLS = [
     title: 'Link Captured Photos',
     description: 'Match photos staff took to a real inventory item or room.',
   },
+  {
+    slug: 'hechsher-verification',
+    icon: '✅',
+    title: 'Hechsher Verification',
+    description: 'Confirm hechsher against OU/OK for every item missing one.',
+  },
 ];
 
 const TASTE_MEMORY_TOOL = {
@@ -180,7 +186,7 @@ const GROUPS: {
       {
         key: 'admin-cleanup',
         label: 'Admin Cleanup',
-        slugs: ['duplicate-ingredients', 'needs-linking', 'link-captured-photos'],
+        slugs: ['duplicate-ingredients', 'needs-linking', 'link-captured-photos', 'hechsher-verification'],
         lockIcon: true,
       },
     ],
