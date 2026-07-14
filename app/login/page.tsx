@@ -5,6 +5,7 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { LogoMark } from '@/components/Logo';
+import Footer from '@/components/Footer';
 
 export default function LoginPage() {
   return (
@@ -113,6 +114,8 @@ function LoginForm() {
             {loading ? 'Please wait…' : 'Sign in'}
           </button>
         </form>
+
+        <Footer />
       </div>
     </div>
   );

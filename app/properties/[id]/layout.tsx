@@ -12,6 +12,7 @@ import { LogoMark } from '@/components/Logo';
 import LocaleToggle from '@/components/LocaleToggle';
 import { PropertyRoleProvider, type PropertyRole } from '@/components/PropertyRoleContext';
 import PropertySwitcher from '@/components/PropertySwitcher';
+import Footer from '@/components/Footer';
 
 export default async function PropertyLayout({
   params,
@@ -94,7 +95,10 @@ export default async function PropertyLayout({
         <div className="sticky top-[60px] z-20">
           <DesktopNav propertyId={id} role={membership.role as PropertyRole} />
         </div>
-        <main className="pb-20 md:pb-0">{children}</main>
+        <main className="pb-20 md:pb-0">
+          {children}
+          <Footer propertyId={id} />
+        </main>
         <MobileBottomNav propertyId={id} />
         <CommandPalette propertyId={id} />
       </div>

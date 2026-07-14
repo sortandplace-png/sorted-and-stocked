@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import Footer from '@/components/Footer';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -40,6 +41,7 @@ export default function ForgotPasswordPage() {
           <p className="text-sm text-charcoal/60">
             If an account exists for {email}, a password reset link is on its way.
           </p>
+          <Footer />
         </div>
       </div>
     );
@@ -75,6 +77,8 @@ export default function ForgotPasswordPage() {
         <Link href="/login" className="block text-center text-sm text-charcoal/60 mt-4">
           Back to sign in
         </Link>
+
+        <Footer />
       </div>
     </div>
   );

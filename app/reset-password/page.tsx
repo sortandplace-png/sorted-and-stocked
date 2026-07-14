@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import Footer from '@/components/Footer';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -70,6 +71,8 @@ export default function ResetPasswordPage() {
             {loading ? 'Saving…' : 'Save password'}
           </button>
         </form>
+
+        <Footer />
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import LogoutButton from '@/components/LogoutButton';
 import { LogoMark } from '@/components/Logo';
+import Footer from '@/components/Footer';
 
 export default async function PropertiesPage() {
   const supabase = await createClient();
@@ -81,6 +82,8 @@ export default async function PropertiesPage() {
         >
           + Add a property
         </Link>
+
+        <Footer />
       </div>
     </div>
   );
