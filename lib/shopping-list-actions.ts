@@ -71,40 +71,80 @@ export async function addIngredientsToShoppingList(
     .eq('property_id', propertyId);
   const inventoryIdByName = new Map((inventoryItems ?? []).map((i) => [i.name.trim().toLowerCase(), i.id]));
 
-  const rows = ingredients.map((ing) => ({
-    shopping_list_id: list!.id,
-    // Quantity/unit are recorded per-source below in shopping_list_item_sources
-    // already — baking them into the display name too broke de-duplication
-    // (two entries of "Milk" at different quantities never matched as the
-    // same item) for no benefit.
-    name: ing.name,
-    category: ing.category,
-    qty_needed: 1,
-    status: 'pending' as const,
-    inventory_item_id: inventoryIdByName.get(ing.name.trim().toLowerCase()) ?? null,
-  }));
-
-  const { data: insertedItems, error: insertError } = await supabase
-    .from('shopping_list_items')
-    .insert(rows)
-    .select('id');
-
-  if (insertError || !insertedItems) {
-    return { ok: false, error: 'Failed to add ingredients.' };
+  // A staple like "Chicken Stock" or "Salt" shows up in most recipes in a
+  // week — generateShoppingList() in MealPlanView.tsx passes every recipe's
+  // ingredients in as one batch, so the same name arrives here once per
+  // recipe that calls for it. Group by name first so each unique ingredient
+  // becomes exactly one shopping_list_items row with every contributing
+  // recipe recorded as its own shopping_list_item_sources row (that's what
+  // powers the "By Recipe" attribution), instead of one row per recipe.
+  const groups = new Map<string, IngredientToAdd[]>();
+  for (const ing of ingredients) {
+    const key = ing.name.trim().toLowerCase();
+    const existing = groups.get(key);
+    if (existing) existing.push(ing);
+    else groups.set(key, [ing]);
   }
 
-  const sourceRows = insertedItems
-    .map((item, i) => ({
-      shopping_list_item_id: item.id,
-      recipe_id: ingredients[i].recipe_id,
-      quantity: ingredients[i].quantity,
-      unit: ingredients[i].unit,
-    }))
-    .filter((row) => row.recipe_id);
+  // Also don't duplicate against what's already sitting on the list —
+  // same name pattern the pre-existing handle_low_stock() trigger uses
+  // (scoped to status='pending' so a name that was already bought and
+  // is sitting there as 'purchased' still gets a fresh row for the new need).
+  const { data: existingPending } = await supabase
+    .from('shopping_list_items')
+    .select('id, name')
+    .eq('shopping_list_id', list!.id)
+    .eq('status', 'pending');
+  const existingIdByName = new Map((existingPending ?? []).map((i) => [i.name.trim().toLowerCase(), i.id]));
+
+  const keysToInsert = [...groups.keys()].filter((key) => !existingIdByName.has(key));
+  const itemIdByKey = new Map(existingIdByName);
+
+  if (keysToInsert.length > 0) {
+    const rows = keysToInsert.map((key) => {
+      const ing = groups.get(key)![0];
+      return {
+        shopping_list_id: list!.id,
+        // Quantity/unit are recorded per-source below in
+        // shopping_list_item_sources already — baking them into the display
+        // name too broke de-duplication (two entries of "Milk" at different
+        // quantities never matched as the same item) for no benefit.
+        name: ing.name,
+        category: ing.category,
+        qty_needed: 1,
+        status: 'pending' as const,
+        inventory_item_id: inventoryIdByName.get(key) ?? null,
+      };
+    });
+
+    const { data: insertedItems, error: insertError } = await supabase
+      .from('shopping_list_items')
+      .insert(rows)
+      .select('id');
+
+    if (insertError || !insertedItems) {
+      return { ok: false, error: 'Failed to add ingredients.' };
+    }
+
+    insertedItems.forEach((item, i) => itemIdByKey.set(keysToInsert[i], item.id));
+  }
+
+  const sourceRows = [...groups.entries()].flatMap(([key, group]) => {
+    const itemId = itemIdByKey.get(key);
+    if (!itemId) return [];
+    return group
+      .filter((ing) => ing.recipe_id)
+      .map((ing) => ({
+        shopping_list_item_id: itemId,
+        recipe_id: ing.recipe_id,
+        quantity: ing.quantity,
+        unit: ing.unit,
+      }));
+  });
 
   if (sourceRows.length > 0) {
     await supabase.from('shopping_list_item_sources').insert(sourceRows);
   }
 
-  return { ok: true, count: insertedItems.length };
+  return { ok: true, count: groups.size };
 }
