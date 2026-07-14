@@ -40,6 +40,10 @@ const GROUPS: { key: GroupKey; labelKey: string; items: { segment: string; label
       // print-labels now lives inside Inventory, shift-handover inside
       // Staff's Handover tab — no longer separate top-level entries here.
       { segment: 'staff', labelKey: 'staff', managerOnly: true },
+      // Not managerOnly -- every role needs this for their own SMS opt-in;
+      // the Invite Codes section inside is what's actually gated, per-role,
+      // by the page itself.
+      { segment: 'settings', labelKey: 'settings' },
     ],
   },
 ];
