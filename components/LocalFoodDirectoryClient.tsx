@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { SkeletonList } from '@/components/Skeleton';
+import { usePropertyRole, canManage } from '@/components/PropertyRoleContext';
 
 type Restaurant = {
   id: string;
@@ -21,15 +22,66 @@ type Restaurant = {
   rating: number | null;
 };
 
+type FormState = {
+  name: string;
+  category: string;
+  phone: string;
+  whatsapp: string;
+  address: string;
+  city: string;
+  website: string;
+  hours: string;
+  hashgacha: string;
+  hashgacha_confirmed: boolean;
+  delivery_available: boolean;
+};
+
+const EMPTY_FORM: FormState = {
+  name: '',
+  category: '',
+  phone: '',
+  whatsapp: '',
+  address: '',
+  city: '',
+  website: '',
+  hours: '',
+  hashgacha: '',
+  hashgacha_confirmed: false,
+  delivery_available: false,
+};
+
+function toRestaurantInsert(propertyId: string, form: FormState) {
+  return {
+    property_id: propertyId,
+    name: form.name.trim(),
+    category: form.category.trim() || null,
+    phone: form.phone.trim() || null,
+    whatsapp: form.whatsapp.trim() || null,
+    address: form.address.trim() || null,
+    city: form.city.trim() || null,
+    website: form.website.trim() || null,
+    hours: form.hours.trim() || null,
+    hashgacha: form.hashgacha.trim() || null,
+    hashgacha_confirmed: form.hashgacha_confirmed,
+    delivery_available: form.delivery_available,
+  };
+}
+
 export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: string }) {
   const supabase = createClient();
+  const role = usePropertyRole();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    supabase
+  function loadRestaurants() {
+    return supabase
       .from('local_food_directory')
       .select(
         'id, name, phone, whatsapp, address, city, category, hashgacha, hashgacha_confirmed, website, hours, delivery_available, rating'
@@ -40,7 +92,12 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
         setRestaurants(data ?? []);
         setLoading(false);
       });
-  }, [propertyId, supabase]);
+  }
+
+  useEffect(() => {
+    loadRestaurants();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyId]);
 
   const categories = useMemo(
     () => [...new Set(restaurants.map((r) => r.category).filter(Boolean))] as string[],
@@ -54,12 +111,201 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
     return true;
   });
 
+  function openAddForm() {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setError(null);
+    setFormOpen(true);
+  }
+
+  function openEditForm(r: Restaurant) {
+    setEditingId(r.id);
+    setForm({
+      name: r.name ?? '',
+      category: r.category ?? '',
+      phone: r.phone ?? '',
+      whatsapp: r.whatsapp ?? '',
+      address: r.address ?? '',
+      city: r.city ?? '',
+      website: r.website ?? '',
+      hours: r.hours ?? '',
+      hashgacha: r.hashgacha ?? '',
+      hashgacha_confirmed: r.hashgacha_confirmed ?? false,
+      delivery_available: r.delivery_available ?? false,
+    });
+    setError(null);
+    setFormOpen(true);
+  }
+
+  function closeForm() {
+    setFormOpen(false);
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setError(null);
+  }
+
+  async function handleSave() {
+    if (!form.name.trim()) {
+      setError('Name is required.');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+
+    if (editingId) {
+      const { error: updateError } = await supabase
+        .from('local_food_directory')
+        .update(toRestaurantInsert(propertyId, form))
+        .eq('id', editingId);
+      setSaving(false);
+      if (updateError) {
+        setError(updateError.message);
+        return;
+      }
+    } else {
+      const { error: insertError } = await supabase
+        .from('local_food_directory')
+        .insert(toRestaurantInsert(propertyId, form));
+      setSaving(false);
+      if (insertError) {
+        setError(insertError.message);
+        return;
+      }
+    }
+
+    closeForm();
+    setLoading(true);
+    await loadRestaurants();
+  }
+
+  async function handleRemove(id: string) {
+    if (!confirm('Remove this restaurant from the directory?')) return;
+    const { error: deleteError } = await supabase.from('local_food_directory').delete().eq('id', id);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+    setRestaurants((prev) => prev.filter((r) => r.id !== id));
+  }
+
   if (loading) return <SkeletonList />;
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Local Takeout Directory</h1>
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <h1 className="text-2xl font-display text-charcoal">Local Takeout Directory</h1>
+        {canManage(role) && !formOpen && (
+          <button
+            onClick={openAddForm}
+            className="shrink-0 text-sm font-medium bg-charcoal text-cream px-3 py-1.5 rounded-full"
+          >
+            + Add
+          </button>
+        )}
+      </div>
       <p className="text-sm text-charcoal/50 mb-4">Restaurants and takeout near Lakewood, with hashgacha noted.</p>
+
+      {formOpen && (
+        <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-4 space-y-2.5">
+          <h2 className="font-display text-lg text-charcoal mb-1">
+            {editingId ? 'Edit restaurant' : 'Add restaurant'}
+          </h2>
+          {error && <p className="text-sm text-rust">{error}</p>}
+          <input
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            placeholder="Name *"
+            className="w-full border border-gold-light/60 rounded-full px-4 py-2 bg-white text-sm"
+          />
+          <input
+            value={form.category}
+            onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+            placeholder="Category (e.g. pizza, deli, bakery)"
+            className="w-full border border-gold-light/60 rounded-full px-4 py-2 bg-white text-sm"
+          />
+          <div className="grid grid-cols-2 gap-2.5">
+            <input
+              value={form.phone}
+              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+              placeholder="Phone"
+              className="w-full border border-gold-light/60 rounded-full px-4 py-2 bg-white text-sm"
+            />
+            <input
+              value={form.whatsapp}
+              onChange={(e) => setForm((f) => ({ ...f, whatsapp: e.target.value }))}
+              placeholder="WhatsApp"
+              className="w-full border border-gold-light/60 rounded-full px-4 py-2 bg-white text-sm"
+            />
+          </div>
+          <input
+            value={form.address}
+            onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+            placeholder="Address"
+            className="w-full border border-gold-light/60 rounded-full px-4 py-2 bg-white text-sm"
+          />
+          <div className="grid grid-cols-2 gap-2.5">
+            <input
+              value={form.city}
+              onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+              placeholder="City"
+              className="w-full border border-gold-light/60 rounded-full px-4 py-2 bg-white text-sm"
+            />
+            <input
+              value={form.hours}
+              onChange={(e) => setForm((f) => ({ ...f, hours: e.target.value }))}
+              placeholder="Hours"
+              className="w-full border border-gold-light/60 rounded-full px-4 py-2 bg-white text-sm"
+            />
+          </div>
+          <input
+            value={form.website}
+            onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
+            placeholder="Website"
+            className="w-full border border-gold-light/60 rounded-full px-4 py-2 bg-white text-sm"
+          />
+          <input
+            value={form.hashgacha}
+            onChange={(e) => setForm((f) => ({ ...f, hashgacha: e.target.value }))}
+            placeholder="Hashgacha"
+            className="w-full border border-gold-light/60 rounded-full px-4 py-2 bg-white text-sm"
+          />
+          <div className="flex gap-4 px-1">
+            <label className="flex items-center gap-1.5 text-sm text-charcoal/70">
+              <input
+                type="checkbox"
+                checked={form.hashgacha_confirmed}
+                onChange={(e) => setForm((f) => ({ ...f, hashgacha_confirmed: e.target.checked }))}
+                className="rounded border-gold-light/60 text-gold-dark"
+              />
+              Hashgacha confirmed
+            </label>
+            <label className="flex items-center gap-1.5 text-sm text-charcoal/70">
+              <input
+                type="checkbox"
+                checked={form.delivery_available}
+                onChange={(e) => setForm((f) => ({ ...f, delivery_available: e.target.checked }))}
+                className="rounded border-gold-light/60 text-gold-dark"
+              />
+              Delivery available
+            </label>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 text-sm font-medium bg-charcoal text-cream px-4 py-2 rounded-full disabled:opacity-40"
+            >
+              {saving ? 'Saving…' : editingId ? 'Save changes' : 'Add restaurant'}
+            </button>
+            <button
+              onClick={closeForm}
+              className="text-sm font-medium border border-charcoal/30 text-charcoal px-4 py-2 rounded-full"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       <input
         value={search}
@@ -121,7 +367,7 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
                 {r.hours && <span className="text-xs text-charcoal/50">{r.hours}</span>}
               </div>
             )}
-            <div className="flex flex-wrap gap-3 mt-2 text-sm">
+            <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
               {r.phone && (
                 <a href={`tel:${r.phone}`} className="text-charcoal/70 hover:text-charcoal">
                   📞 {r.phone}
@@ -141,6 +387,16 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
                 <a href={r.website} target="_blank" rel="noopener noreferrer" className="text-gold-dark hover:text-charcoal">
                   🔗 Website
                 </a>
+              )}
+              {canManage(role) && (
+                <>
+                  <button onClick={() => openEditForm(r)} className="ml-auto text-charcoal/50 hover:text-charcoal">
+                    Edit
+                  </button>
+                  <button onClick={() => handleRemove(r.id)} className="text-rust/70 hover:text-rust">
+                    Remove
+                  </button>
+                </>
               )}
             </div>
           </li>
