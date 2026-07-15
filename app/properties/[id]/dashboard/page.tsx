@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { format, parseISO } from 'date-fns'
 import { Calendar, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, UtensilsCrossed, BookMarked } from 'lucide-react'
 import FloatingScanButton from '@/components/FloatingScanButton'
+import PrepAheadAssistant from '@/components/PrepAheadAssistant'
 import { COURSES } from '@/lib/course-constants'
 import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
 
@@ -347,6 +348,51 @@ async function getReadinessSummary(propertyId: string): Promise<ReadinessSummary
   }
 }
 
+// Prep Ahead Assistant: freezer-triggered reminder, list-only (never writes
+// staff_tasks). Real data check before picking a trigger source: prep_lead_days
+// exists as a column but is set on only 1 of 316 recipes and has zero overlap
+// with the 156 recipes tagged 'freezer-friendly' -- using prep_lead_days as
+// the gate would mean this almost never fires. The tag is the real, populated
+// signal; prep_lead_days is still used to phrase the reminder when a recipe
+// happens to have it set, since that's real information when present.
+const PREP_AHEAD_WINDOW_DAYS = 4 // same near-term window as the recipes page's own "expiring soon" default, for consistency
+
+type PrepAheadReminder = { recipeName: string; planDate: string; prepLeadDays: number | null }
+
+async function getPrepAheadReminders(propertyId: string): Promise<PrepAheadReminder[]> {
+  const supabase = await createClient()
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
+  const horizon = format(new Date(Date.now() + PREP_AHEAD_WINDOW_DAYS * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
+
+  const { data } = await supabase
+    .from('meal_plan_entries')
+    .select('plan_date, recipes(name, tags, prep_lead_days)')
+    .eq('property_id', propertyId)
+    .gte('plan_date', todayStr)
+    .lte('plan_date', horizon)
+
+  return (data || [])
+    .filter((e: any) => e.recipes?.tags?.includes('freezer-friendly'))
+    .map((e: any) => ({
+      recipeName: e.recipes.name as string,
+      planDate: e.plan_date as string,
+      prepLeadDays: e.recipes.prep_lead_days ?? null,
+    }))
+    .sort((a, b) => (a.planDate < b.planDate ? -1 : 1))
+}
+
+// Property-level, persisted (not a session preference) -- reuses the exact
+// feature_flags jsonb column already holding auto_restock/pesach_mode/
+// guest_taste_memory. Defaults to enabled (absence of the key, or anything
+// other than an explicit false) so a brand-new property starts with the
+// "every day" cadence Racquel asked for, not opt-in.
+async function getPrepAheadEnabled(propertyId: string): Promise<boolean> {
+  const supabase = await createClient()
+  const { data } = await supabase.from('properties').select('feature_flags').eq('id', propertyId).single()
+  const flags = (data?.feature_flags ?? {}) as Record<string, unknown>
+  return flags.prep_ahead_assistant !== false
+}
+
 async function getUserRole(propertyId: string): Promise<string | null> {
   const supabase = await createClient()
   const {
@@ -375,7 +421,7 @@ async function getTehillim(hebrewDay: number | null) {
 
 export default async function Dashboard({ params }: { params: Promise<{ id: string }> }) {
   const { id: propertyId } = await params
-  const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole] = await Promise.all([
+  const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled] = await Promise.all([
     getData(propertyId),
     getHebcal(),
     getHebrewInfo(),
@@ -384,6 +430,8 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     getRecipeCount(propertyId),
     getReadinessSummary(propertyId),
     getUserRole(propertyId),
+    getPrepAheadReminders(propertyId),
+    getPrepAheadEnabled(propertyId),
   ])
   const isOwnerOrManager = userRole === 'owner' || userRole === 'manager'
   const tehillim = await getTehillim(hebrewInfo.day)
@@ -657,6 +705,13 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             </ul>
           </div>
         )}
+
+        <PrepAheadAssistant
+          propertyId={propertyId}
+          initialEnabled={prepAheadEnabled}
+          reminders={prepAheadReminders}
+          canManage={isOwnerOrManager}
+        />
 
         {showHalachicWidget && (
           <div className="rounded-2xl p-4 mb-8 bg-gold-light/15 border border-gold-light/40">
