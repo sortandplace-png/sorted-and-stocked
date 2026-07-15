@@ -21,6 +21,7 @@ type Item = {
   photo_url: string | null;
   print_label: boolean;
   location_id: string | null;
+  category: string | null;
 };
 
 type Location = { id: string; name: string };
@@ -94,6 +95,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState<string | null>(null);
   const [photosOnly, setPhotosOnly] = useState(false);
+  const [showSelectionPanel, setShowSelectionPanel] = useState(false);
   const showToast = useToast();
 
   useEffect(() => {
@@ -103,7 +105,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
     Promise.all([
       supabase
         .from('inventory_items')
-        .select('id, name, qr_code, photo_url, print_label, location_id')
+        .select('id, name, qr_code, photo_url, print_label, location_id, category')
         .eq('property_id', propertyId)
         .order('name'),
       supabase.from('locations').select('id, name').eq('property_id', propertyId).order('name'),
@@ -119,7 +121,10 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
       setLocations(locationsRes.data ?? []);
       // Respect each item's Print Label toggle (set in the Edit Item
       // modal) as the initial selection — still fully overridable below.
-      setSelected(new Set(data.filter((i) => i.print_label).map((i) => i.id)));
+      // Produce is excluded from this default: a permanent QR sticker
+      // doesn't make sense for perishable produce, though it stays visible
+      // and toggleable back on individually or via a filter.
+      setSelected(new Set(data.filter((i) => i.print_label && i.category !== 'Produce').map((i) => i.id)));
       setLoading(false);
     });
 
@@ -153,7 +158,9 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
   }
 
   function selectAll(value: boolean) {
-    setSelected(value ? new Set(items.map((i) => i.id)) : new Set());
+    // Same Produce exclusion as the initial default — "Select all" is the
+    // other place a bulk-select would otherwise silently re-include them.
+    setSelected(value ? new Set(items.filter((i) => i.category !== 'Produce').map((i) => i.id)) : new Set());
   }
 
   const filteredItems = useMemo(() => {
@@ -183,14 +190,34 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
 
   const selectedItems = useMemo(() => items.filter((i) => selected.has(i.id)), [items, selected]);
 
-  async function generatePdf() {
+  // Grouped over the full item list (not the currently-filtered/visible
+  // one) so a selected item still shows up here to be removed even if the
+  // active search/filter would otherwise hide it — the whole point is not
+  // having to scroll back through the virtualized list to find it again.
+  const selectedGroups = useMemo(() => {
+    const map = new Map<string, Item[]>();
+    for (const item of items) {
+      if (!selected.has(item.id)) continue;
+      if (!map.has(item.name)) map.set(item.name, []);
+      map.get(item.name)!.push(item);
+    }
+    return [...map.entries()]
+      .map(([name, groupItems]) => ({ name, items: groupItems }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [items, selected]);
+
+  async function generatePdf(testOnly: boolean = false) {
     setGenerating(true);
     setError(null);
     try {
-      const toPrint = items.filter((i) => selected.has(i.id));
-      const doc = new jsPDF({ unit: 'in', format: 'letter' });
       const t = AVERY_22807;
       const perPage = t.cols * t.rows;
+      // A test sheet is exactly one real physical sheet worth of the
+      // current selection (first 20), so a misclick on the full batch
+      // doesn't waste actual label stock — print this one sheet, check
+      // alignment/photos, then run the real batch.
+      const toPrint = testOnly ? items.filter((i) => selected.has(i.id)).slice(0, perPage) : items.filter((i) => selected.has(i.id));
+      const doc = new jsPDF({ unit: 'in', format: 'letter' });
 
       // Batch-fetch every photo concurrently before the render loop instead
       // of blocking sequentially inside it — one slow photo used to stall
@@ -258,10 +285,13 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
         doc.setTextColor(0);
       }
 
-      doc.save(`item-labels-${propertyId}.pdf`);
-      showToast(`Generated ${toPrint.length} label${toPrint.length === 1 ? '' : 's'}.`, {
-        variant: 'success',
-      });
+      doc.save(testOnly ? `item-labels-test-sheet-${propertyId}.pdf` : `item-labels-${propertyId}.pdf`);
+      showToast(
+        testOnly
+          ? `Generated 1 test sheet (${toPrint.length} label${toPrint.length === 1 ? '' : 's'}).`
+          : `Generated ${toPrint.length} label${toPrint.length === 1 ? '' : 's'}.`,
+        { variant: 'success' }
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to generate PDF.';
       setError(message);
@@ -379,16 +409,30 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
           <div className="grid grid-cols-4 gap-1 bg-cream/60 p-2 rounded-lg border border-gold-light/40">
             {Array.from({ length: 20 }).map((_, i) => {
               const item = selectedItems[i];
+              const hasPhoto = !!item && !!item.photo_url && isDirectImageUrl(item.photo_url);
               return (
                 <div
                   key={i}
-                  className="aspect-square border border-gold-light/50 rounded-sm bg-white flex flex-col items-center justify-center p-0.5 overflow-hidden"
+                  className={`aspect-square rounded-sm flex flex-col items-center justify-center p-0.5 overflow-hidden ${
+                    item
+                      ? hasPhoto
+                        ? 'border border-gold-light/50 bg-white'
+                        // Previously bg-cream/50 inside a bg-cream/60
+                        // container -- computed the actual blended colors:
+                        // that left about a 1-2 unit RGB difference from
+                        // the container, functionally invisible. This
+                        // gold-light/40 + gold-dark/50 border blends to a
+                        // real ~10-20 unit difference from both the
+                        // container and the white has-photo cells --
+                        // genuinely visible at a glance, still just the
+                        // gold family, no new color introduced.
+                        : 'border border-dashed border-gold-dark/50 bg-gold-light/40'
+                      : 'border border-gold-light/50 bg-white'
+                  }`}
                 >
                   {item ? (
                     <>
-                      <span className="text-[10px] leading-none">
-                        {item.photo_url && isDirectImageUrl(item.photo_url) ? '📷' : '🏷️'}
-                      </span>
+                      <span className="text-[10px] leading-none">{hasPhoto ? '📷' : '🏷️'}</span>
                       <span className="text-[6px] leading-tight text-center text-charcoal/70 line-clamp-2 mt-0.5">
                         {truncateForLabel(item.name)}
                       </span>
@@ -404,13 +448,67 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
         </div>
       </div>
 
-      <button
-        onClick={generatePdf}
-        disabled={generating || selected.size === 0}
-        className="w-full py-3 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40 mt-4"
-      >
-        {generating ? 'Generating…' : `Generate PDF (${selected.size} labels)`}
-      </button>
+      {/* Sticky footer: bottom-16 on mobile clears MobileBottomNav (fixed
+          bottom-0, md:hidden); bottom-2 on desktop where that bar doesn't
+          exist. Lets the count/chip panel and Generate PDF stay reachable
+          without scrolling back down through a long virtualized list. */}
+      <div className="sticky bottom-16 md:bottom-2 z-20 mt-4 space-y-2">
+        {showSelectionPanel && selectedGroups.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-md shadow-charcoal/10 border border-gold-light/40 p-3 max-h-56 overflow-y-auto">
+            <div className="flex flex-wrap gap-1.5">
+              {selectedGroups.map((group) => (
+                <button
+                  key={group.name}
+                  onClick={() => toggleGroup(group.items)}
+                  className="inline-flex items-center gap-1.5 text-xs bg-gold-light/20 text-charcoal pl-2.5 pr-2 py-1 rounded-full hover:bg-gold-light/30 transition"
+                >
+                  <span className="truncate max-w-[10rem]">{group.name}</span>
+                  {group.items.length > 1 && (
+                    <span className="text-charcoal/40 shrink-0">×{group.items.length}</span>
+                  )}
+                  <span aria-hidden="true" className="text-charcoal/40 shrink-0">
+                    ✕
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Guardrail: only past a real batch size, not for a handful of
+            labels where a misclick can't do much damage. */}
+        {selected.size > 50 && (
+          <div className="bg-gold-light/20 border border-gold-light/50 rounded-2xl px-4 py-2 text-xs text-charcoal flex items-center justify-between gap-3 flex-wrap">
+            <span>
+              {selected.size} labels = {Math.ceil(selected.size / 20)} sheets of Avery 22807
+            </span>
+            <button
+              onClick={() => generatePdf(true)}
+              disabled={generating}
+              className="shrink-0 text-xs font-medium text-gold-dark underline disabled:opacity-40"
+            >
+              Print 1 test sheet
+            </button>
+          </div>
+        )}
+
+        <div className="bg-white rounded-2xl shadow-md shadow-charcoal/10 border border-gold-light/40 p-3 flex items-center gap-3">
+          <button
+            onClick={() => setShowSelectionPanel((v) => !v)}
+            disabled={selected.size === 0}
+            className="text-sm text-charcoal underline shrink-0 disabled:opacity-40 disabled:no-underline"
+          >
+            {selected.size} selected
+          </button>
+          <button
+            onClick={() => generatePdf(false)}
+            disabled={generating || selected.size === 0}
+            className="flex-1 py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40 text-sm"
+          >
+            {generating ? 'Generating…' : `Generate PDF (${selected.size} labels)`}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
