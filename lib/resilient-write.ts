@@ -78,6 +78,58 @@ export async function resilientUpdate(
   return { ok: true, queued: false };
 }
 
+// Optimistic-locking variant of resilientUpdate -- for rows where two people
+// editing at once should never silently last-write-wins. The caller passes
+// the updated_at it loaded the row with; the update only applies if that
+// value still matches the row in the database. If someone else saved in
+// between, zero rows match and this returns `conflict: true` instead of a
+// generic error, so the caller can show a real "someone else just changed
+// this" message rather than clobbering their change.
+export type VersionedWriteResult =
+  | { ok: true; queued: boolean; newUpdatedAt?: string }
+  | { ok: false; queued: false; conflict: true }
+  | { ok: false; queued: false; conflict: false; error: string };
+
+export async function resilientUpdateWithVersionCheck(
+  supabase: SupabaseClient,
+  table: string,
+  id: string,
+  expectedUpdatedAt: string,
+  values: Record<string, unknown>
+): Promise<VersionedWriteResult> {
+  if (isOffline()) {
+    // Conflict detection needs a live round-trip -- while offline there's no
+    // way to know whether someone else has changed the row, so this falls
+    // back to the existing queue-and-reconcile behavior rather than
+    // blocking offline edits altogether.
+    await enqueueWrite({ table, operation: 'update', match: { id }, values });
+    return { ok: true, queued: true };
+  }
+
+  const { data, error } = await supabase
+    .from(table)
+    .update(values)
+    .eq('id', id)
+    .eq('updated_at', expectedUpdatedAt)
+    .select('id, updated_at');
+
+  if (error) {
+    if (isTransientError(error)) {
+      await enqueueWrite({ table, operation: 'update', match: { id }, values });
+      return { ok: true, queued: true };
+    }
+    return { ok: false, queued: false, conflict: false, error: error.message };
+  }
+
+  if (!data || data.length === 0) {
+    // Zero rows matched id + updated_at together -- either someone else
+    // saved in between (the real case this exists for) or the row is gone.
+    return { ok: false, queued: false, conflict: true };
+  }
+
+  return { ok: true, queued: false, newUpdatedAt: data[0].updated_at as string };
+}
+
 export async function resilientDelete(
   supabase: SupabaseClient,
   table: string,

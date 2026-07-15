@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { resilientInsert, resilientUpdate, resilientDelete } from '@/lib/resilient-write';
+import { resilientInsert, resilientUpdate, resilientUpdateWithVersionCheck, resilientDelete } from '@/lib/resilient-write';
 import { usePropertyRole, canManage } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
@@ -62,6 +62,7 @@ type InventoryItem = {
   print_label: boolean;
   pesach_status: 'kosher_for_pesach' | 'not_kosher_for_pesach' | 'needs_review' | 'not_applicable';
   last_counted_at: string | null;
+  updated_at: string;
 };
 
 type HistoryEntry = {
@@ -90,6 +91,9 @@ type ItemFormState = {
   opened_date: string;
   qr_code: string | null; // read-only, DB-generated — display only, never submitted
   print_label: boolean;
+  // Loaded value at edit-open time, for the optimistic-lock check on save —
+  // never rendered as an editable field.
+  updated_at: string | null;
 };
 
 const EMPTY_FORM: ItemFormState = {
@@ -108,6 +112,7 @@ const EMPTY_FORM: ItemFormState = {
   opened_date: '',
   qr_code: null,
   print_label: true,
+  updated_at: null,
 };
 
 // Plain Drive "file/d/.../view" links aren't directly viewable as <img> src.
@@ -261,7 +266,7 @@ export default function InventoryClient({
       supabase
         .from('inventory_items')
         .select(
-          'id, name, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at'
+          'id, name, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
         )
         .eq('property_id', propertyId)
         .order('name'),
@@ -367,6 +372,26 @@ export default function InventoryClient({
     setHistoryLoading(false);
   }
 
+  // Best-effort attribution for the optimistic-lock conflict message.
+  // inventory_item_history only logs a row for a handful of tracked fields
+  // (name/category/location_id/min_qty/current_qty, see
+  // log_inventory_item_change()), so a conflicting edit that only touched an
+  // untracked field (photo, supplier, cost...) won't have a matching row.
+  // Only trust the name if the most recent history row is recent enough to
+  // plausibly be the conflicting edit itself, not some unrelated older one.
+  async function getRecentEditorName(itemId: string): Promise<string | null> {
+    const { data } = await supabase
+      .from('inventory_item_history')
+      .select('actor_name, created_at')
+      .eq('inventory_item_id', itemId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!data?.actor_name) return null;
+    const ageMs = Date.now() - new Date(data.created_at).getTime();
+    return ageMs < 5 * 60 * 1000 ? data.actor_name : null;
+  }
+
   async function saveNewRoom() {
     if (!newRoomName.trim()) return;
     setSavingRoom(true);
@@ -434,6 +459,7 @@ export default function InventoryClient({
       opened_date: item.opened_date ?? '',
       qr_code: item.qr_code,
       print_label: item.print_label,
+      updated_at: item.updated_at,
     });
     setHistory([]);
     loadHistory(item.id);
@@ -492,7 +518,7 @@ export default function InventoryClient({
     const { data: existing } = await supabase
       .from('inventory_items')
       .select(
-        'id, name, category, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at'
+        'id, name, category, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
       )
       .eq('id', matchId)
       .single();
@@ -554,14 +580,35 @@ export default function InventoryClient({
     };
 
     if (form.id) {
-      const result = await resilientUpdate(supabase, 'inventory_items', { id }, payload);
+      // Optimistic locking: only apply if updated_at still matches what this
+      // form loaded. If someone else saved in between, zero rows match and
+      // this comes back as a conflict instead of silently clobbering their
+      // change. form.updated_at should always be set by openEditForm; the
+      // fallback to a plain update only guards against that invariant ever
+      // breaking, not a real expected path.
+      const result = form.updated_at
+        ? await resilientUpdateWithVersionCheck(supabase, 'inventory_items', id, form.updated_at, payload)
+        : await resilientUpdate(supabase, 'inventory_items', { id }, payload);
       setSaving(false);
       if (!result.ok) {
-        setError(result.error);
+        if ('conflict' in result && result.conflict) {
+          const recentEditorName = await getRecentEditorName(id);
+          showToast(
+            recentEditorName
+              ? `This item was just updated by ${recentEditorName} — reload to see their change before saving yours.`
+              : "This item was just updated by someone else — reload to see their change before saving yours.",
+            { variant: 'error', durationMs: 10000 }
+          );
+          return;
+        }
+        setError('error' in result ? result.error : 'Failed to save item.');
         showToast('Failed to save item.', { variant: 'error' });
         return;
       }
-      setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...payload, id } : i)));
+      const newUpdatedAt = 'newUpdatedAt' in result ? result.newUpdatedAt : undefined;
+      setItems((prev) =>
+        prev.map((i) => (i.id === id ? { ...i, ...payload, id, updated_at: newUpdatedAt ?? i.updated_at } : i))
+      );
       if (photoUploadError) {
         showToast(`Item saved, but the photo failed to upload: ${photoUploadError}`, {
           variant: 'error',
@@ -592,7 +639,20 @@ export default function InventoryClient({
       // applies server-side, matched here for the optimistic local row.
       // last_counted_at is never set on INSERT (see the DB trigger) -- a
       // brand-new item is always "not yet counted."
-      setItems((prev) => [...prev, { ...payload, id, qr_code: null, pesach_status: 'needs_review', last_counted_at: null }]);
+      // updated_at defaults to now() server-side on insert -- approximated
+      // here the same way, only relevant as the version-check baseline if
+      // this exact item gets edited again before the next reload.
+      setItems((prev) => [
+        ...prev,
+        {
+          ...payload,
+          id,
+          qr_code: null,
+          pesach_status: 'needs_review',
+          last_counted_at: null,
+          updated_at: new Date().toISOString(),
+        },
+      ]);
       if (photoUploadError) {
         showToast(`Item added, but the photo failed to upload: ${photoUploadError}`, {
           variant: 'error',
