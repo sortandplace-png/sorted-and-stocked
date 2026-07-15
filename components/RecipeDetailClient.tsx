@@ -4,6 +4,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
+import { LOCALE_COOKIE } from '@/i18n/locale-constants';
 import { Printer, Share2, History as HistoryIcon, Heart, MoreVertical, Pencil, Copy, Trash2 } from 'lucide-react';
 import NewRecipeModal from '@/components/NewRecipeModal';
 import { createClient } from '@/lib/supabase/client';
@@ -148,7 +150,17 @@ export default function RecipeDetailClient({
   const [error, setError] = useState<string | null>(null);
   const [targetServings, setTargetServings] = useState<number | null>(null);
   const [view, setView] = useState<'owner' | 'staff'>(role === 'staff' ? 'staff' : 'owner');
-  const [lang, setLang] = useState<'en' | 'es'>('en');
+  // Reads the same sns_locale cookie the nav's global LocaleToggle writes,
+  // so this page's language follows the site-wide toggle instead of always
+  // resetting to English on load (the previous bug: local-only state that
+  // never read the global locale at all).
+  const locale = useLocale();
+  const lang = locale as 'en' | 'es';
+  function setLang(next: 'en' | 'es') {
+    if (next === locale) return;
+    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000`;
+    router.refresh();
+  }
   const [checkedIds, setCheckedIds] = useState<Record<string, boolean>>({});
   const [addingToListIds, setAddingToListIds] = useState<Record<string, boolean>>({});
   const [showHistory, setShowHistory] = useState(false);

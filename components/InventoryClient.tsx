@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo, useRef, useId } from 'react';
+import { useLocale } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientUpdate, resilientUpdateWithVersionCheck, resilientDelete } from '@/lib/resilient-write';
 import { usePropertyRole, canManage } from '@/components/PropertyRoleContext';
@@ -47,6 +48,7 @@ const PESACH_STATUS_INFO: Record<
 type InventoryItem = {
   id: string;
   name: string;
+  name_es: string | null;
   category: string | null;
   location_id: string | null;
   current_qty: number;
@@ -180,6 +182,9 @@ export default function InventoryClient({
   propertyId: string;
   initialLocationFilter?: string | null;
 }) {
+  const locale = useLocale();
+  const displayName = (item: { name: string; name_es: string | null }) =>
+    locale === 'es' && item.name_es ? item.name_es : item.name;
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [locations, setLocations] = useState<StorageLocation[]>([]);
   const [categorySuggestions, setCategorySuggestions] = useState<string[]>([]);
@@ -266,7 +271,7 @@ export default function InventoryClient({
       supabase
         .from('inventory_items')
         .select(
-          'id, name, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
+          'id, name, name_es, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
         )
         .eq('property_id', propertyId)
         .order('name'),
@@ -518,7 +523,7 @@ export default function InventoryClient({
     const { data: existing } = await supabase
       .from('inventory_items')
       .select(
-        'id, name, category, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
+        'id, name, name_es, category, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
       )
       .eq('id', matchId)
       .single();
@@ -647,6 +652,10 @@ export default function InventoryClient({
         {
           ...payload,
           id,
+          // Not part of the add-item form (only ever populated via bulk
+          // backfill) -- null is accurate for a brand-new item, same as
+          // qr_code/last_counted_at above.
+          name_es: null,
           qr_code: null,
           pesach_status: 'needs_review',
           last_counted_at: null,
@@ -905,7 +914,7 @@ export default function InventoryClient({
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-charcoal truncate">{item.name}</p>
+          <p className="font-medium text-charcoal truncate">{displayName(item)}</p>
           <p className="text-xs text-charcoal/50 truncate mt-0.5">
             {[
               item.category ? `${categoryIcon(item.category)} ${item.category}` : null,

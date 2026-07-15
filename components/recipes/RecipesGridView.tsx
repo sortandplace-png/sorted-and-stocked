@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   Timer,
   Soup,
@@ -64,6 +64,7 @@ function kosherPillClass(kosherType: string) {
 interface Recipe {
   id: string;
   name: string;
+  name_es?: string | null;
   photo_url: string | null;
   kosher_type: string | null;
   course: string | null;
@@ -89,6 +90,7 @@ function matchesOccasion(r: Recipe, occasion: Occasion): boolean {
 interface ExpiringSoonRecipe {
   recipe_id: string;
   recipe_name: string;
+  recipe_name_es?: string | null;
   photo_url: string | null;
   expiring_count: number;
   expiring_ingredient_names: string[];
@@ -213,6 +215,11 @@ export default function RecipesGridView({
 }) {
   const role = usePropertyRole();
   const t = useTranslations('recipesGrid');
+  const locale = useLocale();
+  const displayName = (r: { name: string; name_es?: string | null }) =>
+    locale === 'es' && r.name_es ? r.name_es : r.name;
+  const displayExpiringName = (r: { recipe_name: string; recipe_name_es?: string | null }) =>
+    locale === 'es' && r.recipe_name_es ? r.recipe_name_es : r.recipe_name;
   const router = useRouter();
   const supabase = createClient();
   const showToast = useToast();
@@ -862,7 +869,7 @@ export default function RecipesGridView({
                           <span className="text-sm text-charcoal/20">🍽️</span>
                         )}
                       </div>
-                      <p className="text-xs font-medium text-charcoal leading-snug line-clamp-2">{r.recipe_name}</p>
+                      <p className="text-xs font-medium text-charcoal leading-snug line-clamp-2">{displayExpiringName(r)}</p>
                     </Link>
                   ))}
                 </div>
@@ -885,7 +892,7 @@ export default function RecipesGridView({
                         )}
                       </div>
                       <div className="p-2.5">
-                        <p className="text-sm font-medium text-charcoal leading-snug line-clamp-2">{r.recipe_name}</p>
+                        <p className="text-sm font-medium text-charcoal leading-snug line-clamp-2">{displayExpiringName(r)}</p>
                         <p
                           className="text-xs text-rust mt-1"
                           title={r.expiring_ingredient_names.join(', ')}
@@ -968,7 +975,7 @@ export default function RecipesGridView({
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={recipe.photo_url}
-                              alt={recipe.name}
+                              alt={displayName(recipe)}
                               className="w-full h-full object-cover"
                             />
                           ) : (
@@ -1054,7 +1061,7 @@ export default function RecipesGridView({
                         </div>
                         <div className="p-3">
                           <h2 className="font-display font-bold text-lg text-charcoal leading-snug mb-1">
-                            {recipe.name}
+                            {displayName(recipe)}
                           </h2>
                           <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
                             {(() => {
