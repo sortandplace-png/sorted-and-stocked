@@ -6,6 +6,7 @@ import { Calendar, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square
 import FloatingScanButton from '@/components/FloatingScanButton'
 import PrepAheadAssistant from '@/components/PrepAheadAssistant'
 import ThisWeeksMealsList from '@/components/ThisWeeksMealsList'
+import LocationZmanim from '@/components/LocationZmanim'
 import { COURSES } from '@/lib/course-constants'
 import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
 
@@ -663,10 +664,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             )}
           </div>
           <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-line text-[12.5px] font-bold text-ink-soft">
-            <span aria-hidden="true">🕯️</span>
-            <span>
-              Candle Lighting{candleDateLabel ? ` · ${candleDateLabel}` : ''} · <bdi dir="ltr">{hebcal.candleTime}</bdi>
-            </span>
+            <LocationZmanim propertyName={propertyName} defaultTime={hebcal.candleTime} defaultDateLabel={candleDateLabel} />
             {isShabbos && <span className="px-2 py-0.5 bg-amber-200 rounded text-xs">Shabbos Mode Active</span>}
           </div>
           {omerTitle && <p className="text-xs text-muted2 mt-2">{omerTitle}</p>}
