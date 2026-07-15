@@ -32,6 +32,7 @@ const MODAL_SLUGS = new Set<ToolModalSlug>([
   'capture-photo',
   'link-captured-photos',
   'hechsher-verification',
+  'kosher-type-tagging',
 ]);
 
 export default function ToolsGroupList({ propertyId, groups }: { propertyId: string; groups: Group[] }) {

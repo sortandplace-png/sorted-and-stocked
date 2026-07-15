@@ -15,6 +15,7 @@ import HalachicCalendarClient from '@/components/HalachicCalendarClient';
 import CapturePhotoClient from '@/components/CapturePhotoClient';
 import LinkCapturedPhotosClient from '@/components/LinkCapturedPhotosClient';
 import HechsherVerificationClient from '@/components/HechsherVerificationClient';
+import KosherTypeTaggingClient from '@/components/KosherTypeTaggingClient';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 
 export type ToolModalSlug =
@@ -31,7 +32,8 @@ export type ToolModalSlug =
   | 'halachic-calendar'
   | 'capture-photo'
   | 'link-captured-photos'
-  | 'hechsher-verification';
+  | 'hechsher-verification'
+  | 'kosher-type-tagging';
 
 // Same modal shell as KitchenOpsToolModal (its own established, verified
 // pattern) applied to the Scanners / Inventory Ops / Household groups --
@@ -108,6 +110,12 @@ export default function ToolModal({
         {slug === 'hechsher-verification' &&
           (canManage(role) ? (
             <HechsherVerificationClient propertyId={propertyId} />
+          ) : (
+            <p className="p-5 text-sm text-charcoal/50">Only an owner or manager can use this tool.</p>
+          ))}
+        {slug === 'kosher-type-tagging' &&
+          (canManage(role) ? (
+            <KosherTypeTaggingClient propertyId={propertyId} />
           ) : (
             <p className="p-5 text-sm text-charcoal/50">Only an owner or manager can use this tool.</p>
           ))}

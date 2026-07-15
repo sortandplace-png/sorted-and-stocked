@@ -141,6 +141,12 @@ const TOOLS = [
     title: 'Hechsher Verification',
     description: 'Confirm hechsher against OU/OK for every item missing one.',
   },
+  {
+    slug: 'kosher-type-tagging',
+    icon: '🏷️',
+    title: 'Kosher Type Tagging',
+    description: 'Bulk-tag Meat/Dairy/Parve by category for items missing one.',
+  },
 ];
 
 const TASTE_MEMORY_TOOL = {
@@ -186,7 +192,7 @@ const GROUPS: {
       {
         key: 'admin-cleanup',
         label: 'Admin Cleanup',
-        slugs: ['duplicate-ingredients', 'needs-linking', 'link-captured-photos', 'hechsher-verification'],
+        slugs: ['duplicate-ingredients', 'needs-linking', 'link-captured-photos', 'hechsher-verification', 'kosher-type-tagging'],
         lockIcon: true,
       },
     ],
