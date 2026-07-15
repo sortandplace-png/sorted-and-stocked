@@ -590,6 +590,17 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             </span>
             {isShabbos && <span className="px-2 py-0.5 bg-amber-200 rounded-full text-xs">Shabbos Mode Active</span>}
           </div>
+          {/* Sefiras HaOmer: only non-null during the real ~49-day Omer
+              window (Hebcal itself returns null outside it, so no date-range
+              logic is needed here) -- previously only ever shown on Fridays/
+              Erev Yom Tov inside the halachic widget below, invisible every
+              other day of the count. Persistent here instead, alongside the
+              Hebrew date it's most naturally read next to. */}
+          {omerTitle && (
+            <div className="text-sm mt-2 inline-flex items-center gap-2 bg-white px-3 py-1 rounded-full text-charcoal">
+              <span aria-hidden="true">🔢</span> {omerTitle}
+            </div>
+          )}
           {tehillim && (
             <div className="text-sm mt-2 inline-flex items-center gap-2 bg-white px-3 py-1 rounded-full text-charcoal">
               <span aria-hidden="true">📖</span> Tehillim: Perek {tehillim.perek_start}
@@ -719,7 +730,9 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               <BookMarked size={16} strokeWidth={1.75} className="text-gold-dark" aria-hidden="true" /> {isErevYomTov ? 'Erev Yom Tov' : 'Erev Shabbos'}
             </h2>
             <p className="text-sm text-charcoal/80">
-              {omerTitle && <>{omerTitle} · </>}
+              {/* Omer count now shown persistently in the Hebrew date card
+                  above -- not repeated here to avoid saying it twice on the
+                  one day a week both are visible. */}
               Hadlakas Neiros <bdi dir="ltr">{hebcal.candleTime}</bdi>
             </p>
           </div>
