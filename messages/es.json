@@ -188,5 +188,36 @@
   },
   "scan": {
     "reorder": "Volver a pedir"
+  },
+  "staffOnboarding": {
+    "next": "Siguiente",
+    "back": "Atrás",
+    "skip": "Omitir",
+    "finish": "Llevarme a Inicio",
+    "screen1Headline": "Bienvenido a Sorted & Stocked",
+    "screen1Sub": "Se le ha agregado como Personal para {propertyName}. Serán cuatro pantallas rápidas — y estará listo.",
+    "screen2Eyebrow": "Antes de Todo",
+    "screen2Headline": "Conozca las etiquetas",
+    "screen2Sub": "Cada receta y artículo de inventario está etiquetado. Verifíquelo antes de combinar cualquier cosa.",
+    "screen2Fleishig": "Carne",
+    "screen2Milchig": "Lácteo",
+    "screen2Parve": "Ninguno — seguro con cualquiera",
+    "screen2Example": "Ejemplo",
+    "screen3Eyebrow": "Dónde Están las Cosas",
+    "screen3Headline": "Recorrido rápido",
+    "screen3Sub": "Estos cuatro están en Inicio. Los usará a diario.",
+    "screen4Eyebrow": "Ya Está Listo",
+    "screen4Headline": "Es Personal en {propertyName}",
+    "screen4Check1Title": "Revise el Traspaso de Turno",
+    "screen4Check1Body": "Vea las notas dejadas por quien trabajó antes que usted.",
+    "screen4Check2Title": "Consulte el Centro de Tareas",
+    "screen4Check2Body": "Sus tareas asignadas están aquí.",
+    "screen4Check3Title": "Pregunte si algo no está claro",
+    "screen4Check3Body": "Especialmente las etiquetas de kashrut — siempre confirme, nunca adivine."
+  },
+  "shiftHandover": {
+    "whatsDone": "Lo Que Está Hecho:",
+    "inProgress": "En Progreso:",
+    "headsUp": "Atención:"
   }
 }

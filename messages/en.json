@@ -188,5 +188,36 @@
   },
   "scan": {
     "reorder": "Reorder"
+  },
+  "staffOnboarding": {
+    "next": "Next",
+    "back": "Back",
+    "skip": "Skip",
+    "finish": "Take me to Home",
+    "screen1Headline": "Welcome to Sorted & Stocked",
+    "screen1Sub": "You've been added as Staff for {propertyName}. This'll take four quick screens — then you're in.",
+    "screen2Eyebrow": "Before Anything Else",
+    "screen2Headline": "Know the tags",
+    "screen2Sub": "Every recipe and inventory item is tagged. Check it before combining anything.",
+    "screen2Fleishig": "Meat",
+    "screen2Milchig": "Dairy",
+    "screen2Parve": "Neither — safe with either",
+    "screen2Example": "Example",
+    "screen3Eyebrow": "Where Things Live",
+    "screen3Headline": "Quick tour",
+    "screen3Sub": "These four are on Home. You'll use them daily.",
+    "screen4Eyebrow": "You're Set Up",
+    "screen4Headline": "You're Staff on {propertyName}",
+    "screen4Check1Title": "Check Shift Handover",
+    "screen4Check1Body": "See notes left by whoever worked before you.",
+    "screen4Check2Title": "Look at the Task Center",
+    "screen4Check2Body": "Your assigned tasks live here.",
+    "screen4Check3Title": "Ask if anything's unclear",
+    "screen4Check3Body": "Especially kashrut tags — always confirm, never guess."
+  },
+  "shiftHandover": {
+    "whatsDone": "What's Done:",
+    "inProgress": "In Progress:",
+    "headsUp": "Heads Up:"
   }
 }
