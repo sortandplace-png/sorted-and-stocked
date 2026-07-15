@@ -305,6 +305,63 @@ async function getRecipeCount(propertyId: string): Promise<number> {
   return count ?? 0
 }
 
+// Owner/manager-only "are we ready" glance: real data already collected for
+// other reasons (staff_tasks, shift_handovers), no new table. Useful any day
+// -- most valuable right before Shabbos/Yom Tov, but not gated to Friday the
+// way the Halachic widget above is, since a manager might check this any
+// afternoon.
+type ReadinessSummary = {
+  tasksDone: number
+  tasksOpen: number
+  latestHandover: { noteText: string; authorName: string | null; createdAt: string } | null
+}
+
+async function getReadinessSummary(propertyId: string): Promise<ReadinessSummary> {
+  const supabase = await createClient()
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
+
+  const [tasksRes, handoverRes] = await Promise.all([
+    supabase
+      .from('staff_tasks')
+      .select('completed')
+      .eq('property_id', propertyId)
+      .eq('due_date', todayStr),
+    supabase
+      .from('shift_handovers')
+      .select('note_text, created_at, profiles(full_name)')
+      .eq('property_id', propertyId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ])
+
+  const tasks = tasksRes.data ?? []
+  const latest = handoverRes.data as { note_text: string; created_at: string; profiles: { full_name: string | null } | null } | null
+
+  return {
+    tasksDone: tasks.filter((t) => t.completed).length,
+    tasksOpen: tasks.filter((t) => !t.completed).length,
+    latestHandover: latest
+      ? { noteText: latest.note_text, authorName: latest.profiles?.full_name ?? null, createdAt: latest.created_at }
+      : null,
+  }
+}
+
+async function getUserRole(propertyId: string): Promise<string | null> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data } = await supabase
+    .from('property_members')
+    .select('role')
+    .eq('property_id', propertyId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+  return data?.role ?? null
+}
+
 async function getTehillim(hebrewDay: number | null) {
   if (!hebrewDay) return null
   const supabase = await createClient()
@@ -318,14 +375,17 @@ async function getTehillim(hebrewDay: number | null) {
 
 export default async function Dashboard({ params }: { params: Promise<{ id: string }> }) {
   const { id: propertyId } = await params
-  const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount] = await Promise.all([
+  const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole] = await Promise.all([
     getData(propertyId),
     getHebcal(),
     getHebrewInfo(),
     getPrepReminders(propertyId),
     getPropertyName(propertyId),
     getRecipeCount(propertyId),
+    getReadinessSummary(propertyId),
+    getUserRole(propertyId),
   ])
+  const isOwnerOrManager = userRole === 'owner' || userRole === 'manager'
   const tehillim = await getTehillim(hebrewInfo.day)
   const missingIngredientCount = await getMissingIngredientCount(
     propertyId,
@@ -523,6 +583,38 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             <ShoppingCart size={16} className="text-gold-dark" aria-hidden="true" /> Shopping List
           </Link>
         </div>
+
+        {isOwnerOrManager && (
+          <div className="rounded-2xl p-4 mb-8 bg-white border border-gold-light/40">
+            <h2 className="text-sm font-display text-charcoal mb-2 flex items-center gap-1.5">
+              <Clock size={16} strokeWidth={1.75} className="text-gold-dark" aria-hidden="true" /> Readiness at a glance
+            </h2>
+            <p className="text-sm text-charcoal/80">
+              {readiness.tasksDone + readiness.tasksOpen === 0 ? (
+                'No tasks due today.'
+              ) : (
+                <>
+                  <span className="font-medium">{readiness.tasksDone}</span> task{readiness.tasksDone === 1 ? '' : 's'} done,{' '}
+                  <span className={`font-medium ${readiness.tasksOpen > 0 ? 'text-rust' : ''}`}>{readiness.tasksOpen}</span> left today.
+                </>
+              )}
+              {' '}Candle lighting <bdi dir="ltr">{hebcal.candleTime}</bdi>.
+            </p>
+            <p className="text-sm text-charcoal/60 mt-1">
+              {readiness.latestHandover ? (
+                <>
+                  Last handover{readiness.latestHandover.authorName ? ` (${readiness.latestHandover.authorName})` : ''}: "
+                  {readiness.latestHandover.noteText.length > 100
+                    ? `${readiness.latestHandover.noteText.slice(0, 100)}…`
+                    : readiness.latestHandover.noteText}
+                  "
+                </>
+              ) : (
+                'No handover notes yet.'
+              )}
+            </p>
+          </div>
+        )}
 
         {/* Quick-glance overview — real counts (inventory.length and
             meals.length are already fetched above for this exact property/
