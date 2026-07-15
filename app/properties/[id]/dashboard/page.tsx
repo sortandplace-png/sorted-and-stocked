@@ -268,7 +268,7 @@ async function getData(propertyId: string) {
     .maybeSingle()
 
   const [meals, inventory, shopping] = await Promise.all([
-    supabase.from('meal_plan_entries').select('plan_date, recipe_id, course, recipes(name, name_es, kosher_type)').eq('property_id', propertyId).gte('plan_date', startStr).lte('plan_date', endStr).order('plan_date'),
+    supabase.from('meal_plan_entries').select('plan_date, meal_slot, recipe_id, course, recipes(name, name_es, kosher_type)').eq('property_id', propertyId).gte('plan_date', startStr).lte('plan_date', endStr).order('plan_date'),
     supabase.from('inventory_items').select('category, name, current_qty, min_qty, photo_url, reorder_link').eq('property_id', propertyId).order('category'),
     list
       ? supabase.from('shopping_list_items').select('name, category, qty_needed, status, inventory_items(photo_url, reorder_link)').eq('shopping_list_id', list.id).eq('status', 'pending').order('category')
@@ -475,6 +475,32 @@ async function getUserRole(propertyId: string): Promise<string | null> {
   return data?.role ?? null
 }
 
+// Brass pin-dot accent -- part of the original Concept B spec ("brass
+// pin-dot accent on card corners") that never actually got implemented in
+// the first repaint pass. `lg` for the 4 main top-section cards (Today/
+// Candle/Pantry/Meal Plan), `sm` for the Quick Action tiles. Not used on
+// Readiness or the stat cards -- neither is part of the reference mockup's
+// own pinned-card set.
+function Pin({ size = 'lg' }: { size?: 'lg' | 'sm' }) {
+  const dim = size === 'lg' ? 14 : 10
+  const offset = size === 'lg' ? 18 : 14
+  return (
+    <span
+      className="absolute rounded-full pointer-events-none"
+      style={{
+        top: offset,
+        right: offset,
+        width: dim,
+        height: dim,
+        background: 'radial-gradient(circle at 32% 26%, #F8E9C4 0%, #C6A46E 46%, #8C6D38 100%)',
+        boxShadow: '0 3px 6px rgba(70,45,10,0.35), 0 0 0 4px rgba(198,164,110,0.16)',
+        zIndex: 2,
+      }}
+      aria-hidden="true"
+    />
+  )
+}
+
 async function getTehillim(hebrewDay: number | null) {
   if (!hebrewDay) return null
   const supabase = await createClient()
@@ -579,6 +605,13 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const showHalachicWidget = isEasternFriday || isErevYomTov
   const chametzItems = await getChametzCountdown(propertyId, daysUntilPesach)
 
+  // Real bug found and fixed, not assumed: meal_plan_entries is one row per
+  // dish/course (confirmed live -- 38 rows for the week, 5-6 courses × 7
+  // dinners), so meals.length was counting dishes, not meals, everywhere it
+  // was used as "X meals planned." A real meal is a distinct
+  // plan_date+meal_slot pair -- 7 that week, not 38.
+  const distinctMealCount = new Set(meals.map((m: any) => `${m.plan_date}|${m.meal_slot}`)).size
+
   // Canonical course order (Dip/Kids Platter/Soup/Protein/Starch/Vege/Salad/
   // Dessert-last) applied as a secondary sort after plan_date -- the raw
   // query only orders by date, so entries within the same day previously
@@ -622,7 +655,15 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     .slice(0, 5)
 
   return (
-    <div className={`min-h-screen p-4 md:p-6 font-interDisplay transition-all ${isShabbos ? 'bg-amber-50' : 'bg-linen'}`}>
+    <div
+      className={`min-h-screen p-4 md:p-6 font-interDisplay transition-all ${isShabbos ? 'bg-amber-50' : 'bg-linen'}`}
+      style={{
+        backgroundImage: `linear-gradient(118deg, rgba(255,250,240,0) 0%, rgba(255,244,222,0.45) 42%, rgba(255,250,240,0) 78%),
+          radial-gradient(circle at 10% 6%, rgba(214,228,240,0.6) 0%, transparent 42%),
+          radial-gradient(circle at 94% 88%, rgba(234,221,199,0.6) 0%, transparent 42%),
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.075'/%3E%3C/svg%3E")`,
+      }}
+    >
       <div className="max-w-[1180px] mx-auto pb-16">
         {/* New direction (2026-07-15) -- full repaint, replacing Bold
             Direction on every section of Home. Individual floating cards on
@@ -639,7 +680,8 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               date, parsha, Tehillim, omer, Shabbos Mode indicator); now
               inside an actual card per the approved mockup, where before
               this was deliberately chrome-less. */}
-          <div className={`col-span-12 md:col-span-7 min-h-[300px] rounded-xl3 border border-cardBorder shadow-card p-10 flex flex-col items-center justify-center text-center transition-shadow hover:shadow-cardHover ${isShabbos ? 'bg-amber-100' : 'bg-card'}`}>
+          <div className={`relative col-span-12 md:col-span-7 min-h-[300px] rounded-xl3 border border-cardBorder shadow-card p-10 flex flex-col items-center justify-center text-center transition-shadow hover:shadow-cardHover ${isShabbos ? 'bg-amber-100' : 'bg-card'}`}>
+            <Pin />
             {propertyName && (
               <p className="text-[10px] tracking-[0.18em] uppercase font-bold text-brass border-b border-brass inline-block pb-1.5 mb-5">
                 {propertyName}
@@ -691,6 +733,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               backgroundPosition: 'center',
             }}
           >
+            <Pin />
             <div className="absolute top-5 left-5 w-9 h-9 rounded-full bg-white/15 border border-white/30 flex items-center justify-center text-white">
               <Flame size={16} aria-hidden="true" />
             </div>
@@ -716,8 +759,9 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               backgroundPosition: 'center',
             }}
           >
+            <Pin />
             <span className="inline-block bg-white/90 text-denim text-[11px] font-semibold px-4 py-2 rounded-full shadow-card">
-              Pantry · {inventoryCount} items
+              Pantry · {inventoryCount.toLocaleString('en-US')} items
             </span>
           </Link>
 
@@ -730,52 +774,37 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               backgroundPosition: 'center',
             }}
           >
+            <Pin />
             <span className="inline-block bg-white/90 text-denim text-[11px] font-semibold px-4 py-2 rounded-full shadow-card">
-              This Week · {meals.length} meal{meals.length === 1 ? '' : 's'}
+              This Week · {distinctMealCount} meal{distinctMealCount === 1 ? '' : 's'}
             </span>
           </Link>
 
-          {/* QUICK ACTIONS -- same 4 real destinations as before (Plan Meal
-              is still the sole primary/filled action), restyled as the
-              mockup's small/action cards (20px radius, not 28px). */}
+          {/* QUICK ACTIONS -- same 4 real destinations as before. Uniform
+              treatment per explicit instruction: Plan Meal's dark "primary"
+              fill was my own addition, not in the reference spec -- reverted
+              so all 4 read identically (mist fill, brass-tinted border, pin
+              dot, 46px icon circle). */}
           <div className="col-span-12 md:col-span-4 grid grid-cols-2 gap-3">
-            <Link
-              href={`/properties/${propertyId}/meal-plan`}
-              className="min-h-[104px] flex flex-col justify-between gap-2.5 rounded-xl2 bg-denim text-white p-4 text-sm font-semibold shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
-            >
-              <span className="w-[38px] h-[38px] rounded-full bg-white/15 flex items-center justify-center">
-                <Calendar size={18} aria-hidden="true" />
-              </span>
-              <span className="font-display font-semibold text-[15px]">Plan Meal</span>
-            </Link>
-            <Link
-              href={`/properties/${propertyId}/scan`}
-              className="min-h-[104px] flex flex-col justify-between gap-2.5 rounded-xl2 bg-card border border-cardBorder p-4 text-sm font-semibold shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
-              aria-label="Scan an item"
-            >
-              <span className="w-[38px] h-[38px] rounded-full bg-mist border border-brass/35 flex items-center justify-center text-denim">
-                <Scan size={18} aria-hidden="true" />
-              </span>
-              <span className="font-display font-semibold text-[15px] text-denim">Scan Item</span>
-            </Link>
-            <Link
-              href={`/properties/${propertyId}/recipes`}
-              className="min-h-[104px] flex flex-col justify-between gap-2.5 rounded-xl2 bg-card border border-cardBorder p-4 text-sm font-semibold shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
-            >
-              <span className="w-[38px] h-[38px] rounded-full bg-mist border border-brass/35 flex items-center justify-center text-denim">
-                <Plus size={18} aria-hidden="true" />
-              </span>
-              <span className="font-display font-semibold text-[15px] text-denim">Add Recipe</span>
-            </Link>
-            <Link
-              href={`/properties/${propertyId}/shopping-list`}
-              className="min-h-[104px] flex flex-col justify-between gap-2.5 rounded-xl2 bg-card border border-cardBorder p-4 text-sm font-semibold shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
-            >
-              <span className="w-[38px] h-[38px] rounded-full bg-mist border border-brass/35 flex items-center justify-center text-denim">
-                <ShoppingCart size={18} aria-hidden="true" />
-              </span>
-              <span className="font-display font-semibold text-[15px] text-denim">Shopping List</span>
-            </Link>
+            {([
+              [`/properties/${propertyId}/meal-plan`, Calendar, 'Plan Meal', undefined] as const,
+              [`/properties/${propertyId}/scan`, Scan, 'Scan Item', 'Scan an item'] as const,
+              [`/properties/${propertyId}/recipes`, Plus, 'Add Recipe', undefined] as const,
+              [`/properties/${propertyId}/shopping-list`, ShoppingCart, 'Shopping List', undefined] as const,
+            ]).map(([href, Icon, label, ariaLabel]) => (
+              <Link
+                key={label}
+                href={href}
+                aria-label={ariaLabel}
+                className="relative min-h-[118px] flex flex-col items-start justify-center gap-3 rounded-xl2 bg-mist border border-brass/30 p-[18px] shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+              >
+                <Pin size="sm" />
+                <span className="w-[46px] h-[46px] rounded-full border border-brass/40 flex items-center justify-center text-denim" style={{ background: 'radial-gradient(circle at 32% 28%, #FFFEFC 0%, #F3F7FB 70%)' }}>
+                  <Icon size={22} aria-hidden="true" />
+                </span>
+                <span className="font-display font-semibold text-base text-denim">{label}</span>
+              </Link>
+            ))}
           </div>
 
           {/* READINESS -- content/functionality unchanged (real task counts,
@@ -829,7 +858,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
             <Package size={18} strokeWidth={1.5} className="text-brass mx-auto mb-1" aria-hidden="true" />
-            <div className="text-2xl font-display text-denim">{inventoryCount}</div>
+            <div className="text-2xl font-display text-denim">{inventoryCount.toLocaleString('en-US')}</div>
             <div className="text-xs text-dusk">Total Inventory</div>
           </div>
           <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
@@ -839,7 +868,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           </div>
           <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
             <Calendar size={18} strokeWidth={1.5} className="text-brass mx-auto mb-1" aria-hidden="true" />
-            <div className="text-2xl font-display text-denim">{meals.length}</div>
+            <div className="text-2xl font-display text-denim">{distinctMealCount}</div>
             <div className="text-xs text-dusk">Meals Planned</div>
           </div>
         </div>
@@ -959,7 +988,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               </Link>
             </div>
             <p className="text-denim mb-4">
-              <span className="font-bold">{meals.length}</span> meal{meals.length === 1 ? '' : 's'} planned this week
+              <span className="font-bold">{distinctMealCount}</span> meal{distinctMealCount === 1 ? '' : 's'} planned this week
             </p>
 
             <div className="flex gap-1.5 mb-4 flex-wrap" role="list" aria-label="Kashrut color legend">
