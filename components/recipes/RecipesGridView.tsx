@@ -850,7 +850,7 @@ export default function RecipesGridView({
                     <Link
                       key={r.recipe_id}
                       href={`/properties/${propertyId}/recipes/${r.recipe_id}`}
-                      className={`shrink-0 w-28 flex items-center gap-1.5 rounded-lg border shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors p-1.5 ${
+                      className={`shrink-0 w-36 flex items-center gap-1.5 rounded-lg border shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors p-1.5 ${
                         pesachIds.has(r.recipe_id) ? 'bg-gold/[0.08] border-gold/40' : 'bg-white border-gold-light/40'
                       }`}
                     >
@@ -862,7 +862,7 @@ export default function RecipesGridView({
                           <span className="text-sm text-charcoal/20">🍽️</span>
                         )}
                       </div>
-                      <p className="text-xs font-medium text-charcoal leading-snug truncate">{r.recipe_name}</p>
+                      <p className="text-xs font-medium text-charcoal leading-snug line-clamp-2">{r.recipe_name}</p>
                     </Link>
                   ))}
                 </div>
