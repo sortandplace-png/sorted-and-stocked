@@ -130,6 +130,12 @@ const TOOLS = [
     description: 'Snap a photo — match it to a room or item later.',
   },
   {
+    slug: 'identify-item',
+    icon: '🆕',
+    title: 'Identify New Item',
+    description: "Photograph something new — AI suggests a name, you confirm before it's added.",
+  },
+  {
     slug: 'link-captured-photos',
     icon: '🔗',
     title: 'Link Captured Photos',
@@ -188,7 +194,7 @@ const GROUPS: {
       // Location-based pair first (House Manual, Pantry Zone Map), then the
       // people/contact-based pair (Contacts & Vendors, Borrowed & Lent).
       { key: 'reference', label: 'Reference', slugs: ['knowledge-base', 'pantry-zones', 'contacts', 'borrowed-items'] },
-      { key: 'capture-tools', label: 'Capture Tools', slugs: ['capture-inbox', 'capture-photo', 'photo-review'] },
+      { key: 'capture-tools', label: 'Capture Tools', slugs: ['capture-inbox', 'capture-photo', 'identify-item', 'photo-review'] },
       {
         key: 'admin-cleanup',
         label: 'Admin Cleanup',

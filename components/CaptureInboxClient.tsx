@@ -166,6 +166,7 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
         min_qty: 0,
         unit: 'pcs',
         notes: payload.notes?.trim() || null,
+        photo_url: payload.photo_url?.trim() || null,
       });
       return result.ok;
     }
@@ -284,6 +285,14 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
 
                 {capture.capture_type === 'inventory' && (
                   <div className="space-y-2">
+                    {fields.photo_url && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={fields.photo_url}
+                        alt=""
+                        className="w-full h-32 object-cover rounded-xl"
+                      />
+                    )}
                     <input
                       value={fields.name ?? ''}
                       onChange={(e) => setField(capture.id, capture.raw_payload, 'name', e.target.value)}

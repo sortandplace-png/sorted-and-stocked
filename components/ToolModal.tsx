@@ -13,6 +13,7 @@ import HouseholdContactsClient from '@/components/HouseholdContactsClient';
 import LocalFoodDirectoryClient from '@/components/LocalFoodDirectoryClient';
 import HalachicCalendarClient from '@/components/HalachicCalendarClient';
 import CapturePhotoClient from '@/components/CapturePhotoClient';
+import IdentifyItemClient from '@/components/IdentifyItemClient';
 import LinkCapturedPhotosClient from '@/components/LinkCapturedPhotosClient';
 import HechsherVerificationClient from '@/components/HechsherVerificationClient';
 import KosherTypeTaggingClient from '@/components/KosherTypeTaggingClient';
@@ -31,6 +32,7 @@ export type ToolModalSlug =
   | 'takeout-directory'
   | 'halachic-calendar'
   | 'capture-photo'
+  | 'identify-item'
   | 'link-captured-photos'
   | 'hechsher-verification'
   | 'kosher-type-tagging';
@@ -101,6 +103,7 @@ export default function ToolModal({
         {slug === 'takeout-directory' && <LocalFoodDirectoryClient propertyId={propertyId} />}
         {slug === 'halachic-calendar' && <HalachicCalendarClient />}
         {slug === 'capture-photo' && <CapturePhotoClient propertyId={propertyId} />}
+        {slug === 'identify-item' && <IdentifyItemClient propertyId={propertyId} />}
         {slug === 'link-captured-photos' &&
           (canManage(role) ? (
             <LinkCapturedPhotosClient propertyId={propertyId} />

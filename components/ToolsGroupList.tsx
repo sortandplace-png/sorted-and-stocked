@@ -30,6 +30,7 @@ const MODAL_SLUGS = new Set<ToolModalSlug>([
   'takeout-directory',
   'halachic-calendar',
   'capture-photo',
+  'identify-item',
   'link-captured-photos',
   'hechsher-verification',
   'kosher-type-tagging',
