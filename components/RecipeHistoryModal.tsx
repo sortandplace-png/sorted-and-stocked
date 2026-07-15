@@ -21,6 +21,9 @@ const FIELD_LABELS: Record<string, string> = {
   kosher_type: 'Kosher type',
   family_notes: 'Family notes',
   photo_url: 'Photo',
+  ingredient_added: 'Ingredient added',
+  ingredient_removed: 'Ingredient removed',
+  ingredient_changed: 'Ingredient changed',
 };
 
 function truncate(value: string | null, max = 140): string {
