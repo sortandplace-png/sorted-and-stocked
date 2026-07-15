@@ -28,6 +28,21 @@ const config: Config = {
         sage: '#8CA085',       // success — softened, not clinical green
         rust: '#B5636B',       // alerts/low-stock — dusty rose-red, not brown-rust
         dairy: '#4A6B8A',      // dusty blue — third kashrut-indicator color, same softened treatment as rust/sage
+
+        // Bold Direction (2026-07-15) — additive only, does NOT replace the
+        // tokens above. Phase 1 of the approved redesign, Home dashboard
+        // only this round; every other page still reads charcoal/gold/rust/
+        // dairy/sage until/unless a later round migrates it. Once the whole
+        // app has moved over, these are the real candidates to become the
+        // new charcoal/rust/dairy/sage — not done yet, don't rename early.
+        ink: '#171512',
+        'ink-soft': '#3A362F',
+        stone: '#F1ECE2',
+        line: '#DED5C4',
+        muted2: '#8C8373', // named distinctly from the existing `gold` family; unrelated token, same neutral-label role as charcoal/60 elsewhere
+        fleishigBold: '#9C2E22',
+        milchigBold: '#243F63',
+        parveBold: '#3E5734',
       },
       fontFamily: {
         display: ['var(--font-display)', 'serif'],

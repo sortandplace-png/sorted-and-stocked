@@ -5,6 +5,7 @@ import { format, parseISO } from 'date-fns'
 import { Calendar, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, UtensilsCrossed, BookMarked } from 'lucide-react'
 import FloatingScanButton from '@/components/FloatingScanButton'
 import PrepAheadAssistant from '@/components/PrepAheadAssistant'
+import ThisWeeksMealsList from '@/components/ThisWeeksMealsList'
 import { COURSES } from '@/lib/course-constants'
 import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
 
@@ -29,7 +30,14 @@ async function getHebcal() {
     // against the real Hebcal response).
     const parashat = data.items?.find((i: any) => i.category === 'parashat')
     return {
-      candleTime: candle ? new Date(candle.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '8:12pm',
+      // candle.date is a full ISO string with its own -04:00/-05:00 offset
+      // (e.g. "2026-07-03T20:11:00-04:00"). Formatting it without an
+      // explicit timeZone reads the JS runtime's own timezone instead —
+      // Vercel's serverless functions default to UTC, so an 8:11pm Eastern
+      // candle lighting (00:11 UTC the next day) rendered as "12:11 AM".
+      candleTime: candle
+        ? new Date(candle.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })
+        : '8:12pm',
       candleDate: candle?.date,
       havdalahDate: havdalah?.date,
       parsha: parashat?.hebrew || ''
@@ -75,6 +83,54 @@ async function getOmerStatus(): Promise<string | null> {
   } catch {
     return null
   }
+}
+
+// Same real Hebcal maj=on query as /api/tools/halachic-calendar's
+// getNextErevPesach -- duplicated for the same reason getOmerStatus() above
+// is (already a server component, no benefit to an internal HTTP round trip).
+async function getDaysUntilPesach(): Promise<number | null> {
+  try {
+    const now = new Date()
+    const years = [now.getFullYear(), now.getFullYear() + 1]
+    const events: { title: string; date: string }[] = []
+    for (const year of years) {
+      const res = await fetch(`https://www.hebcal.com/hebcal?cfg=json&v=1&year=${year}&maj=on`, {
+        next: { revalidate: 3600 * 24 },
+      })
+      const data = await res.json()
+      events.push(...(data.items ?? []))
+    }
+    const todayStr = format(now, 'yyyy-MM-dd')
+    const candidates = events
+      .filter((e) => e.title?.includes('Erev Pesach') && e.date >= todayStr)
+      .sort((a, b) => a.date.localeCompare(b.date))
+    const erevPesach = candidates[0]
+    if (!erevPesach) return null
+    return Math.round((new Date(erevPesach.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  } catch {
+    return null
+  }
+}
+
+type ChametzItem = { id: string; name: string; current_qty: number; unit: string; expiration_date: string | null }
+
+// Chametz Countdown: a filtered read against pesach_status + expiration_date,
+// both already-existing fields -- no new tracking. Only queried (and the
+// dashboard card only rendered) inside the real 30-day Erev Pesach window,
+// same "don't clutter the dashboard with an empty-state card" convention as
+// the other conditional banners on this page.
+async function getChametzCountdown(propertyId: string, daysUntilPesach: number | null): Promise<ChametzItem[]> {
+  if (daysUntilPesach === null || daysUntilPesach < 0 || daysUntilPesach > 30) return []
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('inventory_items')
+    .select('id, name, current_qty, unit, expiration_date')
+    .eq('property_id', propertyId)
+    .eq('pesach_status', 'not_kosher_for_pesach')
+    .order('expiration_date', { ascending: true, nullsFirst: false })
+    .order('current_qty', { ascending: false })
+    .limit(15)
+  return data ?? []
 }
 
 // yom_tov_dates isn't property-scoped (shared calendar data, same table
@@ -208,33 +264,13 @@ async function getData(propertyId: string) {
     .maybeSingle()
 
   const [meals, inventory, shopping] = await Promise.all([
-    supabase.from('meal_plan_entries').select('plan_date, recipe_id, course, recipes(name, kosher_type)').eq('property_id', propertyId).gte('plan_date', startStr).lte('plan_date', endStr).order('plan_date'),
+    supabase.from('meal_plan_entries').select('plan_date, recipe_id, course, recipes(name, name_es, kosher_type)').eq('property_id', propertyId).gte('plan_date', startStr).lte('plan_date', endStr).order('plan_date'),
     supabase.from('inventory_items').select('category, name, current_qty, min_qty, photo_url, reorder_link').eq('property_id', propertyId).order('category'),
     list
       ? supabase.from('shopping_list_items').select('name, category, qty_needed, status, inventory_items(photo_url, reorder_link)').eq('shopping_list_id', list.id).eq('status', 'pending').order('category')
       : Promise.resolve({ data: [] as any[] })
   ])
   return { meals: meals.data || [], inventory: inventory.data || [], shopping: shopping.data || [] }
-}
-
-// Actionable replacement for the old "301 meals planned" vanity count —
-// "missing" means an ingredient this week's linked recipes need that either
-// has no matching inventory item at all, or is linked but sitting at 0.
-async function getMissingIngredientCount(propertyId: string, recipeIds: string[]) {
-  if (recipeIds.length === 0) return 0
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('recipe_ingredients')
-    .select('name, inventory_item_id, inventory_items(current_qty)')
-    .in('recipe_id', recipeIds)
-    .eq('ignored_from_inventory', false)
-
-  const missing = new Set<string>()
-  for (const ing of data || []) {
-    const qty = (ing as any).inventory_items?.current_qty
-    if (!ing.inventory_item_id || qty === 0 || qty == null) missing.add(ing.name)
-  }
-  return missing.size
 }
 
 // v1 prep timeline: a single prep_lead_days number per recipe rather than a
@@ -306,6 +342,25 @@ async function getRecipeCount(propertyId: string): Promise<number> {
   return count ?? 0
 }
 
+// Real bug found and fixed, not assumed: the "Total Inventory" stat was
+// reading inventory.length off the same array fetched for the preview list
+// (getData(), no .limit()/.range()) -- PostgREST silently caps an
+// unpaginated select() at the project's configured max-rows (1000 here), so
+// any property with more real rows than that displays exactly 1000 with no
+// error. Confirmed live: this property has 1,029 real inventory_items rows,
+// not 1,076 (that figure was the sum across both of Racquel's properties,
+// Main 1,029 + Country 47) -- 1,029 > 1000, so it silently truncated.
+// count-only query, same pattern as getRecipeCount, isn't subject to the
+// row cap at all.
+async function getInventoryCount(propertyId: string): Promise<number> {
+  const supabase = await createClient()
+  const { count } = await supabase
+    .from('inventory_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('property_id', propertyId)
+  return count ?? 0
+}
+
 // Owner/manager-only "are we ready" glance: real data already collected for
 // other reasons (staff_tasks, shift_handovers), no new table. Useful any day
 // -- most valuable right before Shabbos/Yom Tov, but not gated to Friday the
@@ -357,23 +412,31 @@ async function getReadinessSummary(propertyId: string): Promise<ReadinessSummary
 // happens to have it set, since that's real information when present.
 const PREP_AHEAD_WINDOW_DAYS = 4 // same near-term window as the recipes page's own "expiring soon" default, for consistency
 
-type PrepAheadReminder = { recipeName: string; planDate: string; prepLeadDays: number | null }
+type PrepAheadReminder = { recipeId: string | null; recipeName: string; planDate: string; prepLeadDays: number | null }
 
 async function getPrepAheadReminders(propertyId: string): Promise<PrepAheadReminder[]> {
   const supabase = await createClient()
+  // Real bug found and fixed, not assumed: this previously started the
+  // window at today (gte todayStr), so a meal scheduled for TODAY showed up
+  // with "pull it out ahead of time" copy -- a contradiction, since there's
+  // no ahead-of-time left once it's the day of. Confirmed live: both
+  // Cauliflower Zucchini Soup and Caramelized Onion Kugel were scheduled
+  // for 2026-07-15, today, with prep_lead_days null (hence the generic
+  // fallback wording). Starts strictly after today now.
   const todayStr = format(new Date(), 'yyyy-MM-dd')
   const horizon = format(new Date(Date.now() + PREP_AHEAD_WINDOW_DAYS * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
 
   const { data } = await supabase
     .from('meal_plan_entries')
-    .select('plan_date, recipes(name, tags, prep_lead_days)')
+    .select('plan_date, recipe_id, recipes(name, tags, prep_lead_days)')
     .eq('property_id', propertyId)
-    .gte('plan_date', todayStr)
+    .gt('plan_date', todayStr)
     .lte('plan_date', horizon)
 
   return (data || [])
     .filter((e: any) => e.recipes?.tags?.includes('freezer-friendly'))
     .map((e: any) => ({
+      recipeId: e.recipe_id ?? null,
       recipeName: e.recipes.name as string,
       planDate: e.plan_date as string,
       prepLeadDays: e.recipes.prep_lead_days ?? null,
@@ -421,7 +484,7 @@ async function getTehillim(hebrewDay: number | null) {
 
 export default async function Dashboard({ params }: { params: Promise<{ id: string }> }) {
   const { id: propertyId } = await params
-  const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled] = await Promise.all([
+  const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount] = await Promise.all([
     getData(propertyId),
     getHebcal(),
     getHebrewInfo(),
@@ -432,13 +495,10 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     getUserRole(propertyId),
     getPrepAheadReminders(propertyId),
     getPrepAheadEnabled(propertyId),
+    getInventoryCount(propertyId),
   ])
   const isOwnerOrManager = userRole === 'owner' || userRole === 'manager'
   const tehillim = await getTehillim(hebrewInfo.day)
-  const missingIngredientCount = await getMissingIngredientCount(
-    propertyId,
-    meals.map((m: any) => m.recipe_id).filter(Boolean)
-  )
 
   const now = new Date()
 
@@ -467,6 +527,13 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const isEasternSaturday = easternWeekday === 'Sat'
   const isEasternSunday = easternWeekday === 'Sun'
 
+  // The candle-lighting line otherwise reads as "tonight" no matter what day
+  // it's viewed on -- labeling it with its actual date removes that
+  // ambiguity without needing to hide the widget on non-Fridays.
+  const candleDateLabel = hebcal.candleDate
+    ? new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(hebcal.candleDate))
+    : null
+
   const isShabbos = (isEasternFriday && hebcal.candleDate && now > new Date(new Date(hebcal.candleDate).getTime() - 3600000)) ||
                     (isEasternSaturday && hebcal.havdalahDate && now < new Date(hebcal.havdalahDate))
 
@@ -493,13 +560,15 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   // Persistent Halachic Calendar widget (separate from the existing Tools
   // Hub card, which stays as-is): Sefira count + candle-lighting time,
   // shown on Friday or Erev Yom Tov specifically.
-  const [omerTitle, isErevYomTov, eruvTavshilin, resetBanner] = await Promise.all([
+  const [omerTitle, isErevYomTov, eruvTavshilin, resetBanner, daysUntilPesach] = await Promise.all([
     getOmerStatus(),
     getIsErevYomTov(easternTomorrowStr),
     getEruvTavshilinBanner(easternTodayStr),
     getResetBannerInfo(propertyId, hebcal.candleDate ?? null, isEasternSaturday, easternHour, isEasternSunday),
+    getDaysUntilPesach(),
   ])
   const showHalachicWidget = isEasternFriday || isErevYomTov
+  const chametzItems = await getChametzCountdown(propertyId, daysUntilPesach)
 
   // Canonical course order (Dip/Kids Platter/Soup/Protein/Starch/Vege/Salad/
   // Dessert-last) applied as a secondary sort after plan_date -- the raw
@@ -551,8 +620,8 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             needs enough space to read clearly, not a second full header's
             worth of padding. */}
         <div className="flex flex-col gap-1 md:flex-row md:justify-between md:items-center md:gap-0 mb-4">
-          <h1 className="text-4xl font-serif text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>Sorted & Stocked</h1>
-          <div className="text-xs uppercase tracking-[0.2em] text-charcoal/50">Kosher Household Management</div>
+          <h1 className="text-4xl font-display font-bold text-ink">Sorted & Stocked</h1>
+          <div className="text-xs uppercase tracking-[0.2em] text-muted2">Kosher Household Management</div>
         </div>
 
         {/* Hebrew Bar - LIVE. This is a single centered stack (date+parsha,
@@ -562,52 +631,45 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             swimming in a lot of empty side margin at desktop sizes.
             Constrained instead of adding content just to fill space that
             only exists because the card was wider than it needed to be. */}
-        <div className={`max-w-2xl mx-auto rounded-2xl p-4 text-center mb-8 border ${isShabbos ? 'bg-amber-100 border-amber-200' : 'bg-gold-light/25 border-gold-light/40'}`}>
+        {/* Bold Direction hero (2026-07-15, Home only) — typography-first,
+            no card chrome, matching the approved mockup: gold eyebrow label,
+            large serif Hebrew + Gregorian dates, ink candle-lighting line
+            with a top divider instead of a pill. isShabbos keeps its own
+            amber accent (a real, separate existing feature, not part of
+            this redesign) layered on top rather than removed. */}
+        <div className={`max-w-2xl mx-auto text-center mb-8 ${isShabbos ? 'bg-amber-100 rounded-2xl p-4 border border-amber-200' : ''}`}>
           {propertyName && (
-            <p className="font-serif text-lg text-charcoal mb-2" style={{ fontFamily: 'Playfair Display, serif' }}>
-              Welcome to the {propertyName} Residence
+            <p className="text-[11px] tracking-[0.2em] uppercase font-bold text-gold-dark border-b border-gold inline-block pb-1 mb-4">
+              {propertyName}
             </p>
           )}
-          <div className="inline-flex items-center gap-3">
-            <span className="bg-white px-4 py-1 rounded-full text-sm font-medium text-charcoal">
-              <span lang="he" dir="rtl">{hebrewInfo.hebrewText}</span> • {format(now, 'EEEE, MMMM d, yyyy')}
-            </span>
-            {/* hebcal.parsha (the item's "hebrew" field) already includes the
-                word for "Parashat" — no separate English prefix needed, and
-                adding one would duplicate it. */}
+          <p lang="he" dir="rtl" className="font-display font-semibold text-3xl text-ink leading-tight">
+            {hebrewInfo.hebrewText}
+          </p>
+          <p className="font-display italic font-medium text-4xl text-ink leading-tight mt-0.5">
+            {format(now, 'EEEE, MMMM d')}
+          </p>
+          <div className="flex items-center justify-center gap-2 mt-3">
             {hebcal.parsha && (
-              <span lang="he" dir="rtl" className="text-sm text-charcoal/60">
+              <span lang="he" dir="rtl" className="font-display text-ink-soft text-base">
                 {hebcal.parsha}
               </span>
             )}
+            {tehillim && (
+              <span className="text-[11px] tracking-wider uppercase font-bold text-muted2">
+                Tehillim {tehillim.perek_start}
+                {tehillim.perek_end !== tehillim.perek_start ? `–${tehillim.perek_end}` : ''}
+              </span>
+            )}
           </div>
-          <div className="text-sm mt-2 flex flex-col md:flex-row items-center justify-center gap-0.5 md:gap-2 text-charcoal/70">
-            <span className="flex items-center gap-1">
-              <span aria-hidden="true">🕯️</span> Candle Lighting
-            </span>
+          <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-line text-[12.5px] font-bold text-ink-soft">
+            <span aria-hidden="true">🕯️</span>
             <span>
-              <bdi dir="ltr">{hebcal.candleTime}</bdi> • Lakewood, NJ
+              Candle Lighting{candleDateLabel ? ` · ${candleDateLabel}` : ''} · <bdi dir="ltr">{hebcal.candleTime}</bdi>
             </span>
-            {isShabbos && <span className="px-2 py-0.5 bg-amber-200 rounded-full text-xs">Shabbos Mode Active</span>}
+            {isShabbos && <span className="px-2 py-0.5 bg-amber-200 rounded text-xs">Shabbos Mode Active</span>}
           </div>
-          {/* Sefiras HaOmer: only non-null during the real ~49-day Omer
-              window (Hebcal itself returns null outside it, so no date-range
-              logic is needed here) -- previously only ever shown on Fridays/
-              Erev Yom Tov inside the halachic widget below, invisible every
-              other day of the count. Persistent here instead, alongside the
-              Hebrew date it's most naturally read next to. */}
-          {omerTitle && (
-            <div className="text-sm mt-2 inline-flex items-center gap-2 bg-white px-3 py-1 rounded-full text-charcoal">
-              <span aria-hidden="true">🔢</span> {omerTitle}
-            </div>
-          )}
-          {tehillim && (
-            <div className="text-sm mt-2 inline-flex items-center gap-2 bg-white px-3 py-1 rounded-full text-charcoal">
-              <span aria-hidden="true">📖</span> Tehillim: Perek {tehillim.perek_start}
-              {tehillim.perek_end !== tehillim.perek_start ? `–${tehillim.perek_end}` : ''}
-              {tehillim.note && <span className="text-charcoal/50">({tehillim.note})</span>}
-            </div>
-          )}
+          {omerTitle && <p className="text-xs text-muted2 mt-2">{omerTitle}</p>}
         </div>
 
         {/* Quick Actions — Plan Meal is the single primary (filled) action;
@@ -615,40 +677,43 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             creation and meal planning both happen inline on their list pages
             (no dedicated "/new" route exists for either), Scan reuses the
             exact same route as the header/icon nav's Scan link. */}
-        <div className="flex flex-wrap justify-center gap-2 mb-8">
+        {/* Bold Direction: 2x2 sharp-cornered grid, ink primary instead of
+            a gold pill row -- gold is demoted to a rare accent under this
+            direction, not the dominant button color. */}
+        <div className="grid grid-cols-2 gap-2.5 mb-8 max-w-md mx-auto">
           <Link
             href={`/properties/${propertyId}/meal-plan`}
-            className="inline-flex items-center gap-2 rounded-full bg-gold-dark text-white px-4 py-2.5 text-sm font-medium hover:opacity-90 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal"
+            className="flex flex-col items-start gap-2 rounded bg-ink text-cream px-4 py-4 text-sm font-bold hover:opacity-90 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           >
-            <Calendar size={16} aria-hidden="true" /> Plan Meal
+            <Calendar size={19} aria-hidden="true" /> Plan Meal
           </Link>
           <Link
             href={`/properties/${propertyId}/scan`}
-            className="inline-flex items-center gap-2 rounded-full bg-white border border-gold-light/60 text-charcoal px-4 py-2.5 text-sm font-medium hover:bg-gold-light/10 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal"
+            className="flex flex-col items-start gap-2 rounded border border-ink text-ink px-4 py-4 text-sm font-bold hover:bg-stone transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             aria-label="Scan an item"
           >
-            <Scan size={16} className="text-gold-dark" aria-hidden="true" /> Scan Item
+            <Scan size={19} aria-hidden="true" /> Scan Item
           </Link>
           <Link
             href={`/properties/${propertyId}/recipes`}
-            className="inline-flex items-center gap-2 rounded-full bg-white border border-gold-light/60 text-charcoal px-4 py-2.5 text-sm font-medium hover:bg-gold-light/10 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal"
+            className="flex flex-col items-start gap-2 rounded border border-ink text-ink px-4 py-4 text-sm font-bold hover:bg-stone transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           >
-            <Plus size={16} className="text-gold-dark" aria-hidden="true" /> Add Recipe
+            <Plus size={19} aria-hidden="true" /> Add Recipe
           </Link>
           <Link
             href={`/properties/${propertyId}/shopping-list`}
-            className="inline-flex items-center gap-2 rounded-full bg-white border border-gold-light/60 text-charcoal px-4 py-2.5 text-sm font-medium hover:bg-gold-light/10 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal"
+            className="flex flex-col items-start gap-2 rounded border border-ink text-ink px-4 py-4 text-sm font-bold hover:bg-stone transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           >
-            <ShoppingCart size={16} className="text-gold-dark" aria-hidden="true" /> Shopping List
+            <ShoppingCart size={19} aria-hidden="true" /> Shopping List
           </Link>
         </div>
 
         {isOwnerOrManager && (
-          <div className="rounded-2xl p-4 mb-8 bg-white border border-gold-light/40">
-            <h2 className="text-sm font-display text-charcoal mb-2 flex items-center gap-1.5">
-              <Clock size={16} strokeWidth={1.75} className="text-gold-dark" aria-hidden="true" /> Readiness at a glance
-            </h2>
-            <p className="text-sm text-charcoal/80">
+          <div className="mb-8 border-t border-line pt-3.5">
+            <span className="text-[11px] tracking-[0.16em] uppercase font-bold text-ink flex items-center gap-1.5 mb-2">
+              <Clock size={13} strokeWidth={2.25} className="text-gold-dark" aria-hidden="true" /> Readiness at a Glance
+            </span>
+            <p className="text-sm text-ink-soft">
               {readiness.tasksDone + readiness.tasksOpen === 0 ? (
                 'No tasks due today.'
               ) : (
@@ -659,7 +724,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               )}
               {' '}Candle lighting <bdi dir="ltr">{hebcal.candleTime}</bdi>.
             </p>
-            <p className="text-sm text-charcoal/60 mt-1">
+            <p className="text-sm text-muted2 mt-1">
               {readiness.latestHandover ? (
                 <>
                   Last handover{readiness.latestHandover.authorName ? ` (${readiness.latestHandover.authorName})` : ''}: "
@@ -675,17 +740,22 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           </div>
         )}
 
-        {/* Quick-glance overview — real counts (inventory.length and
-            meals.length are already fetched above for this exact property/
-            week, no extra query needed; recipeCount is one lightweight
-            count-only query). Distinct from the "X meals planned this week"
-            sentence inside This Week's Meals below: this is a top-of-page
-            at-a-glance summary, that's a contextual detail with its own
-            "missing ingredients" link — not the same information twice. */}
+        {/* Quick-glance overview — meals.length is already fetched above for
+            this exact property/week, no extra query needed; recipeCount and
+            inventoryCount are both lightweight count-only queries. Inventory
+            specifically CANNOT reuse inventory.length here -- that array
+            comes from getData()'s unpaginated select(), which PostgREST
+            silently caps at the project's max-rows setting (1000); this
+            property has 1,029 real rows, so inventory.length was reading a
+            truncated 1000 with no error. Distinct from the "X meals planned
+            this week" sentence inside This Week's Meals below: this is a
+            top-of-page at-a-glance summary, that's a contextual detail with
+            its own "missing ingredients" link — not the same information
+            twice. */}
         <div className="grid grid-cols-3 gap-3 mb-8">
           <div className="rounded-2xl p-4 bg-white border border-gold-light/40 text-center">
             <Package size={18} strokeWidth={1.5} className="text-gold-dark mx-auto mb-1" aria-hidden="true" />
-            <div className="text-2xl font-serif text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>{inventory.length}</div>
+            <div className="text-2xl font-serif text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>{inventoryCount}</div>
             <div className="text-xs text-charcoal/50">Total Inventory</div>
           </div>
           <div className="rounded-2xl p-4 bg-white border border-gold-light/40 text-center">
@@ -764,6 +834,23 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           </Link>
         )}
 
+        {chametzItems.length > 0 && (
+          <Link
+            href={`/properties/${propertyId}/inventory`}
+            className="block rounded-2xl p-4 mb-8 bg-gold-light/15 border border-gold-light/40 hover:bg-gold-light/25 transition-colors"
+          >
+            <h2 className="text-sm font-display text-charcoal mb-1 flex items-center gap-1.5">
+              <Package size={16} strokeWidth={1.75} className="text-gold-dark" aria-hidden="true" />
+              {daysUntilPesach} day{daysUntilPesach === 1 ? '' : 's'} until Pesach — use up your chametz
+            </h2>
+            <p className="text-sm text-charcoal/80">
+              {chametzItems.length} item{chametzItems.length === 1 ? '' : 's'} marked not-for-Pesach, soonest-expiring first:{' '}
+              {chametzItems.slice(0, 3).map((i) => i.name).join(', ')}
+              {chametzItems.length > 3 ? `, +${chametzItems.length - 3} more` : ''} — tap to open Inventory.
+            </p>
+          </Link>
+        )}
+
         {isMotzeiShabbos && (
           <div className="rounded-2xl p-4 mb-8 bg-gold-light/15 border border-gold-light/40">
             <h2 className="text-sm font-display text-charcoal mb-2 flex items-center gap-1.5">
@@ -782,69 +869,37 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* LEFT */}
           <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-              <h2 className="text-2xl font-serif flex items-center gap-2 text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>
-                <Calendar size={20} strokeWidth={1.5} className="text-gold-dark" aria-hidden="true" /> This Week's Meals
-              </h2>
-              <Link href={`/properties/${propertyId}/meal-plan`} className="text-sm text-gold-dark hover:text-charcoal underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal">
-                View full meal plan →
+            {/* Bold Direction section-head: uppercase label + bottom border
+                + link, replacing the serif h2 -- matches the mockup's
+                .section-head pattern used for every named section on Home. */}
+            <div className="flex items-center justify-between border-t border-line pt-3.5 mb-4">
+              <span className="text-[11px] tracking-[0.16em] uppercase font-bold text-ink">This Week's Meals</span>
+              <Link href={`/properties/${propertyId}/meal-plan`} className="text-[11px] font-bold text-gold-dark underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
+                View full plan →
               </Link>
             </div>
-            {/* Actionable stat, replacing the old raw "meals planned" count —
-                ties the number to something fixable (missing ingredients)
-                rather than just reporting volume. */}
-            <p className="text-charcoal/60 mb-4">
-              <span className="font-medium text-charcoal">{meals.length}</span> meal{meals.length === 1 ? '' : 's'} planned this week
-              {missingIngredientCount > 0 && (
-                <>
-                  {' '}·{' '}
-                  <Link href={`/properties/${propertyId}/shopping-list`} className="text-rust font-medium hover:underline">
-                    {missingIngredientCount} ingredient{missingIngredientCount === 1 ? '' : 's'} missing
-                  </Link>
-                </>
-              )}
+            <p className="text-ink-soft mb-4">
+              <span className="font-bold text-ink">{meals.length}</span> meal{meals.length === 1 ? '' : 's'} planned this week
             </p>
 
             {/* Legend — color paired with a distinct shape + label, not
-                color alone, so it holds up for colorblind users. */}
-            <div className="flex gap-2 mb-4 flex-wrap" role="list" aria-label="Kashrut color legend">
-              {(Object.entries(KASHRUT_INFO) as [keyof typeof KASHRUT_INFO, typeof KASHRUT_INFO[keyof typeof KASHRUT_INFO]][]).map(([k, info]) => (
-                <div key={k} role="listitem" className="flex items-center gap-1.5 px-3 py-1.5 border border-gold-light/40 rounded-full text-xs bg-white text-charcoal">
-                  <info.Icon className={`w-3 h-3 ${info.color}`} fill="currentColor" aria-hidden="true" />
+                color alone, so it holds up for colorblind users. Bold,
+                solid-fill high-contrast chips per the approved direction,
+                same shapes as ThisWeeksMealsList's own tags below. */}
+            <div className="flex gap-1.5 mb-4 flex-wrap" role="list" aria-label="Kashrut color legend">
+              {([
+                ['Fleishig', 'bg-fleishigBold', Square],
+                ['Milchig', 'bg-milchigBold', Triangle],
+                ['Parve', 'bg-parveBold', Circle],
+              ] as const).map(([k, bg, Icon]) => (
+                <div key={k} role="listitem" className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10.5px] font-bold uppercase text-white ${bg}`}>
+                  <Icon className="w-2.5 h-2.5" fill="currentColor" aria-hidden="true" />
                   {k}
                 </div>
               ))}
             </div>
 
-            <div className="space-y-3">
-              {mealsByDay.map(({ date, entries }) => (
-                <div key={date} className="p-4 bg-white border border-gold-light/40 rounded-xl">
-                  <div className="font-medium text-charcoal mb-2">{format(parseISO(date), 'EEEE • MMM d')}</div>
-                  <div className="space-y-1.5">
-                    {entries.map((meal: any, i) => {
-                      const k = getKashrut(meal.recipes?.kosher_type)
-                      const info = KASHRUT_INFO[k]
-                      const courseLabel = COURSES.find((c) => c.key === meal.course)?.label
-                      return (
-                        <div key={i} className="flex items-center gap-2 pl-1">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[11px] text-white rounded-md font-medium shrink-0 ${info.bg}`}>
-                            <info.Icon className="w-2.5 h-2.5" fill="currentColor" aria-hidden="true" />
-                            {k}
-                          </span>
-                          <span className="text-sm text-charcoal">
-                            {courseLabel && <span className="text-charcoal/50">{courseLabel}: </span>}
-                            {meal.recipes?.name || 'Meal'}
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
-              {meals.length === 0 && (
-                <p className="text-sm text-charcoal/40 italic py-4">Nothing planned yet this week.</p>
-              )}
-            </div>
+            <ThisWeeksMealsList propertyId={propertyId} mealsByDay={mealsByDay} />
           </div>
 
           {/* RIGHT */}

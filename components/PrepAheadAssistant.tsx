@@ -7,12 +7,13 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
 import { Snowflake } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 
-type Reminder = { recipeName: string; planDate: string; prepLeadDays: number | null };
+type Reminder = { recipeId: string | null; recipeName: string; planDate: string; prepLeadDays: number | null };
 
 export default function PrepAheadAssistant({
   propertyId,
@@ -27,6 +28,7 @@ export default function PrepAheadAssistant({
 }) {
   const [enabled, setEnabled] = useState(initialEnabled);
   const [saving, setSaving] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const supabase = createClient();
   const showToast = useToast();
 
@@ -53,12 +55,12 @@ export default function PrepAheadAssistant({
 
   if (!enabled) {
     return (
-      <div className="rounded-2xl p-4 mb-8 bg-cream border border-gold-light/40 flex items-center justify-between gap-3">
-        <p className="text-sm text-charcoal/50">Prep Ahead Assistant is off.</p>
+      <div className="py-3.5 border-t border-line flex items-center justify-between gap-3">
+        <p className="text-sm text-muted2">Prep Ahead Assistant is off.</p>
         <button
           onClick={() => setPrepAheadEnabled(true)}
           disabled={saving}
-          className="text-xs font-medium text-gold-dark underline disabled:opacity-40 shrink-0"
+          className="text-xs font-bold text-gold-dark underline disabled:opacity-40 shrink-0"
         >
           Turn on
         </button>
@@ -66,34 +68,52 @@ export default function PrepAheadAssistant({
     );
   }
 
+  // Bold Direction (Home only): the mockup's .collapsed-row treatment --
+  // a plain border-top/bottom row with an uppercase label, count, and
+  // chevron, not a bordered gold card.
   return (
-    <div className="rounded-2xl p-4 mb-8 bg-gold-light/15 border border-gold-light/40">
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <h2 className="text-sm font-display text-charcoal flex items-center gap-1.5">
-          <Snowflake size={16} strokeWidth={1.75} className="text-gold-dark" aria-hidden="true" /> Prep Ahead Assistant
-        </h2>
+    <div className="mb-2">
+      <div className="flex items-center justify-between gap-2 py-3.5 border-t border-line">
+        <button onClick={() => setCollapsed((v) => !v)} className="flex items-center gap-2 text-left">
+          <Snowflake size={14} strokeWidth={2} className="text-gold-dark" aria-hidden="true" />
+          <span className="text-xs font-bold uppercase tracking-wider text-ink">Prep Ahead Assistant</span>
+          <span className="text-xs text-muted2 font-bold">({reminders.length})</span>
+          <span className="text-muted2 text-sm">{collapsed ? '▸' : '▾'}</span>
+        </button>
         {canManage && (
           <button
             onClick={() => setPrepAheadEnabled(false)}
             disabled={saving}
-            className="text-xs text-charcoal/40 underline disabled:opacity-40 shrink-0"
+            className="text-xs text-muted2 underline disabled:opacity-40 shrink-0"
           >
             Turn off
           </button>
         )}
       </div>
-      {reminders.length === 0 ? (
-        <p className="text-sm text-charcoal/60">Nothing freezer-friendly needs pulling ahead in the next few days.</p>
-      ) : (
-        <ul className="space-y-1.5">
-          {reminders.map((r, i) => (
-            <li key={i} className="text-sm text-charcoal/80">
-              <span className="font-medium">{r.recipeName}</span> — freezer-friendly, scheduled{' '}
-              {format(parseISO(r.planDate), 'EEEE, MMM d')}
-              {r.prepLeadDays ? `; start prep ${r.prepLeadDays} day${r.prepLeadDays === 1 ? '' : 's'} ahead` : ' — pull it out ahead of time'}
-            </li>
-          ))}
-        </ul>
+      {!collapsed && (
+        reminders.length === 0 ? (
+          <p className="text-sm text-muted2 pb-2">Nothing freezer-friendly needs pulling ahead in the next few days.</p>
+        ) : (
+          <ul className="space-y-1.5 pb-2">
+            {reminders.map((r, i) => (
+              <li key={i} className="text-sm text-ink-soft">
+                {r.recipeId ? (
+                  <Link
+                    href={`/properties/${propertyId}/recipes/${r.recipeId}`}
+                    className="font-semibold underline decoration-line decoration-2 underline-offset-2 hover:text-gold-dark"
+                  >
+                    {r.recipeName}
+                  </Link>
+                ) : (
+                  <span className="font-semibold">{r.recipeName}</span>
+                )}
+                {' '}— freezer-friendly, scheduled{' '}
+                {format(parseISO(r.planDate), 'EEEE, MMM d')}
+                {r.prepLeadDays ? `; start prep ${r.prepLeadDays} day${r.prepLeadDays === 1 ? '' : 's'} ahead` : ' — pull it out ahead of time'}
+              </li>
+            ))}
+          </ul>
+        )
       )}
     </div>
   );
