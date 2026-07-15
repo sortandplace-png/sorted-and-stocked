@@ -28,6 +28,7 @@ import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { classifyProvenance, PROVENANCE_INFO } from '@/lib/recipe-provenance';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
 import { checkRecipeDeletable } from '@/lib/recipe-delete-guard';
+import { bedikasTolaimIngredients, BEDIKAS_TOLAIM_NOTE } from '@/lib/bedikas-tolaim';
 
 // Confirmed each of these has a real page + component before linking to it
 // (checked directly against the file system, not assumed) — Kitchen Timer,
@@ -387,6 +388,8 @@ export default function RecipeDetailClient({
       ingredientGroups.push({ label, items: [ing] });
     }
   }
+
+  const bedikahIngredients = bedikasTolaimIngredients(ingredients.map((i) => i.name));
 
   const baseServings = recipe?.servings ?? 4;
   const scaleFactor = targetServings ? targetServings / baseServings : 1;
@@ -818,6 +821,14 @@ export default function RecipeDetailClient({
           {lang === 'es' ? 'Rinde' : 'Serves'} {targetServings ?? baseServings}
           {isScaled ? ` (${lang === 'es' ? 'escalado de' : 'scaled from'} ${baseServings})` : ''}
         </p>
+        {bedikahIngredients.length > 0 && (
+          <div className="bg-sage/10 border border-sage/20 rounded-xl px-3 py-2 mb-3 print:hidden">
+            <p className="text-xs font-medium text-charcoal mb-0.5">
+              🔎 Bedikas Tolaim: {bedikahIngredients.join(', ')}
+            </p>
+            <p className="text-xs text-charcoal/60">{BEDIKAS_TOLAIM_NOTE}</p>
+          </div>
+        )}
         {ingredients.length === 0 ? (
           <p className="text-sm text-charcoal/40">No ingredients recorded for this recipe.</p>
         ) : (

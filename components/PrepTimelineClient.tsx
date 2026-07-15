@@ -6,11 +6,16 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { SkeletonList } from '@/components/Skeleton';
 import { formatMinutes } from '@/lib/format-time';
+import { bedikasTolaimIngredients, BEDIKAS_TOLAIM_NOTE } from '@/lib/bedikas-tolaim';
 
 type Entry = {
   id: string;
   course: string;
-  recipes: { name: string; approx_total_minutes: number | null } | null;
+  recipes: {
+    name: string;
+    approx_total_minutes: number | null;
+    recipe_ingredients: { name: string }[] | null;
+  } | null;
   custom_name: string | null;
 };
 
@@ -38,7 +43,7 @@ export default function PrepTimelineClient({ propertyId }: { propertyId: string 
     setLoading(true);
     supabase
       .from('meal_plan_entries')
-      .select('id, course, custom_name, recipes(name, approx_total_minutes)')
+      .select('id, course, custom_name, recipes(name, approx_total_minutes, recipe_ingredients(name))')
       .eq('property_id', propertyId)
       .eq('plan_date', date)
       .then(({ data }) => {
@@ -74,6 +79,9 @@ export default function PrepTimelineClient({ propertyId }: { propertyId: string 
     (e) => e.course === 'kids_platter' && (e.recipes?.name || e.custom_name)
   );
 
+  const allIngredientNames = entries.flatMap((e) => e.recipes?.recipe_ingredients?.map((i) => i.name) ?? []);
+  const bedikahIngredients = bedikasTolaimIngredients(allIngredientNames);
+
   if (loading) return <SkeletonList />;
 
   return (
@@ -102,6 +110,13 @@ export default function PrepTimelineClient({ propertyId }: { propertyId: string 
           <Link href={`/properties/${propertyId}/meal-plan`} className="text-sm font-medium text-gold-dark underline">
             Plan a meal for this day →
           </Link>
+        </div>
+      )}
+
+      {bedikahIngredients.length > 0 && (
+        <div className="bg-sage/10 border border-sage/20 rounded-2xl p-4 mb-4">
+          <p className="text-sm font-medium text-charcoal mb-1">🔎 Bedikas Tolaim: {bedikahIngredients.join(', ')}</p>
+          <p className="text-xs text-charcoal/60">{BEDIKAS_TOLAIM_NOTE}</p>
         </div>
       )}
 
