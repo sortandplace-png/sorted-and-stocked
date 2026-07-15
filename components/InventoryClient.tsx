@@ -1709,6 +1709,7 @@ function ItemFormSheet({
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              capture="environment"
               className="hidden"
               onChange={(e) => handlePhotoSelected(e.target.files)}
             />
