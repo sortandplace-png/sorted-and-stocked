@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { LOCALE_COOKIE } from '@/i18n/locale-constants';
 import { Printer, Share2, History as HistoryIcon, Heart, MoreVertical, Pencil, Copy, Trash2 } from 'lucide-react';
@@ -144,6 +144,7 @@ export default function RecipeDetailClient({
   const role = usePropertyRole();
   const supabase = createClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const showToast = useToast();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -194,6 +195,17 @@ export default function RecipeDetailClient({
       }
     })();
   }, [recipeId]);
+
+  // Lets the Recipes grid's mobile card menu jump straight into editing
+  // (?edit=1) instead of duplicating this modal's initial* data-fetch there
+  // with a partial recipe object -- this component already has the full
+  // record loaded, so it's the safe place to own the edit flow.
+  useEffect(() => {
+    if (searchParams.get('edit') === '1' && recipe && canManage(role)) {
+      setShowEditModal(true);
+      router.replace(`/properties/${propertyId}/recipes/${recipeId}`, { scroll: false });
+    }
+  }, [searchParams, recipe, role, propertyId, recipeId, router]);
 
   // "Pairs well with": recipes from a DIFFERENT course that share at least
   // one occasion with this one (both Shabbos, both Weekday, etc.) --

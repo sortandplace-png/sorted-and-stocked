@@ -29,6 +29,7 @@ import {
   ChevronDown,
   Heart,
   MoreVertical,
+  Pencil,
   Copy,
   Trash2,
   Search,
@@ -215,6 +216,7 @@ export default function RecipesGridView({
 }) {
   const role = usePropertyRole();
   const t = useTranslations('recipesGrid');
+  const tCourse = useTranslations('course');
   const locale = useLocale();
   const displayName = (r: { name: string; name_es?: string | null }) =>
     locale === 'es' && r.name_es ? r.name_es : r.name;
@@ -497,7 +499,7 @@ export default function RecipesGridView({
     setStagedPrepFilter(null);
   }
 
-  const courseLabel = (key: string | null) => (key ? COURSES.find((c) => c.key === key)?.label ?? key : 'All');
+  const courseLabel = (key: string | null) => (key ? tCourse(key) : 'All');
   const occasionLabels: Record<Occasion, string> = { shabbos: 'Shabbos', yomtov: 'Yom Tov', pesach: 'Pesach', weekday: 'Weekday' };
   const prepLabel = (key: PrepKey | null) => (key ? PREP_FILTERS.find((p) => p.key === key)?.label ?? key : 'Any');
 
@@ -607,7 +609,7 @@ export default function RecipesGridView({
               key={c.key}
               active={courseFilter === c.key}
               icon={COURSE_PILL_ICONS[c.key]}
-              label={c.label}
+              label={tCourse(c.key)}
               count={courseCounts[c.key] ?? 0}
               onClick={() => setCourseFilter(courseFilter === c.key ? null : c.key)}
             />
@@ -706,7 +708,7 @@ export default function RecipesGridView({
                   key={c.key}
                   active={stagedCourseFilter === c.key}
                   icon={COURSE_PILL_ICONS[c.key]}
-                  label={c.label}
+                  label={tCourse(c.key)}
                   count={courseCounts[c.key] ?? 0}
                   onClick={() => setStagedCourseFilter(stagedCourseFilter === c.key ? null : c.key)}
                 />
@@ -1027,6 +1029,22 @@ export default function RecipesGridView({
                                   />
                                   <div className="absolute left-0 top-11 z-20 bg-white rounded-2xl shadow-lg shadow-charcoal/10 border border-gold-light/40 w-40 overflow-hidden">
                                     <button
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setCardMenuOpenId(null);
+                                        // Opens the recipe's own detail page with its edit
+                                        // modal pre-triggered, rather than duplicating that
+                                        // modal's full initial-data-fetch here with a partial
+                                        // recipe object off the grid.
+                                        router.push(`/properties/${propertyId}/recipes/${recipe.id}?edit=1`);
+                                      }}
+                                      className="w-full min-h-11 flex items-center gap-2 px-3 text-sm text-charcoal hover:bg-gold-light/10 transition border-b border-gold-light/40"
+                                    >
+                                      <Pencil size={14} strokeWidth={1.75} />
+                                      Edit
+                                    </button>
+                                    <button
                                       onClick={(e) => duplicateRecipeFromCard(recipe.id, e)}
                                       disabled={cardActionBusy === recipe.id}
                                       className="w-full min-h-11 flex items-center gap-2 px-3 text-sm text-charcoal hover:bg-gold-light/10 transition disabled:opacity-40"
@@ -1068,7 +1086,7 @@ export default function RecipesGridView({
                               const courseInfo = COURSES.find((c) => c.key === recipe.course);
                               return courseInfo ? (
                                 <span className="inline-block text-xs font-medium text-charcoal/70">
-                                  {courseInfo.icon} {courseInfo.label}
+                                  {courseInfo.icon} {tCourse(courseInfo.key)}
                                 </span>
                               ) : null;
                             })()}
