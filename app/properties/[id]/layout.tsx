@@ -1,7 +1,6 @@
 // app/properties/[id]/layout.tsx
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { format } from 'date-fns';
 import { createClient } from '@/lib/supabase/server';
 import DesktopNav from '@/components/nav/DesktopNav';
 import MobileBottomNav from '@/components/nav/MobileBottomNav';
@@ -16,44 +15,7 @@ import LocaleToggle from '@/components/LocaleToggle';
 import { PropertyRoleProvider, type PropertyRole } from '@/components/PropertyRoleContext';
 import PropertySwitcher from '@/components/PropertySwitcher';
 import Footer from '@/components/Footer';
-import { groupYomTovOccasions, daysBetween } from '@/lib/yom-tov';
-
-type UpcomingObservance = { name: string; date: string; daysUntil: number };
-
-// yom_tov_dates and fast_days both have no property_id -- same shared
-// calendar tables serve every property. Lives in the layout (not the
-// Dashboard page) so the countdown is a persistent small header badge on
-// every page, not a full-width banner that only exists on Dashboard and
-// pushes its content down.
-//
-// Merges both sources rather than showing Yom Tov only -- a minor fast like
-// Tzom Tammuz or Tish'a B'Av is very often the actually-nearest observance
-// and was previously invisible here. Yom Kippur is a real row in BOTH
-// tables (it's both a Yom Tov and a major fast) -- deduped by date after
-// sorting so it surfaces once, not as two adjacent badges for the same day.
-async function getNextObservance(): Promise<UpcomingObservance | null> {
-  const supabase = await createClient();
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const [{ data: yomTovRows }, { data: fastRows }] = await Promise.all([
-    supabase.from('yom_tov_dates').select('date, holiday_name').gte('date', todayStr).order('date'),
-    supabase.from('fast_days').select('date, holiday_name').gte('date', todayStr).order('date'),
-  ]);
-
-  const yomTovOccasions = groupYomTovOccasions(yomTovRows || [], todayStr);
-  const fastOccasions: UpcomingObservance[] = (fastRows || []).map((r) => ({
-    name: r.holiday_name,
-    date: r.date,
-    daysUntil: daysBetween(todayStr, r.date),
-  }));
-
-  const merged = [...yomTovOccasions, ...fastOccasions].sort((a, b) => a.date.localeCompare(b.date));
-  const deduped: UpcomingObservance[] = [];
-  for (const occ of merged) {
-    if (deduped.length > 0 && deduped[deduped.length - 1].date === occ.date) continue;
-    deduped.push(occ);
-  }
-  return deduped[0] ?? null;
-}
+import { getNextObservance } from '@/lib/get-next-observance';
 
 export default async function PropertyLayout({
   params,

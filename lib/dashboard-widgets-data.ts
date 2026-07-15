@@ -1,0 +1,107 @@
+// lib/dashboard-widgets-data.ts
+// Server-side data fetchers for the 4 Dashboard Widgets v1 cards. Each
+// reads from data that already exists elsewhere in the app -- no new
+// tracking, same convention as the rest of app/properties/[id]/dashboard/page.tsx.
+import { format } from 'date-fns';
+import { createClient } from '@/lib/supabase/server';
+
+export const WIDGET_KEYS = ['home_pulse_score', 'todays_meal_plan', 'low_stock_alerts', 'holiday_countdown'] as const;
+export type WidgetKey = (typeof WIDGET_KEYS)[number];
+
+export type WidgetPrefs = Record<WidgetKey, { isVisible: boolean; sortOrder: number }>;
+
+const DEFAULT_PREFS: WidgetPrefs = {
+  home_pulse_score: { isVisible: true, sortOrder: 0 },
+  todays_meal_plan: { isVisible: true, sortOrder: 1 },
+  low_stock_alerts: { isVisible: true, sortOrder: 2 },
+  holiday_countdown: { isVisible: true, sortOrder: 3 },
+};
+
+// No prefs row for a given widget_key (or no rows at all) means "visible,
+// default position" -- a brand-new user/property combination should see
+// all 4, not none, per spec.
+export async function getWidgetPrefs(propertyId: string): Promise<WidgetPrefs> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return DEFAULT_PREFS;
+
+  const { data } = await supabase
+    .from('dashboard_widget_prefs')
+    .select('widget_key, is_visible, sort_order')
+    .eq('user_id', user.id)
+    .eq('property_id', propertyId);
+
+  const prefs = { ...DEFAULT_PREFS };
+  for (const row of data ?? []) {
+    if (WIDGET_KEYS.includes(row.widget_key as WidgetKey)) {
+      prefs[row.widget_key as WidgetKey] = { isVisible: row.is_visible, sortOrder: row.sort_order };
+    }
+  }
+  return prefs;
+}
+
+export type HomePulseScore = {
+  pulseScore: number;
+  stockScore: number;
+  taskScore: number;
+  listFreshnessScore: number;
+} | null;
+
+export async function getHomePulseScore(propertyId: string): Promise<HomePulseScore> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('home_pulse_score')
+    .select('pulse_score, stock_score, task_score, list_freshness_score')
+    .eq('property_id', propertyId)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    pulseScore: data.pulse_score,
+    stockScore: data.stock_score,
+    taskScore: data.task_score,
+    listFreshnessScore: data.list_freshness_score,
+  };
+}
+
+export type TodaysMealEntry = { mealSlot: string; course: string; name: string };
+
+export async function getTodaysMealPlan(propertyId: string): Promise<TodaysMealEntry[]> {
+  const supabase = await createClient();
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const { data } = await supabase
+    .from('meal_plan_entries')
+    .select('meal_slot, course, custom_name, sequence, recipes(name)')
+    .eq('property_id', propertyId)
+    .eq('plan_date', todayStr)
+    .order('meal_slot')
+    .order('sequence');
+
+  return (data ?? []).map((e: any) => ({
+    mealSlot: e.meal_slot ?? 'meal',
+    course: e.course ?? '',
+    name: e.custom_name || e.recipes?.name || 'Untitled',
+  }));
+}
+
+export type LowStockItem = { id: string; name: string; currentQty: number; minQty: number; category: string | null };
+
+export async function getLowStockAlerts(propertyId: string): Promise<LowStockItem[]> {
+  const supabase = await createClient();
+  // current_qty < min_qty is a column-to-column comparison, which
+  // PostgREST's query builder can't express -- fetching every row and
+  // filtering client-side would silently truncate on a property with more
+  // rows than the project's max-rows cap (the exact bug found earlier
+  // tonight on the inventory count stat). get_low_stock_items() does the
+  // comparison server-side instead (migration 091).
+  const { data } = await supabase.rpc('get_low_stock_items', { p_property_id: propertyId });
+
+  return (data ?? []).map((item: any) => ({
+    id: item.id,
+    name: item.name,
+    currentQty: item.current_qty,
+    minQty: item.min_qty,
+    category: item.category,
+  }));
+}

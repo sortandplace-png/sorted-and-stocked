@@ -64,19 +64,19 @@ export default function ThisWeeksMealsList({
   return (
     <div>
       <button onClick={() => setCollapsed((v) => !v)} className="w-full flex items-center gap-2 mb-3 text-left">
-        <span className="text-xs font-bold uppercase tracking-wider text-ink">
+        <span className="text-xs font-bold uppercase tracking-wider text-denim">
           {locale === 'es' ? 'Comidas de esta semana' : "This week's meals"}
         </span>
-        <span className="text-xs text-muted2">({mealsByDay.reduce((n, d) => n + d.entries.length, 0)})</span>
-        <span className="flex-1 border-t border-line" />
-        <span className="text-muted2 text-sm">{collapsed ? '▸' : '▾'}</span>
+        <span className="text-xs text-dusk">({mealsByDay.reduce((n, d) => n + d.entries.length, 0)})</span>
+        <span className="flex-1 border-t border-cardBorder" />
+        <span className="text-dusk text-sm">{collapsed ? '▸' : '▾'}</span>
       </button>
 
       {!collapsed && (
         <div className="space-y-3">
           {mealsByDay.map(({ date, entries }) => (
-            <div key={date} className="p-4 bg-white border border-line rounded">
-              <div className="font-display font-semibold text-lg text-ink mb-2">{formatDay(date)}</div>
+            <div key={date} className="p-4 bg-linen border border-cardBorder rounded-xl2">
+              <div className="font-display font-semibold text-lg text-denim mb-2">{formatDay(date)}</div>
               <div className="space-y-1.5">
                 {entries.map((meal, i) => {
                   const k = getKashrut(meal.recipes?.kosher_type);
@@ -89,12 +89,12 @@ export default function ThisWeeksMealsList({
                         <info.Icon className="w-2.5 h-2.5" fill="currentColor" aria-hidden="true" />
                         {k}
                       </span>
-                      <span className="text-sm text-ink">
-                        {courseLabel && <span className="text-muted2">{courseLabel}: </span>}
+                      <span className="text-sm text-denim">
+                        {courseLabel && <span className="text-dusk">{courseLabel}: </span>}
                         {meal.recipe_id ? (
                           <Link
                             href={`/properties/${propertyId}/recipes/${meal.recipe_id}`}
-                            className="font-semibold underline decoration-line decoration-2 underline-offset-2 hover:text-gold-dark"
+                            className="font-semibold underline decoration-cardBorder decoration-2 underline-offset-2 hover:text-brass"
                           >
                             {name}
                           </Link>
@@ -109,7 +109,7 @@ export default function ThisWeeksMealsList({
             </div>
           ))}
           {mealsByDay.length === 0 && (
-            <p className="text-sm text-muted2 italic py-4">
+            <p className="text-sm text-dusk italic py-4">
               {locale === 'es' ? 'Nada planeado esta semana todavía.' : 'Nothing planned yet this week.'}
             </p>
           )}

@@ -43,14 +43,43 @@ const config: Config = {
         fleishigBold: '#9C2E22',
         milchigBold: '#243F63',
         parveBold: '#3E5734',
+
+        // New direction (2026-07-15) -- replaces Bold Direction above as of
+        // the Home dashboard's full repaint this round. Bold Direction's own
+        // tokens are left in the config (still referenced by other pages'
+        // Bold-Direction-era styling that hasn't moved over yet) but are no
+        // longer used on Home.
+        // "Stone (secondary text)" from the spec is named `dusk` here, not
+        // `stone` -- that name is already taken by Bold Direction's card-fill
+        // token above (#F1ECE2, a different color/role entirely) and reusing
+        // it would have silently overwritten one of the two.
+        linen: '#FFFAF3',
+        card: '#FFFEFC',
+        cardBorder: '#E8DDD0',
+        denimBlue: '#6B8DBE', // primary -- not named bare `blue`, which would shadow Tailwind's own blue-* shade scale
+        denim: '#2E4A62',     // headings/ink
+        mist: '#E8EEF6',      // fills
+        brass: '#C6A46E',     // accent
+        dusk: '#7A8A9C',      // secondary text
       },
       fontFamily: {
         display: ['var(--font-display)', 'serif'],
         sans: ['var(--font-body)', 'sans-serif'],
         serif: ['var(--font-playfair)', 'serif'],
+        // Inter is already loaded app-wide (app/layout.tsx, --font-inter)
+        // but was dormant -- nothing referenced it. The new direction's
+        // spec calls for Inter specifically as the body/UI face; mapped to
+        // its own token rather than repointing `sans`/--font-body (Nunito
+        // Sans), which would silently change body text on every other page.
+        interDisplay: ['var(--font-inter)', 'sans-serif'],
       },
       borderRadius: {
-        xl2: '1.25rem',
+        xl2: '1.25rem',  // 20px -- small/action cards (new direction's spec)
+        xl3: '1.75rem',  // 28px -- large cards (new direction's spec)
+      },
+      boxShadow: {
+        card: '0 16px 40px rgba(90,120,150,.09)',
+        cardHover: '0 20px 48px rgba(90,120,150,.15)',
       },
     },
   },

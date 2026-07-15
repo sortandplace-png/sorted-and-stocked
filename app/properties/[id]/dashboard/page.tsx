@@ -7,8 +7,11 @@ import FloatingScanButton from '@/components/FloatingScanButton'
 import PrepAheadAssistant from '@/components/PrepAheadAssistant'
 import ThisWeeksMealsList from '@/components/ThisWeeksMealsList'
 import LocationZmanim from '@/components/LocationZmanim'
+import DashboardWidgets from '@/components/DashboardWidgets'
 import { COURSES } from '@/lib/course-constants'
 import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
+import { getNextObservance } from '@/lib/get-next-observance'
+import { getWidgetPrefs, getHomePulseScore, getTodaysMealPlan, getLowStockAlerts } from '@/lib/dashboard-widgets-data'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -485,7 +488,7 @@ async function getTehillim(hebrewDay: number | null) {
 
 export default async function Dashboard({ params }: { params: Promise<{ id: string }> }) {
   const { id: propertyId } = await params
-  const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount] = await Promise.all([
+  const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount, widgetPrefs, homePulseScore, todaysMeals, lowStockItems, nextObservance] = await Promise.all([
     getData(propertyId),
     getHebcal(),
     getHebrewInfo(),
@@ -497,6 +500,11 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     getPrepAheadReminders(propertyId),
     getPrepAheadEnabled(propertyId),
     getInventoryCount(propertyId),
+    getWidgetPrefs(propertyId),
+    getHomePulseScore(propertyId),
+    getTodaysMealPlan(propertyId),
+    getLowStockAlerts(propertyId),
+    getNextObservance(),
   ])
   const isOwnerOrManager = userRole === 'owner' || userRole === 'manager'
   const tehillim = await getTehillim(hebrewInfo.day)
@@ -614,168 +622,245 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     .slice(0, 5)
 
   return (
-    <div className={`min-h-screen p-6 font-sans transition-all ${isShabbos ? 'bg-amber-50' : 'bg-cream'}`}>
-      <div className={`max-w-7xl mx-auto rounded-[2rem] shadow-xl p-6 transition-all ${isShabbos ? 'bg-amber-50/80 backdrop-blur-sm' : 'bg-white'}`}>
-        {/* Header — this page already sits under the property layout's own
-            header (logo/property name/avatar), so this local title row only
-            needs enough space to read clearly, not a second full header's
-            worth of padding. */}
-        <div className="flex flex-col gap-1 md:flex-row md:justify-between md:items-center md:gap-0 mb-4">
-          <h1 className="text-4xl font-display font-bold text-ink">Sorted & Stocked</h1>
-          <div className="text-xs uppercase tracking-[0.2em] text-muted2">Kosher Household Management</div>
-        </div>
+    <div className={`min-h-screen p-4 md:p-6 font-interDisplay transition-all ${isShabbos ? 'bg-amber-50' : 'bg-linen'}`}>
+      <div className="max-w-[1180px] mx-auto pb-16">
+        {/* New direction (2026-07-15) -- full repaint, replacing Bold
+            Direction on every section of Home. Individual floating cards on
+            an open linen ground (matching the approved Concept B mockup)
+            instead of one big wrapping card -- that's the defining shape
+            change, not a color swap. Card-hierarchy rule used throughout:
+            section-level containers get the full card treatment (cardBorder
+            + shadow-card + xl3 radius); list rows *inside* a section get a
+            lighter, shadowless border only, so lists don't read as cards
+            nested inside cards. */}
 
-        {/* Hebrew Bar - LIVE. This is a single centered stack (date+parsha,
-            then candle lighting, then Tehillim), not a left/right split —
-            with no width constraint of its own it was stretching to the
-            full max-w-7xl dashboard width, leaving short centered text
-            swimming in a lot of empty side margin at desktop sizes.
-            Constrained instead of adding content just to fill space that
-            only exists because the card was wider than it needed to be. */}
-        {/* Bold Direction hero (2026-07-15, Home only) — typography-first,
-            no card chrome, matching the approved mockup: gold eyebrow label,
-            large serif Hebrew + Gregorian dates, ink candle-lighting line
-            with a top divider instead of a pill. isShabbos keeps its own
-            amber accent (a real, separate existing feature, not part of
-            this redesign) layered on top rather than removed. */}
-        <div className={`max-w-2xl mx-auto text-center mb-8 ${isShabbos ? 'bg-amber-100 rounded-2xl p-4 border border-amber-200' : ''}`}>
-          {propertyName && (
-            <p className="text-[11px] tracking-[0.2em] uppercase font-bold text-gold-dark border-b border-gold inline-block pb-1 mb-4">
-              {propertyName}
+        <div className="grid grid-cols-12 gap-4 mb-4">
+          {/* TODAY -- content/functionality unchanged (Hebrew date, English
+              date, parsha, Tehillim, omer, Shabbos Mode indicator); now
+              inside an actual card per the approved mockup, where before
+              this was deliberately chrome-less. */}
+          <div className={`col-span-12 md:col-span-7 min-h-[300px] rounded-xl3 border border-cardBorder shadow-card p-10 flex flex-col items-center justify-center text-center transition-shadow hover:shadow-cardHover ${isShabbos ? 'bg-amber-100' : 'bg-card'}`}>
+            {propertyName && (
+              <p className="text-[10px] tracking-[0.18em] uppercase font-bold text-brass border-b border-brass inline-block pb-1.5 mb-5">
+                {propertyName}
+              </p>
+            )}
+            <p lang="he" dir="rtl" className="font-display font-medium text-4xl text-denim leading-tight">
+              {hebrewInfo.hebrewText}
             </p>
-          )}
-          <p lang="he" dir="rtl" className="font-display font-semibold text-3xl text-ink leading-tight">
-            {hebrewInfo.hebrewText}
-          </p>
-          <p className="font-display italic font-medium text-4xl text-ink leading-tight mt-0.5">
-            {format(now, 'EEEE, MMMM d')}
-          </p>
-          <div className="flex items-center justify-center gap-2 mt-3">
-            {hebcal.parsha && (
-              <span lang="he" dir="rtl" className="font-display text-ink-soft text-base">
-                {hebcal.parsha}
-              </span>
-            )}
-            {tehillim && (
-              <span className="text-[11px] tracking-wider uppercase font-bold text-muted2">
-                Tehillim {tehillim.perek_start}
-                {tehillim.perek_end !== tehillim.perek_start ? `–${tehillim.perek_end}` : ''}
-              </span>
-            )}
+            <p className="font-display italic text-2xl text-denimBlue leading-tight mt-1 mb-5">
+              {format(now, 'EEEE, MMMM d')}
+            </p>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              {hebcal.parsha && (
+                <span lang="he" dir="rtl" className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">
+                  {hebcal.parsha}
+                </span>
+              )}
+              {tehillim && (
+                <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">
+                  Tehillim {tehillim.perek_start}
+                  {tehillim.perek_end !== tehillim.perek_start ? `–${tehillim.perek_end}` : ''}
+                </span>
+              )}
+              {isShabbos && (
+                <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">Shabbos Mode Active</span>
+              )}
+            </div>
+            {omerTitle && <p className="text-xs text-dusk mt-3">{omerTitle}</p>}
           </div>
-          <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-line text-[12.5px] font-bold text-ink-soft">
-            <LocationZmanim propertyName={propertyName} defaultTime={hebcal.candleTime} defaultDateLabel={candleDateLabel} />
-            {isShabbos && <span className="px-2 py-0.5 bg-amber-200 rounded text-xs">Shabbos Mode Active</span>}
-          </div>
-          {omerTitle && <p className="text-xs text-muted2 mt-2">{omerTitle}</p>}
-        </div>
 
-        {/* Quick Actions — Plan Meal is the single primary (filled) action;
-            planning drives the rest of the workflow, per IA review. Recipe
-            creation and meal planning both happen inline on their list pages
-            (no dedicated "/new" route exists for either), Scan reuses the
-            exact same route as the header/icon nav's Scan link. */}
-        {/* Bold Direction: 2x2 sharp-cornered grid, ink primary instead of
-            a gold pill row -- gold is demoted to a rare accent under this
-            direction, not the dominant button color. */}
-        <div className="grid grid-cols-2 gap-2.5 mb-8 max-w-md mx-auto">
+          {/* CANDLE LIGHTING -- was folded into the Today text block before;
+              now its own card per the mockup, with a decorative
+              photo-gradient placeholder background (same empty-slot
+              convention as the Pantry/Meal Plan cards below -- swap in a
+              real re-hosted photo later, gradient stays as the fallback
+              either way). LocationZmanim's real geolocation toggle is
+              unchanged -- only given a `variant="dark"` prop so its button
+              reads on a dark photo background instead of the cream one it
+              was designed for. */}
+          <div
+            className="col-span-12 md:col-span-5 min-h-[300px] rounded-xl3 border border-cardBorder shadow-card overflow-hidden relative flex items-end transition-shadow hover:shadow-cardHover"
+            style={{
+              backgroundImage: `linear-gradient(180deg, transparent 0%, transparent 50%, rgba(35,57,78,0.95) 100%),
+                radial-gradient(ellipse at 24% 68%, rgba(214,182,133,0.6) 0%, transparent 40%),
+                radial-gradient(ellipse at 30% 24%, #85A3C9 0%, transparent 52%),
+                radial-gradient(ellipse at 76% 16%, #D8BE8E 0%, transparent 36%),
+                linear-gradient(155deg, #4A6B8C 0%, #23394E 100%)`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          >
+            <div className="absolute top-5 left-5 w-9 h-9 rounded-full bg-white/15 border border-white/30 flex items-center justify-center text-white">
+              <Flame size={16} aria-hidden="true" />
+            </div>
+            <div className="p-6 w-full text-white">
+              <LocationZmanim
+                variant="dark"
+                propertyName={propertyName}
+                defaultTime={hebcal.candleTime}
+                defaultDateLabel={candleDateLabel}
+              />
+            </div>
+          </div>
+
+          {/* PANTRY / MEAL PLAN preview tiles -- deliberately minimal (a
+              count pill over a gradient), same empty-photo-slot convention
+              as the candle card. Real counts, not placeholder text. */}
+          <Link
+            href={`/properties/${propertyId}/inventory`}
+            className="col-span-6 md:col-span-4 min-h-[220px] rounded-xl3 border border-cardBorder shadow-card p-5 relative transition-shadow hover:shadow-cardHover"
+            style={{
+              backgroundImage: 'linear-gradient(200deg, #D9C4A0 0%, #EADDC7 38%, #F5EDE0 68%, #FFFEFC 100%)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          >
+            <span className="inline-block bg-white/90 text-denim text-[11px] font-semibold px-4 py-2 rounded-full shadow-card">
+              Pantry · {inventoryCount} items
+            </span>
+          </Link>
+
           <Link
             href={`/properties/${propertyId}/meal-plan`}
-            className="flex flex-col items-start gap-2 rounded bg-ink text-cream px-4 py-4 text-sm font-bold hover:opacity-90 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            className="col-span-6 md:col-span-4 min-h-[220px] rounded-xl3 border border-cardBorder shadow-card p-5 relative transition-shadow hover:shadow-cardHover"
+            style={{
+              backgroundImage: 'linear-gradient(200deg, #D6E4F0 0%, #E8EEF0 42%, #F5F3ED 72%, #FFFEFC 100%)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
           >
-            <Calendar size={19} aria-hidden="true" /> Plan Meal
-          </Link>
-          <Link
-            href={`/properties/${propertyId}/scan`}
-            className="flex flex-col items-start gap-2 rounded border border-ink text-ink px-4 py-4 text-sm font-bold hover:bg-stone transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-            aria-label="Scan an item"
-          >
-            <Scan size={19} aria-hidden="true" /> Scan Item
-          </Link>
-          <Link
-            href={`/properties/${propertyId}/recipes`}
-            className="flex flex-col items-start gap-2 rounded border border-ink text-ink px-4 py-4 text-sm font-bold hover:bg-stone transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-          >
-            <Plus size={19} aria-hidden="true" /> Add Recipe
-          </Link>
-          <Link
-            href={`/properties/${propertyId}/shopping-list`}
-            className="flex flex-col items-start gap-2 rounded border border-ink text-ink px-4 py-4 text-sm font-bold hover:bg-stone transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-          >
-            <ShoppingCart size={19} aria-hidden="true" /> Shopping List
-          </Link>
-        </div>
-
-        {isOwnerOrManager && (
-          <div className="mb-8 border-t border-line pt-3.5">
-            <span className="text-[11px] tracking-[0.16em] uppercase font-bold text-ink flex items-center gap-1.5 mb-2">
-              <Clock size={13} strokeWidth={2.25} className="text-gold-dark" aria-hidden="true" /> Readiness at a Glance
+            <span className="inline-block bg-white/90 text-denim text-[11px] font-semibold px-4 py-2 rounded-full shadow-card">
+              This Week · {meals.length} meal{meals.length === 1 ? '' : 's'}
             </span>
-            <p className="text-sm text-ink-soft">
-              {readiness.tasksDone + readiness.tasksOpen === 0 ? (
-                'No tasks due today.'
-              ) : (
-                <>
-                  <span className="font-medium">{readiness.tasksDone}</span> task{readiness.tasksDone === 1 ? '' : 's'} done,{' '}
-                  <span className={`font-medium ${readiness.tasksOpen > 0 ? 'text-rust' : ''}`}>{readiness.tasksOpen}</span> left today.
-                </>
-              )}
-              {' '}Candle lighting <bdi dir="ltr">{hebcal.candleTime}</bdi>.
-            </p>
-            <p className="text-sm text-muted2 mt-1">
-              {readiness.latestHandover ? (
-                <>
-                  Last handover{readiness.latestHandover.authorName ? ` (${readiness.latestHandover.authorName})` : ''}: "
-                  {readiness.latestHandover.noteText.length > 100
-                    ? `${readiness.latestHandover.noteText.slice(0, 100)}…`
-                    : readiness.latestHandover.noteText}
-                  "
-                </>
-              ) : (
-                'No handover notes yet.'
-              )}
-            </p>
-          </div>
-        )}
+          </Link>
 
-        {/* Quick-glance overview — meals.length is already fetched above for
-            this exact property/week, no extra query needed; recipeCount and
-            inventoryCount are both lightweight count-only queries. Inventory
-            specifically CANNOT reuse inventory.length here -- that array
-            comes from getData()'s unpaginated select(), which PostgREST
-            silently caps at the project's max-rows setting (1000); this
-            property has 1,029 real rows, so inventory.length was reading a
-            truncated 1000 with no error. Distinct from the "X meals planned
-            this week" sentence inside This Week's Meals below: this is a
-            top-of-page at-a-glance summary, that's a contextual detail with
-            its own "missing ingredients" link — not the same information
-            twice. */}
-        <div className="grid grid-cols-3 gap-3 mb-8">
-          <div className="rounded-2xl p-4 bg-white border border-gold-light/40 text-center">
-            <Package size={18} strokeWidth={1.5} className="text-gold-dark mx-auto mb-1" aria-hidden="true" />
-            <div className="text-2xl font-serif text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>{inventoryCount}</div>
-            <div className="text-xs text-charcoal/50">Total Inventory</div>
+          {/* QUICK ACTIONS -- same 4 real destinations as before (Plan Meal
+              is still the sole primary/filled action), restyled as the
+              mockup's small/action cards (20px radius, not 28px). */}
+          <div className="col-span-12 md:col-span-4 grid grid-cols-2 gap-3">
+            <Link
+              href={`/properties/${propertyId}/meal-plan`}
+              className="min-h-[104px] flex flex-col justify-between gap-2.5 rounded-xl2 bg-denim text-white p-4 text-sm font-semibold shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+            >
+              <span className="w-[38px] h-[38px] rounded-full bg-white/15 flex items-center justify-center">
+                <Calendar size={18} aria-hidden="true" />
+              </span>
+              <span className="font-display font-semibold text-[15px]">Plan Meal</span>
+            </Link>
+            <Link
+              href={`/properties/${propertyId}/scan`}
+              className="min-h-[104px] flex flex-col justify-between gap-2.5 rounded-xl2 bg-card border border-cardBorder p-4 text-sm font-semibold shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+              aria-label="Scan an item"
+            >
+              <span className="w-[38px] h-[38px] rounded-full bg-mist border border-brass/35 flex items-center justify-center text-denim">
+                <Scan size={18} aria-hidden="true" />
+              </span>
+              <span className="font-display font-semibold text-[15px] text-denim">Scan Item</span>
+            </Link>
+            <Link
+              href={`/properties/${propertyId}/recipes`}
+              className="min-h-[104px] flex flex-col justify-between gap-2.5 rounded-xl2 bg-card border border-cardBorder p-4 text-sm font-semibold shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+            >
+              <span className="w-[38px] h-[38px] rounded-full bg-mist border border-brass/35 flex items-center justify-center text-denim">
+                <Plus size={18} aria-hidden="true" />
+              </span>
+              <span className="font-display font-semibold text-[15px] text-denim">Add Recipe</span>
+            </Link>
+            <Link
+              href={`/properties/${propertyId}/shopping-list`}
+              className="min-h-[104px] flex flex-col justify-between gap-2.5 rounded-xl2 bg-card border border-cardBorder p-4 text-sm font-semibold shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+            >
+              <span className="w-[38px] h-[38px] rounded-full bg-mist border border-brass/35 flex items-center justify-center text-denim">
+                <ShoppingCart size={18} aria-hidden="true" />
+              </span>
+              <span className="font-display font-semibold text-[15px] text-denim">Shopping List</span>
+            </Link>
           </div>
-          <div className="rounded-2xl p-4 bg-white border border-gold-light/40 text-center">
-            <BookOpen size={18} strokeWidth={1.5} className="text-gold-dark mx-auto mb-1" aria-hidden="true" />
-            <div className="text-2xl font-serif text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>{recipeCount}</div>
-            <div className="text-xs text-charcoal/50">Active Recipes</div>
+
+          {/* READINESS -- content/functionality unchanged (real task counts,
+              real handover preview, gated to owner/manager same as before).
+              "View Brief" is new (per explicit instruction): points at the
+              real Shift Handover page, nothing built for it. */}
+          {isOwnerOrManager && (
+            <div className="col-span-12 rounded-xl3 border border-cardBorder shadow-card bg-card px-7 py-5 flex items-center justify-between gap-4 flex-wrap border-l-4 border-l-denimBlue">
+              <div className="flex items-center gap-3.5">
+                <span className="w-[34px] h-[34px] rounded-full bg-mist flex items-center justify-center text-denim shrink-0">
+                  <Clock size={16} aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="text-sm text-denim">
+                    {readiness.tasksDone + readiness.tasksOpen === 0 ? (
+                      'No tasks due today.'
+                    ) : (
+                      <>
+                        <span className="font-semibold">{readiness.tasksDone}</span> task{readiness.tasksDone === 1 ? '' : 's'} done,{' '}
+                        <span className={`font-semibold ${readiness.tasksOpen > 0 ? 'text-rust' : ''}`}>{readiness.tasksOpen}</span> left today.
+                      </>
+                    )}
+                    {' '}Candle lighting <bdi dir="ltr">{hebcal.candleTime}</bdi>.
+                  </p>
+                  <p className="text-sm text-dusk mt-0.5">
+                    {readiness.latestHandover ? (
+                      <>
+                        Last handover{readiness.latestHandover.authorName ? ` (${readiness.latestHandover.authorName})` : ''}: "
+                        {readiness.latestHandover.noteText.length > 100
+                          ? `${readiness.latestHandover.noteText.slice(0, 100)}…`
+                          : readiness.latestHandover.noteText}
+                        "
+                      </>
+                    ) : (
+                      'No handover notes yet.'
+                    )}
+                  </p>
+                </div>
+              </div>
+              <Link
+                href={`/properties/${propertyId}/shift-handover`}
+                className="bg-brass text-white text-xs font-semibold tracking-wide px-6 py-3 rounded-full hover:-translate-y-0.5 transition-transform shadow-card hover:shadow-cardHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+              >
+                View Brief
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Quick-glance overview -- same 3 real counts as before, restyled. */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
+            <Package size={18} strokeWidth={1.5} className="text-brass mx-auto mb-1" aria-hidden="true" />
+            <div className="text-2xl font-display text-denim">{inventoryCount}</div>
+            <div className="text-xs text-dusk">Total Inventory</div>
           </div>
-          <div className="rounded-2xl p-4 bg-white border border-gold-light/40 text-center">
-            <Calendar size={18} strokeWidth={1.5} className="text-gold-dark mx-auto mb-1" aria-hidden="true" />
-            <div className="text-2xl font-serif text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>{meals.length}</div>
-            <div className="text-xs text-charcoal/50">Meals Planned</div>
+          <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
+            <BookOpen size={18} strokeWidth={1.5} className="text-brass mx-auto mb-1" aria-hidden="true" />
+            <div className="text-2xl font-display text-denim">{recipeCount}</div>
+            <div className="text-xs text-dusk">Active Recipes</div>
+          </div>
+          <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
+            <Calendar size={18} strokeWidth={1.5} className="text-brass mx-auto mb-1" aria-hidden="true" />
+            <div className="text-2xl font-display text-denim">{meals.length}</div>
+            <div className="text-xs text-dusk">Meals Planned</div>
           </div>
         </div>
+
+        <DashboardWidgets
+          propertyId={propertyId}
+          initialPrefs={widgetPrefs}
+          homePulseScore={homePulseScore}
+          todaysMeals={todaysMeals}
+          lowStockItems={lowStockItems}
+          nextObservance={nextObservance}
+        />
 
         {prepReminders.length > 0 && (
-          <div className="rounded-2xl p-4 mb-8 bg-gold-light/15 border border-gold-light/40">
-            <h2 className="text-sm font-display text-charcoal mb-2 flex items-center gap-1.5">
-              <Clock size={16} strokeWidth={1.75} className="text-gold-dark" aria-hidden="true" /> Prep reminders
+          <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4">
+            <h2 className="text-sm font-display font-semibold text-denim mb-2 flex items-center gap-1.5">
+              <Clock size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" /> Prep reminders
             </h2>
             <ul className="space-y-1.5">
               {prepReminders.map((r, i) => (
-                <li key={i} className="text-sm text-charcoal/80">
+                <li key={i} className="text-sm text-denim">
                   <span className="font-medium">{r.recipeName}</span> — start prep{' '}
                   {r.daysUntil === 0 ? 'today' : `by ${format(parseISO(r.planDate), 'EEEE')}`}, needed for{' '}
                   {format(parseISO(r.planDate), 'EEEE, MMM d')}
@@ -793,25 +878,22 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         />
 
         {showHalachicWidget && (
-          <div className="rounded-2xl p-4 mb-8 bg-gold-light/15 border border-gold-light/40">
-            <h2 className="text-sm font-display text-charcoal mb-2 flex items-center gap-1.5">
-              <BookMarked size={16} strokeWidth={1.75} className="text-gold-dark" aria-hidden="true" /> {isErevYomTov ? 'Erev Yom Tov' : 'Erev Shabbos'}
+          <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4">
+            <h2 className="text-sm font-display font-semibold text-denim mb-2 flex items-center gap-1.5">
+              <BookMarked size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" /> {isErevYomTov ? 'Erev Yom Tov' : 'Erev Shabbos'}
             </h2>
-            <p className="text-sm text-charcoal/80">
-              {/* Omer count now shown persistently in the Hebrew date card
-                  above -- not repeated here to avoid saying it twice on the
-                  one day a week both are visible. */}
+            <p className="text-sm text-denim">
               Hadlakas Neiros <bdi dir="ltr">{hebcal.candleTime}</bdi>
             </p>
           </div>
         )}
 
         {eruvTavshilin && (
-          <div className="rounded-2xl p-4 mb-8 bg-gold-light/15 border border-gold-light/40">
-            <h2 className="text-sm font-display text-charcoal mb-2 flex items-center gap-1.5">
-              <Flame size={16} strokeWidth={1.75} className="text-gold-dark" aria-hidden="true" /> Eruv Tavshilin reminder
+          <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4">
+            <h2 className="text-sm font-display font-semibold text-denim mb-2 flex items-center gap-1.5">
+              <Flame size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" /> Eruv Tavshilin reminder
             </h2>
-            <p className="text-sm text-charcoal/80">
+            <p className="text-sm text-denim">
               Make Eruv Tavshilin on <span className="font-medium">{format(parseISO(eruvTavshilin.eruvDate), 'EEEE, MMM d')}</span>, before {eruvTavshilin.name} begins.
             </p>
           </div>
@@ -820,13 +902,13 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         {resetBanner && (
           <Link
             href={`/properties/${propertyId}/tools/reset-checklist`}
-            className="block rounded-2xl p-4 mb-8 bg-gold-light/15 border border-gold-light/40 hover:bg-gold-light/25 transition-colors"
+            className="block rounded-xl3 border border-cardBorder shadow-card hover:shadow-cardHover transition-shadow bg-card p-5 mb-4"
           >
-            <h2 className="text-sm font-display text-charcoal mb-1 flex items-center gap-1.5">
-              <BookMarked size={16} strokeWidth={1.75} className="text-gold-dark" aria-hidden="true" />
+            <h2 className="text-sm font-display font-semibold text-denim mb-1 flex items-center gap-1.5">
+              <BookMarked size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" />
               {resetBanner.type === 'post-shabbos' ? 'Post-Shabbos reset' : 'Erev Shabbos prep'}
             </h2>
-            <p className="text-sm text-charcoal/80">
+            <p className="text-sm text-denim">
               {resetBanner.templateName} hasn't been started yet — tap to open the checklist.
             </p>
           </Link>
@@ -835,13 +917,13 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         {chametzItems.length > 0 && (
           <Link
             href={`/properties/${propertyId}/inventory`}
-            className="block rounded-2xl p-4 mb-8 bg-gold-light/15 border border-gold-light/40 hover:bg-gold-light/25 transition-colors"
+            className="block rounded-xl3 border border-cardBorder shadow-card hover:shadow-cardHover transition-shadow bg-card p-5 mb-4"
           >
-            <h2 className="text-sm font-display text-charcoal mb-1 flex items-center gap-1.5">
-              <Package size={16} strokeWidth={1.75} className="text-gold-dark" aria-hidden="true" />
+            <h2 className="text-sm font-display font-semibold text-denim mb-1 flex items-center gap-1.5">
+              <Package size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" />
               {daysUntilPesach} day{daysUntilPesach === 1 ? '' : 's'} until Pesach — use up your chametz
             </h2>
-            <p className="text-sm text-charcoal/80">
+            <p className="text-sm text-denim">
               {chametzItems.length} item{chametzItems.length === 1 ? '' : 's'} marked not-for-Pesach, soonest-expiring first:{' '}
               {chametzItems.slice(0, 3).map((i) => i.name).join(', ')}
               {chametzItems.length > 3 ? `, +${chametzItems.length - 3} more` : ''} — tap to open Inventory.
@@ -850,13 +932,13 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         )}
 
         {isMotzeiShabbos && (
-          <div className="rounded-2xl p-4 mb-8 bg-gold-light/15 border border-gold-light/40">
-            <h2 className="text-sm font-display text-charcoal mb-2 flex items-center gap-1.5">
-              <UtensilsCrossed size={16} strokeWidth={1.75} className="text-gold-dark" aria-hidden="true" /> Motzei Shabbos — easy dinner?
+          <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4">
+            <h2 className="text-sm font-display font-semibold text-denim mb-2 flex items-center gap-1.5">
+              <UtensilsCrossed size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" /> Motzei Shabbos — easy dinner?
             </h2>
             <div className="flex gap-2 flex-wrap">
               {['Pizza', 'Pasta', 'Salad'].map((suggestion) => (
-                <span key={suggestion} className="text-sm px-3 py-1.5 bg-white border border-gold-light/40 rounded-full text-charcoal">
+                <span key={suggestion} className="text-sm px-3 py-1.5 bg-mist rounded-full text-denim">
                   {suggestion}
                 </span>
               ))}
@@ -864,26 +946,22 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* LEFT */}
-          <div className="lg:col-span-2">
-            {/* Bold Direction section-head: uppercase label + bottom border
-                + link, replacing the serif h2 -- matches the mockup's
-                .section-head pattern used for every named section on Home. */}
-            <div className="flex items-center justify-between border-t border-line pt-3.5 mb-4">
-              <span className="text-[11px] tracking-[0.16em] uppercase font-bold text-ink">This Week's Meals</span>
-              <Link href={`/properties/${propertyId}/meal-plan`} className="text-[11px] font-bold text-gold-dark underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* LEFT -- This Week's Meals, now one large card. Kashrut legend
+              colors (fleishigBold/milchigBold/parveBold) are semantic
+              signaling, not decorative palette -- left exactly as they are,
+              same reasoning as the Low Stock/rust warning color below. */}
+          <div className="lg:col-span-2 rounded-xl3 border border-cardBorder shadow-card bg-card p-6">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[11px] tracking-[0.16em] uppercase font-bold text-denim">This Week's Meals</span>
+              <Link href={`/properties/${propertyId}/meal-plan`} className="text-[11px] font-bold text-brass underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim">
                 View full plan →
               </Link>
             </div>
-            <p className="text-ink-soft mb-4">
-              <span className="font-bold text-ink">{meals.length}</span> meal{meals.length === 1 ? '' : 's'} planned this week
+            <p className="text-denim mb-4">
+              <span className="font-bold">{meals.length}</span> meal{meals.length === 1 ? '' : 's'} planned this week
             </p>
 
-            {/* Legend — color paired with a distinct shape + label, not
-                color alone, so it holds up for colorblind users. Bold,
-                solid-fill high-contrast chips per the approved direction,
-                same shapes as ThisWeeksMealsList's own tags below. */}
             <div className="flex gap-1.5 mb-4 flex-wrap" role="list" aria-label="Kashrut color legend">
               {([
                 ['Fleishig', 'bg-fleishigBold', Square],
@@ -900,91 +978,99 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             <ThisWeeksMealsList propertyId={propertyId} mealsByDay={mealsByDay} />
           </div>
 
-          {/* RIGHT */}
-          <div>
-            <h2 className="text-2xl font-serif mb-1 flex items-center gap-2 text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>
-              <ShoppingBag size={20} strokeWidth={1.5} className="text-gold-dark" aria-hidden="true" /> Shopping List
-            </h2>
-            <p className="text-sm text-charcoal/50 mb-4">{shopping.length} items</p>
+          {/* RIGHT -- Shopping List and Inventory Items, each its own card
+              (rather than one shared card) so both read as independent
+              content units, same as every other section on this page.
+              Category-dot colors (rust/dairy/sage) and the low-stock
+              rust/"LOW" flag are semantic, not decorative -- left as-is. */}
+          <div className="space-y-4">
+            <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-6">
+              <h2 className="font-display text-xl font-semibold mb-1 flex items-center gap-2 text-denim">
+                <ShoppingBag size={19} strokeWidth={1.5} className="text-brass" aria-hidden="true" /> Shopping List
+              </h2>
+              <p className="text-sm text-dusk mb-4">{shopping.length} items</p>
 
-            <div className="space-y-4">
-              {shoppingByCat.map(group => (
-                <div key={group.cat}>
-                  <div className="flex items-center gap-2 font-medium mb-2 text-charcoal/80">
-                    <span className={`w-3 h-3 rounded-full ${group.cat === 'Meat' ? 'bg-rust' : group.cat === 'Dairy' ? 'bg-dairy' : 'bg-sage'}`}></span>
-                    {group.cat}
-                  </div>
-                  <div className="space-y-2 ml-5">
-                    {group.items.map((item: any, i) => (
-                      <div key={i} className="flex items-center gap-2.5 text-sm p-2 bg-white border border-gold-light/30 rounded-lg hover:bg-gold-light/10 transition">
-                        <input type="checkbox" className="rounded border-gold-light/60 text-gold-dark" aria-label={`Mark ${item.name} purchased`} />
-                        {item.inventory_items?.photo_url && <img src={item.inventory_items.photo_url} alt="" className="w-8 h-8 object-cover rounded" />}
-                        <div className="flex-1">
-                          <div className="font-medium text-charcoal">{item.name}</div>
-                          <div className="text-xs text-charcoal/50">{item.qty_needed}</div>
+              <div className="space-y-4">
+                {shoppingByCat.map(group => (
+                  <div key={group.cat}>
+                    <div className="flex items-center gap-2 font-medium mb-2 text-denim">
+                      <span className={`w-3 h-3 rounded-full ${group.cat === 'Meat' ? 'bg-rust' : group.cat === 'Dairy' ? 'bg-dairy' : 'bg-sage'}`}></span>
+                      {group.cat}
+                    </div>
+                    <div className="space-y-2 ml-5">
+                      {group.items.map((item: any, i) => (
+                        <div key={i} className="flex items-center gap-2.5 text-sm p-2 bg-linen border border-cardBorder rounded-lg hover:bg-mist/50 transition">
+                          <input type="checkbox" className="rounded border-cardBorder text-brass" aria-label={`Mark ${item.name} purchased`} />
+                          {item.inventory_items?.photo_url && <img src={item.inventory_items.photo_url} alt="" className="w-8 h-8 object-cover rounded" />}
+                          <div className="flex-1">
+                            <div className="font-medium text-denim">{item.name}</div>
+                            <div className="text-xs text-dusk">{item.qty_needed}</div>
+                          </div>
+                          {item.inventory_items?.reorder_link && (
+                            <a href={item.inventory_items.reorder_link} target="_blank" rel="noopener noreferrer" className="text-brass hover:text-denim text-xs font-medium px-2 py-1 bg-mist rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim">
+                              Order ↗
+                            </a>
+                          )}
                         </div>
-                        {item.inventory_items?.reorder_link && (
-                          <a href={item.inventory_items.reorder_link} target="_blank" rel="noopener noreferrer" className="text-gold-dark hover:text-charcoal text-xs font-medium px-2 py-1 bg-gold-light/20 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal">
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {shopping.length === 0 && (
+                  <div className="text-center py-6 border border-dashed border-cardBorder rounded-xl">
+                    <p className="text-sm text-dusk mb-3">No items yet — generate from this week's meals.</p>
+                    <Link
+                      href={`/properties/${propertyId}/shopping-list`}
+                      className="inline-block bg-brass text-white px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition"
+                    >
+                      Go to Shopping List
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-6">
+              <h3 className="font-display text-lg font-semibold mb-3 flex items-center gap-2 text-denim">
+                <Package size={19} strokeWidth={1.5} className="text-brass" aria-hidden="true" /> Inventory Items
+              </h3>
+              <div className="space-y-2">
+                {inventoryPreview.map((item: any, i) => {
+                  const stockPct = item.current_qty > 0 ? Math.min(100, (item.current_qty / (item.min_qty + 2)) * 100) : 0
+                  const isLow = item.current_qty < item.min_qty
+                  return (
+                    <div key={i} className={`p-3 rounded-lg border ${isLow ? 'bg-rust/10 border-rust/30' : 'bg-linen border-cardBorder'}`}>
+                      <div className="flex items-start gap-3">
+                        {item.photo_url && <img src={item.photo_url} alt="" className="w-10 h-10 object-cover rounded" />}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-denim truncate">{item.name}</div>
+                          <div className="text-xs text-dusk">{item.category}</div>
+                          <div className="w-full bg-mist h-1 rounded-full mt-1.5 overflow-hidden">
+                            <div className={`${isLow ? 'bg-rust' : 'bg-sage'} h-1 transition-all`} style={{ width: `${stockPct}%` }}></div>
+                          </div>
+                          <div className="text-xs text-dusk mt-1">Qty: {item.current_qty} {isLow && <span className="text-rust font-medium">LOW</span>}</div>
+                        </div>
+                        {item.reorder_link && (
+                          <a href={item.reorder_link} target="_blank" rel="noopener noreferrer" className="text-brass hover:text-denim text-xs font-medium px-2 py-1 bg-mist rounded whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim">
                             Order ↗
                           </a>
                         )}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              {shopping.length === 0 && (
-                <div className="text-center py-6 border border-dashed border-gold-light/50 rounded-xl">
-                  <p className="text-sm text-charcoal/50 mb-3">No items yet — generate from this week's meals.</p>
-                  <Link
-                    href={`/properties/${propertyId}/shopping-list`}
-                    className="inline-block bg-gold-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition"
-                  >
-                    Go to Shopping List
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            <h3 className="text-xl font-serif mt-8 mb-3 flex items-center gap-2 text-charcoal" style={{fontFamily: 'Playfair Display, serif'}}>
-              <Package size={20} strokeWidth={1.5} className="text-gold-dark" aria-hidden="true" /> Inventory Items
-            </h3>
-            <div className="space-y-2">
-              {inventoryPreview.map((item: any, i) => {
-                const stockPct = item.current_qty > 0 ? Math.min(100, (item.current_qty / (item.min_qty + 2)) * 100) : 0
-                const isLow = item.current_qty < item.min_qty
-                return (
-                  <div key={i} className={`p-3 rounded-lg border ${isLow ? 'bg-rust/10 border-rust/30' : 'bg-white border-gold-light/30'}`}>
-                    <div className="flex items-start gap-3">
-                      {item.photo_url && <img src={item.photo_url} alt="" className="w-10 h-10 object-cover rounded" />}
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-charcoal truncate">{item.name}</div>
-                        <div className="text-xs text-charcoal/50">{item.category}</div>
-                        <div className="w-full bg-gold-light/30 h-1 rounded-full mt-1.5 overflow-hidden">
-                          <div className={`${isLow ? 'bg-rust' : 'bg-sage'} h-1 transition-all`} style={{ width: `${stockPct}%` }}></div>
-                        </div>
-                        <div className="text-xs text-charcoal/60 mt-1">Qty: {item.current_qty} {isLow && <span className="text-rust font-medium">LOW</span>}</div>
-                      </div>
-                      {item.reorder_link && (
-                        <a href={item.reorder_link} target="_blank" rel="noopener noreferrer" className="text-gold-dark hover:text-charcoal text-xs font-medium px-2 py-1 bg-gold-light/20 rounded whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal">
-                          Order ↗
-                        </a>
-                      )}
                     </div>
-                  </div>
-                )
-              })}
-              {inventoryPreview.length === 0 && (
-                <p className="text-sm text-charcoal/50 text-center py-4">No items yet</p>
-              )}
-            </div>
+                  )
+                })}
+                {inventoryPreview.length === 0 && (
+                  <p className="text-sm text-dusk text-center py-4">No items yet</p>
+                )}
+              </div>
 
-            <Link
-              href={`/properties/${propertyId}/inventory`}
-              className="block w-full mt-4 text-center bg-white border border-gold-light/60 text-charcoal py-3 rounded-xl font-medium hover:bg-gold-light/10 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal"
-            >
-              + Add Item
-            </Link>
+              <Link
+                href={`/properties/${propertyId}/inventory`}
+                className="block w-full mt-4 text-center bg-card border border-cardBorder text-denim py-3 rounded-xl font-medium hover:bg-mist/50 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+              >
+                + Add Item
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -994,14 +1080,14 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             Handover inside Staff's Handover tab, so neither needs its own
             entry point here anymore. Desktop already has these in the
             nav's "More" dropdown, so this block is mobile-only. */}
-        <div className="md:hidden mt-6 pt-4 border-t border-gold-light/30 flex flex-wrap gap-x-4 gap-y-2 text-sm">
-          <Link href={`/properties/${propertyId}/tools`} className="text-charcoal/60 hover:text-charcoal underline underline-offset-2">
+        <div className="md:hidden mt-6 pt-4 border-t border-cardBorder flex flex-wrap gap-x-4 gap-y-2 text-sm">
+          <Link href={`/properties/${propertyId}/tools`} className="text-dusk hover:text-denim underline underline-offset-2">
             Tools
           </Link>
-          <Link href={`/properties/${propertyId}/staff`} className="text-charcoal/60 hover:text-charcoal underline underline-offset-2">
+          <Link href={`/properties/${propertyId}/staff`} className="text-dusk hover:text-denim underline underline-offset-2">
             Staff
           </Link>
-          <Link href={`/properties/${propertyId}/settings`} className="text-charcoal/60 hover:text-charcoal underline underline-offset-2">
+          <Link href={`/properties/${propertyId}/settings`} className="text-dusk hover:text-denim underline underline-offset-2">
             Settings
           </Link>
         </div>

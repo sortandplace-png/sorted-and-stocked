@@ -55,12 +55,12 @@ export default function PrepAheadAssistant({
 
   if (!enabled) {
     return (
-      <div className="py-3.5 border-t border-line flex items-center justify-between gap-3">
-        <p className="text-sm text-muted2">Prep Ahead Assistant is off.</p>
+      <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4 flex items-center justify-between gap-3">
+        <p className="text-sm text-dusk">Prep Ahead Assistant is off.</p>
         <button
           onClick={() => setPrepAheadEnabled(true)}
           disabled={saving}
-          className="text-xs font-bold text-gold-dark underline disabled:opacity-40 shrink-0"
+          className="text-xs font-bold text-brass underline disabled:opacity-40 shrink-0"
         >
           Turn on
         </button>
@@ -68,23 +68,22 @@ export default function PrepAheadAssistant({
     );
   }
 
-  // Bold Direction (Home only): the mockup's .collapsed-row treatment --
-  // a plain border-top/bottom row with an uppercase label, count, and
-  // chevron, not a bordered gold card.
+  // New direction (2026-07-15): a full card, same as every other section on
+  // Home, replacing Bold Direction's borderless .collapsed-row treatment.
   return (
-    <div className="mb-2">
-      <div className="flex items-center justify-between gap-2 py-3.5 border-t border-line">
+    <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4">
+      <div className="flex items-center justify-between gap-2">
         <button onClick={() => setCollapsed((v) => !v)} className="flex items-center gap-2 text-left">
-          <Snowflake size={14} strokeWidth={2} className="text-gold-dark" aria-hidden="true" />
-          <span className="text-xs font-bold uppercase tracking-wider text-ink">Prep Ahead Assistant</span>
-          <span className="text-xs text-muted2 font-bold">({reminders.length})</span>
-          <span className="text-muted2 text-sm">{collapsed ? '▸' : '▾'}</span>
+          <Snowflake size={14} strokeWidth={2} className="text-brass" aria-hidden="true" />
+          <span className="text-xs font-bold uppercase tracking-wider text-denim">Prep Ahead Assistant</span>
+          <span className="text-xs text-dusk font-bold">({reminders.length})</span>
+          <span className="text-dusk text-sm">{collapsed ? '▸' : '▾'}</span>
         </button>
         {canManage && (
           <button
             onClick={() => setPrepAheadEnabled(false)}
             disabled={saving}
-            className="text-xs text-muted2 underline disabled:opacity-40 shrink-0"
+            className="text-xs text-dusk underline disabled:opacity-40 shrink-0"
           >
             Turn off
           </button>
@@ -92,15 +91,15 @@ export default function PrepAheadAssistant({
       </div>
       {!collapsed && (
         reminders.length === 0 ? (
-          <p className="text-sm text-muted2 pb-2">Nothing freezer-friendly needs pulling ahead in the next few days.</p>
+          <p className="text-sm text-dusk pt-3">Nothing freezer-friendly needs pulling ahead in the next few days.</p>
         ) : (
-          <ul className="space-y-1.5 pb-2">
+          <ul className="space-y-1.5 pt-3">
             {reminders.map((r, i) => (
-              <li key={i} className="text-sm text-ink-soft">
+              <li key={i} className="text-sm text-denim">
                 {r.recipeId ? (
                   <Link
                     href={`/properties/${propertyId}/recipes/${r.recipeId}`}
-                    className="font-semibold underline decoration-line decoration-2 underline-offset-2 hover:text-gold-dark"
+                    className="font-semibold underline decoration-cardBorder decoration-2 underline-offset-2 hover:text-brass"
                   >
                     {r.recipeName}
                   </Link>
