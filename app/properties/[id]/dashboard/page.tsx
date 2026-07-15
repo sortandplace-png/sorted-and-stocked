@@ -713,18 +713,18 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           </div>
 
           {/* CANDLE LIGHTING -- was folded into the Today text block before;
-              now its own card per the mockup, with a decorative
-              photo-gradient placeholder background (same empty-slot
-              convention as the Pantry/Meal Plan cards below -- swap in a
-              real re-hosted photo later, gradient stays as the fallback
-              either way). LocationZmanim's real geolocation toggle is
+              now its own card per the mockup. Real photo now live in
+              Supabase Storage (dashboard-photos/candle.jpeg); the gradient
+              stack stays underneath as the fallback if the photo ever
+              fails to load. LocationZmanim's real geolocation toggle is
               unchanged -- only given a `variant="dark"` prop so its button
               reads on a dark photo background instead of the cream one it
               was designed for. */}
           <div
             className="col-span-12 md:col-span-5 min-h-[300px] rounded-xl3 border border-cardBorder shadow-card overflow-hidden relative flex items-end transition-shadow hover:shadow-cardHover"
             style={{
-              backgroundImage: `linear-gradient(180deg, transparent 0%, transparent 50%, rgba(35,57,78,0.95) 100%),
+              backgroundImage: `url('https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/dashboard-photos/candle.jpeg'),
+                linear-gradient(180deg, transparent 0%, transparent 50%, rgba(35,57,78,0.95) 100%),
                 radial-gradient(ellipse at 24% 68%, rgba(214,182,133,0.6) 0%, transparent 40%),
                 radial-gradient(ellipse at 30% 24%, #85A3C9 0%, transparent 52%),
                 radial-gradient(ellipse at 76% 16%, #D8BE8E 0%, transparent 36%),
@@ -748,17 +748,17 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           </div>
 
           {/* PANTRY / MEAL PLAN preview tiles -- deliberately minimal (a
-              count pill over a gradient), same empty-photo-slot convention
-              as the candle card. Real counts, not placeholder text. Half-
-              width each per explicit instruction (was a 3rd-width slot
-              alongside Quick Actions) -- real photo URLs coming in a
-              follow-up once re-hosted in Supabase Storage; gradient stays
-              as the fallback underneath either way. */}
+              count pill over a photo). Real counts, not placeholder text.
+              Half-width each per explicit instruction (was a 3rd-width slot
+              alongside Quick Actions). Real photos now live in Supabase
+              Storage (dashboard-photos/pantry.jpeg, mealplan.jpg); the
+              gradient stays underneath as the fallback if either photo ever
+              fails to load. */}
           <Link
             href={`/properties/${propertyId}/inventory`}
             className="col-span-12 md:col-span-6 min-h-[300px] rounded-xl3 border border-cardBorder shadow-card p-6 relative transition-shadow hover:shadow-cardHover"
             style={{
-              backgroundImage: 'linear-gradient(200deg, #D9C4A0 0%, #EADDC7 38%, #F5EDE0 68%, #FFFEFC 100%)',
+              backgroundImage: "url('https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/dashboard-photos/pantry.jpeg'), linear-gradient(200deg, #D9C4A0 0%, #EADDC7 38%, #F5EDE0 68%, #FFFEFC 100%)",
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}
@@ -773,7 +773,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             href={`/properties/${propertyId}/meal-plan`}
             className="col-span-12 md:col-span-6 min-h-[300px] rounded-xl3 border border-cardBorder shadow-card p-6 relative transition-shadow hover:shadow-cardHover"
             style={{
-              backgroundImage: 'linear-gradient(200deg, #D6E4F0 0%, #E8EEF0 42%, #F5F3ED 72%, #FFFEFC 100%)',
+              backgroundImage: "url('https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/dashboard-photos/mealplan.jpg'), linear-gradient(200deg, #D6E4F0 0%, #E8EEF0 42%, #F5F3ED 72%, #FFFEFC 100%)",
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}
