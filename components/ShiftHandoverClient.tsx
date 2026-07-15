@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert } from '@/lib/resilient-write';
 import { compressImageToDataUrl } from '@/lib/compress-image';
@@ -38,10 +39,17 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 }
 
 export default function ShiftHandoverClient({ propertyId }: { propertyId: string }) {
+  const t = useTranslations('shiftHandover');
+  // A real starting structure, not vanishing placeholder text -- lands in
+  // the textarea itself so there's something to edit around instead of a
+  // blank field, the actual friction point (zero handovers had ever been
+  // logged against this component before this change).
+  const templateText = `${t('whatsDone')} \n${t('inProgress')} \n${t('headsUp')} \n`;
+
   const [handovers, setHandovers] = useState<Handover[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [noteText, setNoteText] = useState('');
+  const [noteText, setNoteText] = useState(templateText);
   const [templateTag, setTemplateTag] = useState<string | null>(null);
   const [photoDataUrls, setPhotoDataUrls] = useState<string[]>([]);
   const [audioDataUrl, setAudioDataUrl] = useState<string | null>(null);
@@ -167,7 +175,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
   }
 
   function resetForm() {
-    setNoteText('');
+    setNoteText(templateText);
     setTemplateTag(null);
     setPhotoDataUrls([]);
     setAudioDataUrl(null);
@@ -175,7 +183,11 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
   }
 
   async function submitHandover() {
-    if (!noteText.trim() && photoDataUrls.length === 0 && !audioDataUrl) {
+    // The template's own labels aren't real content -- someone who never
+    // typed anything into it shouldn't be able to submit that as if it
+    // were a note.
+    const noteIsUnedited = noteText.trim() === templateText.trim();
+    if (noteIsUnedited && photoDataUrls.length === 0 && !audioDataUrl) {
       showToast('Add a note, photo, or recording first.', { variant: 'error' });
       return;
     }
@@ -194,7 +206,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
     const result = await resilientInsert(supabase, 'shift_handovers', {
       property_id: propertyId,
       created_by: user.id,
-      note_text: noteText.trim() || null,
+      note_text: noteIsUnedited ? null : noteText.trim() || null,
       photo_data_url: photoDataUrls[0] ?? null, // kept for older readers of the single-photo column
       photo_data_urls: photoDataUrls.length > 0 ? photoDataUrls : null,
       audio_data_url: audioDataUrl,
@@ -222,7 +234,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
         body: JSON.stringify({
           propertyId,
           trigger: 'shift_handover',
-          noteText: noteText.trim() || 'New shift handover (photo/audio) added.',
+          noteText: noteIsUnedited ? 'New shift handover (photo/audio) added.' : noteText.trim(),
         }),
       }).catch(() => {});
     }
