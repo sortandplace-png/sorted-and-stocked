@@ -784,33 +784,30 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             </span>
           </Link>
 
-          {/* QUICK ACTIONS -- same 4 real destinations as before. Now its
-              own full-width row of 4 (was a 3rd-width slot next to Pantry/
-              Meal Plan) per explicit instruction. Uniform treatment: Plan
-              Meal's dark "primary" fill was my own addition, not in the
-              reference spec -- reverted so all 4 read identically (mist
-              fill, brass-tinted border, pin dot). Icon circle sized up to
-              74px/32px icon (third round on icon prominence, per explicit
-              instruction) with centered content -- not left-aligned like
-              the first pass. */}
-          <div className="col-span-12 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* QUICK ACTIONS -- 5 real destinations (Inventory added; it was
+              asked for a few rounds back and never shipped). Icon-circle
+              badge removed -- icon now sits bare on the mist tile at 36px
+              since it's no longer fighting a circle for space -- plus a
+              one-line subtitle under each title for the reference's
+              three-line hierarchy. */}
+          <div className="col-span-12 grid grid-cols-2 sm:grid-cols-5 gap-3">
             {([
-              [`/properties/${propertyId}/meal-plan`, Calendar, 'Plan Meal', undefined] as const,
-              [`/properties/${propertyId}/scan`, Scan, 'Scan Item', 'Scan an item'] as const,
-              [`/properties/${propertyId}/recipes`, Plus, 'Add Recipe', undefined] as const,
-              [`/properties/${propertyId}/shopping-list`, ShoppingCart, 'Shopping List', undefined] as const,
-            ]).map(([href, Icon, label, ariaLabel]) => (
+              [`/properties/${propertyId}/meal-plan`, Calendar, 'Plan Meal', 'This week’s menu', undefined] as const,
+              [`/properties/${propertyId}/scan`, Scan, 'Scan Item', 'Quick lookup', 'Scan an item'] as const,
+              [`/properties/${propertyId}/recipes`, Plus, 'Add Recipe', 'New dish', undefined] as const,
+              [`/properties/${propertyId}/shopping-list`, ShoppingCart, 'Shopping List', 'View & edit', undefined] as const,
+              [`/properties/${propertyId}/inventory`, Package, 'Inventory', 'Check stock', undefined] as const,
+            ]).map(([href, Icon, label, subtitle, ariaLabel]) => (
               <Link
                 key={label}
                 href={href}
                 aria-label={ariaLabel}
-                className="relative min-h-[152px] flex flex-col items-center justify-center gap-3 rounded-xl2 bg-mist border border-brass/30 p-[18px] shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+                className="relative min-h-[152px] flex flex-col items-center justify-center gap-2.5 rounded-xl2 bg-mist border border-brass/30 p-[18px] shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
               >
                 <Pin size="sm" />
-                <span className="w-[74px] h-[74px] rounded-full border border-brass/40 flex items-center justify-center text-denim" style={{ background: 'radial-gradient(circle at 32% 28%, #FFFEFC 0%, #F3F7FB 70%)' }}>
-                  <Icon size={32} aria-hidden="true" />
-                </span>
+                <Icon size={36} className="text-denim" aria-hidden="true" />
                 <span className="font-display font-semibold text-base text-denim text-center">{label}</span>
+                <span className="text-[11.5px] text-dusk text-center">{subtitle}</span>
               </Link>
             ))}
           </div>
