@@ -62,11 +62,12 @@ export default function CommandPaletteTrigger() {
       ) : (
         <button
           onClick={() => setExpanded(true)}
-          aria-label={t('search')}
+          aria-label={t('searchShortcut')}
           title={t('searchShortcut')}
-          className="flex items-center justify-center h-8 w-8 rounded-full border border-gold-light/60 text-charcoal/50 hover:bg-gold-light/10 transition-colors"
+          className="flex items-center gap-1.5 rounded-full border border-gold-light/60 px-3 py-1.5 text-xs text-charcoal/60 hover:bg-gold-light/10 transition-colors"
         >
-          <Search className="h-3.5 w-3.5" strokeWidth={1.75} />
+          <Search className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
+          {t('findLabel')}
         </button>
       )}
     </div>

@@ -31,6 +31,7 @@
     "revert": "Deshacer",
     "search": "Buscar",
     "searchShortcut": "Buscar (Cmd+K)",
+    "findLabel": "Buscar",
     "signOut": "Cerrar sesión",
     "unknown": "alguien"
   },
