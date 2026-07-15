@@ -749,10 +749,14 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
 
           {/* PANTRY / MEAL PLAN preview tiles -- deliberately minimal (a
               count pill over a gradient), same empty-photo-slot convention
-              as the candle card. Real counts, not placeholder text. */}
+              as the candle card. Real counts, not placeholder text. Half-
+              width each per explicit instruction (was a 3rd-width slot
+              alongside Quick Actions) -- real photo URLs coming in a
+              follow-up once re-hosted in Supabase Storage; gradient stays
+              as the fallback underneath either way. */}
           <Link
             href={`/properties/${propertyId}/inventory`}
-            className="col-span-6 md:col-span-4 min-h-[220px] rounded-xl3 border border-cardBorder shadow-card p-5 relative transition-shadow hover:shadow-cardHover"
+            className="col-span-12 md:col-span-6 min-h-[300px] rounded-xl3 border border-cardBorder shadow-card p-6 relative transition-shadow hover:shadow-cardHover"
             style={{
               backgroundImage: 'linear-gradient(200deg, #D9C4A0 0%, #EADDC7 38%, #F5EDE0 68%, #FFFEFC 100%)',
               backgroundSize: 'cover',
@@ -767,7 +771,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
 
           <Link
             href={`/properties/${propertyId}/meal-plan`}
-            className="col-span-6 md:col-span-4 min-h-[220px] rounded-xl3 border border-cardBorder shadow-card p-5 relative transition-shadow hover:shadow-cardHover"
+            className="col-span-12 md:col-span-6 min-h-[300px] rounded-xl3 border border-cardBorder shadow-card p-6 relative transition-shadow hover:shadow-cardHover"
             style={{
               backgroundImage: 'linear-gradient(200deg, #D6E4F0 0%, #E8EEF0 42%, #F5F3ED 72%, #FFFEFC 100%)',
               backgroundSize: 'cover',
@@ -780,12 +784,16 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             </span>
           </Link>
 
-          {/* QUICK ACTIONS -- same 4 real destinations as before. Uniform
-              treatment per explicit instruction: Plan Meal's dark "primary"
-              fill was my own addition, not in the reference spec -- reverted
-              so all 4 read identically (mist fill, brass-tinted border, pin
-              dot, 46px icon circle). */}
-          <div className="col-span-12 md:col-span-4 grid grid-cols-2 gap-3">
+          {/* QUICK ACTIONS -- same 4 real destinations as before. Now its
+              own full-width row of 4 (was a 3rd-width slot next to Pantry/
+              Meal Plan) per explicit instruction. Uniform treatment: Plan
+              Meal's dark "primary" fill was my own addition, not in the
+              reference spec -- reverted so all 4 read identically (mist
+              fill, brass-tinted border, pin dot). Icon circle sized up to
+              74px/32px icon (third round on icon prominence, per explicit
+              instruction) with centered content -- not left-aligned like
+              the first pass. */}
+          <div className="col-span-12 grid grid-cols-2 sm:grid-cols-4 gap-3">
             {([
               [`/properties/${propertyId}/meal-plan`, Calendar, 'Plan Meal', undefined] as const,
               [`/properties/${propertyId}/scan`, Scan, 'Scan Item', 'Scan an item'] as const,
@@ -796,13 +804,13 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                 key={label}
                 href={href}
                 aria-label={ariaLabel}
-                className="relative min-h-[118px] flex flex-col items-start justify-center gap-3 rounded-xl2 bg-mist border border-brass/30 p-[18px] shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+                className="relative min-h-[152px] flex flex-col items-center justify-center gap-3 rounded-xl2 bg-mist border border-brass/30 p-[18px] shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
               >
                 <Pin size="sm" />
-                <span className="w-[46px] h-[46px] rounded-full border border-brass/40 flex items-center justify-center text-denim" style={{ background: 'radial-gradient(circle at 32% 28%, #FFFEFC 0%, #F3F7FB 70%)' }}>
-                  <Icon size={22} aria-hidden="true" />
+                <span className="w-[74px] h-[74px] rounded-full border border-brass/40 flex items-center justify-center text-denim" style={{ background: 'radial-gradient(circle at 32% 28%, #FFFEFC 0%, #F3F7FB 70%)' }}>
+                  <Icon size={32} aria-hidden="true" />
                 </span>
-                <span className="font-display font-semibold text-base text-denim">{label}</span>
+                <span className="font-display font-semibold text-base text-denim text-center">{label}</span>
               </Link>
             ))}
           </div>
@@ -812,44 +820,47 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               "View Brief" is new (per explicit instruction): points at the
               real Shift Handover page, nothing built for it. */}
           {isOwnerOrManager && (
-            <div className="col-span-12 rounded-xl3 border border-cardBorder shadow-card bg-card px-7 py-5 flex items-center justify-between gap-4 flex-wrap border-l-4 border-l-denimBlue">
-              <div className="flex items-center gap-3.5">
-                <span className="w-[34px] h-[34px] rounded-full bg-mist flex items-center justify-center text-denim shrink-0">
-                  <Clock size={16} aria-hidden="true" />
-                </span>
-                <div>
-                  <p className="text-sm text-denim">
-                    {readiness.tasksDone + readiness.tasksOpen === 0 ? (
-                      'No tasks due today.'
-                    ) : (
-                      <>
-                        <span className="font-semibold">{readiness.tasksDone}</span> task{readiness.tasksDone === 1 ? '' : 's'} done,{' '}
-                        <span className={`font-semibold ${readiness.tasksOpen > 0 ? 'text-rust' : ''}`}>{readiness.tasksOpen}</span> left today.
-                      </>
-                    )}
-                    {' '}Candle lighting <bdi dir="ltr">{hebcal.candleTime}</bdi>.
-                  </p>
-                  <p className="text-sm text-dusk mt-0.5">
-                    {readiness.latestHandover ? (
-                      <>
-                        Last handover{readiness.latestHandover.authorName ? ` (${readiness.latestHandover.authorName})` : ''}: "
-                        {readiness.latestHandover.noteText.length > 100
-                          ? `${readiness.latestHandover.noteText.slice(0, 100)}…`
-                          : readiness.latestHandover.noteText}
-                        "
-                      </>
-                    ) : (
-                      'No handover notes yet.'
-                    )}
-                  </p>
+            <div className="col-span-12 rounded-xl3 border border-cardBorder shadow-card bg-card px-7 py-5 flex flex-col gap-3 border-l-4 border-l-denimBlue">
+              <span className="text-[11px] tracking-[0.16em] uppercase font-bold text-denim">Readiness at a Glance</span>
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3.5">
+                  <span className="w-[34px] h-[34px] rounded-full bg-mist flex items-center justify-center text-denim shrink-0">
+                    <Clock size={16} aria-hidden="true" />
+                  </span>
+                  <div>
+                    <p className="text-sm text-denim">
+                      {readiness.tasksDone + readiness.tasksOpen === 0 ? (
+                        'No tasks due today.'
+                      ) : (
+                        <>
+                          <span className="font-semibold">{readiness.tasksDone}</span> task{readiness.tasksDone === 1 ? '' : 's'} done,{' '}
+                          <span className={`font-semibold ${readiness.tasksOpen > 0 ? 'text-rust' : ''}`}>{readiness.tasksOpen}</span> left today.
+                        </>
+                      )}
+                      {' '}Candle lighting <bdi dir="ltr">{hebcal.candleTime}</bdi>.
+                    </p>
+                    <p className="text-sm text-dusk mt-0.5">
+                      {readiness.latestHandover ? (
+                        <>
+                          Last handover{readiness.latestHandover.authorName ? ` (${readiness.latestHandover.authorName})` : ''}: "
+                          {readiness.latestHandover.noteText.length > 100
+                            ? `${readiness.latestHandover.noteText.slice(0, 100)}…`
+                            : readiness.latestHandover.noteText}
+                          "
+                        </>
+                      ) : (
+                        'No handover notes yet.'
+                      )}
+                    </p>
+                  </div>
                 </div>
+                <Link
+                  href={`/properties/${propertyId}/shift-handover`}
+                  className="bg-brass text-white text-xs font-semibold tracking-wide px-6 py-3 rounded-full hover:-translate-y-0.5 transition-transform shadow-card hover:shadow-cardHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+                >
+                  View Brief
+                </Link>
               </div>
-              <Link
-                href={`/properties/${propertyId}/shift-handover`}
-                className="bg-brass text-white text-xs font-semibold tracking-wide px-6 py-3 rounded-full hover:-translate-y-0.5 transition-transform shadow-card hover:shadow-cardHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
-              >
-                View Brief
-              </Link>
             </div>
           )}
         </div>
