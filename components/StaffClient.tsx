@@ -72,7 +72,7 @@ function describeActivity(a: ActivityEntry): string {
   return `${who} removed${by}`;
 }
 
-export default function StaffClient({ propertyId }: { propertyId: string }) {
+export default function StaffClient({ propertyId, propertyName }: { propertyId: string; propertyName: string }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -381,6 +381,15 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
         <>
       <h2 className="font-display text-lg text-charcoal mb-2">Invite someone</h2>
       <form onSubmit={handleInvite} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 space-y-3">
+        {/* Real risk this closes: with two properties on one account, the
+            property being invited into was previously only shown via the
+            header switcher, not on this form -- easy to send an invite to
+            the wrong house without noticing. */}
+        {propertyName && (
+          <p className="text-xs font-medium text-gold-dark bg-gold-light/20 rounded-full px-3 py-1.5 inline-block">
+            Inviting to: {propertyName}
+          </p>
+        )}
         <div>
           <FieldLabel>Email address</FieldLabel>
           <input
