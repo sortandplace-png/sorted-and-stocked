@@ -715,11 +715,19 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           {/* CANDLE LIGHTING -- was folded into the Today text block before;
               now its own card per the mockup. Real photo now live in
               Supabase Storage (dashboard-photos/candle.jpeg); the gradient
-              stack stays underneath as the fallback if the photo ever
-              fails to load. LocationZmanim's real geolocation toggle is
-              unchanged -- only given a `variant="dark"` prop so its button
-              reads on a dark photo background instead of the cream one it
-              was designed for. */}
+              stack on the outer div stays underneath as the fallback if the
+              photo ever fails to load. The text scrim below is a SEPARATE
+              absolutely-positioned overlay div, not another layer in that
+              same background-image stack -- a background-image list paints
+              its first-listed layer on top, so with the opaque photo listed
+              first, any gradient layered after it in that same property is
+              completely hidden once the photo loads and can never function
+              as a scrim no matter how strong its alpha is. This overlay
+              renders as real DOM content stacked above the photo instead,
+              which actually darkens it. LocationZmanim's real geolocation
+              toggle is unchanged -- only given a `variant="dark"` prop so
+              its button reads on a dark photo background instead of the
+              cream one it was designed for. */}
           <div
             className="col-span-12 md:col-span-5 min-h-[300px] rounded-xl3 border border-cardBorder shadow-card overflow-hidden relative flex items-end transition-shadow hover:shadow-cardHover"
             style={{
@@ -733,6 +741,13 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               backgroundPosition: 'center',
             }}
           >
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundImage: `linear-gradient(180deg, transparent 0%, transparent 28%, rgba(20,32,46,0.55) 55%, rgba(16,26,38,0.9) 78%, rgba(12,20,30,0.97) 100%)`,
+              }}
+              aria-hidden="true"
+            />
             <Pin />
             <div className="absolute top-5 left-5 w-9 h-9 rounded-full bg-white/15 border border-white/30 flex items-center justify-center text-white">
               <Flame size={16} aria-hidden="true" />
