@@ -10,8 +10,13 @@ const withPWA = require('next-pwa')({
   disable: process.env.NODE_ENV === 'development',
   runtimeCaching: [
     // Static assets: cache-first, instant load even with zero signal.
+    // Same-origin only -- an unscoped regex here also matched cross-origin
+    // Supabase Storage photo URLs (dashboard-photos/*.jpeg), and CacheFirst
+    // never revalidates, so any device that had already hit one of those
+    // URLs (even before the real photo existed) kept serving that cached
+    // response forever, regardless of how many times the app redeployed.
     {
-      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|woff2?)$/i,
+      urlPattern: ({ url }) => url.origin === self.location.origin && /\.(?:png|jpg|jpeg|svg|gif|webp|ico|woff2?)$/i.test(url.pathname),
       handler: 'CacheFirst',
       options: {
         cacheName: 'static-assets',
