@@ -37,6 +37,7 @@ export default function ThisWeeksMealsList({
   mealsByDay: { date: string; entries: MealEntry[] }[];
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const t = useTranslations('dashboard');
   const tCourse = useTranslations('course');
   const locale = useLocale();
 
@@ -65,7 +66,7 @@ export default function ThisWeeksMealsList({
     <div>
       <button onClick={() => setCollapsed((v) => !v)} className="w-full flex items-center gap-2 mb-3 text-left">
         <span className="text-xs font-bold uppercase tracking-wider text-denim">
-          {locale === 'es' ? 'Comidas de esta semana' : "This week's meals"}
+          {t('mealsListCard.heading')}
         </span>
         <span className="text-xs text-dusk">({mealsByDay.reduce((n, d) => n + d.entries.length, 0)})</span>
         <span className="flex-1 border-t border-cardBorder" />
@@ -82,7 +83,7 @@ export default function ThisWeeksMealsList({
                   const k = getKashrut(meal.recipes?.kosher_type);
                   const info = KASHRUT_INFO[k];
                   const courseLabel = tCourse(meal.course);
-                  const name = (locale === 'es' && meal.recipes?.name_es) || meal.recipes?.name || 'Meal';
+                  const name = (locale === 'es' && meal.recipes?.name_es) || meal.recipes?.name || t('meal');
                   return (
                     <div key={i} className="flex items-center gap-2 pl-1">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10.5px] text-white rounded font-bold uppercase shrink-0 ${info.bg}`}>
@@ -110,7 +111,7 @@ export default function ThisWeeksMealsList({
           ))}
           {mealsByDay.length === 0 && (
             <p className="text-sm text-dusk italic py-4">
-              {locale === 'es' ? 'Nada planeado esta semana todavía.' : 'Nothing planned yet this week.'}
+              {t('mealsListCard.nothingPlanned')}
             </p>
           )}
         </div>

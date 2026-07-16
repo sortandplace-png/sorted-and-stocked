@@ -9,18 +9,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Activity, Settings2, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import type { WidgetKey, WidgetPrefs, HomePulseScore, TodaysMealEntry, LowStockItem } from '@/lib/dashboard-widgets-data';
 import type { UpcomingObservance } from '@/lib/get-next-observance';
-
-const WIDGET_LABELS: Record<WidgetKey, string> = {
-  home_pulse_score: 'Home Pulse Score',
-  todays_meal_plan: "Today's Meal Plan",
-  low_stock_alerts: 'Low Stock Alerts',
-  holiday_countdown: 'Shabbos/Yom Tov Countdown',
-};
 
 export default function DashboardWidgets({
   propertyId,
@@ -37,6 +31,13 @@ export default function DashboardWidgets({
   lowStockItems: LowStockItem[];
   nextObservance: UpcomingObservance | null;
 }) {
+  const t = useTranslations('dashboard.widgets');
+  const WIDGET_LABELS: Record<WidgetKey, string> = {
+    home_pulse_score: t('labelHomePulseScore'),
+    todays_meal_plan: t('labelTodaysMealPlan'),
+    low_stock_alerts: t('labelLowStockAlerts'),
+    holiday_countdown: t('labelHolidayCountdown'),
+  };
   const [prefs, setPrefs] = useState(initialPrefs);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -64,7 +65,7 @@ export default function DashboardWidgets({
     }));
     const { error } = await supabase.from('dashboard_widget_prefs').upsert(rows, { onConflict: 'user_id,property_id,widget_key' });
     setSaving(false);
-    if (error) showToast('Failed to save widget layout.', { variant: 'error' });
+    if (error) showToast(t('saveFailedToast'), { variant: 'error' });
   }
 
   function toggleVisible(key: WidgetKey) {
@@ -90,13 +91,13 @@ export default function DashboardWidgets({
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-[11px] tracking-[0.16em] uppercase font-bold text-denim">Widgets</span>
+        <span className="text-[11px] tracking-[0.16em] uppercase font-bold text-denim">{t('sectionTitle')}</span>
         <button
           onClick={() => setEditing((v) => !v)}
           className="flex items-center gap-1 text-[11px] font-bold text-brass underline underline-offset-2"
         >
           <Settings2 size={13} strokeWidth={2.25} aria-hidden="true" />
-          {editing ? 'Done' : 'Edit widgets'}
+          {editing ? t('done') : t('editWidgets')}
         </button>
       </div>
 
@@ -110,7 +111,7 @@ export default function DashboardWidgets({
                   onClick={() => move(key, -1)}
                   disabled={saving || i === 0}
                   className="p-1 text-dusk hover:text-denim disabled:opacity-30"
-                  aria-label={`Move ${WIDGET_LABELS[key]} up`}
+                  aria-label={t('moveUpAria', { label: WIDGET_LABELS[key] })}
                 >
                   <ChevronUp size={16} aria-hidden="true" />
                 </button>
@@ -118,7 +119,7 @@ export default function DashboardWidgets({
                   onClick={() => move(key, 1)}
                   disabled={saving || i === orderedKeys.length - 1}
                   className="p-1 text-dusk hover:text-denim disabled:opacity-30"
-                  aria-label={`Move ${WIDGET_LABELS[key]} down`}
+                  aria-label={t('moveDownAria', { label: WIDGET_LABELS[key] })}
                 >
                   <ChevronDown size={16} aria-hidden="true" />
                 </button>
@@ -126,7 +127,7 @@ export default function DashboardWidgets({
                   onClick={() => toggleVisible(key)}
                   disabled={saving}
                   className="p-1 text-dusk hover:text-denim disabled:opacity-30"
-                  aria-label={`${prefs[key].isVisible ? 'Hide' : 'Show'} ${WIDGET_LABELS[key]}`}
+                  aria-label={prefs[key].isVisible ? t('hideAria', { label: WIDGET_LABELS[key] }) : t('showAria', { label: WIDGET_LABELS[key] })}
                 >
                   {prefs[key].isVisible ? <Eye size={16} aria-hidden="true" /> : <EyeOff size={16} aria-hidden="true" />}
                 </button>
@@ -137,14 +138,14 @@ export default function DashboardWidgets({
       )}
 
       {visibleKeys.length === 0 ? (
-        !editing && <p className="text-sm text-dusk">All widgets hidden — tap Edit widgets to bring one back.</p>
+        !editing && <p className="text-sm text-dusk">{t('allHidden')}</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {visibleKeys.map((key) => {
-            if (key === 'home_pulse_score') return <HomePulseScoreCard key={key} data={homePulseScore} />;
-            if (key === 'todays_meal_plan') return <TodaysMealPlanCard key={key} propertyId={propertyId} meals={todaysMeals} />;
-            if (key === 'low_stock_alerts') return <LowStockAlertsCard key={key} propertyId={propertyId} items={lowStockItems} />;
-            return <HolidayCountdownCard key={key} observance={nextObservance} />;
+            if (key === 'home_pulse_score') return <HomePulseScoreCard key={key} title={WIDGET_LABELS.home_pulse_score} data={homePulseScore} />;
+            if (key === 'todays_meal_plan') return <TodaysMealPlanCard key={key} title={WIDGET_LABELS.todays_meal_plan} propertyId={propertyId} meals={todaysMeals} />;
+            if (key === 'low_stock_alerts') return <LowStockAlertsCard key={key} title={WIDGET_LABELS.low_stock_alerts} propertyId={propertyId} items={lowStockItems} />;
+            return <HolidayCountdownCard key={key} title={WIDGET_LABELS.holiday_countdown} observance={nextObservance} />;
           })}
         </div>
       )}
@@ -161,25 +162,26 @@ function WidgetCard({ title, children }: { title: string; children: React.ReactN
   );
 }
 
-function HomePulseScoreCard({ data }: { data: HomePulseScore }) {
+function HomePulseScoreCard({ title, data }: { title: string; data: HomePulseScore }) {
+  const t = useTranslations('dashboard.widgets');
   if (!data) {
     return (
-      <WidgetCard title="Home Pulse Score">
-        <p className="text-sm text-dusk">Not available yet.</p>
+      <WidgetCard title={title}>
+        <p className="text-sm text-dusk">{t('notAvailable')}</p>
       </WidgetCard>
     );
   }
   const rows: [string, number][] = [
-    ['Stock', data.stockScore],
-    ['Tasks', data.taskScore],
-    ['List freshness', data.listFreshnessScore],
+    [t('stock'), data.stockScore],
+    [t('tasks'), data.taskScore],
+    [t('listFreshness'), data.listFreshnessScore],
   ];
   return (
-    <WidgetCard title="Home Pulse Score">
+    <WidgetCard title={title}>
       <div className="flex items-baseline gap-1.5 mb-3">
         <Activity size={16} strokeWidth={2} className="text-brass" aria-hidden="true" />
         <span className="text-3xl font-display text-denim">{Math.round(data.pulseScore)}</span>
-        <span className="text-xs text-dusk">/ 100</span>
+        <span className="text-xs text-dusk">{t('outOf100')}</span>
       </div>
       <div className="space-y-1.5">
         {rows.map(([label, score]) => (
@@ -196,15 +198,16 @@ function HomePulseScoreCard({ data }: { data: HomePulseScore }) {
   );
 }
 
-function TodaysMealPlanCard({ propertyId, meals }: { propertyId: string; meals: TodaysMealEntry[] }) {
+function TodaysMealPlanCard({ title, propertyId, meals }: { title: string; propertyId: string; meals: TodaysMealEntry[] }) {
+  const t = useTranslations('dashboard.widgets');
   const bySlot = meals.reduce<Record<string, TodaysMealEntry[]>>((acc, m) => {
     (acc[m.mealSlot] ??= []).push(m);
     return acc;
   }, {});
   return (
-    <WidgetCard title="Today's Meal Plan">
+    <WidgetCard title={title}>
       {meals.length === 0 ? (
-        <p className="text-sm text-dusk">Nothing planned for today.</p>
+        <p className="text-sm text-dusk">{t('nothingPlannedToday')}</p>
       ) : (
         <div className="space-y-2">
           {Object.entries(bySlot).map(([slot, entries]) => (
@@ -223,18 +226,19 @@ function TodaysMealPlanCard({ propertyId, meals }: { propertyId: string; meals: 
         </div>
       )}
       <Link href={`/properties/${propertyId}/meal-plan`} className="inline-block mt-2.5 text-[11px] font-bold text-brass underline underline-offset-2">
-        View full plan →
+        {t('viewFullPlan')}
       </Link>
     </WidgetCard>
   );
 }
 
-function LowStockAlertsCard({ propertyId, items }: { propertyId: string; items: LowStockItem[] }) {
+function LowStockAlertsCard({ title, propertyId, items }: { title: string; propertyId: string; items: LowStockItem[] }) {
+  const t = useTranslations('dashboard.widgets');
   const preview = items.slice(0, 5);
   return (
-    <WidgetCard title="Low Stock Alerts">
+    <WidgetCard title={title}>
       {items.length === 0 ? (
-        <p className="text-sm text-dusk">Everything's stocked up.</p>
+        <p className="text-sm text-dusk">{t('allStocked')}</p>
       ) : (
         <ul className="space-y-1">
           {preview.map((item) => (
@@ -247,24 +251,25 @@ function LowStockAlertsCard({ propertyId, items }: { propertyId: string; items: 
           ))}
         </ul>
       )}
-      {items.length > preview.length && <p className="text-xs text-dusk mt-1.5">+{items.length - preview.length} more</p>}
+      {items.length > preview.length && <p className="text-xs text-dusk mt-1.5">{t('moreCount', { count: items.length - preview.length })}</p>}
       <Link href={`/properties/${propertyId}/inventory`} className="inline-block mt-2.5 text-[11px] font-bold text-brass underline underline-offset-2">
-        View inventory →
+        {t('viewInventory')}
       </Link>
     </WidgetCard>
   );
 }
 
-function HolidayCountdownCard({ observance }: { observance: UpcomingObservance | null }) {
+function HolidayCountdownCard({ title, observance }: { title: string; observance: UpcomingObservance | null }) {
+  const t = useTranslations('dashboard.widgets');
   return (
-    <WidgetCard title="Shabbos/Yom Tov Countdown">
+    <WidgetCard title={title}>
       {observance ? (
         <div className="flex items-baseline gap-2">
           <span className="text-lg font-display text-denim">{observance.name}</span>
-          <span className="text-sm text-dusk">{observance.daysUntil === 0 ? 'today' : `${observance.daysUntil}d`}</span>
+          <span className="text-sm text-dusk">{observance.daysUntil === 0 ? t('today') : t('daysUntilShort', { count: observance.daysUntil })}</span>
         </div>
       ) : (
-        <p className="text-sm text-dusk">No upcoming observance found.</p>
+        <p className="text-sm text-dusk">{t('noneFound')}</p>
       )}
     </WidgetCard>
   );

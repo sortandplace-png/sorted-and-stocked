@@ -1,6 +1,7 @@
 // app/properties/[id]/dashboard/page.tsx
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { getTranslations } from 'next-intl/server'
 import { format, parseISO } from 'date-fns'
 import { Calendar, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, UtensilsCrossed, BookMarked } from 'lucide-react'
 import FloatingScanButton from '@/components/FloatingScanButton'
@@ -514,6 +515,7 @@ async function getTehillim(hebrewDay: number | null) {
 
 export default async function Dashboard({ params }: { params: Promise<{ id: string }> }) {
   const { id: propertyId } = await params
+  const t = await getTranslations('dashboard')
   const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount, widgetPrefs, homePulseScore, todaysMeals, lowStockItems, nextObservance] = await Promise.all([
     getData(propertyId),
     getHebcal(),
@@ -634,6 +636,17 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([date, entries]) => ({ date, entries }))
 
+  // categoryLabels keeps the English keys ('Produce', 'Meat', ...) for
+  // matching against the real shopping_list_items.category column, which
+  // isn't itself translated -- only the on-screen label swaps per locale.
+  const categoryLabels: Record<string, string> = {
+    Produce: t('shoppingListCard.categoryProduce'),
+    Meat: t('shoppingListCard.categoryMeat'),
+    Dairy: t('shoppingListCard.categoryDairy'),
+    Pantry: t('shoppingListCard.categoryPantry'),
+    Bakery: t('shoppingListCard.categoryBakery'),
+    Frozen: t('shoppingListCard.categoryFrozen'),
+  }
   const categories = ['Produce', 'Meat', 'Dairy', 'Pantry', 'Bakery', 'Frozen']
   const shoppingByCat = categories.map(cat => ({
     cat,
@@ -706,7 +719,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                 </span>
               )}
               {isShabbos && (
-                <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">Shabbos Mode Active</span>
+                <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">{t('shabbosModeActive')}</span>
               )}
             </div>
             {omerTitle && <p className="text-xs text-dusk mt-3">{omerTitle}</p>}
@@ -780,7 +793,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           >
             <Pin />
             <span className="inline-block bg-white/90 text-denim text-[11px] font-semibold px-4 py-2 rounded-full shadow-card">
-              Pantry · {inventoryCount.toLocaleString('en-US')} items
+              {t('pantryPillLabel')} · {inventoryCount.toLocaleString('en-US')} {inventoryCount === 1 ? t('item') : t('items')}
             </span>
           </Link>
 
@@ -795,7 +808,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           >
             <Pin />
             <span className="inline-block bg-white/90 text-denim text-[11px] font-semibold px-4 py-2 rounded-full shadow-card">
-              This Week · {distinctMealCount} meal{distinctMealCount === 1 ? '' : 's'}
+              {t('mealPlanPillLabel')} · {distinctMealCount} {distinctMealCount === 1 ? t('meal') : t('meals')}
             </span>
           </Link>
 
@@ -807,11 +820,11 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               three-line hierarchy. */}
           <div className="col-span-12 grid grid-cols-2 sm:grid-cols-5 gap-3">
             {([
-              [`/properties/${propertyId}/meal-plan`, Calendar, 'Plan Meal', 'This week’s menu', undefined] as const,
-              [`/properties/${propertyId}/scan`, Scan, 'Scan Item', 'Quick lookup', 'Scan an item'] as const,
-              [`/properties/${propertyId}/recipes`, Plus, 'Add Recipe', 'New dish', undefined] as const,
-              [`/properties/${propertyId}/shopping-list`, ShoppingCart, 'Shopping List', 'View & edit', undefined] as const,
-              [`/properties/${propertyId}/inventory`, Package, 'Inventory', 'Check stock', undefined] as const,
+              [`/properties/${propertyId}/meal-plan`, Calendar, t('quickActions.planMeal'), t('quickActions.planMealSubtitle'), undefined] as const,
+              [`/properties/${propertyId}/scan`, Scan, t('quickActions.scanItem'), t('quickActions.scanItemSubtitle'), t('quickActions.scanItemAria')] as const,
+              [`/properties/${propertyId}/recipes`, Plus, t('quickActions.addRecipe'), t('quickActions.addRecipeSubtitle'), undefined] as const,
+              [`/properties/${propertyId}/shopping-list`, ShoppingCart, t('quickActions.shoppingList'), t('quickActions.shoppingListSubtitle'), undefined] as const,
+              [`/properties/${propertyId}/inventory`, Package, t('quickActions.inventory'), t('quickActions.inventorySubtitle'), undefined] as const,
             ]).map(([href, Icon, label, subtitle, ariaLabel]) => (
               <Link
                 key={label}
@@ -833,7 +846,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               real Shift Handover page, nothing built for it. */}
           {isOwnerOrManager && (
             <div className="col-span-12 rounded-xl3 border border-cardBorder shadow-card bg-card px-7 py-5 flex flex-col gap-3 border-l-4 border-l-denimBlue">
-              <span className="text-[11px] tracking-[0.16em] uppercase font-bold text-denim">Readiness at a Glance</span>
+              <span className="text-[11px] tracking-[0.16em] uppercase font-bold text-denim">{t('readiness.heading')}</span>
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex items-center gap-3.5">
                   <span className="w-[34px] h-[34px] rounded-full bg-mist flex items-center justify-center text-denim shrink-0">
@@ -842,26 +855,26 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                   <div>
                     <p className="text-sm text-denim">
                       {readiness.tasksDone + readiness.tasksOpen === 0 ? (
-                        'No tasks due today.'
+                        t('readiness.noTasksToday')
                       ) : (
                         <>
-                          <span className="font-semibold">{readiness.tasksDone}</span> task{readiness.tasksDone === 1 ? '' : 's'} done,{' '}
-                          <span className={`font-semibold ${readiness.tasksOpen > 0 ? 'text-rust' : ''}`}>{readiness.tasksOpen}</span> left today.
+                          <span className="font-semibold">{readiness.tasksDone}</span> {readiness.tasksDone === 1 ? t('readiness.task') : t('readiness.tasks')} {t('readiness.done')}{' '}
+                          <span className={`font-semibold ${readiness.tasksOpen > 0 ? 'text-rust' : ''}`}>{readiness.tasksOpen}</span> {t('readiness.leftToday')}
                         </>
                       )}
-                      {' '}Candle lighting <bdi dir="ltr">{hebcal.candleTime}</bdi>.
+                      {' '}{t('readiness.candleLighting')} <bdi dir="ltr">{hebcal.candleTime}</bdi>.
                     </p>
                     <p className="text-sm text-dusk mt-0.5">
                       {readiness.latestHandover ? (
                         <>
-                          Last handover{readiness.latestHandover.authorName ? ` (${readiness.latestHandover.authorName})` : ''}: "
+                          {t('readiness.lastHandover')}{readiness.latestHandover.authorName ? ` (${readiness.latestHandover.authorName})` : ''}: "
                           {readiness.latestHandover.noteText.length > 100
                             ? `${readiness.latestHandover.noteText.slice(0, 100)}…`
                             : readiness.latestHandover.noteText}
                           "
                         </>
                       ) : (
-                        'No handover notes yet.'
+                        t('readiness.noHandoverNotes')
                       )}
                     </p>
                   </div>
@@ -870,7 +883,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                   href={`/properties/${propertyId}/shift-handover`}
                   className="bg-brass text-white text-xs font-semibold tracking-wide px-6 py-3 rounded-full hover:-translate-y-0.5 transition-transform shadow-card hover:shadow-cardHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
                 >
-                  View Brief
+                  {t('readiness.viewBrief')}
                 </Link>
               </div>
             </div>
@@ -882,17 +895,17 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
             <Package size={18} strokeWidth={1.5} className="text-brass mx-auto mb-1" aria-hidden="true" />
             <div className="text-2xl font-display text-denim">{inventoryCount.toLocaleString('en-US')}</div>
-            <div className="text-xs text-dusk">Total Inventory</div>
+            <div className="text-xs text-dusk">{t('stats.totalInventory')}</div>
           </div>
           <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
             <BookOpen size={18} strokeWidth={1.5} className="text-brass mx-auto mb-1" aria-hidden="true" />
             <div className="text-2xl font-display text-denim">{recipeCount}</div>
-            <div className="text-xs text-dusk">Active Recipes</div>
+            <div className="text-xs text-dusk">{t('stats.activeRecipes')}</div>
           </div>
           <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
             <Calendar size={18} strokeWidth={1.5} className="text-brass mx-auto mb-1" aria-hidden="true" />
             <div className="text-2xl font-display text-denim">{distinctMealCount}</div>
-            <div className="text-xs text-dusk">Meals Planned</div>
+            <div className="text-xs text-dusk">{t('stats.mealsPlanned')}</div>
           </div>
         </div>
 
@@ -908,13 +921,12 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         {prepReminders.length > 0 && (
           <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4">
             <h2 className="text-sm font-display font-semibold text-denim mb-2 flex items-center gap-1.5">
-              <Clock size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" /> Prep reminders
+              <Clock size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" /> {t('prepReminders.heading')}
             </h2>
             <ul className="space-y-1.5">
               {prepReminders.map((r, i) => (
                 <li key={i} className="text-sm text-denim">
-                  <span className="font-medium">{r.recipeName}</span> — start prep{' '}
-                  {r.daysUntil === 0 ? 'today' : `by ${format(parseISO(r.planDate), 'EEEE')}`}, needed for{' '}
+                  <span className="font-medium">{r.recipeName}</span> — {r.daysUntil === 0 ? t('prepReminders.startPrepToday') : `${t('prepReminders.startPrepBy')} ${format(parseISO(r.planDate), 'EEEE')}, ${t('prepReminders.neededFor')}`}{' '}
                   {format(parseISO(r.planDate), 'EEEE, MMM d')}
                 </li>
               ))}
@@ -932,10 +944,10 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         {showHalachicWidget && (
           <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4">
             <h2 className="text-sm font-display font-semibold text-denim mb-2 flex items-center gap-1.5">
-              <BookMarked size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" /> {isErevYomTov ? 'Erev Yom Tov' : 'Erev Shabbos'}
+              <BookMarked size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" /> {isErevYomTov ? t('halachic.erevYomTov') : t('halachic.erevShabbos')}
             </h2>
             <p className="text-sm text-denim">
-              Hadlakas Neiros <bdi dir="ltr">{hebcal.candleTime}</bdi>
+              {t('halachic.hadlakasNeiros')} <bdi dir="ltr">{hebcal.candleTime}</bdi>
             </p>
           </div>
         )}
@@ -943,10 +955,10 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         {eruvTavshilin && (
           <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4">
             <h2 className="text-sm font-display font-semibold text-denim mb-2 flex items-center gap-1.5">
-              <Flame size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" /> Eruv Tavshilin reminder
+              <Flame size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" /> {t('eruvTavshilin.heading')}
             </h2>
             <p className="text-sm text-denim">
-              Make Eruv Tavshilin on <span className="font-medium">{format(parseISO(eruvTavshilin.eruvDate), 'EEEE, MMM d')}</span>, before {eruvTavshilin.name} begins.
+              {t('eruvTavshilin.makeOn')} <span className="font-medium">{format(parseISO(eruvTavshilin.eruvDate), 'EEEE, MMM d')}</span>, {t('eruvTavshilin.before')} {eruvTavshilin.name} {t('eruvTavshilin.begins')}
             </p>
           </div>
         )}
@@ -958,10 +970,10 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           >
             <h2 className="text-sm font-display font-semibold text-denim mb-1 flex items-center gap-1.5">
               <BookMarked size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" />
-              {resetBanner.type === 'post-shabbos' ? 'Post-Shabbos reset' : 'Erev Shabbos prep'}
+              {resetBanner.type === 'post-shabbos' ? t('resetBanner.postShabbos') : t('resetBanner.erevShabbosPrep')}
             </h2>
             <p className="text-sm text-denim">
-              {resetBanner.templateName} hasn't been started yet — tap to open the checklist.
+              {resetBanner.templateName} {t('resetBanner.notStarted')}
             </p>
           </Link>
         )}
@@ -973,12 +985,12 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           >
             <h2 className="text-sm font-display font-semibold text-denim mb-1 flex items-center gap-1.5">
               <Package size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" />
-              {daysUntilPesach} day{daysUntilPesach === 1 ? '' : 's'} until Pesach — use up your chametz
+              {daysUntilPesach} {daysUntilPesach === 1 ? t('chametz.day') : t('chametz.days')} {t('chametz.untilPesach')}
             </h2>
             <p className="text-sm text-denim">
-              {chametzItems.length} item{chametzItems.length === 1 ? '' : 's'} marked not-for-Pesach, soonest-expiring first:{' '}
+              {chametzItems.length} {chametzItems.length === 1 ? t('chametz.item') : t('chametz.items')} {t('chametz.markedNotForPesach')}{' '}
               {chametzItems.slice(0, 3).map((i) => i.name).join(', ')}
-              {chametzItems.length > 3 ? `, +${chametzItems.length - 3} more` : ''} — tap to open Inventory.
+              {chametzItems.length > 3 ? t('chametz.moreCount', { count: chametzItems.length - 3 }) : ''} — {t('chametz.tapToOpenInventory')}
             </p>
           </Link>
         )}
@@ -986,10 +998,10 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         {isMotzeiShabbos && (
           <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4">
             <h2 className="text-sm font-display font-semibold text-denim mb-2 flex items-center gap-1.5">
-              <UtensilsCrossed size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" /> Motzei Shabbos — easy dinner?
+              <UtensilsCrossed size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" /> {t('motzeiShabbos.heading')}
             </h2>
             <div className="flex gap-2 flex-wrap">
-              {['Pizza', 'Pasta', 'Salad'].map((suggestion) => (
+              {[t('motzeiShabbos.pizza'), t('motzeiShabbos.pasta'), t('motzeiShabbos.salad')].map((suggestion) => (
                 <span key={suggestion} className="text-sm px-3 py-1.5 bg-mist rounded-full text-denim">
                   {suggestion}
                 </span>
@@ -1005,16 +1017,16 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               same reasoning as the Low Stock/rust warning color below. */}
           <div className="lg:col-span-2 rounded-xl3 border border-cardBorder shadow-card bg-card p-6">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] tracking-[0.16em] uppercase font-bold text-denim">This Week's Meals</span>
+              <span className="text-[11px] tracking-[0.16em] uppercase font-bold text-denim">{t('thisWeeksMealsCard.heading')}</span>
               <Link href={`/properties/${propertyId}/meal-plan`} className="text-[11px] font-bold text-brass underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim">
-                View full plan →
+                {t('thisWeeksMealsCard.viewFullPlan')}
               </Link>
             </div>
             <p className="text-denim mb-4">
-              <span className="font-bold">{distinctMealCount}</span> meal{distinctMealCount === 1 ? '' : 's'} planned this week
+              <span className="font-bold">{distinctMealCount}</span> {distinctMealCount === 1 ? t('meal') : t('meals')} {t('thisWeeksMealsCard.plannedThisWeek')}
             </p>
 
-            <div className="flex gap-1.5 mb-4 flex-wrap" role="list" aria-label="Kashrut color legend">
+            <div className="flex gap-1.5 mb-4 flex-wrap" role="list" aria-label={t('thisWeeksMealsCard.kashrutLegendAria')}>
               {([
                 ['Fleishig', 'bg-fleishigBold', Square],
                 ['Milchig', 'bg-milchigBold', Triangle],
@@ -1038,21 +1050,21 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           <div className="space-y-4">
             <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-6">
               <h2 className="font-display text-xl font-semibold mb-1 flex items-center gap-2 text-denim">
-                <ShoppingBag size={19} strokeWidth={1.5} className="text-brass" aria-hidden="true" /> Shopping List
+                <ShoppingBag size={19} strokeWidth={1.5} className="text-brass" aria-hidden="true" /> {t('shoppingListCard.heading')}
               </h2>
-              <p className="text-sm text-dusk mb-4">{shopping.length} items</p>
+              <p className="text-sm text-dusk mb-4">{shopping.length} {shopping.length === 1 ? t('item') : t('items')}</p>
 
               <div className="space-y-4">
                 {shoppingByCat.map(group => (
                   <div key={group.cat}>
                     <div className="flex items-center gap-2 font-medium mb-2 text-denim">
                       <span className={`w-3 h-3 rounded-full ${group.cat === 'Meat' ? 'bg-rust' : group.cat === 'Dairy' ? 'bg-dairy' : 'bg-sage'}`}></span>
-                      {group.cat}
+                      {categoryLabels[group.cat]}
                     </div>
                     <div className="space-y-2 ml-5">
                       {group.items.map((item: any, i) => (
                         <div key={i} className="flex items-center gap-2.5 text-sm p-2 bg-linen border border-cardBorder rounded-lg hover:bg-mist/50 transition">
-                          <input type="checkbox" className="rounded border-cardBorder text-brass" aria-label={`Mark ${item.name} purchased`} />
+                          <input type="checkbox" className="rounded border-cardBorder text-brass" aria-label={t('shoppingListCard.markPurchasedAria', { item: item.name })} />
                           {item.inventory_items?.photo_url && <img src={item.inventory_items.photo_url} alt="" className="w-8 h-8 object-cover rounded" />}
                           <div className="flex-1">
                             <div className="font-medium text-denim">{item.name}</div>
@@ -1060,7 +1072,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                           </div>
                           {item.inventory_items?.reorder_link && (
                             <a href={item.inventory_items.reorder_link} target="_blank" rel="noopener noreferrer" className="text-brass hover:text-denim text-xs font-medium px-2 py-1 bg-mist rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim">
-                              Order ↗
+                              {t('shoppingListCard.order')}
                             </a>
                           )}
                         </div>
@@ -1070,12 +1082,12 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                 ))}
                 {shopping.length === 0 && (
                   <div className="text-center py-6 border border-dashed border-cardBorder rounded-xl">
-                    <p className="text-sm text-dusk mb-3">No items yet — generate from this week's meals.</p>
+                    <p className="text-sm text-dusk mb-3">{t('shoppingListCard.emptyMessage')}</p>
                     <Link
                       href={`/properties/${propertyId}/shopping-list`}
                       className="inline-block bg-brass text-white px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition"
                     >
-                      Go to Shopping List
+                      {t('shoppingListCard.goToShoppingList')}
                     </Link>
                   </div>
                 )}
@@ -1084,7 +1096,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
 
             <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-6">
               <h3 className="font-display text-lg font-semibold mb-3 flex items-center gap-2 text-denim">
-                <Package size={19} strokeWidth={1.5} className="text-brass" aria-hidden="true" /> Inventory Items
+                <Package size={19} strokeWidth={1.5} className="text-brass" aria-hidden="true" /> {t('inventoryCard.heading')}
               </h3>
               <div className="space-y-2">
                 {inventoryPreview.map((item: any, i) => {
@@ -1100,11 +1112,11 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                           <div className="w-full bg-mist h-1 rounded-full mt-1.5 overflow-hidden">
                             <div className={`${isLow ? 'bg-rust' : 'bg-sage'} h-1 transition-all`} style={{ width: `${stockPct}%` }}></div>
                           </div>
-                          <div className="text-xs text-dusk mt-1">Qty: {item.current_qty} {isLow && <span className="text-rust font-medium">LOW</span>}</div>
+                          <div className="text-xs text-dusk mt-1">{t('inventoryCard.qty')} {item.current_qty} {isLow && <span className="text-rust font-medium">{t('inventoryCard.low')}</span>}</div>
                         </div>
                         {item.reorder_link && (
                           <a href={item.reorder_link} target="_blank" rel="noopener noreferrer" className="text-brass hover:text-denim text-xs font-medium px-2 py-1 bg-mist rounded whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim">
-                            Order ↗
+                            {t('shoppingListCard.order')}
                           </a>
                         )}
                       </div>
@@ -1112,7 +1124,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                   )
                 })}
                 {inventoryPreview.length === 0 && (
-                  <p className="text-sm text-dusk text-center py-4">No items yet</p>
+                  <p className="text-sm text-dusk text-center py-4">{t('inventoryCard.empty')}</p>
                 )}
               </div>
 
@@ -1120,7 +1132,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                 href={`/properties/${propertyId}/inventory`}
                 className="block w-full mt-4 text-center bg-card border border-cardBorder text-denim py-3 rounded-xl font-medium hover:bg-mist/50 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
               >
-                + Add Item
+                {t('inventoryCard.addItem')}
               </Link>
             </div>
           </div>
@@ -1134,13 +1146,13 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             nav's "More" dropdown, so this block is mobile-only. */}
         <div className="md:hidden mt-6 pt-4 border-t border-cardBorder flex flex-wrap gap-x-4 gap-y-2 text-sm">
           <Link href={`/properties/${propertyId}/tools`} className="text-dusk hover:text-denim underline underline-offset-2">
-            Tools
+            {t('mobileFooter.tools')}
           </Link>
           <Link href={`/properties/${propertyId}/staff`} className="text-dusk hover:text-denim underline underline-offset-2">
-            Staff
+            {t('mobileFooter.staff')}
           </Link>
           <Link href={`/properties/${propertyId}/settings`} className="text-dusk hover:text-denim underline underline-offset-2">
-            Settings
+            {t('mobileFooter.settings')}
           </Link>
         </div>
 
@@ -1148,7 +1160,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           // bottom-24 on md+ so this doesn't sit on top of the floating
           // Scan button, which occupies bottom-6 right-6 on desktop only.
           <div className="fixed bottom-4 right-4 md:bottom-24 bg-amber-900 text-amber-50 px-4 py-2 rounded-full text-sm shadow-lg">
-            Shabbos Mode • Editing disabled
+            {t('shabbosModeBanner')}
           </div>
         )}
       </div>

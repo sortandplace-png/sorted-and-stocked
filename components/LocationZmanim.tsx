@@ -11,6 +11,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { MapPin, Loader2 } from 'lucide-react';
 
 type LocatedResult = { time: string; dateLabel: string | null };
@@ -30,6 +31,7 @@ export default function LocationZmanim({
   defaultDateLabel: string | null;
   variant?: 'light' | 'dark';
 }) {
+  const t = useTranslations('dashboard.candle');
   const [status, setStatus] = useState<'default' | 'loading' | 'located'>('default');
   const [result, setResult] = useState<LocatedResult | null>(null);
 
@@ -79,7 +81,7 @@ export default function LocationZmanim({
     <div className="flex items-end justify-between gap-3">
       <div>
         <div className={`text-[10px] tracking-[0.16em] uppercase mb-1.5 ${dark ? 'text-white/80' : 'text-dusk'}`}>
-          {located ? 'Candle Lighting near you' : `Candle Lighting${propertyName ? ` · ${propertyName}` : ''}`}
+          {located ? t('labelNearYou') : `${t('label')}${propertyName ? ` · ${propertyName}` : ''}`}
         </div>
         <div className={`font-display text-[23px] ${dark ? 'text-white' : 'text-denim'}`}>
           {located ? (
@@ -99,8 +101,8 @@ export default function LocationZmanim({
         type="button"
         onClick={handleToggle}
         disabled={status === 'loading'}
-        aria-label={located ? 'Switch back to household location' : 'Use my current location for candle lighting'}
-        title={located ? 'Switch back to household location' : 'Use my current location'}
+        aria-label={located ? t('switchToHousehold') : t('useMyLocation')}
+        title={located ? t('switchToHousehold') : t('useMyLocationTitle')}
         className={`shrink-0 flex items-center justify-center w-8 h-8 rounded-full transition-colors disabled:opacity-60 ${
           dark
             ? located

@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { format, parseISO } from 'date-fns';
 import { Snowflake } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -26,6 +27,7 @@ export default function PrepAheadAssistant({
   reminders: Reminder[];
   canManage: boolean;
 }) {
+  const t = useTranslations('dashboard.prepAhead');
   const [enabled, setEnabled] = useState(initialEnabled);
   const [saving, setSaving] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -42,11 +44,11 @@ export default function PrepAheadAssistant({
       .eq('id', propertyId);
     setSaving(false);
     if (error) {
-      showToast('Failed to update Prep Ahead Assistant setting.', { variant: 'error' });
+      showToast(t('failedToUpdate'), { variant: 'error' });
       return;
     }
     setEnabled(next);
-    showToast(next ? 'Prep Ahead Assistant turned on.' : 'Prep Ahead Assistant turned off.', { variant: 'success' });
+    showToast(next ? t('turnedOn') : t('turnedOff'), { variant: 'success' });
   }
 
   // Staff shouldn't see a disabled property-wide setting or a control to
@@ -56,13 +58,13 @@ export default function PrepAheadAssistant({
   if (!enabled) {
     return (
       <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4 flex items-center justify-between gap-3">
-        <p className="text-sm text-dusk">Prep Ahead Assistant is off.</p>
+        <p className="text-sm text-dusk">{t('off')}</p>
         <button
           onClick={() => setPrepAheadEnabled(true)}
           disabled={saving}
           className="text-xs font-bold text-brass underline disabled:opacity-40 shrink-0"
         >
-          Turn on
+          {t('turnOn')}
         </button>
       </div>
     );
@@ -75,7 +77,7 @@ export default function PrepAheadAssistant({
       <div className="flex items-center justify-between gap-2">
         <button onClick={() => setCollapsed((v) => !v)} className="flex items-center gap-2 text-left">
           <Snowflake size={14} strokeWidth={2} className="text-brass" aria-hidden="true" />
-          <span className="text-xs font-bold uppercase tracking-wider text-denim">Prep Ahead Assistant</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-denim">{t('title')}</span>
           <span className="text-xs text-dusk font-bold">({reminders.length})</span>
           <span className="text-dusk text-sm">{collapsed ? '▸' : '▾'}</span>
         </button>
@@ -85,13 +87,13 @@ export default function PrepAheadAssistant({
             disabled={saving}
             className="text-xs text-dusk underline disabled:opacity-40 shrink-0"
           >
-            Turn off
+            {t('turnOff')}
           </button>
         )}
       </div>
       {!collapsed && (
         reminders.length === 0 ? (
-          <p className="text-sm text-dusk pt-3">Nothing freezer-friendly needs pulling ahead in the next few days.</p>
+          <p className="text-sm text-dusk pt-3">{t('nothingUpcoming')}</p>
         ) : (
           <ul className="space-y-1.5 pt-3">
             {reminders.map((r, i) => (
@@ -106,9 +108,9 @@ export default function PrepAheadAssistant({
                 ) : (
                   <span className="font-semibold">{r.recipeName}</span>
                 )}
-                {' '}— freezer-friendly, scheduled{' '}
+                {' '}— {t('freezerFriendlyScheduled')}{' '}
                 {format(parseISO(r.planDate), 'EEEE, MMM d')}
-                {r.prepLeadDays ? `; start prep ${r.prepLeadDays} day${r.prepLeadDays === 1 ? '' : 's'} ahead` : ' — pull it out ahead of time'}
+                {r.prepLeadDays ? `; ${t('startPrep')} ${r.prepLeadDays} ${r.prepLeadDays === 1 ? t('day') : t('days')} ${t('ahead')}` : ` — ${t('pullOutAhead')}`}
               </li>
             ))}
           </ul>

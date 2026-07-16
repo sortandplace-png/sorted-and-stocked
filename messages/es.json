@@ -220,5 +220,169 @@
     "whatsDone": "Lo Que Está Hecho:",
     "inProgress": "En Progreso:",
     "headsUp": "Atención:"
+  },
+  "dashboard": {
+    "shabbosModeActive": "Modo Shabat Activo",
+    "candle": {
+      "label": "Encendido de Velas",
+      "labelNearYou": "Encendido de velas cerca de usted",
+      "switchToHousehold": "Volver a la ubicación del hogar",
+      "useMyLocation": "Usar mi ubicación actual para el encendido de velas",
+      "useMyLocationTitle": "Usar mi ubicación actual"
+    },
+    "pantryPillLabel": "Despensa",
+    "mealPlanPillLabel": "Esta Semana",
+    "item": "artículo",
+    "items": "artículos",
+    "meal": "comida",
+    "meals": "comidas",
+    "quickActions": {
+      "planMeal": "Planificar Comida",
+      "planMealSubtitle": "El menú de esta semana",
+      "scanItem": "Escanear Artículo",
+      "scanItemSubtitle": "Búsqueda rápida",
+      "scanItemAria": "Escanear un artículo",
+      "addRecipe": "Agregar Receta",
+      "addRecipeSubtitle": "Nuevo plato",
+      "shoppingList": "Lista de Compras",
+      "shoppingListSubtitle": "Ver y editar",
+      "inventory": "Inventario",
+      "inventorySubtitle": "Ver existencias"
+    },
+    "readiness": {
+      "heading": "Estado de Preparación",
+      "noTasksToday": "No hay tareas pendientes hoy.",
+      "task": "tarea",
+      "tasks": "tareas",
+      "done": "hechas,",
+      "leftToday": "pendientes hoy.",
+      "candleLighting": "Encendido de velas",
+      "lastHandover": "Último traspaso",
+      "noHandoverNotes": "Aún no hay notas de traspaso.",
+      "viewBrief": "Ver Resumen"
+    },
+    "stats": {
+      "totalInventory": "Inventario Total",
+      "activeRecipes": "Recetas Activas",
+      "mealsPlanned": "Comidas Planificadas"
+    },
+    "prepReminders": {
+      "heading": "Recordatorios de preparación",
+      "startPrepToday": "comenzar preparación hoy, necesario para",
+      "startPrepBy": "comenzar preparación antes del",
+      "neededFor": "necesario para"
+    },
+    "halachic": {
+      "erevYomTov": "Víspera de Yom Tov",
+      "erevShabbos": "Víspera de Shabat",
+      "hadlakasNeiros": "Hadlakas Neiros"
+    },
+    "eruvTavshilin": {
+      "heading": "Recordatorio de Eruv Tavshilín",
+      "makeOn": "Haga el Eruv Tavshilín el",
+      "before": "antes de que",
+      "begins": "comience."
+    },
+    "resetBanner": {
+      "postShabbos": "Reinicio post-Shabat",
+      "erevShabbosPrep": "Preparación de víspera de Shabat",
+      "notStarted": "aún no se ha comenzado — toque para abrir la lista de verificación."
+    },
+    "chametz": {
+      "day": "día",
+      "days": "días",
+      "untilPesach": "hasta Pesaj — use su chametz",
+      "item": "artículo",
+      "items": "artículos",
+      "markedNotForPesach": "marcados como no aptos para Pesaj, los que vencen antes primero:",
+      "moreCount": "+{count} más",
+      "tapToOpenInventory": "toque para abrir Inventario."
+    },
+    "motzeiShabbos": {
+      "heading": "Motzei Shabat — ¿cena fácil?",
+      "pizza": "Pizza",
+      "pasta": "Pasta",
+      "salad": "Ensalada"
+    },
+    "thisWeeksMealsCard": {
+      "heading": "Comidas de Esta Semana",
+      "viewFullPlan": "Ver plan completo →",
+      "plannedThisWeek": "planificadas esta semana",
+      "kashrutLegendAria": "Leyenda de colores de kashrut"
+    },
+    "shoppingListCard": {
+      "heading": "Lista de Compras",
+      "markPurchasedAria": "Marcar {item} como comprado",
+      "order": "Pedir ↗",
+      "emptyMessage": "Aún no hay artículos — genérela a partir de las comidas de esta semana.",
+      "goToShoppingList": "Ir a la Lista de Compras",
+      "categoryProduce": "Verduras",
+      "categoryMeat": "Carne",
+      "categoryDairy": "Lácteo",
+      "categoryPantry": "Despensa",
+      "categoryBakery": "Panadería",
+      "categoryFrozen": "Congelados"
+    },
+    "inventoryCard": {
+      "heading": "Artículos de Inventario",
+      "qty": "Cant.:",
+      "low": "BAJO",
+      "empty": "Aún no hay artículos",
+      "addItem": "+ Agregar Artículo"
+    },
+    "mobileFooter": {
+      "tools": "Herramientas",
+      "staff": "Personal",
+      "settings": "Configuración"
+    },
+    "shabbosModeBanner": "Modo Shabat • Edición desactivada",
+    "widgets": {
+      "sectionTitle": "Widgets",
+      "editWidgets": "Editar widgets",
+      "done": "Listo",
+      "moveUpAria": "Mover {label} hacia arriba",
+      "moveDownAria": "Mover {label} hacia abajo",
+      "saveFailedToast": "Error al guardar la disposición de los widgets.",
+      "hideAria": "Ocultar {label}",
+      "showAria": "Mostrar {label}",
+      "allHidden": "Todos los widgets están ocultos — toque Editar widgets para mostrar uno.",
+      "labelHomePulseScore": "Puntaje del Hogar",
+      "labelTodaysMealPlan": "Plan de Comidas de Hoy",
+      "labelLowStockAlerts": "Alertas de Bajo Inventario",
+      "labelHolidayCountdown": "Cuenta Regresiva de Shabat/Yom Tov",
+      "notAvailable": "Aún no disponible.",
+      "stock": "Existencias",
+      "tasks": "Tareas",
+      "listFreshness": "Actualidad de la lista",
+      "outOf100": "/ 100",
+      "nothingPlannedToday": "Nada planificado para hoy.",
+      "viewFullPlan": "Ver plan completo →",
+      "allStocked": "Todo está bien abastecido.",
+      "moreCount": "+{count} más",
+      "viewInventory": "Ver inventario →",
+      "today": "hoy",
+      "daysUntilShort": "{count}d",
+      "noneFound": "No se encontró ninguna festividad próxima."
+    },
+    "prepAhead": {
+      "off": "El Asistente de Preparación Anticipada está desactivado.",
+      "turnOn": "Activar",
+      "turnOff": "Desactivar",
+      "title": "Asistente de Preparación Anticipada",
+      "nothingUpcoming": "Nada apto para congelador necesita prepararse con anticipación en los próximos días.",
+      "freezerFriendlyScheduled": "apto para congelador, programado para",
+      "day": "día",
+      "days": "días",
+      "startPrep": "comenzar preparación",
+      "ahead": "de anticipación",
+      "pullOutAhead": "sáquelo con anticipación",
+      "failedToUpdate": "Error al actualizar la configuración del Asistente de Preparación Anticipada.",
+      "turnedOn": "Asistente de Preparación Anticipada activado.",
+      "turnedOff": "Asistente de Preparación Anticipada desactivado."
+    },
+    "mealsListCard": {
+      "heading": "Comidas de esta semana",
+      "nothingPlanned": "Nada planeado todavía esta semana."
+    }
   }
 }

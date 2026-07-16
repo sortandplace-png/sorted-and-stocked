@@ -220,5 +220,169 @@
     "whatsDone": "What's Done:",
     "inProgress": "In Progress:",
     "headsUp": "Heads Up:"
+  },
+  "dashboard": {
+    "shabbosModeActive": "Shabbos Mode Active",
+    "candle": {
+      "label": "Candle Lighting",
+      "labelNearYou": "Candle Lighting near you",
+      "switchToHousehold": "Switch back to household location",
+      "useMyLocation": "Use my current location for candle lighting",
+      "useMyLocationTitle": "Use my current location"
+    },
+    "pantryPillLabel": "Pantry",
+    "mealPlanPillLabel": "This Week",
+    "item": "item",
+    "items": "items",
+    "meal": "meal",
+    "meals": "meals",
+    "quickActions": {
+      "planMeal": "Plan Meal",
+      "planMealSubtitle": "This week's menu",
+      "scanItem": "Scan Item",
+      "scanItemSubtitle": "Quick lookup",
+      "scanItemAria": "Scan an item",
+      "addRecipe": "Add Recipe",
+      "addRecipeSubtitle": "New dish",
+      "shoppingList": "Shopping List",
+      "shoppingListSubtitle": "View & edit",
+      "inventory": "Inventory",
+      "inventorySubtitle": "Check stock"
+    },
+    "readiness": {
+      "heading": "Readiness at a Glance",
+      "noTasksToday": "No tasks due today.",
+      "task": "task",
+      "tasks": "tasks",
+      "done": "done,",
+      "leftToday": "left today.",
+      "candleLighting": "Candle lighting",
+      "lastHandover": "Last handover",
+      "noHandoverNotes": "No handover notes yet.",
+      "viewBrief": "View Brief"
+    },
+    "stats": {
+      "totalInventory": "Total Inventory",
+      "activeRecipes": "Active Recipes",
+      "mealsPlanned": "Meals Planned"
+    },
+    "prepReminders": {
+      "heading": "Prep reminders",
+      "startPrepToday": "start prep today, needed for",
+      "startPrepBy": "start prep by",
+      "neededFor": "needed for"
+    },
+    "halachic": {
+      "erevYomTov": "Erev Yom Tov",
+      "erevShabbos": "Erev Shabbos",
+      "hadlakasNeiros": "Hadlakas Neiros"
+    },
+    "eruvTavshilin": {
+      "heading": "Eruv Tavshilin reminder",
+      "makeOn": "Make Eruv Tavshilin on",
+      "before": "before",
+      "begins": "begins."
+    },
+    "resetBanner": {
+      "postShabbos": "Post-Shabbos reset",
+      "erevShabbosPrep": "Erev Shabbos prep",
+      "notStarted": "hasn't been started yet — tap to open the checklist."
+    },
+    "chametz": {
+      "day": "day",
+      "days": "days",
+      "untilPesach": "until Pesach — use up your chametz",
+      "item": "item",
+      "items": "items",
+      "markedNotForPesach": "marked not-for-Pesach, soonest-expiring first:",
+      "moreCount": "+{count} more",
+      "tapToOpenInventory": "tap to open Inventory."
+    },
+    "motzeiShabbos": {
+      "heading": "Motzei Shabbos — easy dinner?",
+      "pizza": "Pizza",
+      "pasta": "Pasta",
+      "salad": "Salad"
+    },
+    "thisWeeksMealsCard": {
+      "heading": "This Week's Meals",
+      "viewFullPlan": "View full plan →",
+      "plannedThisWeek": "planned this week",
+      "kashrutLegendAria": "Kashrut color legend"
+    },
+    "shoppingListCard": {
+      "heading": "Shopping List",
+      "markPurchasedAria": "Mark {item} purchased",
+      "order": "Order ↗",
+      "emptyMessage": "No items yet — generate from this week's meals.",
+      "goToShoppingList": "Go to Shopping List",
+      "categoryProduce": "Produce",
+      "categoryMeat": "Meat",
+      "categoryDairy": "Dairy",
+      "categoryPantry": "Pantry",
+      "categoryBakery": "Bakery",
+      "categoryFrozen": "Frozen"
+    },
+    "inventoryCard": {
+      "heading": "Inventory Items",
+      "qty": "Qty:",
+      "low": "LOW",
+      "empty": "No items yet",
+      "addItem": "+ Add Item"
+    },
+    "mobileFooter": {
+      "tools": "Tools",
+      "staff": "Staff",
+      "settings": "Settings"
+    },
+    "shabbosModeBanner": "Shabbos Mode • Editing disabled",
+    "widgets": {
+      "sectionTitle": "Widgets",
+      "editWidgets": "Edit widgets",
+      "done": "Done",
+      "moveUpAria": "Move {label} up",
+      "moveDownAria": "Move {label} down",
+      "saveFailedToast": "Failed to save widget layout.",
+      "hideAria": "Hide {label}",
+      "showAria": "Show {label}",
+      "allHidden": "All widgets hidden — tap Edit widgets to bring one back.",
+      "labelHomePulseScore": "Home Pulse Score",
+      "labelTodaysMealPlan": "Today's Meal Plan",
+      "labelLowStockAlerts": "Low Stock Alerts",
+      "labelHolidayCountdown": "Shabbos/Yom Tov Countdown",
+      "notAvailable": "Not available yet.",
+      "stock": "Stock",
+      "tasks": "Tasks",
+      "listFreshness": "List freshness",
+      "outOf100": "/ 100",
+      "nothingPlannedToday": "Nothing planned for today.",
+      "viewFullPlan": "View full plan →",
+      "allStocked": "Everything's stocked up.",
+      "moreCount": "+{count} more",
+      "viewInventory": "View inventory →",
+      "today": "today",
+      "daysUntilShort": "{count}d",
+      "noneFound": "No upcoming observance found."
+    },
+    "prepAhead": {
+      "off": "Prep Ahead Assistant is off.",
+      "turnOn": "Turn on",
+      "turnOff": "Turn off",
+      "title": "Prep Ahead Assistant",
+      "nothingUpcoming": "Nothing freezer-friendly needs pulling ahead in the next few days.",
+      "freezerFriendlyScheduled": "freezer-friendly, scheduled",
+      "day": "day",
+      "days": "days",
+      "startPrep": "start prep",
+      "ahead": "ahead",
+      "pullOutAhead": "pull it out ahead of time",
+      "failedToUpdate": "Failed to update Prep Ahead Assistant setting.",
+      "turnedOn": "Prep Ahead Assistant turned on.",
+      "turnedOff": "Prep Ahead Assistant turned off."
+    },
+    "mealsListCard": {
+      "heading": "This week's meals",
+      "nothingPlanned": "Nothing planned yet this week."
+    }
   }
 }
