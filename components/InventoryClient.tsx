@@ -233,6 +233,15 @@ export default function InventoryClient({
   const [newRoomName, setNewRoomName] = useState('');
   const [savingRoom, setSavingRoom] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  // search_inventory_items() results for the current query -- synonym-aware
+  // (e.g. "garbage bags" finds "Trash Bags"), which a plain client-side
+  // substring check on item.name can never do. `query` is stored alongside
+  // the ids so a stale in-flight result for a since-changed query string
+  // can't get applied to the wrong search -- matchesFilters() below falls
+  // back to a plain substring match on the (now-complete) local items list
+  // while the debounced RPC call is still in flight, so results don't flash
+  // to empty on every keystroke.
+  const [searchResults, setSearchResults] = useState<{ query: string; ids: Set<string> } | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [belowParOnly, setBelowParOnly] = useState(false);
   const [expiringSoonOnly, setExpiringSoonOnly] = useState(false);
@@ -267,14 +276,39 @@ export default function InventoryClient({
     } = await supabase.auth.getUser();
     setCurrentUserId(user?.id ?? null);
 
+    // Real bug found and fixed, not assumed: a plain unpaginated .select()
+    // here silently truncated at PostgREST's default 1000-row cap the
+    // moment this property's inventory crossed that count (confirmed live:
+    // 1048 real rows, only 1000 ever loaded) -- not just a wrong "Total
+    // Items" number, every downstream view on this page (room browsing,
+    // All Items, search, low-stock/expiring pills) derives from this same
+    // array, so the last 48+ items were invisible everywhere, not just
+    // miscounted. .range() pages through in batches of 1000 until a page
+    // comes back short, same fix pattern as the dashboard inventory count.
+    async function fetchAllInventoryItems() {
+      const pageSize = 1000;
+      let all: any[] = [];
+      let offset = 0;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error } = await supabase
+          .from('inventory_items')
+          .select(
+            'id, name, name_es, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
+          )
+          .eq('property_id', propertyId)
+          .order('name')
+          .range(offset, offset + pageSize - 1);
+        if (error) return { data: null, error };
+        all = all.concat(data ?? []);
+        if (!data || data.length < pageSize) break;
+        offset += pageSize;
+      }
+      return { data: all, error: null };
+    }
+
     const [itemsRes, locationsRes, categoriesRes, favoritesRes, propertyRes] = await Promise.all([
-      supabase
-        .from('inventory_items')
-        .select(
-          'id, name, name_es, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
-        )
-        .eq('property_id', propertyId)
-        .order('name'),
+      fetchAllInventoryItems(),
       supabase
         .from('locations')
         .select('id, name, parent_location_id, photo_url')
@@ -335,6 +369,33 @@ export default function InventoryClient({
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Synonym-aware search (search_inventory_items(), migration -- replaces
+  // the old plain substring check on item.name, which had zero results for
+  // "garbage bags" against an item named "Trash Bags"). Debounced so every
+  // keystroke doesn't fire its own request; `cancelled` guards against a
+  // slower, older request resolving after a newer one and clobbering it.
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setSearchResults(null);
+      return;
+    }
+    let cancelled = false;
+    const handle = setTimeout(async () => {
+      const { data, error } = await supabase.rpc('search_inventory_items', {
+        p_property_id: propertyId,
+        p_query: q,
+      });
+      if (!cancelled && !error) {
+        setSearchResults({ query: q, ids: new Set((data ?? []).map((r: { id: string }) => r.id)) });
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [searchQuery, propertyId, supabase]);
 
   async function toggleFavorite(itemId: string, e: React.MouseEvent) {
     e.stopPropagation(); // don't also open the edit sheet
@@ -766,7 +827,14 @@ export default function InventoryClient({
     (pesachModeEnabled && pesachStatusFilter !== null);
 
   function matchesFilters(item: InventoryItem) {
-    if (searchQuery.trim() && !item.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) return false;
+    const q = searchQuery.trim();
+    if (q) {
+      if (searchResults && searchResults.query === q) {
+        if (!searchResults.ids.has(item.id)) return false;
+      } else if (!item.name.toLowerCase().includes(q.toLowerCase())) {
+        return false;
+      }
+    }
     if (categoryFilter && item.category !== categoryFilter) return false;
     if (expiringSoon30Only && !isExpiringWithin30Days(item.expiration_date)) return false;
     if (belowParOnly && !isLowStock(item)) return false;

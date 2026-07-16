@@ -65,11 +65,23 @@ export async function addIngredientsToShoppingList(
   // same tier find_similar_inventory_items uses for its top match, without
   // pulling in its fuzzy-similarity scoring for what's meant to be a quiet
   // background link.
-  const { data: inventoryItems } = await supabase
-    .from('inventory_items')
-    .select('id, name')
-    .eq('property_id', propertyId);
-  const inventoryIdByName = new Map((inventoryItems ?? []).map((i) => [i.name.trim().toLowerCase(), i.id]));
+  //
+  // Paginated in batches of 1000 -- a plain unpaginated .select() here hits
+  // the same silent PostgREST row cap as the old inventory count stat, and
+  // for a property with more real inventory than that (confirmed: 1048),
+  // any ingredient name that happened to fall past row 1000 would silently
+  // fail to link to its real inventory row.
+  const inventoryItems: { id: string; name: string }[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const { data } = await supabase
+      .from('inventory_items')
+      .select('id, name')
+      .eq('property_id', propertyId)
+      .range(offset, offset + 999);
+    inventoryItems.push(...(data ?? []));
+    if (!data || data.length < 1000) break;
+  }
+  const inventoryIdByName = new Map(inventoryItems.map((i) => [i.name.trim().toLowerCase(), i.id]));
 
   // A staple like "Chicken Stock" or "Salt" shows up in most recipes in a
   // week — generateShoppingList() in MealPlanView.tsx passes every recipe's
