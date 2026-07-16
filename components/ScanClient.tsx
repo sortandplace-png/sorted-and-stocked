@@ -11,6 +11,8 @@ import { resilientUpdate } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
 import { useScanFeedback } from '@/lib/hooks/useScanFeedback';
 import RestockPhotoPrompt from '@/components/RestockPhotoPrompt';
+import { getPreferredSource, type ReorderSource } from '@/lib/reorder-sources';
+import ReorderSourcePills from '@/components/ReorderSourcePills';
 
 type ScannedItem = {
   id: string;
@@ -21,6 +23,7 @@ type ScannedItem = {
   unit_cost: number | null;
   photo_url: string | null;
   reorder_link: string | null;
+  reorder_sources: ReorderSource[] | null;
 };
 
 type LookupState =
@@ -76,7 +79,7 @@ export default function ScanClient({
 
       const { data: item, error } = await supabase
         .from('inventory_items')
-        .select('id, name, current_qty, min_qty, unit, unit_cost, photo_url, reorder_link')
+        .select('id, name, current_qty, min_qty, unit, unit_cost, photo_url, reorder_link, reorder_sources(id, retailer_name, url, is_preferred)')
         .eq('property_id', propertyId)
         .eq('qr_code', code)
         .maybeSingle();
@@ -199,15 +202,19 @@ export default function ScanClient({
           <p className="text-xs text-charcoal/40 mb-3">
             Min stock: {state.item.min_qty} {state.item.unit}
           </p>
-          {state.item.reorder_link && (
-            <a
-              href={state.item.reorder_link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-full border border-gold text-gold-dark text-sm font-medium mb-3"
-            >
-              <ExternalLink size={14} strokeWidth={1.75} /> {t('reorder')}
-            </a>
+          {(state.item.reorder_sources?.length ?? 0) > 1 ? (
+            <ReorderSourcePills sources={state.item.reorder_sources!} className="justify-center mb-3" />
+          ) : (
+            getPreferredSource(state.item.reorder_sources) && (
+              <a
+                href={getPreferredSource(state.item.reorder_sources)!.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-full border border-gold text-gold-dark text-sm font-medium mb-3"
+              >
+                <ExternalLink size={14} strokeWidth={1.75} /> {t('reorder')}
+              </a>
+            )
           )}
           <label className="text-sm text-charcoal/60 block mb-1">Current quantity</label>
           <input

@@ -1,6 +1,7 @@
 // lib/api/shoppingList.ts
 // API layer for Enhanced Shopping List — conditional render data layer
 import { createClient } from '@/lib/supabase/client';
+import type { ReorderSource } from '@/lib/reorder-sources';
 
 export interface EnhancedShoppingItem {
   item_id: string;
@@ -14,6 +15,7 @@ export interface EnhancedShoppingItem {
   inventory_item_id: string | null;
   photo_url: string | null;
   reorder_link: string | null;
+  reorder_sources: ReorderSource[] | null;
   current_stock: number | null;
   location_name: string | null;
   supplier: string | null;

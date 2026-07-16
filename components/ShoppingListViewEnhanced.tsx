@@ -15,6 +15,8 @@ import { ExternalLink, Trash2, CheckCircle2, Circle, MessageCircle, Printer, Spa
 import { useToast } from '@/components/Toast';
 import { createClient } from '@/lib/supabase/client';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
+import { getPreferredSource, type ReorderSource } from '@/lib/reorder-sources';
+import ReorderSourcePills from '@/components/ReorderSourcePills';
 
 type ShoppingListItem = {
   item_id: string;
@@ -28,6 +30,7 @@ type ShoppingListItem = {
   inventory_item_id: string | null;
   photo_url: string | null;
   reorder_link: string | null;
+  reorder_sources: ReorderSource[] | null;
   current_stock: number | null;
   location_name: string | null;
   supplier: string | null;
@@ -563,10 +566,12 @@ export default function ShoppingListViewEnhanced({
                     </span>
                   )}
                 </div>
-                <div className="print:hidden flex items-center gap-2 mt-2">
-                  {item.reorder_link ? (
+                <div className="print:hidden flex items-center gap-2 mt-2 flex-wrap">
+                  {(item.reorder_sources?.length ?? 0) > 1 ? (
+                    <ReorderSourcePills sources={item.reorder_sources!} />
+                  ) : getPreferredSource(item.reorder_sources) ? (
                     <a
-                      href={item.reorder_link}
+                      href={getPreferredSource(item.reorder_sources)!.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-xs text-gold-dark hover:text-charcoal transition-colors font-medium"

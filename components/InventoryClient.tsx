@@ -17,6 +17,9 @@ import RestockPhotoPrompt from '@/components/RestockPhotoPrompt';
 import LocationPhotoUpload from '@/components/LocationPhotoUpload';
 import DuplicateItemWarning from '@/components/DuplicateItemWarning';
 import InventoryBracha from '@/components/InventoryBracha';
+import ReorderSourcesEditor from '@/components/ReorderSourcesEditor';
+import ReorderSourcePills from '@/components/ReorderSourcePills';
+import { getPreferredSource, type ReorderSource } from '@/lib/reorder-sources';
 import { FilterPill, FilterPillRow } from '@/components/recipes/FilterPill';
 import { isFoodCategory } from '@/lib/foodCategories';
 import { compressImageToBlob } from '@/lib/compress-image';
@@ -57,6 +60,7 @@ type InventoryItem = {
   supplier: string | null;
   unit_cost: number | null;
   reorder_link: string | null;
+  reorder_sources: ReorderSource[] | null;
   photo_url: string | null;
   expiration_date: string | null;
   opened_date: string | null;
@@ -87,7 +91,6 @@ type ItemFormState = {
   unit: string;
   supplier: string;
   unit_cost: string;
-  reorder_link: string;
   photo_url: string;
   expiration_date: string;
   opened_date: string;
@@ -98,6 +101,10 @@ type ItemFormState = {
   updated_at: string | null;
 };
 
+// reorder_link isn't a form field anymore -- it's now a read-only mirror
+// of whichever reorder_sources row is preferred (kept in sync by a DB
+// trigger, see supabase/migrations/093), managed instead through
+// ReorderSourcesEditor once the item exists.
 const EMPTY_FORM: ItemFormState = {
   id: null,
   name: '',
@@ -108,7 +115,6 @@ const EMPTY_FORM: ItemFormState = {
   unit: 'pcs',
   supplier: '',
   unit_cost: '',
-  reorder_link: '',
   photo_url: '',
   expiration_date: '',
   opened_date: '',
@@ -178,9 +184,11 @@ const INVENTORY_OPS_LINKS = [
 export default function InventoryClient({
   propertyId,
   initialLocationFilter = null,
+  initialOpenNew = false,
 }: {
   propertyId: string;
   initialLocationFilter?: string | null;
+  initialOpenNew?: boolean;
 }) {
   const locale = useLocale();
   const displayName = (item: { name: string; name_es: string | null }) =>
@@ -294,7 +302,7 @@ export default function InventoryClient({
         const { data, error } = await supabase
           .from('inventory_items')
           .select(
-            'id, name, name_es, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
+            'id, name, name_es, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
           )
           .eq('property_id', propertyId)
           .order('name')
@@ -506,6 +514,22 @@ export default function InventoryClient({
     setPendingPhotoRemoved(false);
   }
 
+  // Dashboard's Quick Capture "Add product" tile links here with ?new=1 so
+  // the add-item sheet is one tap instead of landing on the list and
+  // needing to find "Add Item" first. Gated on !loading (not just mount)
+  // since openNewItemForm reads locations[0]?.id for the default room --
+  // firing before that list loads would leave the new item unassigned.
+  // openedFromQueryRef guards against re-opening if loading flips again
+  // later (e.g. a pull-to-refresh) after the user has already closed it.
+  const openedFromQueryRef = useRef(false);
+  useEffect(() => {
+    if (initialOpenNew && !loading && !openedFromQueryRef.current) {
+      openedFromQueryRef.current = true;
+      openNewItemForm();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialOpenNew, loading]);
+
   function openEditForm(item: InventoryItem) {
     setPendingPhotoFile(null);
     setPendingPhotoRemoved(false);
@@ -519,7 +543,6 @@ export default function InventoryClient({
       unit: item.unit,
       supplier: item.supplier ?? '',
       unit_cost: item.unit_cost !== null ? String(item.unit_cost) : '',
-      reorder_link: item.reorder_link ?? '',
       photo_url: item.photo_url ?? '',
       expiration_date: item.expiration_date ?? '',
       opened_date: item.opened_date ?? '',
@@ -584,7 +607,7 @@ export default function InventoryClient({
     const { data: existing } = await supabase
       .from('inventory_items')
       .select(
-        'id, name, name_es, category, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, photo_url, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
+        'id, name, name_es, category, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
       )
       .eq('id', matchId)
       .single();
@@ -638,7 +661,6 @@ export default function InventoryClient({
       unit: form.unit.trim() || 'pcs',
       supplier: form.supplier.trim() || null,
       unit_cost: form.unit_cost.trim() ? Number(form.unit_cost) : null,
-      reorder_link: form.reorder_link.trim() || null,
       photo_url: photoUrl,
       expiration_date: form.expiration_date || null,
       opened_date: form.opened_date || null,
@@ -721,6 +743,10 @@ export default function InventoryClient({
           pesach_status: 'needs_review',
           last_counted_at: null,
           updated_at: new Date().toISOString(),
+          // A brand-new item has no reorder_sources yet -- gated on form.id
+          // upstream, so there's no CRUD to have produced any.
+          reorder_link: null,
+          reorder_sources: null,
         },
       ]);
       if (photoUploadError) {
@@ -959,6 +985,8 @@ export default function InventoryClient({
     const notYetCounted = item.last_counted_at === null;
     const hasThumb = !!item.photo_url && isDirectImageUrl(item.photo_url) && !brokenPhotoIds.has(item.id);
     const isFav = favoriteIds.has(item.id);
+    const preferredSource = getPreferredSource(item.reorder_sources);
+    const hasMultipleSources = (item.reorder_sources?.length ?? 0) > 1;
     return (
       <div
         key={item.id}
@@ -1017,6 +1045,7 @@ export default function InventoryClient({
                   </span>
                 );
               })()}
+            {hasMultipleSources && <ReorderSourcePills sources={item.reorder_sources!} />}
           </div>
         </div>
         <button
@@ -1026,9 +1055,9 @@ export default function InventoryClient({
         >
           {isFav ? '⭐' : '☆'}
         </button>
-        {item.reorder_link && (
+        {preferredSource && !hasMultipleSources && (
           <a
-            href={item.reorder_link}
+            href={preferredSource.url}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
@@ -1771,16 +1800,6 @@ function ItemFormSheet({
           </div>
 
           <div>
-            <FieldLabel>Reorder Link</FieldLabel>
-            <input
-              className={fieldClass}
-              placeholder="URL"
-              value={form.reorder_link}
-              onChange={(e) => onChange({ ...form, reorder_link: e.target.value })}
-            />
-          </div>
-
-          <div>
             <FieldLabel>Photo</FieldLabel>
             <input
               ref={fileInputRef}
@@ -1889,21 +1908,13 @@ function ItemFormSheet({
             {saving ? 'Saving…' : 'Save'}
           </button>
         </div>
-        {form.reorder_link && (
-          <a
-            href={form.reorder_link}
-            target="_blank"
-            rel="noreferrer"
-            className="block w-full text-center text-sm text-charcoal underline mt-3"
-          >
-            Open reorder link ↗
-          </a>
-        )}
         {onDelete && (
           <button onClick={onDelete} className="w-full text-center text-sm text-rust mt-3">
             Delete item
           </button>
         )}
+
+        {form.id && <ReorderSourcesEditor itemId={form.id} propertyId={propertyId} />}
 
         {form.id && isFoodCategory(form.category) && (
           <div className="mt-5 pt-4 border-t border-gold-light/40">
