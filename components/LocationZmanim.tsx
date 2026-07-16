@@ -77,13 +77,52 @@ export default function LocationZmanim({
   const located = status === 'located' && result;
   const dark = variant === 'dark';
 
+  // Dark variant (Candle Lighting footer): matches the Concept B Figma spec's
+  // centered, time-first layout -- large serif time is the dominant element,
+  // date/location a small italic line below. No separate "Candle Lighting"
+  // label here since the card's own header bar already says that. The real
+  // geolocation toggle (not part of the static Figma mockup) sits as a small
+  // icon beside the time rather than the old side-by-side label+button row.
+  if (dark) {
+    return (
+      <div className="flex flex-col items-center gap-1 text-center">
+        <div className="flex items-center gap-2">
+          <bdi dir="ltr" className="font-display text-[24px] text-white tracking-[0.04em] leading-none">
+            {located ? result.time : defaultTime}
+          </bdi>
+          <button
+            type="button"
+            onClick={handleToggle}
+            disabled={status === 'loading'}
+            aria-label={located ? t('switchToHousehold') : t('useMyLocation')}
+            title={located ? t('switchToHousehold') : t('useMyLocationTitle')}
+            className={`shrink-0 flex items-center justify-center w-6 h-6 rounded-full transition-colors disabled:opacity-60 ${
+              located ? 'text-white bg-white/25' : 'text-white/60 bg-white/10 hover:bg-white/20'
+            }`}
+          >
+            {status === 'loading' ? (
+              <Loader2 size={12} className="animate-spin" aria-hidden="true" />
+            ) : (
+              <MapPin size={12} aria-hidden="true" />
+            )}
+          </button>
+        </div>
+        <div className="font-display italic text-[12px] text-white/60 tracking-wide">
+          {located
+            ? `${result.dateLabel ? `${result.dateLabel} — ` : ''}${t('labelNearYou')}`
+            : `${defaultDateLabel ? `${defaultDateLabel}` : ''}${propertyName ? ` — ${propertyName}` : ''}`}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-end justify-between gap-3">
       <div>
-        <div className={`text-[10px] tracking-[0.16em] uppercase mb-1.5 ${dark ? 'text-white/80' : 'text-dusk'}`}>
+        <div className="text-[10px] tracking-[0.16em] uppercase mb-1.5 text-dusk">
           {located ? t('labelNearYou') : `${t('label')}${propertyName ? ` · ${propertyName}` : ''}`}
         </div>
-        <div className={`font-display text-[23px] ${dark ? 'text-white' : 'text-denim'}`}>
+        <div className="font-display text-[18px] text-denim">
           {located ? (
             <>
               {result.dateLabel ? `${result.dateLabel} · ` : ''}
@@ -104,13 +143,7 @@ export default function LocationZmanim({
         aria-label={located ? t('switchToHousehold') : t('useMyLocation')}
         title={located ? t('switchToHousehold') : t('useMyLocationTitle')}
         className={`shrink-0 flex items-center justify-center w-8 h-8 rounded-full transition-colors disabled:opacity-60 ${
-          dark
-            ? located
-              ? 'text-white bg-white/25'
-              : 'text-white/70 bg-white/10 hover:bg-white/20'
-            : located
-              ? 'text-brass bg-mist'
-              : 'text-dusk hover:bg-mist'
+          located ? 'text-brass bg-mist' : 'text-dusk hover:bg-mist'
         }`}
       >
         {status === 'loading' ? (
