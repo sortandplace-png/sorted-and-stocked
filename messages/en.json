@@ -190,6 +190,45 @@
   "scan": {
     "reorder": "Reorder"
   },
+  "reorderSources": {
+    "heading": "Reorder Sources",
+    "empty": "No reorder links yet.",
+    "retailerPlaceholder": "Retailer name",
+    "urlPlaceholder": "URL",
+    "addButton": "+ Add a source",
+    "add": "Add",
+    "adding": "Adding…",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "edit": "Edit",
+    "delete": "Delete",
+    "preferredTitle": "Preferred source",
+    "makePreferredTitle": "Make preferred",
+    "addedToast": "Added {retailer}.",
+    "updatedToast": "Source updated.",
+    "removedToast": "Removed {retailer}.",
+    "undo": "Undo",
+    "queuedToast": "Saved — will sync when back online.",
+    "addFailedToast": "Failed to add source.",
+    "saveFailedToast": "Failed to save.",
+    "setPreferredFailedToast": "Failed to set preferred source.",
+    "deleteFailedToast": "Failed to delete source — it has been restored."
+  },
+  "quickPhotoCapture": {
+    "title": "Quick Photo",
+    "subtitle": "Search for the item you're restocking, then snap its photo — it saves straight to that item, no review queue.",
+    "searchPlaceholder": "Search inventory…",
+    "searching": "Searching…",
+    "noResults": "No matching items.",
+    "missingPhoto": "No photo yet",
+    "changeItem": "Change",
+    "takePhotoButton": "Tap to take a photo",
+    "uploading": "Saving…",
+    "savedToast": "Photo saved for {item}.",
+    "failedToast": "Failed to save photo.",
+    "sessionCount": "{count, plural, one {# photo added this session} other {# photos added this session}}"
+  },
   "staffOnboarding": {
     "next": "Next",
     "back": "Back",
@@ -223,6 +262,7 @@
   },
   "dashboard": {
     "shabbosModeActive": "Shabbos Mode Active",
+    "todayHeader": "Today",
     "candle": {
       "label": "Candle Lighting",
       "labelNearYou": "Candle Lighting near you",
@@ -232,6 +272,12 @@
     },
     "pantryPillLabel": "Pantry",
     "mealPlanPillLabel": "This Week",
+    "pantryCard": {
+      "subtext": "Browse the full pantry inventory"
+    },
+    "mealPlanCard": {
+      "subtext": "See what's planned this week"
+    },
     "item": "item",
     "items": "items",
     "meal": "meal",
@@ -250,7 +296,6 @@
       "inventorySubtitle": "Check stock"
     },
     "readiness": {
-      "heading": "Readiness at a Glance",
       "noTasksToday": "No tasks due today.",
       "task": "task",
       "tasks": "tasks",
@@ -260,6 +305,16 @@
       "lastHandover": "Last handover",
       "noHandoverNotes": "No handover notes yet.",
       "viewBrief": "View Brief"
+    },
+    "quickCapture": {
+      "headerLabel": "Quick Add",
+      "takePhoto": "Take a Photo",
+      "scanQr": "Scan a QR",
+      "addProduct": "Add Product"
+    },
+    "roshChodesh": {
+      "today": "Today is Rosh Chodesh {month}.",
+      "upcoming": "Rosh Chodesh {month} in {days, plural, one {# day} other {# days}}."
     },
     "stats": {
       "totalInventory": "Total Inventory",

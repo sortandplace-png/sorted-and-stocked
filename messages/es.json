@@ -190,6 +190,45 @@
   "scan": {
     "reorder": "Volver a pedir"
   },
+  "reorderSources": {
+    "heading": "Fuentes de Reorden",
+    "empty": "Aún no hay enlaces de reorden.",
+    "retailerPlaceholder": "Nombre del comercio",
+    "urlPlaceholder": "URL",
+    "addButton": "+ Agregar una fuente",
+    "add": "Agregar",
+    "adding": "Agregando…",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "preferredTitle": "Fuente preferida",
+    "makePreferredTitle": "Marcar como preferida",
+    "addedToast": "{retailer} agregado.",
+    "updatedToast": "Fuente actualizada.",
+    "removedToast": "{retailer} eliminado.",
+    "undo": "Deshacer",
+    "queuedToast": "Guardado — se sincronizará al reconectar.",
+    "addFailedToast": "No se pudo agregar la fuente.",
+    "saveFailedToast": "No se pudo guardar.",
+    "setPreferredFailedToast": "No se pudo marcar la fuente preferida.",
+    "deleteFailedToast": "No se pudo eliminar la fuente — se ha restaurado."
+  },
+  "quickPhotoCapture": {
+    "title": "Foto Rápida",
+    "subtitle": "Busca el artículo que estás reponiendo y toma su foto — se guarda directamente en ese artículo, sin cola de revisión.",
+    "searchPlaceholder": "Buscar en inventario…",
+    "searching": "Buscando…",
+    "noResults": "Sin artículos coincidentes.",
+    "missingPhoto": "Aún sin foto",
+    "changeItem": "Cambiar",
+    "takePhotoButton": "Toca para tomar una foto",
+    "uploading": "Guardando…",
+    "savedToast": "Foto guardada para {item}.",
+    "failedToast": "No se pudo guardar la foto.",
+    "sessionCount": "{count, plural, one {# foto agregada en esta sesión} other {# fotos agregadas en esta sesión}}"
+  },
   "staffOnboarding": {
     "next": "Siguiente",
     "back": "Atrás",
@@ -223,6 +262,7 @@
   },
   "dashboard": {
     "shabbosModeActive": "Modo Shabat Activo",
+    "todayHeader": "Hoy",
     "candle": {
       "label": "Encendido de Velas",
       "labelNearYou": "Encendido de velas cerca de usted",
@@ -232,6 +272,12 @@
     },
     "pantryPillLabel": "Despensa",
     "mealPlanPillLabel": "Esta Semana",
+    "pantryCard": {
+      "subtext": "Explora todo el inventario de la despensa"
+    },
+    "mealPlanCard": {
+      "subtext": "Consulta lo planificado esta semana"
+    },
     "item": "artículo",
     "items": "artículos",
     "meal": "comida",
@@ -250,7 +296,6 @@
       "inventorySubtitle": "Ver existencias"
     },
     "readiness": {
-      "heading": "Estado de Preparación",
       "noTasksToday": "No hay tareas pendientes hoy.",
       "task": "tarea",
       "tasks": "tareas",
@@ -260,6 +305,16 @@
       "lastHandover": "Último traspaso",
       "noHandoverNotes": "Aún no hay notas de traspaso.",
       "viewBrief": "Ver Resumen"
+    },
+    "quickCapture": {
+      "headerLabel": "Agregar Rápido",
+      "takePhoto": "Tomar una Foto",
+      "scanQr": "Escanear un QR",
+      "addProduct": "Agregar Producto"
+    },
+    "roshChodesh": {
+      "today": "Hoy es Rosh Chodesh {month}.",
+      "upcoming": "Rosh Chodesh {month} en {days, plural, one {# día} other {# días}}."
     },
     "stats": {
       "totalInventory": "Inventario Total",

@@ -1,9 +1,9 @@
 // app/properties/[id]/dashboard/page.tsx
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { getTranslations } from 'next-intl/server'
+import { getTranslations, getLocale } from 'next-intl/server'
 import { format, parseISO } from 'date-fns'
-import { Calendar, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, UtensilsCrossed, BookMarked } from 'lucide-react'
+import { Calendar, Camera, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, UtensilsCrossed, BookMarked } from 'lucide-react'
 import FloatingScanButton from '@/components/FloatingScanButton'
 import PrepAheadAssistant from '@/components/PrepAheadAssistant'
 import ThisWeeksMealsList from '@/components/ThisWeeksMealsList'
@@ -13,6 +13,8 @@ import { COURSES } from '@/lib/course-constants'
 import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
 import { getNextObservance } from '@/lib/get-next-observance'
 import { getWidgetPrefs, getHomePulseScore, getTodaysMealPlan, getLowStockAlerts } from '@/lib/dashboard-widgets-data'
+import { getPreferredSource } from '@/lib/reorder-sources'
+import ReorderSourcePills from '@/components/ReorderSourcePills'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -117,6 +119,82 @@ async function getDaysUntilPesach(): Promise<number | null> {
   }
 }
 
+type RoshChodeshStatus = { isToday: boolean; monthName: string; daysUntil: number } | null
+
+// How far ahead the "Rosh Chodesh [Month] in N days" nudge starts showing --
+// tunable; picked from the middle of the suggested 3-5 day range.
+const ROSH_CHODESH_LOOKAHEAD_DAYS = 5
+
+// Same nx=on Hebcal query/category Hebcal itself uses for Rosh Chodesh --
+// same fetch-and-filter shape as getOmerStatus/getDaysUntilPesach above
+// rather than a second date-math engine. A 30-day Hebrew month produces two
+// consecutive-date items with the same title (Rosh Chodesh spans both the
+// last day of the outgoing month and the first of the incoming one) -- only
+// the earlier date is used for "days until" / "is today" so a 2-day month
+// doesn't get counted twice or show the wrong lead time.
+async function getRoshChodeshStatus(todayStr: string): Promise<RoshChodeshStatus> {
+  try {
+    const now = new Date()
+    const years = [now.getFullYear(), now.getFullYear() + 1]
+    const events: { title: string; date: string }[] = []
+    for (const year of years) {
+      const res = await fetch(`https://www.hebcal.com/hebcal?cfg=json&v=1&year=${year}&nx=on`, {
+        next: { revalidate: 3600 * 24 },
+      })
+      const data = await res.json()
+      events.push(...(data.items ?? []).filter((i: any) => i.category === 'roshchodesh'))
+    }
+    const monthNameOf = (title: string) => title.replace(/^Rosh Chodesh /, '')
+    const todayItem = events.find((e) => e.date === todayStr)
+    if (todayItem) {
+      return { isToday: true, monthName: monthNameOf(todayItem.title), daysUntil: 0 }
+    }
+    const next = events.filter((e) => e.date > todayStr).sort((a, b) => a.date.localeCompare(b.date))[0]
+    if (!next) return null
+    const daysUntil = Math.round((new Date(next.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    if (daysUntil > ROSH_CHODESH_LOOKAHEAD_DAYS) return null
+    return { isToday: false, monthName: monthNameOf(next.title), daysUntil }
+  } catch {
+    return null
+  }
+}
+
+type DailyContent = { title: string; body: string } | null
+
+// calendar_content is empty except for a handful of obviously-fake
+// PLACEHOLDER rows (see migration 094 + the session that added this) --
+// Racquel writes the real tips/reflections later; this only proves the
+// trigger-matching + fallback + rotation mechanism itself works. Picks one
+// active row matching today's real trigger_type, falling back to a random
+// 'general' row when nothing calendar-specific applies -- never both, and
+// never more than one, so this stays a small aside, not a second content
+// block competing with the date.
+async function getDailyContent(propertyId: string, locale: string, triggerType: string): Promise<DailyContent> {
+  const supabase = await createClient()
+  const { data: specific } = await supabase
+    .from('calendar_content')
+    .select('title_en, title_es, body_en, body_es')
+    .eq('property_id', propertyId)
+    .eq('trigger_type', triggerType)
+    .eq('active', true)
+  let rows = specific ?? []
+  if (rows.length === 0 && triggerType !== 'general') {
+    const { data: general } = await supabase
+      .from('calendar_content')
+      .select('title_en, title_es, body_en, body_es')
+      .eq('property_id', propertyId)
+      .eq('trigger_type', 'general')
+      .eq('active', true)
+    rows = general ?? []
+  }
+  if (rows.length === 0) return null
+  const row = rows[Math.floor(Math.random() * rows.length)]
+  return {
+    title: locale === 'es' && row.title_es ? row.title_es : row.title_en,
+    body: locale === 'es' && row.body_es ? row.body_es : row.body_en,
+  }
+}
+
 type ChametzItem = { id: string; name: string; current_qty: number; unit: string; expiration_date: string | null }
 
 // Chametz Countdown: a filtered read against pesach_status + expiration_date,
@@ -143,6 +221,15 @@ async function getChametzCountdown(propertyId: string, daysUntilPesach: number |
 async function getIsErevYomTov(tomorrowStr: string): Promise<boolean> {
   const supabase = await createClient()
   const { data } = await supabase.from('yom_tov_dates').select('date').eq('date', tomorrowStr).maybeSingle()
+  return !!data
+}
+
+// Same shared, non-property-scoped fast_days table getNextObservance()
+// already reads -- a plain date match, same pattern as getIsErevYomTov
+// above just checking today instead of tomorrow.
+async function getIsFastDayToday(todayStr: string): Promise<boolean> {
+  const supabase = await createClient()
+  const { data } = await supabase.from('fast_days').select('date').eq('date', todayStr).maybeSingle()
   return !!data
 }
 
@@ -270,9 +357,9 @@ async function getData(propertyId: string) {
 
   const [meals, inventory, shopping] = await Promise.all([
     supabase.from('meal_plan_entries').select('plan_date, meal_slot, recipe_id, course, recipes(name, name_es, kosher_type)').eq('property_id', propertyId).gte('plan_date', startStr).lte('plan_date', endStr).order('plan_date'),
-    supabase.from('inventory_items').select('category, name, current_qty, min_qty, photo_url, reorder_link').eq('property_id', propertyId).order('category'),
+    supabase.from('inventory_items').select('category, name, current_qty, min_qty, photo_url, reorder_link, reorder_sources(id, retailer_name, url, is_preferred)').eq('property_id', propertyId).order('category'),
     list
-      ? supabase.from('shopping_list_items').select('name, category, qty_needed, status, inventory_items(photo_url, reorder_link)').eq('shopping_list_id', list.id).eq('status', 'pending').order('category')
+      ? supabase.from('shopping_list_items').select('name, category, qty_needed, status, inventory_items(photo_url, reorder_link, reorder_sources(id, retailer_name, url, is_preferred))').eq('shopping_list_id', list.id).eq('status', 'pending').order('category')
       : Promise.resolve({ data: [] as any[] })
   ])
   return { meals: meals.data || [], inventory: inventory.data || [], shopping: shopping.data || [] }
@@ -483,18 +570,19 @@ async function getUserRole(propertyId: string): Promise<string | null> {
 // Readiness or the stat cards -- neither is part of the reference mockup's
 // own pinned-card set.
 function Pin({ size = 'lg' }: { size?: 'lg' | 'sm' }) {
-  const dim = size === 'lg' ? 14 : 10
-  const offset = size === 'lg' ? 18 : 14
+  const dim = size === 'lg' ? 11 : 10
+  const top = size === 'lg' ? 13 : 11
+  const right = size === 'lg' ? 14 : 12
   return (
     <span
       className="absolute rounded-full pointer-events-none"
       style={{
-        top: offset,
-        right: offset,
+        top,
+        right,
         width: dim,
         height: dim,
-        background: 'radial-gradient(circle at 32% 26%, #F8E9C4 0%, #C6A46E 46%, #8C6D38 100%)',
-        boxShadow: '0 3px 6px rgba(70,45,10,0.35), 0 0 0 4px rgba(198,164,110,0.16)',
+        background: 'radial-gradient(circle at 36% 30%, #F8E8B8 0%, #C6A46E 52%, #7A4E18 100%)',
+        boxShadow: '0 1px 3px rgba(0,0,0,.26), inset 0 .5px .5px rgba(255,255,255,.3)',
         zIndex: 2,
       }}
       aria-hidden="true"
@@ -516,6 +604,7 @@ async function getTehillim(hebrewDay: number | null) {
 export default async function Dashboard({ params }: { params: Promise<{ id: string }> }) {
   const { id: propertyId } = await params
   const t = await getTranslations('dashboard')
+  const locale = await getLocale()
   const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount, widgetPrefs, homePulseScore, todaysMeals, lowStockItems, nextObservance] = await Promise.all([
     getData(propertyId),
     getHebcal(),
@@ -597,15 +686,31 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   // Persistent Halachic Calendar widget (separate from the existing Tools
   // Hub card, which stays as-is): Sefira count + candle-lighting time,
   // shown on Friday or Erev Yom Tov specifically.
-  const [omerTitle, isErevYomTov, eruvTavshilin, resetBanner, daysUntilPesach] = await Promise.all([
+  const [omerTitle, isErevYomTov, eruvTavshilin, resetBanner, daysUntilPesach, roshChodeshStatus, isFastDayToday] = await Promise.all([
     getOmerStatus(),
     getIsErevYomTov(easternTomorrowStr),
     getEruvTavshilinBanner(easternTodayStr),
     getResetBannerInfo(propertyId, hebcal.candleDate ?? null, isEasternSaturday, easternHour, isEasternSunday),
     getDaysUntilPesach(),
+    getRoshChodeshStatus(easternTodayStr),
+    getIsFastDayToday(easternTodayStr),
   ])
   const showHalachicWidget = isEasternFriday || isErevYomTov
   const chametzItems = await getChametzCountdown(propertyId, daysUntilPesach)
+
+  // Priority order for which single rotating tip/reflection shows today --
+  // most specific real calendar moment wins; 'general' is the catch-all
+  // when none of the others apply (the common case almost every day).
+  const todayTriggerType = roshChodeshStatus?.isToday
+    ? 'rosh_chodesh'
+    : isErevYomTov
+      ? 'pre_yomtov'
+      : omerTitle
+        ? 'omer'
+        : isFastDayToday
+          ? 'fast_day'
+          : 'general'
+  const dailyContent = await getDailyContent(propertyId, locale, todayTriggerType)
 
   // Real bug found and fixed, not assumed: meal_plan_entries is one row per
   // dish/course (confirmed live -- 38 rows for the week, 5-6 courses × 7
@@ -688,84 +793,93 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             lighter, shadowless border only, so lists don't read as cards
             nested inside cards. */}
 
-        <div className="grid grid-cols-12 gap-4 mb-4">
-          {/* TODAY -- content/functionality unchanged (Hebrew date, English
-              date, parsha, Tehillim, omer, Shabbos Mode indicator); now
-              inside an actual card per the approved mockup, where before
-              this was deliberately chrome-less. */}
-          <div className={`relative col-span-12 md:col-span-7 min-h-[300px] rounded-xl3 border border-cardBorder shadow-card p-10 flex flex-col items-center justify-center text-center transition-shadow hover:shadow-cardHover ${isShabbos ? 'bg-amber-100' : 'bg-card'}`}>
+        <div className="grid grid-cols-12 gap-[14px] mb-[14px]">
+          {/* TODAY -- Type A (denim header bar + free content below), per
+              CONCEPT-B-DESIGN-RULES.md section 2. Content/functionality
+              unchanged (Hebrew date, English date, parsha, Tehillim, omer,
+              Shabbos Mode indicator). Parsha pill is now solid denim/white
+              (identity-defining); Tehillim pill stays light mist (routine). */}
+          <div className="relative col-span-12 md:col-span-7 rounded-xl3 border border-cardBorder shadow-card overflow-hidden flex flex-col transition-shadow hover:shadow-cardHover">
             <Pin />
-            {propertyName && (
-              <p className="text-[10px] tracking-[0.18em] uppercase font-bold text-brass border-b border-brass inline-block pb-1.5 mb-5">
-                {propertyName}
+            <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
+              {t('todayHeader')}
+            </div>
+            <div className={`flex-1 flex flex-col items-center justify-center text-center pt-9 px-6 pb-8 ${isShabbos ? 'bg-amber-100' : 'bg-card'}`}>
+              {propertyName && (
+                <p className="text-[10px] tracking-[0.18em] uppercase font-normal text-brass border-b border-brass inline-block pb-1.5 mb-[22px]">
+                  {propertyName}
+                </p>
+              )}
+              <p lang="he" dir="rtl" className="font-display font-normal text-[62px] text-denim leading-[1.05] tracking-[0.02em] mb-[10px]">
+                {hebrewInfo.hebrewText}
               </p>
-            )}
-            <p lang="he" dir="rtl" className="font-display font-medium text-4xl text-denim leading-tight">
-              {hebrewInfo.hebrewText}
-            </p>
-            <p className="font-display italic text-2xl text-denimBlue leading-tight mt-1 mb-5">
-              {format(now, 'EEEE, MMMM d')}
-            </p>
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              {hebcal.parsha && (
-                <span lang="he" dir="rtl" className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">
-                  {hebcal.parsha}
-                </span>
+              <p className="font-interDisplay text-[11px] uppercase tracking-[0.1em] text-dusk mb-6">
+                {format(now, 'EEEE, MMMM d')}
+              </p>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                {hebcal.parsha && (
+                  <span lang="he" dir="rtl" className="bg-denim text-white text-xs font-medium px-4 py-1.5 rounded-full">
+                    {hebcal.parsha}
+                  </span>
+                )}
+                {tehillim && (
+                  <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">
+                    Tehillim {tehillim.perek_start}
+                    {tehillim.perek_end !== tehillim.perek_start ? `–${tehillim.perek_end}` : ''}
+                  </span>
+                )}
+                {isShabbos && (
+                  <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">{t('shabbosModeActive')}</span>
+                )}
+              </div>
+              {omerTitle && <p className="text-xs text-dusk mt-3">{omerTitle}</p>}
+              {roshChodeshStatus && (
+                <p className="text-xs text-brass font-medium mt-3">
+                  {roshChodeshStatus.isToday
+                    ? t('roshChodesh.today', { month: roshChodeshStatus.monthName })
+                    : t('roshChodesh.upcoming', { month: roshChodeshStatus.monthName, days: roshChodeshStatus.daysUntil })}
+                </p>
               )}
-              {tehillim && (
-                <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">
-                  Tehillim {tehillim.perek_start}
-                  {tehillim.perek_end !== tehillim.perek_start ? `–${tehillim.perek_end}` : ''}
-                </span>
-              )}
-              {isShabbos && (
-                <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">{t('shabbosModeActive')}</span>
+              {/* Deliberately one small aside, never both a Rosh Chodesh
+                  callout AND a full second content block competing for
+                  attention -- title + 1-2 lines max, same dusk/brass
+                  palette as everything else in this card so it reads as
+                  part of Today, not a separate feature bolted on. */}
+              {dailyContent && (
+                <div className="mt-4 pt-4 border-t border-cardBorder/60 max-w-[320px]">
+                  <p className="text-[10px] tracking-[0.14em] uppercase font-semibold text-brass mb-1">{dailyContent.title}</p>
+                  <p className="text-xs text-dusk leading-relaxed">{dailyContent.body}</p>
+                </div>
               )}
             </div>
-            {omerTitle && <p className="text-xs text-dusk mt-3">{omerTitle}</p>}
           </div>
 
-          {/* CANDLE LIGHTING -- was folded into the Today text block before;
-              now its own card per the mockup. Real photo now live in
-              Supabase Storage (dashboard-photos/candle.jpeg); the gradient
-              stack on the outer div stays underneath as the fallback if the
-              photo ever fails to load. The text scrim below is a SEPARATE
-              absolutely-positioned overlay div, not another layer in that
-              same background-image stack -- a background-image list paints
-              its first-listed layer on top, so with the opaque photo listed
-              first, any gradient layered after it in that same property is
-              completely hidden once the photo loads and can never function
-              as a scrim no matter how strong its alpha is. This overlay
-              renders as real DOM content stacked above the photo instead,
-              which actually darkens it. LocationZmanim's real geolocation
-              toggle is unchanged -- only given a `variant="dark"` prop so
-              its button reads on a dark photo background instead of the
-              cream one it was designed for. */}
-          <div
-            className="col-span-12 md:col-span-5 min-h-[300px] rounded-xl3 border border-cardBorder shadow-card overflow-hidden relative flex items-end transition-shadow hover:shadow-cardHover"
-            style={{
-              backgroundImage: `url('https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/dashboard-photos/candle.jpeg'),
-                linear-gradient(180deg, transparent 0%, transparent 50%, rgba(35,57,78,0.95) 100%),
-                radial-gradient(ellipse at 24% 68%, rgba(214,182,133,0.6) 0%, transparent 40%),
-                radial-gradient(ellipse at 30% 24%, #85A3C9 0%, transparent 52%),
-                radial-gradient(ellipse at 76% 16%, #D8BE8E 0%, transparent 36%),
-                linear-gradient(155deg, #4A6B8C 0%, #23394E 100%)`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
-          >
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                backgroundImage: `linear-gradient(180deg, transparent 0%, transparent 28%, rgba(20,32,46,0.55) 55%, rgba(16,26,38,0.9) 78%, rgba(12,20,30,0.97) 100%)`,
-              }}
-              aria-hidden="true"
-            />
+          {/* CANDLE LIGHTING -- Type B (header bar + fixed-height photo +
+              footer bar), the only card using this three-part structure.
+              Replaces the full-bleed-photo-plus-overlay-text approach
+              entirely: no text ever renders on the photo itself now, which
+              is the root-cause fix for the legibility bug (not another
+              scrim patch), and the fixed 140px photo plus denim header/
+              footer bars is what keeps this card's height matched to
+              Today's via the grid row's default stretch behavior.
+              LocationZmanim's real geolocation toggle is unchanged, just
+              relocated into the footer bar -- variant="dark" already reads
+              correctly on a solid dark background. */}
+          <div className="col-span-12 md:col-span-5 rounded-xl3 border border-cardBorder shadow-card overflow-hidden relative flex flex-col transition-shadow hover:shadow-cardHover">
             <Pin />
-            <div className="absolute top-5 left-5 w-9 h-9 rounded-full bg-white/15 border border-white/30 flex items-center justify-center text-white">
-              <Flame size={16} aria-hidden="true" />
+            <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5 flex items-center gap-2">
+              <Flame size={13} className="text-white/80" aria-hidden="true" />
+              {t('candle.label')}
             </div>
-            <div className="p-6 w-full text-white">
+            <div
+              className="h-[140px] w-full bg-denim shrink-0"
+              style={{
+                backgroundImage: `url('https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/dashboard-photos/candle.jpeg')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+            />
+            <div className="bg-denim px-5 py-[13px] flex-1 flex items-center justify-center">
               <LocationZmanim
                 variant="dark"
                 propertyName={propertyName}
@@ -775,50 +889,104 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             </div>
           </div>
 
-          {/* PANTRY / MEAL PLAN preview tiles -- deliberately minimal (a
-              count pill over a photo). Real counts, not placeholder text.
-              Half-width each per explicit instruction (was a 3rd-width slot
-              alongside Quick Actions). Real photos now live in Supabase
-              Storage (dashboard-photos/pantry.jpeg, mealplan.jpg); the
-              gradient stays underneath as the fallback if either photo ever
-              fails to load. */}
-          <Link
-            href={`/properties/${propertyId}/inventory`}
-            className="col-span-12 md:col-span-6 min-h-[300px] rounded-xl3 border border-cardBorder shadow-card p-6 relative transition-shadow hover:shadow-cardHover"
-            style={{
-              backgroundImage: "url('https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/dashboard-photos/pantry.jpeg'), linear-gradient(200deg, #D9C4A0 0%, #EADDC7 38%, #F5EDE0 68%, #FFFEFC 100%)",
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
-          >
-            <Pin />
-            <span className="inline-block bg-white/90 text-denim text-[11px] font-semibold px-4 py-2 rounded-full shadow-card">
-              {t('pantryPillLabel')} · {inventoryCount.toLocaleString('en-US')} {inventoryCount === 1 ? t('item') : t('items')}
-            </span>
-          </Link>
+          {/* QUICK CAPTURE -- Type A (header bar + free content), replaces
+              the old Readiness card in the same slot/position. NOT gated to
+              owner/manager -- unlike Readiness, this serves whoever's
+              actually restocking, not just management. Three actions, same
+              visual weight as the old task-summary row: take a photo
+              (routes to a new search-existing-item-then-attach-photo tool,
+              since neither existing photo tool -- identify-item or
+              capture-photo -- actually attaches immediately to an existing
+              item; both either create a new item or defer matching to a
+              later cleanup pass, which is exactly the batch-sweep pattern
+              this is meant to replace), scan a QR (existing /scan route),
+              add product (existing manual-entry sheet on /inventory, now
+              reachable in one tap via ?new=1 instead of requiring the
+              user find "Add Item" themselves once there).
 
-          <Link
-            href={`/properties/${propertyId}/meal-plan`}
-            className="col-span-12 md:col-span-6 min-h-[300px] rounded-xl3 border border-cardBorder shadow-card p-6 relative transition-shadow hover:shadow-cardHover"
-            style={{
-              backgroundImage: "url('https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/dashboard-photos/mealplan.jpg'), linear-gradient(200deg, #D6E4F0 0%, #E8EEF0 42%, #F5F3ED 72%, #FFFEFC 100%)",
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
-          >
-            <Pin />
-            <span className="inline-block bg-white/90 text-denim text-[11px] font-semibold px-4 py-2 rounded-full shadow-card">
-              {t('mealPlanPillLabel')} · {distinctMealCount} {distinctMealCount === 1 ? t('meal') : t('meals')}
-            </span>
-          </Link>
+              The old task-count/handover-preview content is NOT duplicated
+              anywhere else in the app (verified: Staff Task Center shows
+              an all-time Kanban by status, not a same-day done/open count,
+              and has zero shift_handovers reference anywhere) -- so per
+              the explicit instruction not to delete content that's the
+              only place it shows, it's relocated below as a slim
+              owner/manager-only strip rather than dropped. Flagged in the
+              session report; say the word if it should just go away
+              instead. */}
+          <div className="col-span-12 rounded-xl3 border border-cardBorder shadow-card overflow-hidden transition-shadow hover:shadow-cardHover">
+            <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
+              {t('quickCapture.headerLabel')}
+            </div>
+            <div className="bg-card px-[22px] py-4">
+              <div className="grid grid-cols-3 gap-3">
+                <Link
+                  href={`/properties/${propertyId}/tools/quick-photo`}
+                  className="flex flex-col items-center justify-center gap-2 rounded-xl2 bg-mist border border-brass/30 py-4 px-2 text-center hover:shadow-card transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+                >
+                  <Camera size={26} className="text-denim" aria-hidden="true" />
+                  <span className="text-xs font-medium text-denim">{t('quickCapture.takePhoto')}</span>
+                </Link>
+                <Link
+                  href={`/properties/${propertyId}/scan`}
+                  className="flex flex-col items-center justify-center gap-2 rounded-xl2 bg-mist border border-brass/30 py-4 px-2 text-center hover:shadow-card transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+                >
+                  <Scan size={26} className="text-denim" aria-hidden="true" />
+                  <span className="text-xs font-medium text-denim">{t('quickCapture.scanQr')}</span>
+                </Link>
+                <Link
+                  href={`/properties/${propertyId}/inventory?new=1`}
+                  className="flex flex-col items-center justify-center gap-2 rounded-xl2 bg-mist border border-brass/30 py-4 px-2 text-center hover:shadow-card transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+                >
+                  <Plus size={26} className="text-denim" aria-hidden="true" />
+                  <span className="text-xs font-medium text-denim">{t('quickCapture.addProduct')}</span>
+                </Link>
+              </div>
 
-          {/* QUICK ACTIONS -- 5 real destinations (Inventory added; it was
-              asked for a few rounds back and never shipped). Icon-circle
-              badge removed -- icon now sits bare on the mist tile at 36px
-              since it's no longer fighting a circle for space -- plus a
-              one-line subtitle under each title for the reference's
-              three-line hierarchy. */}
-          <div className="col-span-12 grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {isOwnerOrManager && (
+                <div className="mt-3 pt-3 border-t border-cardBorder flex flex-col gap-1">
+                  <p className="text-xs text-denim">
+                    {readiness.tasksDone + readiness.tasksOpen === 0 ? (
+                      t('readiness.noTasksToday')
+                    ) : (
+                      <>
+                        <span className="font-semibold">{readiness.tasksDone}</span> {readiness.tasksDone === 1 ? t('readiness.task') : t('readiness.tasks')} {t('readiness.done')}{' '}
+                        <span className={`font-semibold ${readiness.tasksOpen > 0 ? 'text-rust' : ''}`}>{readiness.tasksOpen}</span> {t('readiness.leftToday')}
+                      </>
+                    )}
+                    {' '}{t('readiness.candleLighting')} <bdi dir="ltr">{hebcal.candleTime}</bdi>.
+                  </p>
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <p className="text-xs text-dusk">
+                      {readiness.latestHandover ? (
+                        <>
+                          {t('readiness.lastHandover')}{readiness.latestHandover.authorName ? ` (${readiness.latestHandover.authorName})` : ''}: "
+                          {readiness.latestHandover.noteText.length > 80
+                            ? `${readiness.latestHandover.noteText.slice(0, 80)}…`
+                            : readiness.latestHandover.noteText}
+                          "
+                        </>
+                      ) : (
+                        t('readiness.noHandoverNotes')
+                      )}
+                    </p>
+                    <Link
+                      href={`/properties/${propertyId}/shift-handover`}
+                      className="text-xs font-semibold text-brass hover:underline shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+                    >
+                      {t('readiness.viewBrief')}
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* QUICK ACTIONS -- own category, not a Type A/B/C variant: no
+              denim header bar. New this round: a small-caps brass eyebrow
+              label above the icon, same text as the title beneath it, per
+              explicit instruction. 5 real destinations (Inventory added a
+              few rounds back). */}
+          <div className="col-span-12 grid grid-cols-2 sm:grid-cols-5 gap-[14px]">
             {([
               [`/properties/${propertyId}/meal-plan`, Calendar, t('quickActions.planMeal'), t('quickActions.planMealSubtitle'), undefined] as const,
               [`/properties/${propertyId}/scan`, Scan, t('quickActions.scanItem'), t('quickActions.scanItemSubtitle'), t('quickActions.scanItemAria')] as const,
@@ -830,64 +998,75 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                 key={label}
                 href={href}
                 aria-label={ariaLabel}
-                className="relative min-h-[152px] flex flex-col items-center justify-center gap-2.5 rounded-xl2 bg-mist border border-brass/30 p-[18px] shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+                className="relative min-h-[152px] flex flex-col items-center justify-center gap-[11px] rounded-xl2 bg-mist border border-brass/30 py-[22px] px-[18px] shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
               >
                 <Pin size="sm" />
+                <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{label}</span>
                 <Icon size={36} className="text-denim" aria-hidden="true" />
-                <span className="font-display font-semibold text-base text-denim text-center">{label}</span>
-                <span className="text-[11.5px] text-dusk text-center">{subtitle}</span>
+                <span className="font-display font-normal text-[18px] text-denim text-center">{label}</span>
+                <span className="text-[11px] text-dusk text-center">{subtitle}</span>
               </Link>
             ))}
           </div>
 
-          {/* READINESS -- content/functionality unchanged (real task counts,
-              real handover preview, gated to owner/manager same as before).
-              "View Brief" is new (per explicit instruction): points at the
-              real Shift Handover page, nothing built for it. */}
-          {isOwnerOrManager && (
-            <div className="col-span-12 rounded-xl3 border border-cardBorder shadow-card bg-card px-7 py-5 flex flex-col gap-3 border-l-4 border-l-denimBlue">
-              <span className="text-[11px] tracking-[0.16em] uppercase font-bold text-denim">{t('readiness.heading')}</span>
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div className="flex items-center gap-3.5">
-                  <span className="w-[34px] h-[34px] rounded-full bg-mist flex items-center justify-center text-denim shrink-0">
-                    <Clock size={16} aria-hidden="true" />
-                  </span>
-                  <div>
-                    <p className="text-sm text-denim">
-                      {readiness.tasksDone + readiness.tasksOpen === 0 ? (
-                        t('readiness.noTasksToday')
-                      ) : (
-                        <>
-                          <span className="font-semibold">{readiness.tasksDone}</span> {readiness.tasksDone === 1 ? t('readiness.task') : t('readiness.tasks')} {t('readiness.done')}{' '}
-                          <span className={`font-semibold ${readiness.tasksOpen > 0 ? 'text-rust' : ''}`}>{readiness.tasksOpen}</span> {t('readiness.leftToday')}
-                        </>
-                      )}
-                      {' '}{t('readiness.candleLighting')} <bdi dir="ltr">{hebcal.candleTime}</bdi>.
-                    </p>
-                    <p className="text-sm text-dusk mt-0.5">
-                      {readiness.latestHandover ? (
-                        <>
-                          {t('readiness.lastHandover')}{readiness.latestHandover.authorName ? ` (${readiness.latestHandover.authorName})` : ''}: "
-                          {readiness.latestHandover.noteText.length > 100
-                            ? `${readiness.latestHandover.noteText.slice(0, 100)}…`
-                            : readiness.latestHandover.noteText}
-                          "
-                        </>
-                      ) : (
-                        t('readiness.noHandoverNotes')
-                      )}
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href={`/properties/${propertyId}/shift-handover`}
-                  className="bg-brass text-white text-xs font-semibold tracking-wide px-6 py-3 rounded-full hover:-translate-y-0.5 transition-transform shadow-card hover:shadow-cardHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
-                >
-                  {t('readiness.viewBrief')}
-                </Link>
+          {/* PANTRY / MEAL PLAN -- Type C (header bar + side-by-side photo/
+              text), moved to last position per the corrected page order.
+              Photo is partial-width (~42%) beside the text block, not a
+              full-bleed band above/behind it -- corrected from an earlier
+              full-width pass. Real photos still live in Supabase Storage
+              (dashboard-photos/pantry.jpeg, mealplan.jpg); a mist fallback
+              fill shows if either ever fails to load. */}
+          <Link
+            href={`/properties/${propertyId}/inventory`}
+            className="col-span-12 md:col-span-6 rounded-xl3 border border-cardBorder shadow-card overflow-hidden flex flex-col transition-shadow hover:shadow-cardHover"
+          >
+            <Pin />
+            <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
+              {t('pantryPillLabel')}
+            </div>
+            <div className="flex-1 flex min-h-[120px]">
+              <div
+                className="w-[42%] shrink-0 bg-mist"
+                style={{
+                  backgroundImage: "url('https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/dashboard-photos/pantry.jpeg')",
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }}
+              />
+              <div className="flex-1 flex flex-col justify-center py-[22px] px-5">
+                <p className="font-display text-[22px] font-normal text-denim mb-[14px]">
+                  {inventoryCount.toLocaleString('en-US')} {inventoryCount === 1 ? t('item') : t('items')}
+                </p>
+                <p className="text-[12px] text-dusk">{t('pantryCard.subtext')}</p>
               </div>
             </div>
-          )}
+          </Link>
+
+          <Link
+            href={`/properties/${propertyId}/meal-plan`}
+            className="col-span-12 md:col-span-6 rounded-xl3 border border-cardBorder shadow-card overflow-hidden flex flex-col transition-shadow hover:shadow-cardHover"
+          >
+            <Pin />
+            <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
+              {t('mealPlanPillLabel')}
+            </div>
+            <div className="flex-1 flex min-h-[120px]">
+              <div
+                className="w-[42%] shrink-0 bg-mist"
+                style={{
+                  backgroundImage: "url('https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/dashboard-photos/mealplan.jpg')",
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }}
+              />
+              <div className="flex-1 flex flex-col justify-center py-[22px] px-5">
+                <p className="font-display text-[22px] font-normal text-denim mb-[14px]">
+                  {distinctMealCount} {distinctMealCount === 1 ? t('meal') : t('meals')}
+                </p>
+                <p className="text-[12px] text-dusk">{t('mealPlanCard.subtext')}</p>
+              </div>
+            </div>
+          </Link>
         </div>
 
         {/* Quick-glance overview -- same 3 real counts as before, restyled. */}
@@ -1070,10 +1249,14 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                             <div className="font-medium text-denim">{item.name}</div>
                             <div className="text-xs text-dusk">{item.qty_needed}</div>
                           </div>
-                          {item.inventory_items?.reorder_link && (
-                            <a href={item.inventory_items.reorder_link} target="_blank" rel="noopener noreferrer" className="text-brass hover:text-denim text-xs font-medium px-2 py-1 bg-mist rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim">
-                              {t('shoppingListCard.order')}
-                            </a>
+                          {(item.inventory_items?.reorder_sources?.length ?? 0) > 1 ? (
+                            <ReorderSourcePills sources={item.inventory_items.reorder_sources} variant="conceptB" />
+                          ) : (
+                            getPreferredSource(item.inventory_items?.reorder_sources) && (
+                              <a href={getPreferredSource(item.inventory_items.reorder_sources)!.url} target="_blank" rel="noopener noreferrer" className="text-brass hover:text-denim text-xs font-medium px-2 py-1 bg-mist rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim">
+                                {t('shoppingListCard.order')}
+                              </a>
+                            )
                           )}
                         </div>
                       ))}
@@ -1114,10 +1297,14 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                           </div>
                           <div className="text-xs text-dusk mt-1">{t('inventoryCard.qty')} {item.current_qty} {isLow && <span className="text-rust font-medium">{t('inventoryCard.low')}</span>}</div>
                         </div>
-                        {item.reorder_link && (
-                          <a href={item.reorder_link} target="_blank" rel="noopener noreferrer" className="text-brass hover:text-denim text-xs font-medium px-2 py-1 bg-mist rounded whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim">
-                            {t('shoppingListCard.order')}
-                          </a>
+                        {(item.reorder_sources?.length ?? 0) > 1 ? (
+                          <ReorderSourcePills sources={item.reorder_sources} variant="conceptB" />
+                        ) : (
+                          getPreferredSource(item.reorder_sources) && (
+                            <a href={getPreferredSource(item.reorder_sources)!.url} target="_blank" rel="noopener noreferrer" className="text-brass hover:text-denim text-xs font-medium px-2 py-1 bg-mist rounded whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim">
+                              {t('shoppingListCard.order')}
+                            </a>
+                          )
                         )}
                       </div>
                     </div>
