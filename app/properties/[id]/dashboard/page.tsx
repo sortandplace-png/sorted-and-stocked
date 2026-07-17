@@ -6,11 +6,9 @@ import { format, parseISO } from 'date-fns'
 import { Calendar, Camera, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, UtensilsCrossed, BookMarked } from 'lucide-react'
 import FloatingScanButton from '@/components/FloatingScanButton'
 import PrepAheadAssistant from '@/components/PrepAheadAssistant'
-import ThisWeeksMealsList from '@/components/ThisWeeksMealsList'
 import LocationZmanim from '@/components/LocationZmanim'
 import DashboardWidgets from '@/components/DashboardWidgets'
 import Pin from '@/components/PinAccent'
-import { COURSES } from '@/lib/course-constants'
 import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
 import { getNextObservance } from '@/lib/get-next-observance'
 import { getWidgetPrefs, getTodaysMealPlan, getLowStockAlerts } from '@/lib/dashboard-widgets-data'
@@ -650,28 +648,6 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   // plan_date+meal_slot pair -- 7 that week, not 38.
   const distinctMealCount = new Set(meals.map((m: any) => `${m.plan_date}|${m.meal_slot}`)).size
 
-  // Canonical course order (Dip/Kids Platter/Soup/Protein/Starch/Vege/Salad/
-  // Dessert-last) applied as a secondary sort after plan_date -- the raw
-  // query only orders by date, so entries within the same day previously
-  // came back in whatever order Postgres happened to return them.
-  const courseOrderIndex = new Map(COURSES.map((c, i) => [c.key, i]))
-  const sortedMeals = [...meals].sort((a: any, b: any) => {
-    if (a.plan_date !== b.plan_date) return a.plan_date < b.plan_date ? -1 : 1
-    return (courseOrderIndex.get(a.course) ?? 99) - (courseOrderIndex.get(b.course) ?? 99)
-  })
-
-  // One card per day (its full course lineup underneath) rather than one
-  // card per course -- previously every course on the same day rendered as
-  // its own separate, identically-dated card.
-  const mealsByDay = Object.entries(
-    sortedMeals.reduce((acc: Record<string, any[]>, meal: any) => {
-      (acc[meal.plan_date] ??= []).push(meal)
-      return acc
-    }, {})
-  )
-    .sort(([a], [b]) => (a < b ? -1 : 1))
-    .map(([date, entries]) => ({ date, entries }))
-
   // categoryLabels keeps the English keys ('Produce', 'Meat', ...) for
   // matching against the real shopping_list_items.category column, which
   // isn't itself translated -- only the on-screen label swaps per locale.
@@ -1139,44 +1115,16 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* LEFT -- This Week's Meals, now one large card. Kashrut legend
-              colors (fleishigBold/milchigBold/parveBold) are semantic
-              signaling, not decorative palette -- left exactly as they are,
-              same reasoning as the Low Stock/rust warning color below. */}
-          <div className="lg:col-span-2 rounded-xl3 border border-cardBorder shadow-card bg-card p-6">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] tracking-[0.16em] uppercase font-bold text-denim">{t('thisWeeksMealsCard.heading')}</span>
-              <Link href={`/properties/${propertyId}/meal-plan`} className="text-[11px] font-bold text-brass underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim">
-                {t('thisWeeksMealsCard.viewFullPlan')}
-              </Link>
-            </div>
-            <p className="text-denim mb-4">
-              <span className="font-bold">{distinctMealCount}</span> {distinctMealCount === 1 ? t('meal') : t('meals')} {t('thisWeeksMealsCard.plannedThisWeek')}
-            </p>
-
-            <div className="flex gap-1.5 mb-4 flex-wrap" role="list" aria-label={t('thisWeeksMealsCard.kashrutLegendAria')}>
-              {([
-                ['Fleishig', 'bg-fleishigBold', Square],
-                ['Milchig', 'bg-milchigBold', Triangle],
-                ['Parve', 'bg-parveBold', Circle],
-              ] as const).map(([k, bg, Icon]) => (
-                <div key={k} role="listitem" className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10.5px] font-bold uppercase text-white ${bg}`}>
-                  <Icon className="w-2.5 h-2.5" fill="currentColor" aria-hidden="true" />
-                  {k}
-                </div>
-              ))}
-            </div>
-
-            <ThisWeeksMealsList propertyId={propertyId} mealsByDay={mealsByDay} />
-          </div>
-
-          {/* RIGHT -- Shopping List and Inventory Items, each its own card
-              (rather than one shared card) so both read as independent
-              content units, same as every other section on this page.
-              Category-dot colors (rust/dairy/sage) and the low-stock
-              rust/"LOW" flag are semantic, not decorative -- left as-is. */}
-          <div className="space-y-4">
+        {/* The full "This Week's Meals" list (heading, kashrut legend,
+            day-by-day breakdown) was removed from the Dashboard entirely --
+            it still exists on the real Plan page, just not duplicated here.
+            The "THIS WEEK" pantry-style card above (photo + meal count,
+            linking to /meal-plan) stays untouched. This used to be a
+            lg:grid-cols-3 row splitting 2/3 to that list and 1/3 to this
+            Shopping List/Inventory sidebar -- now that the left side is
+            gone, the sidebar keeps its original narrow card width instead
+            of stretching full-bleed. */}
+        <div className="max-w-md space-y-4">
             <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-6">
               <h2 className="font-display text-xl font-semibold mb-1 flex items-center gap-2 text-denim">
                 <ShoppingBag size={19} strokeWidth={1.5} className="text-brass" aria-hidden="true" /> {t('shoppingListCard.heading')}
@@ -1273,8 +1221,6 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               </Link>
             </div>
           </div>
-        </div>
-
         {/* Mobile bottom nav only shows Home/Recipes/Scan/Shopping/Inventory
             — Tools/Staff/Settings are reachable from here instead of being
             crammed into the bottom bar. Labels now lives inside Inventory and
