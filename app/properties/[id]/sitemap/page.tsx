@@ -75,6 +75,7 @@ function buildSections(propertyId: string): Section[] {
       entries: [
         { href: p('/staff'), label: 'Staff', subtitle: 'Team & roles', icon: Users },
         { href: p('/shift-handover'), label: 'Shift Handover', subtitle: 'Pass the baton', icon: RotateCcw },
+        { href: p('/tools/reset-checklist'), label: 'Reset for Next', subtitle: 'Post-use checklist', icon: RotateCcw },
       ],
     },
     {
@@ -90,7 +91,6 @@ function buildSections(propertyId: string): Section[] {
       entries: [
         { href: p('/tools/kitchen-timer'), label: 'Kitchen Timer', subtitle: 'Multiple timers', icon: Timer },
         { href: p('/tools/guest-scaler'), label: 'Scale Servings', subtitle: 'Adjust a recipe', icon: Scale },
-        { href: p('/tools/reset-checklist'), label: 'Reset for Next', subtitle: 'Post-use checklist', icon: RotateCcw },
         { href: p('/tools/prep-timeline'), label: 'Prep Timeline', subtitle: 'Freezer-ahead plan', icon: ListChecks },
       ],
     },

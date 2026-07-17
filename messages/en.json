@@ -480,7 +480,7 @@
     },
     "shabbosModeBanner": "Shabbos Mode • Editing disabled",
     "widgets": {
-      "sectionTitle": "Today",
+      "sectionTitle": "At a Glance",
       "editWidgets": "Edit widgets",
       "done": "Done",
       "moveUpAria": "Move {label} up",

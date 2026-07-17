@@ -33,15 +33,24 @@ export default function CollapsibleCard({
 }) {
   const { collapsed, toggle } = useCardCollapse(cardId)
 
+  // flex-1 on the animating wrapper is what makes it fill the remaining
+  // height of this card's flex-col shell when expanded (matching what a
+  // plain content div used to do before collapse existed) -- but applied
+  // unconditionally, it fights grid-template-rows: 0fr directly: flex-grow
+  // stretches the wrapper to fill available space in ITS flex parent
+  // regardless of the grid row's own 0fr/1fr track size, so a collapsed
+  // card kept its full height as an empty box even though the content
+  // inside was correctly invisible. Only applying flex-1 when expanded is
+  // what actually lets the collapsed state shrink.
   const inner = (
     <>
       <Pin size={pinSize} collapsed={collapsed} onToggle={toggle} />
       {header}
       <div
-        className="flex-1 grid transition-[grid-template-rows] duration-200 ease-out"
+        className={`grid transition-[grid-template-rows] duration-200 ease-out ${collapsed ? '' : 'flex-1'}`}
         style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
       >
-        <div className="overflow-hidden flex flex-col flex-1 min-h-0">{children}</div>
+        <div className="overflow-hidden flex flex-col min-h-0">{children}</div>
       </div>
     </>
   )

@@ -167,7 +167,7 @@ export default function DashboardWidgets({
         {visibleKeys.length === 0 ? (
           !editing && <p className="text-sm text-dusk">{t('allHidden')}</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
             {visibleKeys.map((key) => {
               if (key === 'todays_meal_plan') return <TodaysMealPlanCard key={key} title={WIDGET_LABELS.todays_meal_plan} propertyId={propertyId} meals={todaysMeals} isShabbosOrYomTov={isShabbosOrYomTovDinner} />;
               return (
@@ -187,7 +187,7 @@ export default function DashboardWidgets({
         {/* Fixed row -- always shown, not part of the show/hide/reorder
             system above (Low Stock Alerts and the shopping-list count are
             operational, not optional). */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 items-start">
           <LowStockAlertsCard title={t('labelLowStockAlerts')} propertyId={propertyId} items={lowStockItems} />
           <ShoppingListSummaryCard propertyId={propertyId} count={shoppingListCount} />
         </div>
@@ -269,19 +269,19 @@ function TodaysMealPlanCard({
   }
 
   return (
-    <div className="relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow overflow-hidden flex flex-col min-h-[140px]">
+    <div className={`relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow overflow-hidden flex flex-col ${collapsed ? '' : 'min-h-[100px]'}`}>
       <Pin size="sm" collapsed={collapsed} onToggle={toggle} />
-      <h3 className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass pt-[14px] px-[18px] pb-2.5">{title}</h3>
+      <h3 className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass pt-[10px] px-[16px] pb-2">{title}</h3>
       <div
-        className="flex-1 grid transition-[grid-template-rows] duration-200 ease-out"
+        className={`grid transition-[grid-template-rows] duration-200 ease-out ${collapsed ? '' : 'flex-1'}`}
         style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
       >
-        <div className="overflow-hidden flex flex-1 min-h-0">
-          <div className="flex-1 px-[18px] pb-[14px]">
+        <div className="overflow-hidden flex min-h-0">
+          <div className="flex-1 px-[16px] pb-[10px]">
             {meals.length === 0 ? (
               <p className="text-sm text-dusk">{t('nothingPlannedToday')}</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {Object.entries(bySlot).map(([slot, rawEntries]) => {
                   const entries = orderedEntries(slot, rawEntries);
                   if (entries.length === 0) return null;
@@ -310,7 +310,7 @@ function TodaysMealPlanCard({
                 })}
               </div>
             )}
-            <Link href={`/properties/${propertyId}/meal-plan`} className="inline-block mt-2.5 text-[11px] font-bold text-brass underline underline-offset-2">
+            <Link href={`/properties/${propertyId}/meal-plan`} className="inline-block mt-2 text-[11px] font-bold text-brass underline underline-offset-2">
               {t('viewFullPlan')}
             </Link>
           </div>
@@ -415,9 +415,9 @@ function PrepAheadWidgetCard({
   }
 
   return (
-    <div className="relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow overflow-hidden flex flex-col min-h-[140px]">
+    <div className={`relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow overflow-hidden flex flex-col ${collapsed ? '' : 'min-h-[100px]'}`}>
       <Pin size="sm" collapsed={collapsed} onToggle={toggle} />
-      <div className="flex items-center justify-between gap-2 pt-[14px] px-[18px] pb-2.5">
+      <div className="flex items-center justify-between gap-2 pt-[10px] px-[16px] pb-2">
         <span className="flex items-center gap-2">
           <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{title}</span>
           {isEnabled && <span className="text-xs text-dusk font-bold">({reminders.length})</span>}
@@ -433,11 +433,11 @@ function PrepAheadWidgetCard({
         )}
       </div>
       <div
-        className="flex-1 grid transition-[grid-template-rows] duration-200 ease-out"
+        className={`grid transition-[grid-template-rows] duration-200 ease-out ${collapsed ? '' : 'flex-1'}`}
         style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
       >
-        <div className="overflow-hidden flex flex-1 min-h-0">
-          <div className="flex-1 px-[18px] pb-[14px]">
+        <div className="overflow-hidden flex min-h-0">
+          <div className="flex-1 px-[16px] pb-[10px]">
             {!isEnabled ? (
               <p className="text-sm text-dusk">{t('off')}</p>
             ) : reminders.length === 0 ? (
