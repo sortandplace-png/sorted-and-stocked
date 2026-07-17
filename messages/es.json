@@ -506,6 +506,7 @@
       "turnOff": "Desactivar",
       "title": "Asistente de Preparación Anticipada",
       "nothingUpcoming": "Nada apto para congelador necesita prepararse con anticipación en los próximos días.",
+      "viewAll": "Ver todo ({count}) →",
       "freezerFriendlyScheduled": "apto para congelador, programado para",
       "day": "día",
       "days": "días",

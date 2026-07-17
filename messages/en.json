@@ -506,6 +506,7 @@
       "turnOff": "Turn off",
       "title": "Prep Ahead Assistant",
       "nothingUpcoming": "Nothing freezer-friendly needs pulling ahead in the next few days.",
+      "viewAll": "View all ({count}) →",
       "freezerFriendlyScheduled": "freezer-friendly, scheduled",
       "day": "day",
       "days": "days",

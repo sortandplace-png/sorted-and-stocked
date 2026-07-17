@@ -443,26 +443,36 @@ function PrepAheadWidgetCard({
             ) : reminders.length === 0 ? (
               <p className="text-sm text-dusk">{t('nothingUpcoming')}</p>
             ) : (
-              <ul className="space-y-1.5">
-                {reminders.map((r, i) => (
-                  <li key={i} className="text-sm text-denim">
-                    {r.recipeId ? (
-                      <Link href={`/properties/${propertyId}/recipes/${r.recipeId}`} className="font-semibold text-brass hover:underline underline-offset-2">
-                        {r.recipeName}
-                      </Link>
-                    ) : (
-                      <span className="font-semibold">{r.recipeName}</span>
-                    )}
-                    {' '}— {t('freezerFriendlyScheduled')}{' '}
-                    {format(parseISO(r.planDate), 'EEEE, MMM d')}
-                    {r.prepLeadDays ? `; ${t('startPrep')} ${r.prepLeadDays} ${r.prepLeadDays === 1 ? t('day') : t('days')} ${t('ahead')}` : ` — ${t('pullOutAhead')}`}
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className="space-y-1.5">
+                  {reminders.slice(0, 3).map((r, i) => (
+                    <li key={i} className="text-sm text-denim">
+                      {r.recipeId ? (
+                        <Link href={`/properties/${propertyId}/recipes/${r.recipeId}`} className="font-semibold text-brass hover:underline underline-offset-2">
+                          {r.recipeName}
+                        </Link>
+                      ) : (
+                        <span className="font-semibold">{r.recipeName}</span>
+                      )}
+                      {' '}— {t('freezerFriendlyScheduled')}{' '}
+                      {format(parseISO(r.planDate), 'EEEE, MMM d')}
+                      {r.prepLeadDays ? `; ${t('startPrep')} ${r.prepLeadDays} ${r.prepLeadDays === 1 ? t('day') : t('days')} ${t('ahead')}` : ` — ${t('pullOutAhead')}`}
+                    </li>
+                  ))}
+                </ul>
+                {reminders.length > 3 && (
+                  <Link href={`/properties/${propertyId}/meal-plan`} className="inline-block mt-2 text-[11px] font-bold text-brass underline underline-offset-2">
+                    {t('viewAll', { count: reminders.length })}
+                  </Link>
+                )}
+              </>
             )}
           </div>
+          {/* 42% -> 30%: with the list now capped at 3 items (was
+              unbounded), the photo was reading as photo-heavy relative to
+              the shorter text column -- narrower image restores balance. */}
           <div
-            className="w-[42%] shrink-0"
+            className="w-[30%] shrink-0"
             style={{
               backgroundImage: "url('/prep-ahead-card.png.png')",
               backgroundSize: 'cover',
