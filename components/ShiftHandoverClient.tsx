@@ -254,12 +254,12 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Shift Handover</h1>
-      <p className="text-sm text-charcoal/50 mb-4">
+      <h1 className="text-2xl font-display text-denim mb-1">Shift Handover</h1>
+      <p className="text-sm text-dusk mb-4">
         Leave a quick note for whoever's coming on next — no long write-up needed.
       </p>
 
-      <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-3">
+      <div className="bg-card rounded-xl2 shadow-card p-4 mb-6 space-y-3">
         <div className="flex flex-wrap gap-1.5">
           {QUICK_TEMPLATES.map((template) => (
             <button
@@ -267,8 +267,8 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
               onClick={() => applyTemplate(template)}
               className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
                 templateTag === template
-                  ? 'bg-gold-dark text-white border-gold'
-                  : 'bg-cream/40 text-charcoal/70 border-gold-light/60'
+                  ? 'bg-brass text-white border-brass'
+                  : 'bg-mist text-dusk border-brass/30'
               }`}
             >
               {template}
@@ -282,7 +282,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
           onChange={(e) => setNoteText(e.target.value)}
           placeholder="e.g. Dinner prep is staged in the fridge, just needs reheating…"
           rows={3}
-          className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-3 bg-cream/40 text-sm"
+          className="w-full border border-brass/30 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-4 py-3 bg-mist text-sm text-denim"
         />
 
         {photoDataUrls.length > 0 && (
@@ -293,7 +293,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
                 <img src={url} alt="" className="w-full h-20 rounded-lg object-cover" />
                 <button
                   onClick={() => removePhoto(i)}
-                  className="absolute top-1 right-1 bg-charcoal/70 text-cream text-xs rounded-full h-5 w-5"
+                  className="absolute top-1 right-1 bg-denim/70 text-white text-xs rounded-full h-5 w-5"
                   aria-label="Remove photo"
                 >
                   ✕
@@ -304,7 +304,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
         )}
 
         <div className="flex gap-2">
-          <label className="flex-1 text-center py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm font-medium cursor-pointer">
+          <label className="flex-1 text-center py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium cursor-pointer">
             <input
               ref={fileInputRef}
               type="file"
@@ -320,7 +320,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
           {!recording ? (
             <button
               onClick={startRecording}
-              className="flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm font-medium"
+              className="flex-1 py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium"
             >
               🎙️ {audioDataUrl ? 'Re-record' : 'Record'}
             </button>
@@ -341,21 +341,21 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
         <button
           onClick={submitHandover}
           disabled={submitting}
-          className="w-full py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
+          className="w-full py-2.5 rounded-full bg-brass text-white font-medium disabled:opacity-40"
         >
           {submitting ? 'Saving…' : 'Leave handover note'}
         </button>
       </div>
 
-      <h2 className="font-display text-lg text-charcoal mb-2">Recent handovers</h2>
+      <h2 className="font-display text-lg text-denim mb-2">Recent handovers</h2>
       {loading ? (
         <SkeletonList rows={3} />
       ) : handovers.length === 0 ? (
-        <div className="text-center mt-4 py-6 bg-white rounded-2xl shadow-sm shadow-charcoal/5">
-          <p className="text-sm text-charcoal/50 mb-3">No handovers yet.</p>
+        <div className="text-center mt-4 py-6 bg-card rounded-xl2 shadow-card">
+          <p className="text-sm text-dusk mb-3">No handovers yet.</p>
           <button
             onClick={() => noteTextareaRef.current?.focus()}
-            className="text-sm font-medium text-white bg-gold-dark px-4 py-2 rounded-full"
+            className="text-sm font-medium text-white bg-brass px-4 py-2 rounded-full"
           >
             Create end of day note
           </button>
@@ -365,21 +365,21 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
           {handovers.map((h) => {
             const photos = h.photo_data_urls && h.photo_data_urls.length > 0 ? h.photo_data_urls : h.photo_data_url ? [h.photo_data_url] : [];
             return (
-              <li key={h.id} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+              <li key={h.id} className="bg-card rounded-xl2 shadow-card p-4">
                 <div className="flex items-center justify-between mb-2 flex-wrap gap-1.5">
-                  <span className="text-sm font-medium text-charcoal">
+                  <span className="text-sm font-medium text-denim">
                     {h.created_by_name ?? 'Someone'}
                   </span>
                   <div className="flex items-center gap-2">
                     {h.template_tag && (
-                      <span className="text-[10px] font-medium bg-gold-light/40 text-gold-dark px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-medium bg-brass/15 text-brass px-2 py-0.5 rounded-full">
                         {h.template_tag}
                       </span>
                     )}
-                    <span className="text-xs text-charcoal/40">{timeAgo(h.created_at)}</span>
+                    <span className="text-xs text-dusk">{timeAgo(h.created_at)}</span>
                   </div>
                 </div>
-                {h.note_text && <p className="text-sm text-charcoal mb-2">{h.note_text}</p>}
+                {h.note_text && <p className="text-sm text-denim mb-2">{h.note_text}</p>}
                 {photos.length > 0 && (
                   <div className={`grid gap-2 mb-2 ${photos.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                     {photos.map((url, i) => (

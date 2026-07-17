@@ -39,7 +39,7 @@ const STATUS_OPTIONS: { key: Status; label: string }[] = [
 
 const PRIORITY_STYLE: Record<Priority, string> = {
   high: 'bg-rust/10 text-rust',
-  medium: 'bg-gold-light/40 text-gold-dark',
+  medium: 'bg-brass/15 text-brass',
   low: 'bg-sage/10 text-sage',
 };
 
@@ -114,8 +114,8 @@ export default function MyDayClient({ propertyId, staffNote }: { propertyId: str
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">My Day</h1>
-      <p className="text-sm text-charcoal/50 mb-4">
+      <h1 className="text-2xl font-display text-denim mb-1">My Day</h1>
+      <p className="text-sm text-dusk mb-4">
         {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
       </p>
 
@@ -126,10 +126,10 @@ export default function MyDayClient({ propertyId, staffNote }: { propertyId: str
           today's resolved trigger_type (server-computed, general/omer
           always excluded) -- absent entirely otherwise, no empty-state box. */}
       {staffNote && (
-        <div className="bg-charcoal text-white rounded-2xl p-4 mb-5 flex gap-3 items-start">
-          <Info size={18} className="text-gold shrink-0 mt-0.5" aria-hidden="true" />
+        <div className="bg-denim text-white rounded-xl2 p-4 mb-5 flex gap-3 items-start">
+          <Info size={18} className="text-brass shrink-0 mt-0.5" aria-hidden="true" />
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-gold mb-1">{t('staffNoteHeading')}</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-brass mb-1">{t('staffNoteHeading')}</p>
             <p className="text-sm leading-relaxed">{staffNote}</p>
           </div>
         </div>
@@ -142,21 +142,21 @@ export default function MyDayClient({ propertyId, staffNote }: { propertyId: str
       <div className="flex gap-2 mb-6">
         <button
           onClick={() => setShowCapture(true)}
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-gold-dark text-white px-4 py-2.5 text-sm font-medium hover:opacity-90 transition"
+          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl2 bg-mist border border-brass/30 text-denim px-4 py-2.5 text-sm font-medium shadow-card hover:shadow-cardHover transition-shadow"
         >
           <Camera size={16} aria-hidden="true" /> Capture
         </button>
         <Link
           href={`/properties/${propertyId}/shopping-list`}
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-white border border-gold-light/60 text-charcoal px-4 py-2.5 text-sm font-medium hover:bg-gold-light/10 transition"
+          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl2 bg-mist border border-brass/30 text-denim px-4 py-2.5 text-sm font-medium shadow-card hover:shadow-cardHover transition-shadow"
         >
-          <ShoppingCart size={16} className="text-gold-dark" aria-hidden="true" /> Shopping List
+          <ShoppingCart size={16} aria-hidden="true" /> Shopping List
         </Link>
         <button
           onClick={() => setShowKitchenTimer(true)}
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-white border border-gold-light/60 text-charcoal px-4 py-2.5 text-sm font-medium hover:bg-gold-light/10 transition"
+          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl2 bg-mist border border-brass/30 text-denim px-4 py-2.5 text-sm font-medium shadow-card hover:shadow-cardHover transition-shadow"
         >
-          <Timer size={16} className="text-gold-dark" aria-hidden="true" /> Kitchen Timer
+          <Timer size={16} aria-hidden="true" /> Kitchen Timer
         </button>
       </div>
 
@@ -167,11 +167,11 @@ export default function MyDayClient({ propertyId, staffNote }: { propertyId: str
         <KitchenOpsToolModal slug="kitchen-timer" propertyId={propertyId} onClose={() => setShowKitchenTimer(false)} />
       )}
 
-      <h2 className="font-display text-lg text-charcoal mb-2">Today's Tasks</h2>
+      <h2 className="font-display text-lg text-denim mb-2">Today's Tasks</h2>
       {loading ? (
         <SkeletonList rows={2} />
       ) : tasks.length === 0 ? (
-        <p className="text-sm text-charcoal/40 text-center py-4 mb-6 bg-white rounded-2xl shadow-sm shadow-charcoal/5">
+        <p className="text-sm text-dusk text-center py-4 mb-6 bg-card rounded-xl2 shadow-card">
           Nothing due today.
         </p>
       ) : (
@@ -179,8 +179,8 @@ export default function MyDayClient({ propertyId, staffNote }: { propertyId: str
           {tasks.map((task) => {
             const overdue = !!task.due_date && task.due_date < today;
             return (
-              <li key={task.id} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 space-y-2">
-                <p className="font-medium text-sm text-charcoal">{task.title}</p>
+              <li key={task.id} className="bg-card rounded-xl2 shadow-card p-4 space-y-2">
+                <p className="font-medium text-sm text-denim">{task.title}</p>
                 <div className="flex flex-wrap items-center gap-1.5">
                   {task.priority && (
                     <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize ${PRIORITY_STYLE[task.priority]}`}>
@@ -188,12 +188,12 @@ export default function MyDayClient({ propertyId, staffNote }: { propertyId: str
                     </span>
                   )}
                   {task.category && (
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gold-light/20 text-charcoal/60">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-mist text-dusk">
                       {task.category}
                     </span>
                   )}
                   {task.due_date && (
-                    <span className={`text-[10px] font-medium ${overdue ? 'text-rust' : 'text-charcoal/40'}`}>
+                    <span className={`text-[10px] font-medium ${overdue ? 'text-rust' : 'text-dusk'}`}>
                       {overdue ? 'Overdue' : 'Due today'}
                     </span>
                   )}
@@ -201,7 +201,7 @@ export default function MyDayClient({ propertyId, staffNote }: { propertyId: str
                 <select
                   value={task.status}
                   onChange={(e) => setStatus(task, e.target.value as Status)}
-                  className="w-full text-xs border border-gold-light/60 rounded-full px-3 py-2 min-h-[44px] bg-cream/40"
+                  className="w-full text-xs border border-brass/30 rounded-full px-3 py-2 min-h-[44px] bg-mist text-denim"
                 >
                   {STATUS_OPTIONS.map((s) => (
                     <option key={s.key} value={s.key}>
@@ -215,7 +215,7 @@ export default function MyDayClient({ propertyId, staffNote }: { propertyId: str
         </ul>
       )}
 
-      <div className="-mx-4 border-t border-gold-light/30 pt-2">
+      <div className="-mx-4 border-t border-cardBorder pt-2">
         <ShiftHandoverClient propertyId={propertyId} />
       </div>
     </div>
