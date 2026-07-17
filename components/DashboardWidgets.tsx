@@ -190,13 +190,21 @@ function WidgetCard({ title, children }: { title: string; children: React.ReactN
 const WEEKDAY_DINNER_ORDER = ['soup', 'protein', 'starch', 'vege', 'salad', 'dip'];
 const SHABBOS_DINNER_ORDER = ['soup', 'protein', 'starch', 'vege', 'salad', 'dip', 'dessert'];
 
-// Only this widget gets a fixed header image, so it builds its own shell
-// (matching WidgetCard's mist/brass-border/xl2/shadow/pin exactly) instead
-// of using the shared WidgetCard, which has no image slot. The image is a
-// background-image div, not an <img> -- same technique as the Candle
-// Lighting card's fixed-height photo band -- so a missing/failed
-// /meal-plan-card.png.png silently renders nothing rather than a broken-image
-// icon, which is exactly the "no fallback placeholder" behavior asked for.
+// Only this widget gets an image, so it builds its own shell (matching
+// WidgetCard's mist/brass-border/xl2/shadow/pin exactly) instead of using
+// the shared WidgetCard, which has no image slot. Side-by-side layout and
+// the 42% image width are pulled directly from the real Pantry card
+// (app/properties/[id]/dashboard/page.tsx) -- same technique, mirrored to
+// the right side: no fixed image height (a plain flex child stretches to
+// match the content column via the row's default align-items:stretch,
+// exactly like Pantry's own image div), and no explicit border-radius on
+// the image itself -- the outer rounded-xl2 + overflow-hidden clips its
+// top-right/bottom-right corners automatically, while its left edge (an
+// interior seam against the text column) stays naturally square with zero
+// extra CSS, same as Pantry's un-rounded interior edge. The image is a
+// background-image div, not an <img>, so a missing/failed
+// /meal-plan-card.png.png silently renders nothing rather than a broken-
+// image icon -- the "no fallback placeholder" behavior asked for earlier.
 function TodaysMealPlanCard({
   title,
   propertyId,
@@ -223,17 +231,9 @@ function TodaysMealPlanCard({
   }
 
   return (
-    <div className="relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow overflow-hidden">
+    <div className="relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow overflow-hidden flex min-h-[140px]">
       <Pin size="sm" />
-      <div
-        className="h-[140px] w-full"
-        style={{
-          backgroundImage: "url('/meal-plan-card.png.png')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      />
-      <div className="py-[14px] px-[18px]">
+      <div className="flex-1 py-[14px] px-[18px]">
         <h3 className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass mb-2.5">{title}</h3>
         {meals.length === 0 ? (
           <p className="text-sm text-dusk">{t('nothingPlannedToday')}</p>
@@ -271,6 +271,14 @@ function TodaysMealPlanCard({
           {t('viewFullPlan')}
         </Link>
       </div>
+      <div
+        className="w-[42%] shrink-0"
+        style={{
+          backgroundImage: "url('/meal-plan-card.png.png')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      />
     </div>
   );
 }
