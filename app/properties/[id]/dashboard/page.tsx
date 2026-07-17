@@ -603,7 +603,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   // Persistent Halachic Calendar widget (separate from the existing Tools
   // Hub card, which stays as-is): Sefira count + candle-lighting time,
   // shown on Friday or Erev Yom Tov specifically.
-  const [omerTitle, isErevYomTov, eruvTavshilin, resetBanner, daysUntilPesach, roshChodeshStatus, isFastDayToday, majorHolidayToday, isNineDaysToday] = await Promise.all([
+  const [omerTitle, isErevYomTov, eruvTavshilin, resetBanner, daysUntilPesach, roshChodeshStatus, isFastDayToday, majorHolidayToday, isNineDaysToday, isYomTovToday] = await Promise.all([
     getOmerStatus(),
     getIsErevYomTov(easternTomorrowStr),
     getEruvTavshilinBanner(easternTodayStr),
@@ -613,9 +613,18 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     getIsFastDayToday(easternTodayStr),
     getMajorHolidayToday(easternTodayStr),
     getIsNineDays(),
+    getIsErevYomTov(easternTodayStr), // same yom_tov_dates check, just today's date instead of tomorrow's
   ])
   const showHalachicWidget = isEasternFriday || isErevYomTov
   const chametzItems = await getChametzCountdown(propertyId, daysUntilPesach)
+
+  // Today's Meal Plan widget's hardcoded dinner course order: Shabbos/Yom
+  // Tov gets a Dessert course, weekdays never do. Real day-of-week (Fri/Sat),
+  // not the time-sensitive isShabbos boolean above (which is false all
+  // Friday morning, before candle-lighting, even though Friday NIGHT's
+  // dinner is genuinely a Shabbos meal) -- plus a real Yom Tov date check,
+  // since Yom Tov can land on any weekday, not just Fri/Sat.
+  const isShabbosOrYomTovDinner = isEasternFriday || isEasternSaturday || isYomTovToday
 
   // Priority order for which single rotating tip/reflection shows today --
   // most specific real calendar moment wins; 'general' is the catch-all
@@ -1035,6 +1044,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           todaysMeals={todaysMeals}
           lowStockItems={lowStockItems}
           nextObservance={nextObservance}
+          isShabbosOrYomTovDinner={isShabbosOrYomTovDinner}
         />
 
         {prepReminders.length > 0 && (

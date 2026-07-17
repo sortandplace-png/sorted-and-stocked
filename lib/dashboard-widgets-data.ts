@@ -41,7 +41,7 @@ export async function getWidgetPrefs(propertyId: string): Promise<WidgetPrefs> {
   return prefs;
 }
 
-export type TodaysMealEntry = { mealSlot: string; course: string; name: string; recipeId: string | null };
+export type TodaysMealEntry = { mealSlot: string; course: string; courseSlug: string; name: string; recipeId: string | null };
 
 // course_icons.display_name has the real label for every course slug
 // ("kids_platter" -> "Kids platter", "vege" -> "Vegetable", etc.) -- no FK
@@ -68,6 +68,10 @@ export async function getTodaysMealPlan(propertyId: string): Promise<TodaysMealE
   return (data ?? []).map((e: any) => ({
     mealSlot: e.meal_slot ?? 'meal',
     course: e.course ? (courseLabels.get(e.course) ?? e.course) : '',
+    // Raw slug, kept alongside the display-name `course` above -- the
+    // widget's hardcoded course-order arrays match against real slugs
+    // ('protein', 'vege', ...), not the translated display text.
+    courseSlug: e.course ?? '',
     name: e.custom_name || e.recipes?.name || 'Untitled',
     // A custom-named entry (no recipe_id) or a linked recipe that's since
     // been deleted (recipe_id set but the embed comes back null) both mean

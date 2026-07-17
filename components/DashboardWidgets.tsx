@@ -26,12 +26,14 @@ export default function DashboardWidgets({
   todaysMeals,
   lowStockItems,
   nextObservance,
+  isShabbosOrYomTovDinner,
 }: {
   propertyId: string;
   initialPrefs: WidgetPrefs;
   todaysMeals: TodaysMealEntry[];
   lowStockItems: LowStockItem[];
   nextObservance: UpcomingObservance | null;
+  isShabbosOrYomTovDinner: boolean;
 }) {
   const t = useTranslations('dashboard.widgets');
   const WIDGET_LABELS: Record<WidgetKey, string> = {
@@ -152,7 +154,7 @@ export default function DashboardWidgets({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {visibleKeys.map((key) => {
-              if (key === 'todays_meal_plan') return <TodaysMealPlanCard key={key} title={WIDGET_LABELS.todays_meal_plan} propertyId={propertyId} meals={todaysMeals} />;
+              if (key === 'todays_meal_plan') return <TodaysMealPlanCard key={key} title={WIDGET_LABELS.todays_meal_plan} propertyId={propertyId} meals={todaysMeals} isShabbosOrYomTov={isShabbosOrYomTovDinner} />;
               if (key === 'low_stock_alerts') return <LowStockAlertsCard key={key} title={WIDGET_LABELS.low_stock_alerts} propertyId={propertyId} items={lowStockItems} />;
               return <HolidayCountdownCard key={key} title={WIDGET_LABELS.holiday_countdown} observance={nextObservance} />;
             })}
@@ -180,6 +182,14 @@ function WidgetCard({ title, children }: { title: string; children: React.ReactN
   );
 }
 
+// Hardcoded dinner course order -- not derived from data, not a sort.
+// Dessert never appears on a weekday; any course not in the day-appropriate
+// array (including kids_platter, which is in neither) simply doesn't render
+// on this widget. Only applies to the 'dinner' slot -- breakfast/lunch
+// entries render in their existing sequence order, untouched.
+const WEEKDAY_DINNER_ORDER = ['soup', 'protein', 'starch', 'vege', 'salad', 'dip'];
+const SHABBOS_DINNER_ORDER = ['soup', 'protein', 'starch', 'vege', 'salad', 'dip', 'dessert'];
+
 // Only this widget gets a fixed header image, so it builds its own shell
 // (matching WidgetCard's mist/brass-border/xl2/shadow/pin exactly) instead
 // of using the shared WidgetCard, which has no image slot. The image is a
@@ -187,12 +197,31 @@ function WidgetCard({ title, children }: { title: string; children: React.ReactN
 // Lighting card's fixed-height photo band -- so a missing/failed
 // /meal-plan-card.png.png silently renders nothing rather than a broken-image
 // icon, which is exactly the "no fallback placeholder" behavior asked for.
-function TodaysMealPlanCard({ title, propertyId, meals }: { title: string; propertyId: string; meals: TodaysMealEntry[] }) {
+function TodaysMealPlanCard({
+  title,
+  propertyId,
+  meals,
+  isShabbosOrYomTov,
+}: {
+  title: string;
+  propertyId: string;
+  meals: TodaysMealEntry[];
+  isShabbosOrYomTov: boolean;
+}) {
   const t = useTranslations('dashboard.widgets');
   const bySlot = meals.reduce<Record<string, TodaysMealEntry[]>>((acc, m) => {
     (acc[m.mealSlot] ??= []).push(m);
     return acc;
   }, {});
+
+  function orderedEntries(slot: string, entries: TodaysMealEntry[]): TodaysMealEntry[] {
+    if (slot !== 'dinner') return entries;
+    const order = isShabbosOrYomTov ? SHABBOS_DINNER_ORDER : WEEKDAY_DINNER_ORDER;
+    return order
+      .map((slug) => entries.find((e) => e.courseSlug === slug))
+      .filter((e): e is TodaysMealEntry => !!e);
+  }
+
   return (
     <div className="relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow overflow-hidden">
       <Pin size="sm" />
@@ -210,28 +239,32 @@ function TodaysMealPlanCard({ title, propertyId, meals }: { title: string; prope
           <p className="text-sm text-dusk">{t('nothingPlannedToday')}</p>
         ) : (
           <div className="space-y-2">
-            {Object.entries(bySlot).map(([slot, entries]) => (
-              <div key={slot}>
-                <p className="text-[10.5px] uppercase tracking-wide font-bold text-dusk mb-1">{slot}</p>
-                <ul className="space-y-0.5">
-                  {entries.map((e, i) => (
-                    <li key={i} className="text-sm text-denim">
-                      {e.course && <span className="text-dusk">{e.course}: </span>}
-                      {e.recipeId ? (
-                        <Link
-                          href={`/properties/${propertyId}/recipes/${e.recipeId}`}
-                          className="text-brass hover:underline underline-offset-2"
-                        >
-                          {e.name}
-                        </Link>
-                      ) : (
-                        e.name
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {Object.entries(bySlot).map(([slot, rawEntries]) => {
+              const entries = orderedEntries(slot, rawEntries);
+              if (entries.length === 0) return null;
+              return (
+                <div key={slot}>
+                  <p className="text-[10.5px] uppercase tracking-wide font-bold text-dusk mb-1">{slot}</p>
+                  <ul className="space-y-0.5">
+                    {entries.map((e, i) => (
+                      <li key={i} className="text-sm text-denim">
+                        {e.course && <span className="text-dusk">{e.course}: </span>}
+                        {e.recipeId ? (
+                          <Link
+                            href={`/properties/${propertyId}/recipes/${e.recipeId}`}
+                            className="text-brass hover:underline underline-offset-2"
+                          >
+                            {e.name}
+                          </Link>
+                        ) : (
+                          e.name
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
         )}
         <Link href={`/properties/${propertyId}/meal-plan`} className="inline-block mt-2.5 text-[11px] font-bold text-brass underline underline-offset-2">
