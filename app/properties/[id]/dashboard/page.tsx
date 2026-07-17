@@ -707,12 +707,13 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               Replaces the full-bleed-photo-plus-overlay-text approach
               entirely: no text ever renders on the photo itself now, which
               is the root-cause fix for the legibility bug (not another
-              scrim patch), and the fixed 140px photo plus denim header/
-              footer bars is what keeps this card's height matched to
-              Today's via the grid row's default stretch behavior.
-              LocationZmanim's real geolocation toggle is unchanged, just
-              relocated into the footer bar -- variant="dark" already reads
-              correctly on a solid dark background. */}
+              scrim patch). No longer height-matched to Today via grid
+              stretch (that was turned off fixing the collapse-container-
+              shrink bug) -- sized independently now via its own photo
+              height + footer padding instead. LocationZmanim's real
+              geolocation toggle is unchanged, just relocated into the
+              footer bar -- variant="dark" already reads correctly on a
+              solid dark background. */}
           <CollapsibleCard
             cardId="candle-lighting"
             className="col-span-12 md:col-span-5 rounded-xl3 border border-cardBorder shadow-card overflow-hidden relative flex flex-col transition-shadow hover:shadow-cardHover"
@@ -728,15 +729,15 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               // object-fit: cover -- this already crops rather than
               // stretches. backgroundRepeat added defensively.
               //
-              // 140px -> 70px (2026-07-17 compact pass): the explicit
-              // instruction for this card was cut off mid-sentence right
-              // after "The photo" -- inferred from the shared "roughly
-              // half" height target stated for both this card and Today,
-              // since the photo is the single largest fixed-height
-              // contributor here. Flagging this as an inference, not a
-              // literal instruction -- say the word if a different value
-              // was intended.
-              className="h-[70px] w-full bg-denim shrink-0"
+              // 140px -> 70px (first compact pass) -> 110px (this pass):
+              // once Today/Candle Lighting's grid auto-match was turned off
+              // (fixing the collapse-container-shrink bug), Candle Lighting
+              // started sizing to its own content and read as too short
+              // next to Today. Not going back to full height-matching
+              // (that's the behavior that was intentionally removed) --
+              // just enough taller to not feel undersized as an
+              // independently-sized card.
+              className="h-[110px] w-full bg-denim shrink-0"
               style={{
                 backgroundImage: `url('https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/dashboard-photos/candle.jpeg')`,
                 backgroundSize: 'cover',
@@ -744,7 +745,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                 backgroundRepeat: 'no-repeat',
               }}
             />
-            <div className="bg-denim px-5 py-[13px] flex-1 flex items-center justify-center">
+            <div className="bg-denim px-5 py-[20px] flex-1 flex items-center justify-center">
               <LocationZmanim
                 variant="dark"
                 propertyName={propertyName}
