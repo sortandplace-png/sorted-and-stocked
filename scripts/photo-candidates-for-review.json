@@ -1,0 +1,1526 @@
+[
+  {
+    "id": "8240a2b8-26ca-4b40-a114-96aad72433c4",
+    "name": "L'Oreal Hair Product",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/052/226/3685/front_en.13.400.jpg",
+        "label": "L'Oréal Paris Elvive Extraordinary Oil Hair Oil | L'Oréal Paris",
+        "categories": "Hair care, Hair oils, Hair serums, Hair treatments, open-beauty-facts"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/054/214/0775/front_es.15.400.jpg",
+        "label": "Fructis hair food banana | Garnier",
+        "categories": "en:non-food-products, en:open-beauty-facts"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/000/006/021/7318/front_en.8.400.jpg",
+        "label": "Banana hair food conditioner | Garnier",
+        "categories": "non-food-products, open-beauty-facts"
+      }
+    ]
+  },
+  {
+    "id": "0f89b8c8-d553-403e-8337-6595f8ba8ef5",
+    "name": "Nail Clippers",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/316/678/004/6311/front_fr.3.400.jpg",
+        "label": "Coupe-ongles | Riga",
+        "categories": "nail clippers"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/869/906/717/1093/front_en.4.400.jpg",
+        "label": "Propedi Rose Altın Ayak Makası | Propedi",
+        "categories": "Nail products, Cosmetics, Foot care, Manicure and pedicure tools, Nail clippers, Personal care, Toenail clippers"
+      }
+    ]
+  },
+  {
+    "id": "15c4eb05-d66e-4078-af21-c5ff6e868fb5",
+    "name": "Sunscreen",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/055/112/5282/front_fr.5.400.jpg",
+        "label": " | Mixa",
+        "categories": "Crèmes solaire"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/055/112/5305/front_fr.9.400.jpg",
+        "label": "Dermo protect spf 50+ | Mixa",
+        "categories": "Crèmes solaire"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/054/252/0454/front_fr.3.400.jpg",
+        "label": "Sensitive expert + Spf 50+ | Garnier, Garnier ambre solaire",
+        "categories": "Crèmes solaire"
+      }
+    ]
+  },
+  {
+    "id": "40063045-298a-4972-a283-db55b6967799",
+    "name": "Cornstarch",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/890/180/800/0051/front_en.3.400.jpg",
+        "label": "Cornstarch | Weikfield",
+        "categories": "Cereal flours, Cooking helpers"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/006/038/318/3639/front_fr.12.400.jpg",
+        "label": "Cornstarch | Sans nom",
+        "categories": "Amidon de maïs"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/007/874/214/1671/front_en.8.400.jpg",
+        "label": "Cornstarch | Great Value",
+        "categories": "Corn starch"
+      }
+    ]
+  },
+  {
+    "id": "65c138d8-b6d7-485e-abf4-7d3eadecd59d",
+    "name": "Lemon Juice",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/405/648/987/0326/front_fr.20.400.jpg",
+        "label": "Pur jus de citron | Solevita",
+        "categories": "Jus de citron, Concentrés de jus de citrons"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/842/802/026/7746/front_es.56.400.jpg",
+        "label": "Limón exprimido | Derivados Cítricos, Solimón",
+        "categories": "Zumos exprimidos no refrigerados, en:Squeezed lemon juices"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/000/118/0992/front_en.6.400.jpg",
+        "label": "Lemon Juice | Sainsbury's",
+        "categories": "Lemon juice"
+      }
+    ]
+  },
+  {
+    "id": "9d230946-5aea-4c20-adde-629eb046d0b4",
+    "name": "Chicken Stock",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/501/366/511/2235/front_en.80.400.jpg",
+        "label": "Organic Chicken Stock Cubes -  8 Pack | Kallø",
+        "categories": "Poultry broth, Bouillon cubes, Organic-chicken-stock-cubes, Poultry-stock-for-sauce-and-cooking-dehydrated"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/501/366/510/7538/front_en.40.400.jpg",
+        "label": "Very Low Salt Organic Chicken Stock Cubes | kallø",
+        "categories": "Poultry broth, Bouillon cubes, Groceries"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/871/256/647/9368/front_en.58.400.jpg",
+        "label": "Succulent Chicken | Knorr",
+        "categories": "Vegetable bouillon cubes"
+      }
+    ]
+  },
+  {
+    "id": "7780c3c8-8303-40ad-bfa1-98c5f228927a",
+    "name": "Half and Half",
+    "category": "Dairy",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/871/132/737/1002/front_en.58.400.jpg",
+        "label": "Half Baked | Ben & Jerry's",
+        "categories": "Dairy desserts, Ice cream tubs, Luxury ice cream in a cup"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/501/003/506/8383/front_en.19.400.jpg",
+        "label": "Half-Coated Milk Chocolate Cookies | Fox's",
+        "categories": "Milk chocolate biscuits"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/000/114/5915/front_en.22.400.jpg",
+        "label": "2 Handcrafted Half Ciabattas | Sainsbury's",
+        "categories": "Breads"
+      }
+    ]
+  },
+  {
+    "id": "5fb97801-c570-4d6b-9722-4b02bafde28d",
+    "name": "Ground Turkey (White Meat)",
+    "category": "Meat & Seafood",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/064/220/555/9435/front_en.4.400.jpg",
+        "label": "Fresh ground white turkey | ",
+        "categories": "Poultries"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/064/220/553/5255/front_en.4.400.jpg",
+        "label": "Ground turkey | Honeysuckle white",
+        "categories": "Poultries"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/064/220/555/9428/front_en.11.400.jpg",
+        "label": "93% lean ground turkey | Cargill Meat Solutions Corp., Honeysuckle White",
+        "categories": "Turkeys"
+      }
+    ]
+  },
+  {
+    "id": "2b1260b2-0408-426c-a165-7564bb730d30",
+    "name": "Thyme",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/505/008/345/9825/front_en.34.400.jpg",
+        "label": "Thyme | Kellogg's",
+        "categories": "Corn-flakes"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/316/893/000/5636/front_fr.54.400.jpg",
+        "label": "Saveur Poulet Rôti | Lay's",
+        "categories": "Chips de pommes de terre à l'huile de tournesol, Chips saveur poulet rôti, Apéritif"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/304/206/220/9288/front_fr.20.400.jpg",
+        "label": "Thym du sud de la France | la Tisanière",
+        "categories": "Boissons chaudes, Boissons à base de végétaux, Thym, Infusions de thym"
+      }
+    ]
+  },
+  {
+    "id": "ff1c025c-9487-4ecb-a99a-b39ab125b81d",
+    "name": "Pearl Barley",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/408/860/031/3146/front_en.25.400.jpg",
+        "label": "Valley Spreadable | Valley",
+        "categories": "Spreadable fats, Pearl barley"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/500/035/896/7296/front_en.14.400.jpg",
+        "label": "Pearl Barley | Tesco",
+        "categories": "Pearled barley"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/003/997/811/4037/front_en.31.400.jpg",
+        "label": "Pearl Barley | Bob's Red Mill",
+        "categories": "Barley"
+      }
+    ]
+  },
+  {
+    "id": "d6d2bf86-de03-4539-9307-bc7c0e3a127b",
+    "name": "White Pepper",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/002/941/3010/front_en.9.400.jpg",
+        "label": "Tomatillo & Jalapeño Pepper Tortilla | M&S Food",
+        "categories": "Corn chips, Wheat flatbreads"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/405/648/916/7938/front_de.22.400.jpg",
+        "label": "Pfeffer weiß gemahlen | Kania",
+        "categories": "Weißer Pfeffer gemahlen, en:Alimentos e bebidas à base de plantas, en:Alimentos à base de plantas, en:Condimentos, en:Pimentas, en:Temperos"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/002/067/6490/front_en.3.400.jpg",
+        "label": "Easy Chillies in White Wine Vinegar | Batts",
+        "categories": "Chili peppers"
+      }
+    ]
+  },
+  {
+    "id": "7c69030e-5a39-47bf-bc91-10fd542027c4",
+    "name": "Shoulder Steak",
+    "category": "Meat & Seafood",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/406/146/470/1700/front_en.8.400.jpg",
+        "label": "Pork Shoulder Steaks | Aldi, Ashfields",
+        "categories": "Pork"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/405/648/914/8272/front_en.33.400.jpg",
+        "label": "Pork shoulder steaks | Birchwood Farm, Lidl",
+        "categories": "Pork"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/405/648/911/3188/front_en.3.400.jpg",
+        "label": "PORK SHOULDER STEAKS | LIDL",
+        "categories": "Pork"
+      }
+    ]
+  },
+  {
+    "id": "851e9cda-5598-4008-bbd0-19a6a389dc58",
+    "name": "Spare Ribs",
+    "category": "Meat & Seafood",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/007/889/513/1178/front_fr.15.400.jpg",
+        "label": "Lkk honey garlic spare rib | Lee Kum Kee",
+        "categories": "Sauces, en:groceries"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/539/151/105/9027/front_de.7.400.jpg",
+        "label": "Bourbon BBQ Spare Ribs | Ribworld",
+        "categories": "Schälrippchen, Spareribs"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/401/807/700/5510/front_en.9.400.jpg",
+        "label": "lorenz Crunchips Roasted Spare Rib Flavour | Lorenz",
+        "categories": ""
+      }
+    ]
+  },
+  {
+    "id": "00d75449-3fd6-4d99-b9cb-3863734253a7",
+    "name": "Red Wine Vinegar",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/325/054/023/2677/front_fr.88.400.jpg",
+        "label": "Maille Vinaigre de Vin Rouge adouci au jus de raisin concentré 50cl | Maille",
+        "categories": "Sauces, Red wine vinegars, Groceries"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/501/284/520/5620/front_en.11.400.jpg",
+        "label": "Aspall Classic Red Wine Vinegar | ",
+        "categories": "Red wine vinegars"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/501/284/503/2202/front_en.3.400.jpg",
+        "label": "Organic Red Wine Vinegar | Aspall",
+        "categories": "Red wine vinegars"
+      }
+    ]
+  },
+  {
+    "id": "3918f675-4370-474b-ad2b-b38d76b993f9",
+    "name": "Multivitamins",
+    "category": "Health & First Aid",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/401/035/505/1479/front_en.35.400.jpg",
+        "label": "Multivitamin | Dm, das gesunde Plus",
+        "categories": "en:Dietary-supplements, en:Vitamins"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/505/717/232/4224/front_en.7.400.jpg",
+        "label": "Multivitamins | ASDA",
+        "categories": "Multivitamins, dietary-supplements"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/402/267/912/1202/front_en.3.400.jpg",
+        "label": "Multivitamin | Sunlife",
+        "categories": "Vitamin"
+      }
+    ]
+  },
+  {
+    "id": "52ec8bb0-1108-4e44-ad07-d7defb14f8f7",
+    "name": "Multivitamins",
+    "category": "Health & First Aid",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/401/035/505/1479/front_en.35.400.jpg",
+        "label": "Multivitamin | Dm, das gesunde Plus",
+        "categories": "en:Dietary-supplements, en:Vitamins"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/505/717/232/4224/front_en.7.400.jpg",
+        "label": "Multivitamins | ASDA",
+        "categories": "Multivitamins, dietary-supplements"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/402/267/912/1202/front_en.3.400.jpg",
+        "label": "Multivitamin | Sunlife",
+        "categories": "Vitamin"
+      }
+    ]
+  },
+  {
+    "id": "1dad4bfd-d051-4427-b5dc-8b487e12d492",
+    "name": "Multivitamins",
+    "category": "Health & First Aid",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/401/035/505/1479/front_en.35.400.jpg",
+        "label": "Multivitamin | Dm, das gesunde Plus",
+        "categories": "en:Dietary-supplements, en:Vitamins"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/505/717/232/4224/front_en.7.400.jpg",
+        "label": "Multivitamins | ASDA",
+        "categories": "Multivitamins, dietary-supplements"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/402/267/912/1202/front_en.3.400.jpg",
+        "label": "Multivitamin | Sunlife",
+        "categories": "Vitamin"
+      }
+    ]
+  },
+  {
+    "id": "e95bfc61-f8d1-49c1-8554-0fc671915b77",
+    "name": "Chocolate Sandwich Cookies",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/317/568/120/3303/front_en.41.400.jpg",
+        "label": "Biscuit Cacaoté Fourré Saveur Vanille | Gerblé",
+        "categories": "Biscuits au chocolat, Biscuits cacaotés fourrés goût vanille, Biscuits édulcorés"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/841/000/081/0004/front_da.163.400.jpg",
+        "label": "اوريو اوريجنال ١٧٦ جرام | Oreo",
+        "categories": "Chocolate sandwich cookies"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/762/230/028/1182/front_es.63.400.jpg",
+        "label": "Oreo Original | Mondelez, Oreo",
+        "categories": "Chocolate sandwich cookies"
+      }
+    ]
+  },
+  {
+    "id": "fb663288-1184-45ae-9487-e783ed022713",
+    "name": "Coconut Milk (Unsweetened, Organic)",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/800/186/025/1085/front_en.37.400.jpg",
+        "label": "Rice Coconut | Riso Scotti",
+        "categories": "Products without gluten, Non-alcoholic beverages, Unsweetened beverages, Rice-based drinks, Coconut-based drinks, Flavoured Drinks, Mixed plant milks"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/074/447/391/2353/front_en.80.400.jpg",
+        "label": "Organic Coconut Unsweetened Coconutmilk | SO Delicious",
+        "categories": "fruits-based-foods, Coconut milks and creams, Plant-based creams for cooking, Coconut-based drinks"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/073/762/807/9506/front_en.46.400.jpg",
+        "label": "coconut milk unsweetened | THAI KITCHEN ORGANIC",
+        "categories": "Plant-based milk alternatives, Coconut milks and creams, Plant-based creams for cooking"
+      }
+    ]
+  },
+  {
+    "id": "a3fa9842-b876-4a85-a9d6-92a0eb1f3fd3",
+    "name": "Fettuccine",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/000/041/4234/front_en.144.400.jpg",
+        "label": "Fettuccine Alfredo | Trader Giotto's",
+        "categories": "Frozen pasta dishes"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/408/860/011/9953/front_en.3.400.jpg",
+        "label": "Edamame & Mung Bean Fettuccine | The Foodie Market",
+        "categories": "Dry pastas, Vegan"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/400/836/601/5511/front_en.7.400.jpg",
+        "label": "Fettuccine Wildlachs | FRoSTA",
+        "categories": "Gefrorene Fertigmahlzeiten"
+      }
+    ]
+  },
+  {
+    "id": "2ad69e97-6b2a-48f4-9a64-c0a975e65f11",
+    "name": "Coriander Seeds",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/501/115/788/8163/front_en.42.400.jpg",
+        "label": "Lime & Coriander Basmati Rice | Tilda",
+        "categories": "Basmati rices"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/890/290/122/2654/front_en.3.400.jpg",
+        "label": "coriander whole | Good Life",
+        "categories": "Coriander seeds"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/502/790/601/1591/front_en.3.400.jpg",
+        "label": "Coriander seeds | Greenfield",
+        "categories": ""
+      }
+    ]
+  },
+  {
+    "id": "e696e977-55c2-4803-bdbc-36dbb0e3bbe3",
+    "name": "Sunscreen",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/055/112/5282/front_fr.5.400.jpg",
+        "label": " | Mixa",
+        "categories": "Crèmes solaire"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/055/112/5305/front_fr.9.400.jpg",
+        "label": "Dermo protect spf 50+ | Mixa",
+        "categories": "Crèmes solaire"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/054/252/0454/front_fr.3.400.jpg",
+        "label": "Sensitive expert + Spf 50+ | Garnier, Garnier ambre solaire",
+        "categories": "Crèmes solaire"
+      }
+    ]
+  },
+  {
+    "id": "37be0edf-ad6f-4522-be88-e0c23e2d0465",
+    "name": "Sunscreen",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/055/112/5282/front_fr.5.400.jpg",
+        "label": " | Mixa",
+        "categories": "Crèmes solaire"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/055/112/5305/front_fr.9.400.jpg",
+        "label": "Dermo protect spf 50+ | Mixa",
+        "categories": "Crèmes solaire"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/054/252/0454/front_fr.3.400.jpg",
+        "label": "Sensitive expert + Spf 50+ | Garnier, Garnier ambre solaire",
+        "categories": "Crèmes solaire"
+      }
+    ]
+  },
+  {
+    "id": "7a7b2b06-ab15-4480-9d4e-903819e1db43",
+    "name": "Sunscreen",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/055/112/5282/front_fr.5.400.jpg",
+        "label": " | Mixa",
+        "categories": "Crèmes solaire"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/055/112/5305/front_fr.9.400.jpg",
+        "label": "Dermo protect spf 50+ | Mixa",
+        "categories": "Crèmes solaire"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/054/252/0454/front_fr.3.400.jpg",
+        "label": "Sensitive expert + Spf 50+ | Garnier, Garnier ambre solaire",
+        "categories": "Crèmes solaire"
+      }
+    ]
+  },
+  {
+    "id": "e598f363-b014-41c2-a746-f131441efcc0",
+    "name": "Body Lotion",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/400/590/036/9581/front_ar.21.400.jpg",
+        "label": "body lotion | Nivea",
+        "categories": "fr:Beurre de cocoa"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/628/100/650/6428/front_fr.27.400.jpg",
+        "label": "Chargement… | ",
+        "categories": "en:Beauty, en:Body lotion, en:non-food-products, en:open-beauty-facts"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/841/075/103/6074/front_ar.9.400.jpg",
+        "label": "Body Lotion | Tulipan Negro",
+        "categories": "en:Incorrect product type, en:Cosmetic products, en:Non-food-products, en:Open-beauty-facts"
+      }
+    ]
+  },
+  {
+    "id": "483a3a07-a995-4cd5-a1cc-e001a43c5b4b",
+    "name": "Body Lotion",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/400/590/036/9581/front_ar.21.400.jpg",
+        "label": "body lotion | Nivea",
+        "categories": "fr:Beurre de cocoa"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/628/100/650/6428/front_fr.27.400.jpg",
+        "label": "Chargement… | ",
+        "categories": "en:Beauty, en:Body lotion, en:non-food-products, en:open-beauty-facts"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/841/075/103/6074/front_ar.9.400.jpg",
+        "label": "Body Lotion | Tulipan Negro",
+        "categories": "en:Incorrect product type, en:Cosmetic products, en:Non-food-products, en:Open-beauty-facts"
+      }
+    ]
+  },
+  {
+    "id": "cd074745-8f83-43d0-bf19-41bfdf338493",
+    "name": "Sunscreen",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/055/112/5282/front_fr.5.400.jpg",
+        "label": " | Mixa",
+        "categories": "Crèmes solaire"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/055/112/5305/front_fr.9.400.jpg",
+        "label": "Dermo protect spf 50+ | Mixa",
+        "categories": "Crèmes solaire"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/054/252/0454/front_fr.3.400.jpg",
+        "label": "Sensitive expert + Spf 50+ | Garnier, Garnier ambre solaire",
+        "categories": "Crèmes solaire"
+      }
+    ]
+  },
+  {
+    "id": "56ba497c-c006-4394-92d7-449452e6b8fc",
+    "name": "Sunscreen",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/055/112/5282/front_fr.5.400.jpg",
+        "label": " | Mixa",
+        "categories": "Crèmes solaire"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/055/112/5305/front_fr.9.400.jpg",
+        "label": "Dermo protect spf 50+ | Mixa",
+        "categories": "Crèmes solaire"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/054/252/0454/front_fr.3.400.jpg",
+        "label": "Sensitive expert + Spf 50+ | Garnier, Garnier ambre solaire",
+        "categories": "Crèmes solaire"
+      }
+    ]
+  },
+  {
+    "id": "37887442-5be6-449e-b54c-a85486ee0b08",
+    "name": "Sunscreen",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/055/112/5282/front_fr.5.400.jpg",
+        "label": " | Mixa",
+        "categories": "Crèmes solaire"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/055/112/5305/front_fr.9.400.jpg",
+        "label": "Dermo protect spf 50+ | Mixa",
+        "categories": "Crèmes solaire"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/054/252/0454/front_fr.3.400.jpg",
+        "label": "Sensitive expert + Spf 50+ | Garnier, Garnier ambre solaire",
+        "categories": "Crèmes solaire"
+      }
+    ]
+  },
+  {
+    "id": "a6235a12-c242-4fa3-b197-4a10196fd2ac",
+    "name": "Sunscreen",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/055/112/5282/front_fr.5.400.jpg",
+        "label": " | Mixa",
+        "categories": "Crèmes solaire"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/055/112/5305/front_fr.9.400.jpg",
+        "label": "Dermo protect spf 50+ | Mixa",
+        "categories": "Crèmes solaire"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/360/054/252/0454/front_fr.3.400.jpg",
+        "label": "Sensitive expert + Spf 50+ | Garnier, Garnier ambre solaire",
+        "categories": "Crèmes solaire"
+      }
+    ]
+  },
+  {
+    "id": "1f414f26-268b-46e6-a53a-e5245262c88c",
+    "name": "Body Lotion",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/400/590/036/9581/front_ar.21.400.jpg",
+        "label": "body lotion | Nivea",
+        "categories": "fr:Beurre de cocoa"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/628/100/650/6428/front_fr.27.400.jpg",
+        "label": "Chargement… | ",
+        "categories": "en:Beauty, en:Body lotion, en:non-food-products, en:open-beauty-facts"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/841/075/103/6074/front_ar.9.400.jpg",
+        "label": "Body Lotion | Tulipan Negro",
+        "categories": "en:Incorrect product type, en:Cosmetic products, en:Non-food-products, en:Open-beauty-facts"
+      }
+    ]
+  },
+  {
+    "id": "82b2aa8d-43c5-4ab7-bb6c-3251a479781e",
+    "name": "Body Lotion",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/400/590/036/9581/front_ar.21.400.jpg",
+        "label": "body lotion | Nivea",
+        "categories": "fr:Beurre de cocoa"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/628/100/650/6428/front_fr.27.400.jpg",
+        "label": "Chargement… | ",
+        "categories": "en:Beauty, en:Body lotion, en:non-food-products, en:open-beauty-facts"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/841/075/103/6074/front_ar.9.400.jpg",
+        "label": "Body Lotion | Tulipan Negro",
+        "categories": "en:Incorrect product type, en:Cosmetic products, en:Non-food-products, en:Open-beauty-facts"
+      }
+    ]
+  },
+  {
+    "id": "a27dab50-7f61-4dd1-9455-89d1a3efd13d",
+    "name": "Body Lotion",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/400/590/036/9581/front_ar.21.400.jpg",
+        "label": "body lotion | Nivea",
+        "categories": "fr:Beurre de cocoa"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/628/100/650/6428/front_fr.27.400.jpg",
+        "label": "Chargement… | ",
+        "categories": "en:Beauty, en:Body lotion, en:non-food-products, en:open-beauty-facts"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/841/075/103/6074/front_ar.9.400.jpg",
+        "label": "Body Lotion | Tulipan Negro",
+        "categories": "en:Incorrect product type, en:Cosmetic products, en:Non-food-products, en:Open-beauty-facts"
+      }
+    ]
+  },
+  {
+    "id": "fa39bee4-8bd0-41b6-af8a-4d1db91394b5",
+    "name": "Body Lotion",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/400/590/036/9581/front_ar.21.400.jpg",
+        "label": "body lotion | Nivea",
+        "categories": "fr:Beurre de cocoa"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/628/100/650/6428/front_fr.27.400.jpg",
+        "label": "Chargement… | ",
+        "categories": "en:Beauty, en:Body lotion, en:non-food-products, en:open-beauty-facts"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/841/075/103/6074/front_ar.9.400.jpg",
+        "label": "Body Lotion | Tulipan Negro",
+        "categories": "en:Incorrect product type, en:Cosmetic products, en:Non-food-products, en:Open-beauty-facts"
+      }
+    ]
+  },
+  {
+    "id": "e570894a-b0d7-45a6-bf22-8efdeb341f8d",
+    "name": "Fleischmann's Instant Yeast",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/004/010/001/7874/front_en.26.400.jpg",
+        "label": "Bread Machine Instant Yeast | Fleischmann's",
+        "categories": "Yeast"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/004/010/000/9299/front_en.6.400.jpg",
+        "label": "Rapidrise Instant Yeast | Fleischmann's",
+        "categories": "baker's yeast, Yeast"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/004/010/000/7295/front_en.3.400.jpg",
+        "label": "Instant Dry Yeast | Fleischmann's",
+        "categories": "Instant Dry Yeast"
+      }
+    ]
+  },
+  {
+    "id": "1bf6cf5b-e65f-4f7e-99b6-1c21a64945d3",
+    "name": "HARIBO Happy Cola",
+    "category": "Snacks & Candy",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/400/168/632/7517/front_en.8.400.jpg",
+        "label": "Haribo Happy Cola | Haribo",
+        "categories": "Gummibonbons"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/900/297/532/3369/front_de.52.400.jpg",
+        "label": "Haribo Happy Cola | Haribo",
+        "categories": "Gummi Colaflaschen"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/869/121/602/2010/front_bn.24.400.jpg",
+        "label": "Happy Cola | Haribo",
+        "categories": "en:Gummi candies, en:Snacks  Snacks sucrés  Confiseries  Bonbons  Bonbons gélifiés"
+      }
+    ]
+  },
+  {
+    "id": "8b992166-3955-4251-b7a5-c2b48fc870ff",
+    "name": "Lipton Brisk Iced Tea, Lemon",
+    "category": "Beverages",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/001/200/001/0255/front_en.3.400.jpg",
+        "label": "Brisk lemon iced tea cans | Lipton",
+        "categories": ""
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/001/200/000/7590/front_en.4.400.jpg",
+        "label": "Brisk Iced Tea Lemon 12 Fluid Ounce Aluminum Can | Lipton",
+        "categories": ""
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/001/200/003/9218/front_en.8.400.jpg",
+        "label": "Brisk Iced Tea Lemon | Brisk, Lipton",
+        "categories": "Teas, Lemon flavored iced teas"
+      }
+    ]
+  },
+  {
+    "id": "1bbcb2d4-cf96-48ac-a644-d02d3df11a15",
+    "name": "Multivitamins",
+    "category": "Health & First Aid",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/401/035/505/1479/front_en.35.400.jpg",
+        "label": "Multivitamin | Dm, das gesunde Plus",
+        "categories": "en:Dietary-supplements, en:Vitamins"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/505/717/232/4224/front_en.7.400.jpg",
+        "label": "Multivitamins | ASDA",
+        "categories": "Multivitamins, dietary-supplements"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/402/267/912/1202/front_en.3.400.jpg",
+        "label": "Multivitamin | Sunlife",
+        "categories": "Vitamin"
+      }
+    ]
+  },
+  {
+    "id": "3e5ec170-278d-461f-ba3b-6d62c4246e38",
+    "name": "Dried Apricots",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/002/053/4455/front_en.189.400.jpg",
+        "label": "Dried Soft Apricots | Alesto",
+        "categories": "en:fruits-based-foods, Dörrobst, en:albaricoques-deshidratados, en:alimentos-de-origen-vegetal, en:alimentos-de-origen-vegetal-deshidratados, en:alimentos-y-bebidas-de-origen-vegetal, en:fruchte, en:frutas-deshidratadas, en:frutas-y-sus-productos, en:frutas-y-verduras-y-sus-productos, en:productos-deshidratados"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/405/648/990/0344/front_en.9.400.jpg",
+        "label": "Soft Pitted Apricots | Alesto",
+        "categories": "fruits-based-foods, Dried apricots"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/800/050/041/7539/front_en.37.400.jpg",
+        "label": "almond & apricot with a yoghurt coating | EAT NATURAL",
+        "categories": "fruits-based-foods, Dried fruits, Cereal bars with nuts, Fruits cereal bars, Nut bars, Mixed nuts and dried fruits"
+      }
+    ]
+  },
+  {
+    "id": "e3ed6248-b00b-42ba-b0fa-0619bd82d74d",
+    "name": "Body Lotion",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/400/590/036/9581/front_ar.21.400.jpg",
+        "label": "body lotion | Nivea",
+        "categories": "fr:Beurre de cocoa"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/628/100/650/6428/front_fr.27.400.jpg",
+        "label": "Chargement… | ",
+        "categories": "en:Beauty, en:Body lotion, en:non-food-products, en:open-beauty-facts"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/841/075/103/6074/front_ar.9.400.jpg",
+        "label": "Body Lotion | Tulipan Negro",
+        "categories": "en:Incorrect product type, en:Cosmetic products, en:Non-food-products, en:Open-beauty-facts"
+      }
+    ]
+  },
+  {
+    "id": "599b8c88-a568-4b35-80e2-e4700dbd00cf",
+    "name": "Toothpaste",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/871/052/241/7379/front_en.28.400.jpg",
+        "label": "Signal Integral 8 Dentifrice Nature Elements Charbon 75ml | Signal, Integral 8",
+        "categories": "Dentifrices, en:non-food-products, en:open-beauty-facts"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/890/100/911/1631/front_en.3.400.jpg",
+        "label": "Miswak | Dabur",
+        "categories": "en:Toothpastes, en:open-beauty-facts"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/628/100/111/2013/front_en.5.400.jpg",
+        "label": "Colgate | Colgate",
+        "categories": "Toothpastes, non-food-products, open-beauty-facts"
+      }
+    ]
+  },
+  {
+    "id": "2eb760d4-9295-4743-82d6-a3a0fab2d842",
+    "name": "Ground Walnuts",
+    "category": "Bakery",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/020/910/090/6636/front_en.3.400.jpg",
+        "label": "Fresh Ground Walnut Butter | Heinen's",
+        "categories": "Walnut butters"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/000/564/7156/front_en.4.400.jpg",
+        "label": "Ground Walnuts | Belbake",
+        "categories": "Shelled nuts, Walnuts"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/599/795/670/4623/front_en.3.400.jpg",
+        "label": "Walnut Ground | Kalifa",
+        "categories": ""
+      }
+    ]
+  },
+  {
+    "id": "a2ea3bcc-6dfc-4a52-ad47-070cf97ebdc2",
+    "name": "Body Lotion",
+    "category": "Personal Care",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/400/590/036/9581/front_ar.21.400.jpg",
+        "label": "body lotion | Nivea",
+        "categories": "fr:Beurre de cocoa"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/628/100/650/6428/front_fr.27.400.jpg",
+        "label": "Chargement… | ",
+        "categories": "en:Beauty, en:Body lotion, en:non-food-products, en:open-beauty-facts"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/841/075/103/6074/front_ar.9.400.jpg",
+        "label": "Body Lotion | Tulipan Negro",
+        "categories": "en:Incorrect product type, en:Cosmetic products, en:Non-food-products, en:Open-beauty-facts"
+      }
+    ]
+  },
+  {
+    "id": "4ccc1a3f-a9c2-497c-b673-80e7323ed4b9",
+    "name": "Fresca Citrus",
+    "category": "Beverages",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/004/900/000/2485/front_en.44.400.jpg",
+        "label": "Fresca Sparkling Soda Water Grapefruit Citrus | Fresca",
+        "categories": "Waters, Diet sodas"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/001/000/2230/front_en.49.400.jpg",
+        "label": "Sweet Easy Peelers | Tesco",
+        "categories": "Fresh fruits, Clementines"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/004/900/000/4113/front_en.11.400.jpg",
+        "label": "Sparkling Soda Water Peach Citrus Original | Fresca",
+        "categories": "Sodas"
+      }
+    ]
+  },
+  {
+    "id": "f1b6e871-a46c-4ad0-9226-7015310566e0",
+    "name": "Multivitamins",
+    "category": "Health & First Aid",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/401/035/505/1479/front_en.35.400.jpg",
+        "label": "Multivitamin | Dm, das gesunde Plus",
+        "categories": "en:Dietary-supplements, en:Vitamins"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/505/717/232/4224/front_en.7.400.jpg",
+        "label": "Multivitamins | ASDA",
+        "categories": "Multivitamins, dietary-supplements"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/402/267/912/1202/front_en.3.400.jpg",
+        "label": "Multivitamin | Sunlife",
+        "categories": "Vitamin"
+      }
+    ]
+  },
+  {
+    "id": "3b1872dc-874d-4438-a94b-9ddaafcf0a94",
+    "name": "Multivitamins",
+    "category": "Health & First Aid",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/401/035/505/1479/front_en.35.400.jpg",
+        "label": "Multivitamin | Dm, das gesunde Plus",
+        "categories": "en:Dietary-supplements, en:Vitamins"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/505/717/232/4224/front_en.7.400.jpg",
+        "label": "Multivitamins | ASDA",
+        "categories": "Multivitamins, dietary-supplements"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/402/267/912/1202/front_en.3.400.jpg",
+        "label": "Multivitamin | Sunlife",
+        "categories": "Vitamin"
+      }
+    ]
+  },
+  {
+    "id": "371171ec-bc61-4eb0-8d51-6987c8dbda8a",
+    "name": "Multivitamins",
+    "category": "Health & First Aid",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/401/035/505/1479/front_en.35.400.jpg",
+        "label": "Multivitamin | Dm, das gesunde Plus",
+        "categories": "en:Dietary-supplements, en:Vitamins"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/505/717/232/4224/front_en.7.400.jpg",
+        "label": "Multivitamins | ASDA",
+        "categories": "Multivitamins, dietary-supplements"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/402/267/912/1202/front_en.3.400.jpg",
+        "label": "Multivitamin | Sunlife",
+        "categories": "Vitamin"
+      }
+    ]
+  },
+  {
+    "id": "81bf3340-fb1c-44a7-b9bd-e5fcb488cf25",
+    "name": "Multivitamins",
+    "category": "Health & First Aid",
+    "candidates": [
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/401/035/505/1479/front_en.35.400.jpg",
+        "label": "Multivitamin | Dm, das gesunde Plus",
+        "categories": "en:Dietary-supplements, en:Vitamins"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/505/717/232/4224/front_en.7.400.jpg",
+        "label": "Multivitamins | ASDA",
+        "categories": "Multivitamins, dietary-supplements"
+      },
+      {
+        "url": "https://images.openbeautyfacts.org/images/products/402/267/912/1202/front_en.3.400.jpg",
+        "label": "Multivitamin | Sunlife",
+        "categories": "Vitamin"
+      }
+    ]
+  },
+  {
+    "id": "275351e9-17ed-4d08-b947-8f3da79405cc",
+    "name": "Ortega Mini Taco Slider Shells",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/004/150/149/8934/front_en.9.400.jpg",
+        "label": "Yellow Corn Mini Taco Slider Shells | Ortega",
+        "categories": ""
+      }
+    ]
+  },
+  {
+    "id": "f902eea5-ea71-46f3-948d-c7c082dabc5f",
+    "name": "Kosher Caesar Dressing",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/007/702/887/0373/front_en.3.400.jpg",
+        "label": "Caesar dressing | Tonnelli",
+        "categories": "Salad dressings"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/019/430/669/1816/front_en.3.400.jpg",
+        "label": "Chicken Caesar, Anchovies, Caesar Dressing, Wheat Wrap | Flik",
+        "categories": ""
+      }
+    ]
+  },
+  {
+    "id": "708f1cf8-d41f-458d-a917-6761cf85c5dd",
+    "name": "Ground Beef 1 Lb",
+    "category": "Meat & Seafood",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/085/498/600/6019/front_en.3.400.jpg",
+        "label": "100% Ground Beef 10 Quarter Lb Patties | ",
+        "categories": ""
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/025/669/531/2663/front_en.3.400.jpg",
+        "label": "Ground Beef 80% Lean 20% Fat, 2.44 lb | Aldi",
+        "categories": ""
+      }
+    ]
+  },
+  {
+    "id": "71befc2c-d130-407e-9a71-73b3d0316fd5",
+    "name": "Ground Coriander",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/341/796/002/2619/front_fr.37.400.jpg",
+        "label": "CORIANDRE moulue | Arcadie, Cook",
+        "categories": "Epices, Coriandre en poudre, Coriandre en pot, en:Groceries, Épices et aromates"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/005/002/0034/front_en.4.400.jpg",
+        "label": "Coriander ground | Schwartz",
+        "categories": "Coriander leaves, Potted coriander, Groceries"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/000/524/6117/front_en.3.400.jpg",
+        "label": "Ground Coriander | ",
+        "categories": ""
+      }
+    ]
+  },
+  {
+    "id": "fd75b8aa-13e1-4f51-a885-917469d09e8b",
+    "name": "Gold's Horseradish Prepared",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/004/174/080/0031/front_en.3.400.jpg",
+        "label": "Prepared Horseradish | Gold’s",
+        "categories": ""
+      }
+    ]
+  },
+  {
+    "id": "ee3d7576-64b3-46da-89ef-3f51726005fe",
+    "name": "Puff Pastry Sheets",
+    "category": "Frozen",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/000/611/0729/front_fr.25.400.jpg",
+        "label": "Pâte feuilletée sans gluten | BioBleud",
+        "categories": "Pâtes feuilletées, Pâte feuilletée crue à la matière grasse végétale"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/501/008/410/3677/front_en.31.400.jpg",
+        "label": "Ready Rolled Puff Pastry Sheet | Jus Rol",
+        "categories": "Puff pastry sheets, Raw Puff pastry"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/506/105/662/0197/front_en.33.400.jpg",
+        "label": "PUFF PASTRY SHEET | JUS-ROL",
+        "categories": "Puff pastry sheets"
+      }
+    ]
+  },
+  {
+    "id": "d2d62658-463a-40d1-a541-3167edda1058",
+    "name": "Onion Soup Mix",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/000/413/6202/front_en.14.400.jpg",
+        "label": "Onion Recipe Soup & Dip Mix | Lipton",
+        "categories": "Condiments, Soups, Groceries"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/000/414/0807/front_en.5.400.jpg",
+        "label": "Beefy Onion Recipe Soup & Dip Mix | Lipton",
+        "categories": "Soups"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/006/038/320/1234/front_en.12.400.jpg",
+        "label": "Onion soup mix | No Name",
+        "categories": "Dehydrated soups"
+      }
+    ]
+  },
+  {
+    "id": "1b8e1fa5-18ef-439b-ab3d-67f3dcaba91c",
+    "name": "Walnuts",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/002/081/6438/front_en.85.400.jpg",
+        "label": "Walnuts XXL | Alesto, LIDL Alesto",
+        "categories": "Cerneaux de noix"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/871/129/902/0946/front_de.50.400.jpg",
+        "label": " | Natural Happiness",
+        "categories": "Nusskerne, Walnüsse, noten-en--producten"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/408/860/044/1658/front_en.38.400.jpg",
+        "label": "WALNUTS | THE FOODIE MARKET",
+        "categories": "Walnut kernels"
+      }
+    ]
+  },
+  {
+    "id": "d48be0f3-59d3-4123-82b0-bfb4a7dae1fb",
+    "name": "Rufus Teague Whiskey Maple BBQ Sauce",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/081/915/301/0183/front_fr.10.400.jpg",
+        "label": "Whiskey Maple BBQ | Rufus Teague",
+        "categories": "Sauces, en:Groceries"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/000/028/2327/front_en.3.400.jpg",
+        "label": "Whiskey Maple BBQ Sauce | Rufus Teague",
+        "categories": "Barbecue sauces"
+      }
+    ]
+  },
+  {
+    "id": "eccd134a-397e-4ad6-be92-d511d3a27518",
+    "name": "Roasted Cashews",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/002/033/3737/front_en.107.400.jpg",
+        "label": "Roasted Cashew-Peanut-Mix Honey & Salt | Alesto, Lidl, lidl Alesto",
+        "categories": "Cashew nuts, Roasted nuts, Salted nuts"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/324/541/290/1454/front_fr.114.400.jpg",
+        "label": "Noix de cajou grillées | Carrefour",
+        "categories": "Noix de Cajou grillées"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/405/648/910/5381/front_en.37.400.jpg",
+        "label": "Cashews roasted & salted | Alesto",
+        "categories": "Tiefkühlprodukte, Gesalzene Cashewnüsse"
+      }
+    ]
+  },
+  {
+    "id": "736c37de-a25b-4373-b495-bcc4dd5243b9",
+    "name": "Short Ribs",
+    "category": "Meat & Seafood",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/002/063/9037/front_en.27.400.jpg",
+        "label": "Barbecue Ribs Original | l'étal du boucher",
+        "categories": "Pork, fr:Ribs de bœuf sauce barbecue"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/087/744/800/9250/front_en.51.400.jpg",
+        "label": "Beef Short Rib Lasagna | Giovanni Roma Rana",
+        "categories": "Prepared lasagne"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/084/253/518/1010/front_en.4.400.jpg",
+        "label": "Beef Short Rib Ravioli | Wild Fork",
+        "categories": ""
+      }
+    ]
+  },
+  {
+    "id": "bec5cbc9-a406-447c-9787-63d064a8b22e",
+    "name": "Mini Beef Pastrami",
+    "category": "Meat & Seafood",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/327/016/089/5137/front_fr.23.400.jpg",
+        "label": "Mini sandwiches bretzel pastrami cheddar épinards | Picard",
+        "categories": "Sandwichs"
+      }
+    ]
+  },
+  {
+    "id": "1aab93ed-9023-4982-882d-d6bfb4268098",
+    "name": "Salmon Fillet",
+    "category": "Meat & Seafood",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/002/017/4552/front_en.180.400.jpg",
+        "label": "Pavés de saumon Rose du Pacifique | Ocean Sea",
+        "categories": "Wild salmons, Frozen fishes, Salmon fillets"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/505/737/369/9688/front_en.16.400.jpg",
+        "label": "2 Boneless Salmon Fillets | Tesco",
+        "categories": "Salmon fillets"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/000/002/093/3876/front_hr.28.400.jpg",
+        "label": "salmon fillet with skin | Gastronomia di Mare",
+        "categories": "Fileti lososa"
+      }
+    ]
+  },
+  {
+    "id": "79b0d84e-5bae-49ed-ae19-8356a95fc239",
+    "name": "Side Of Salmon",
+    "category": "Meat & Seafood",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/408/860/048/9032/front_en.5.400.jpg",
+        "label": "Half Side of Salmon | Aldi The Fishmonger",
+        "categories": "Salmons"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/933/968/734/1931/front_en.3.400.jpg",
+        "label": "Tasmanian Salmon Side With Lemon Mytle & Honey Marinade | Woolworths",
+        "categories": ""
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/509/987/439/7274/front_en.7.400.jpg",
+        "label": "Skin On Side Of Salmon | Dunnes Stores",
+        "categories": ""
+      }
+    ]
+  },
+  {
+    "id": "48282ec9-496b-4001-9a49-5648ce9fd75e",
+    "name": "Orzo",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/807/680/958/2209/front_en.42.400.jpg",
+        "label": "Gran Cereale classico, Fiocchi d avena, farrone orzo | Gran Cereale",
+        "categories": "Cibi a base vegetale, Biscotti di fiocchi d'avena"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/505/931/901/6573/front_en.46.400.jpg",
+        "label": "Granola con Avena Mixed Berries | K",
+        "categories": "Mueslis"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/327/016/086/6090/front_fr.24.400.jpg",
+        "label": "Filets De Maquereau, Sauce À La Provençale, Pâtes Orzo Et Légumes Fu Soleil | Picard",
+        "categories": "Filets de maquereaux, Picard"
+      }
+    ]
+  },
+  {
+    "id": "1cd27bd6-bb34-440c-b066-f1031ba68ff8",
+    "name": "Hoisin Sauce",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/007/889/514/1924/front_en.3.400.jpg",
+        "label": "Kee Hoisin Sauce | Lee Kum Kee",
+        "categories": "Hoisin sauzen"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/501/033/810/4023/front_en.11.400.jpg",
+        "label": "Rich Hoisin Sauce | Blue Dragon",
+        "categories": "Hoisin sauces"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/500/019/750/3969/front_en.33.400.jpg",
+        "label": "Hoisin Dipping Sauce | Sharwood's",
+        "categories": "Hoisin sauces"
+      }
+    ]
+  },
+  {
+    "id": "1e7e53b8-6596-44a7-8d05-1d60b848737d",
+    "name": "Sanding Sugar",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/007/874/219/9511/front_en.3.400.jpg",
+        "label": "Sanding sugar | Walmart",
+        "categories": ""
+      }
+    ]
+  },
+  {
+    "id": "ffe42b96-8bbf-4f81-8fa3-3b2c434f30cd",
+    "name": "Wheat Wraps",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/841/007/647/0812/front_en.88.400.jpg",
+        "label": "Blé Complet Wraps | Old El Paso",
+        "categories": "Wheat flatbreads"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/503/603/440/6193/front_en.58.400.jpg",
+        "label": "Wraps WHEAT & WHITE | Mission",
+        "categories": "Wheat flatbreads"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/506/019/864/2760/front_en.70.400.jpg",
+        "label": "DURUM WHEAT PIADINA | CROSTA MOLLICA",
+        "categories": "Flatbreads, Wraps"
+      }
+    ]
+  },
+  {
+    "id": "dd94ea31-d0e0-40fb-9cb7-71f0d5b9a62c",
+    "name": "Ground Coffee",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/800/007/002/0580/front_en.17.400.jpg",
+        "label": "Qualita Oro | Lavazza",
+        "categories": "Beverages, Ground coffees"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/800/007/001/5104/front_en.46.400.jpg",
+        "label": "Boîte de café moulu 100% arabica. | Lavazza",
+        "categories": "Beverages, Ground coffees"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/841/010/002/4202/front_es.33.400.jpg",
+        "label": "Bonka natural | Nestlé",
+        "categories": "Bebidas para tomar calientes, Cafés molidos"
+      }
+    ]
+  },
+  {
+    "id": "74830c9b-58da-400e-8bce-0b5dfdc2e09c",
+    "name": "Sliced Almonds",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/501/002/921/9326/front_en.9.400.jpg",
+        "label": "No Added Sugar Muesli imp | Weetabix, Alpen",
+        "categories": "Mueslis with fruits"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/062/639/427/3303/front_en.6.400.jpg",
+        "label": "Sliced Almonds | Bassé",
+        "categories": "Almonds"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/007/874/224/1654/front_en.13.400.jpg",
+        "label": "Sliced almonds | Great bay",
+        "categories": "Almonds"
+      }
+    ]
+  },
+  {
+    "id": "df3008f3-8ed2-4f59-9ab8-16dc99a57e6c",
+    "name": "Vegetable Stock",
+    "category": "Pantry",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/501/366/511/2273/front_en.62.400.jpg",
+        "label": "Organic Vegetable Stock Cubes | Kallø",
+        "categories": "Broth stock, Vegetable bouillon cubes"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/501/366/510/3134/front_en.31.400.jpg",
+        "label": "VERY LOW SALT ORGANIC VEGETABLE STOCK CUBES | kallø",
+        "categories": "Condiments, Bouillon cubes, Dehydrated vegetable bouillons, Boullion Powders, Groceries"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/871/256/647/9368/front_en.58.400.jpg",
+        "label": "Succulent Chicken | Knorr",
+        "categories": "Vegetable bouillon cubes"
+      }
+    ]
+  },
+  {
+    "id": "178e4d2c-829f-4124-af8a-bbcb0ca23b16",
+    "name": "Frozen Cauliflower Florets",
+    "category": "Frozen",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/405/648/912/3347/front_de.42.400.jpg",
+        "label": "Blumenkohl | Freshona",
+        "categories": "Tiefkühl-Blumenkohl"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/408/860/003/3327/front_en.26.400.jpg",
+        "label": "Cauliflower Cheese | Aldi, Four Seasons",
+        "categories": "Frozen cauliflower florets, Cauliflower gratins, Cauliflower cheese"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/501/837/432/3187/front_en.9.400.jpg",
+        "label": "Cauliflower Cheese | Tesco",
+        "categories": "Frozen cauliflower florets"
+      }
+    ]
+  },
+  {
+    "id": "8905da28-3021-4788-9329-92309c7c5715",
+    "name": "Chicken Nuggets",
+    "category": "Frozen",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/326/698/078/4614/front_fr.27.400.jpg",
+        "label": "Crousty Chicken Long Filet's | Le gaulois",
+        "categories": "Nuggets de poulet"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/359/669/028/9032/front_fr.57.400.jpg",
+        "label": "Crousti Tenders aiguillettes | Père Dodu",
+        "categories": "Poulets cuisinés, Nuggets de poulet"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/848/000/063/3231/front_en.35.400.jpg",
+        "label": "Nuggets de pollo | Mercadona",
+        "categories": "Pollo Preparado, Nugget de pollo"
+      }
+    ]
+  },
+  {
+    "id": "092a5359-4277-4b66-b684-341cb562752e",
+    "name": "Made Good Chocolate Chip Cookies",
+    "category": "Snacks & Candy",
+    "candidates": [
+      {
+        "url": "https://images.openfoodfacts.org/images/products/068/745/621/4306/front_en.20.400.jpg",
+        "label": "ORGANIC SOFT BAKED OAT BARS chocolate chip | MADE GOOD MORNINGS",
+        "categories": "Cereal bars, Individually wrapped cookie -Nut-Free, Individually-wrapped-oat-bars, Individually-wrapped-oat-bars-nut-free, Soft-baked-oat-bar"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/068/745/628/3159/front_en.18.400.jpg",
+        "label": "Soft Baked Mini Cookies Chocolate Chip | Made Good",
+        "categories": "Chocolate biscuits"
+      },
+      {
+        "url": "https://images.openfoodfacts.org/images/products/068/745/628/1155/front_en.34.400.jpg",
+        "label": "ORGANIC SOFT BAKED COOKIE BITES chocolate chip | MADE GOOD",
+        "categories": "Chocolate chip cookies"
+      }
+    ]
+  }
+]
