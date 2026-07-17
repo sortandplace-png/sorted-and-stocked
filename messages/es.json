@@ -484,16 +484,15 @@
       "showAria": "Mostrar {label}",
       "allHidden": "Todos los widgets están ocultos — toque Editar widgets para mostrar uno.",
       "labelTodaysMealPlan": "Plan de Comidas de Hoy",
+      "labelPrepAhead": "Asistente de Preparación Anticipada",
       "labelLowStockAlerts": "Alertas de Bajo Inventario",
-      "labelHolidayCountdown": "Cuenta Regresiva de Shabat/Yom Tov",
+      "shoppingListLabel": "Lista de Compras",
+      "viewList": "Ver lista →",
       "nothingPlannedToday": "Nada planificado para hoy.",
       "viewFullPlan": "Ver plan completo →",
       "allStocked": "Todo está bien abastecido.",
       "moreCount": "+{count} más",
-      "viewInventory": "Ver inventario →",
-      "today": "hoy",
-      "daysUntilShort": "{count}d",
-      "noneFound": "No se encontró ninguna festividad próxima."
+      "viewInventory": "Ver inventario →"
     },
     "prepAhead": {
       "off": "El Asistente de Preparación Anticipada está desactivado.",

@@ -484,16 +484,15 @@
       "showAria": "Show {label}",
       "allHidden": "All widgets hidden — tap Edit widgets to bring one back.",
       "labelTodaysMealPlan": "Today's Meal Plan",
+      "labelPrepAhead": "Prep Ahead Assistant",
       "labelLowStockAlerts": "Low Stock Alerts",
-      "labelHolidayCountdown": "Shabbos/Yom Tov Countdown",
+      "shoppingListLabel": "Shopping List",
+      "viewList": "View list →",
       "nothingPlannedToday": "Nothing planned for today.",
       "viewFullPlan": "View full plan →",
       "allStocked": "Everything's stocked up.",
       "moreCount": "+{count} more",
-      "viewInventory": "View inventory →",
-      "today": "today",
-      "daysUntilShort": "{count}d",
-      "noneFound": "No upcoming observance found."
+      "viewInventory": "View inventory →"
     },
     "prepAhead": {
       "off": "Prep Ahead Assistant is off.",

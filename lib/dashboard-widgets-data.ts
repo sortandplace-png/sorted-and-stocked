@@ -5,15 +5,14 @@
 import { format } from 'date-fns';
 import { createClient } from '@/lib/supabase/server';
 
-export const WIDGET_KEYS = ['todays_meal_plan', 'low_stock_alerts', 'holiday_countdown'] as const;
+export const WIDGET_KEYS = ['todays_meal_plan', 'prep_ahead'] as const;
 export type WidgetKey = (typeof WIDGET_KEYS)[number];
 
 export type WidgetPrefs = Record<WidgetKey, { isVisible: boolean; sortOrder: number }>;
 
 const DEFAULT_PREFS: WidgetPrefs = {
   todays_meal_plan: { isVisible: true, sortOrder: 1 },
-  low_stock_alerts: { isVisible: true, sortOrder: 2 },
-  holiday_countdown: { isVisible: true, sortOrder: 3 },
+  prep_ahead: { isVisible: true, sortOrder: 2 },
 };
 
 // No prefs row for a given widget_key (or no rows at all) means "visible,

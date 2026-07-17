@@ -1,45 +1,59 @@
 // components/DashboardWidgets.tsx
-// Dashboard Widgets v1 -- 3 fixed cards (Today's Meal Plan, Low Stock
-// Alerts, Shabbos/Yom Tov Countdown), all additive to the existing
-// Dashboard content. Home Pulse Score was removed 2026-07-16 -- its
+// Dashboard Widgets -- 2 toggleable/reorderable cards (Today's Meal Plan,
+// Prep Ahead Assistant), plus a fixed (always-shown, not part of the
+// edit/reorder system) Low Stock Alerts + Shopping List summary row below
+// them. Restructured 2026-07-17: Shabbos/Yom Tov Countdown was removed
+// entirely (it duplicated the observance pill already shown in the
+// property header on every page -- app/properties/[id]/layout.tsx), and
+// Prep Ahead Assistant moved from its own standalone full-width card
+// (previously rendered separately in dashboard/page.tsx) into this
+// widget's other toggleable slot, gaining the same image-right treatment
+// as Today's Meal Plan. Home Pulse Score was removed 2026-07-16 -- its
 // underlying scoring formula was unreliable (see home_pulse_score view),
 // not a UI issue, so it came off the page entirely rather than being
 // patched around. Visibility/order persisted per-user, per-property in
-// dashboard_widget_prefs (migration 090); RLS scopes every row to
-// auth.uid(), so this upserts directly from the browser client, same
-// pattern as PrepAheadAssistant's feature-flag toggle.
+// dashboard_widget_prefs (migration 090, key rename in migration 103);
+// RLS scopes every row to auth.uid(), so this upserts directly from the
+// browser client.
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { format, parseISO } from 'date-fns';
 import { Settings2, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import Pin from '@/components/PinAccent';
 import type { WidgetKey, WidgetPrefs, TodaysMealEntry, LowStockItem } from '@/lib/dashboard-widgets-data';
-import type { UpcomingObservance } from '@/lib/get-next-observance';
+
+type PrepAheadReminder = { recipeId: string | null; recipeName: string; planDate: string; prepLeadDays: number | null };
 
 export default function DashboardWidgets({
   propertyId,
   initialPrefs,
   todaysMeals,
   lowStockItems,
-  nextObservance,
+  shoppingListCount,
+  prepAheadReminders,
+  prepAheadEnabled,
+  canManagePrepAhead,
   isShabbosOrYomTovDinner,
 }: {
   propertyId: string;
   initialPrefs: WidgetPrefs;
   todaysMeals: TodaysMealEntry[];
   lowStockItems: LowStockItem[];
-  nextObservance: UpcomingObservance | null;
+  shoppingListCount: number;
+  prepAheadReminders: PrepAheadReminder[];
+  prepAheadEnabled: boolean;
+  canManagePrepAhead: boolean;
   isShabbosOrYomTovDinner: boolean;
 }) {
   const t = useTranslations('dashboard.widgets');
   const WIDGET_LABELS: Record<WidgetKey, string> = {
     todays_meal_plan: t('labelTodaysMealPlan'),
-    low_stock_alerts: t('labelLowStockAlerts'),
-    holiday_countdown: t('labelHolidayCountdown'),
+    prep_ahead: t('labelPrepAhead'),
   };
   const [prefs, setPrefs] = useState(initialPrefs);
   const [editing, setEditing] = useState(false);
@@ -155,11 +169,27 @@ export default function DashboardWidgets({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {visibleKeys.map((key) => {
               if (key === 'todays_meal_plan') return <TodaysMealPlanCard key={key} title={WIDGET_LABELS.todays_meal_plan} propertyId={propertyId} meals={todaysMeals} isShabbosOrYomTov={isShabbosOrYomTovDinner} />;
-              if (key === 'low_stock_alerts') return <LowStockAlertsCard key={key} title={WIDGET_LABELS.low_stock_alerts} propertyId={propertyId} items={lowStockItems} />;
-              return <HolidayCountdownCard key={key} title={WIDGET_LABELS.holiday_countdown} observance={nextObservance} />;
+              return (
+                <PrepAheadWidgetCard
+                  key={key}
+                  title={WIDGET_LABELS.prep_ahead}
+                  propertyId={propertyId}
+                  reminders={prepAheadReminders}
+                  enabled={prepAheadEnabled}
+                  canManage={canManagePrepAhead}
+                />
+              );
             })}
           </div>
         )}
+
+        {/* Fixed row -- always shown, not part of the show/hide/reorder
+            system above (Low Stock Alerts and the shopping-list count are
+            operational, not optional). */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+          <LowStockAlertsCard title={t('labelLowStockAlerts')} propertyId={propertyId} items={lowStockItems} />
+          <ShoppingListSummaryCard propertyId={propertyId} count={shoppingListCount} />
+        </div>
       </div>
     </div>
   );
@@ -310,18 +340,126 @@ function LowStockAlertsCard({ title, propertyId, items }: { title: string; prope
   );
 }
 
-function HolidayCountdownCard({ title, observance }: { title: string; observance: UpcomingObservance | null }) {
-  const t = useTranslations('dashboard.widgets');
+// Mirrors TodaysMealPlanCard's own shell (flex row, Pin, content left /
+// image right ~42%) rather than the shared WidgetCard, which has no image
+// slot -- same reasoning TodaysMealPlanCard's own comment gives. Ported
+// directly from the old standalone PrepAheadAssistant component (enabled/
+// disabled feature-flag toggle, collapse toggle, reminder list, recipe
+// links) -- same content and course filtering, just reshaped into this
+// card's layout. /prep-ahead-card.png is a background-image div, not an
+// <img>, so a not-yet-uploaded file silently renders nothing rather than a
+// broken-image icon, same as the meal-plan card's image slot.
+function PrepAheadWidgetCard({
+  title,
+  propertyId,
+  reminders,
+  enabled,
+  canManage,
+}: {
+  title: string;
+  propertyId: string;
+  reminders: PrepAheadReminder[];
+  enabled: boolean;
+  canManage: boolean;
+}) {
+  const t = useTranslations('dashboard.prepAhead');
+  const [isEnabled, setIsEnabled] = useState(enabled);
+  const [saving, setSaving] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const supabase = createClient();
+  const showToast = useToast();
+
+  // Staff shouldn't see a disabled property-wide setting or a control to
+  // change it -- nothing to render for them once it's off.
+  if (!isEnabled && !canManage) return null;
+
+  async function setPrepAheadEnabled(next: boolean) {
+    setSaving(true);
+    const { data: current } = await supabase.from('properties').select('feature_flags').eq('id', propertyId).single();
+    const flags = (current?.feature_flags ?? {}) as Record<string, unknown>;
+    const { error } = await supabase
+      .from('properties')
+      .update({ feature_flags: { ...flags, prep_ahead_assistant: next } })
+      .eq('id', propertyId);
+    setSaving(false);
+    if (error) {
+      showToast(t('failedToUpdate'), { variant: 'error' });
+      return;
+    }
+    setIsEnabled(next);
+    showToast(next ? t('turnedOn') : t('turnedOff'), { variant: 'success' });
+  }
+
   return (
-    <WidgetCard title={title}>
-      {observance ? (
-        <div className="flex items-baseline gap-2">
-          <span className="text-lg font-display text-denim">{observance.name}</span>
-          <span className="text-sm text-dusk">{observance.daysUntil === 0 ? t('today') : t('daysUntilShort', { count: observance.daysUntil })}</span>
+    <div className="relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow overflow-hidden flex min-h-[140px]">
+      <Pin size="sm" />
+      <div className="flex-1 py-[14px] px-[18px]">
+        <div className="flex items-center justify-between gap-2 mb-2.5">
+          {isEnabled ? (
+            <button onClick={() => setCollapsed((v) => !v)} className="flex items-center gap-2 text-left">
+              <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{title}</span>
+              <span className="text-xs text-dusk font-bold">({reminders.length})</span>
+              <span className="text-dusk text-sm">{collapsed ? '▸' : '▾'}</span>
+            </button>
+          ) : (
+            <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{title}</span>
+          )}
+          {canManage && (
+            <button
+              onClick={() => setPrepAheadEnabled(!isEnabled)}
+              disabled={saving}
+              className="text-xs text-dusk underline disabled:opacity-40 shrink-0"
+            >
+              {isEnabled ? t('turnOff') : t('turnOn')}
+            </button>
+          )}
         </div>
-      ) : (
-        <p className="text-sm text-dusk">{t('noneFound')}</p>
-      )}
+        {!isEnabled ? (
+          <p className="text-sm text-dusk">{t('off')}</p>
+        ) : collapsed ? null : reminders.length === 0 ? (
+          <p className="text-sm text-dusk">{t('nothingUpcoming')}</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {reminders.map((r, i) => (
+              <li key={i} className="text-sm text-denim">
+                {r.recipeId ? (
+                  <Link href={`/properties/${propertyId}/recipes/${r.recipeId}`} className="font-semibold text-brass hover:underline underline-offset-2">
+                    {r.recipeName}
+                  </Link>
+                ) : (
+                  <span className="font-semibold">{r.recipeName}</span>
+                )}
+                {' '}— {t('freezerFriendlyScheduled')}{' '}
+                {format(parseISO(r.planDate), 'EEEE, MMM d')}
+                {r.prepLeadDays ? `; ${t('startPrep')} ${r.prepLeadDays} ${r.prepLeadDays === 1 ? t('day') : t('days')} ${t('ahead')}` : ` — ${t('pullOutAhead')}`}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div
+        className="w-[42%] shrink-0"
+        style={{
+          backgroundImage: "url('/prep-ahead-card.png')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      />
+    </div>
+  );
+}
+
+function ShoppingListSummaryCard({ propertyId, count }: { propertyId: string; count: number }) {
+  const t = useTranslations('dashboard.widgets');
+  const td = useTranslations('dashboard');
+  return (
+    <WidgetCard title={t('shoppingListLabel')}>
+      <p className="text-lg font-display text-denim mb-2">
+        {count} {count === 1 ? td('item') : td('items')}
+      </p>
+      <Link href={`/properties/${propertyId}/shopping-list`} className="inline-block text-[11px] font-bold text-brass underline underline-offset-2">
+        {t('viewList')}
+      </Link>
     </WidgetCard>
   );
 }

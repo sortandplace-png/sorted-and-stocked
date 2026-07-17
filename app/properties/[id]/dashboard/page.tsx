@@ -5,12 +5,10 @@ import { getTranslations, getLocale } from 'next-intl/server'
 import { format, parseISO } from 'date-fns'
 import { Calendar, Camera, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, UtensilsCrossed, BookMarked } from 'lucide-react'
 import FloatingScanButton from '@/components/FloatingScanButton'
-import PrepAheadAssistant from '@/components/PrepAheadAssistant'
 import LocationZmanim from '@/components/LocationZmanim'
 import DashboardWidgets from '@/components/DashboardWidgets'
 import Pin from '@/components/PinAccent'
 import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
-import { getNextObservance } from '@/lib/get-next-observance'
 import { getWidgetPrefs, getTodaysMealPlan, getLowStockAlerts } from '@/lib/dashboard-widgets-data'
 import { getPreferredSource } from '@/lib/reorder-sources'
 import ReorderSourcePills from '@/components/ReorderSourcePills'
@@ -521,7 +519,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const { id: propertyId } = await params
   const t = await getTranslations('dashboard')
   const locale = await getLocale()
-  const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount, widgetPrefs, todaysMeals, lowStockItems, nextObservance] = await Promise.all([
+  const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount, widgetPrefs, todaysMeals, lowStockItems] = await Promise.all([
     getData(propertyId),
     getHebcal(),
     getHebrewInfo(),
@@ -536,7 +534,6 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     getWidgetPrefs(propertyId),
     getTodaysMealPlan(propertyId),
     getLowStockAlerts(propertyId),
-    getNextObservance(),
   ])
   const isOwnerOrManager = userRole === 'owner' || userRole === 'manager'
   const tehillim = await getTehillim(hebrewInfo.day)
@@ -1019,7 +1016,10 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           initialPrefs={widgetPrefs}
           todaysMeals={todaysMeals}
           lowStockItems={lowStockItems}
-          nextObservance={nextObservance}
+          shoppingListCount={shopping.length}
+          prepAheadReminders={prepAheadReminders}
+          prepAheadEnabled={prepAheadEnabled}
+          canManagePrepAhead={isOwnerOrManager}
           isShabbosOrYomTovDinner={isShabbosOrYomTovDinner}
         />
 
@@ -1038,13 +1038,6 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             </ul>
           </div>
         )}
-
-        <PrepAheadAssistant
-          propertyId={propertyId}
-          initialEnabled={prepAheadEnabled}
-          reminders={prepAheadReminders}
-          canManage={isOwnerOrManager}
-        />
 
         {showHalachicWidget && (
           <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4">
