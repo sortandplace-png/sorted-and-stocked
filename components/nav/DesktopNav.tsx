@@ -116,15 +116,15 @@ export default function DesktopNav({
   const isDashboardActive = pathname.includes('/dashboard');
 
   return (
-    <nav ref={navRef} className="hidden md:flex items-center gap-1 px-3 py-2 bg-cream border-b border-gold-light/40 print:hidden" aria-label="Sections">
+    <nav ref={navRef} className="hidden md:flex items-center gap-1 px-3 py-2 bg-denim border-t border-white/10 print:hidden" aria-label="Sections">
       <Link
         href={`/properties/${propertyId}/dashboard`}
         aria-current={isDashboardActive ? 'page' : undefined}
         className={
-          'rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal ' +
+          'rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ' +
           (isDashboardActive
-            ? 'bg-white shadow-sm shadow-charcoal/5 text-charcoal border-gold-active'
-            : 'text-charcoal/60 hover:bg-white/50 border-transparent')
+            ? 'bg-mist shadow-sm shadow-black/10 text-denim border-brass'
+            : 'text-white/70 hover:bg-white/10 border-transparent')
         }
       >
         {t('dashboard')}
@@ -144,10 +144,10 @@ export default function DesktopNav({
               aria-haspopup="menu"
               aria-current={groupActive ? 'page' : undefined}
               className={
-                'flex items-center gap-1 rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal ' +
+                'flex items-center gap-1 rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ' +
                 (groupActive
-                  ? 'bg-white shadow-sm shadow-charcoal/5 text-charcoal border-gold-active'
-                  : 'text-charcoal/60 hover:bg-white/50 border-transparent')
+                  ? 'bg-mist shadow-sm shadow-black/10 text-denim border-brass'
+                  : 'text-white/70 hover:bg-white/10 border-transparent')
               }
             >
               {t(group.labelKey)}
@@ -156,7 +156,7 @@ export default function DesktopNav({
             {isOpen && (
               <div
                 role="menu"
-                className="absolute top-full left-0 mt-1 min-w-[10rem] bg-cream border border-gold-light/40 rounded-2xl shadow-md py-1.5 z-40"
+                className="absolute top-full left-0 mt-1 min-w-[10rem] bg-card border border-cardBorder rounded-2xl shadow-md py-1.5 z-40"
               >
                 {visibleItems.map((item) => {
                   const active = segmentIsActive(pathname, item);
@@ -168,7 +168,7 @@ export default function DesktopNav({
                       onClick={() => setOpenGroup(null)}
                       aria-current={active ? 'page' : undefined}
                       className={`block px-4 py-2 text-sm whitespace-nowrap transition-colors ${
-                        active ? 'text-charcoal font-medium bg-gold-light/20' : 'text-charcoal/70 hover:bg-gold-light/10'
+                        active ? 'text-denim font-medium bg-mist' : 'text-dusk hover:bg-mist/50'
                       }`}
                     >
                       {t(item.labelKey)}
@@ -184,7 +184,7 @@ export default function DesktopNav({
       <button
         onClick={() => setShowScan(true)}
         aria-label={t('scanAriaLabel')}
-        className="rounded-full p-2 text-charcoal/70 hover:bg-white/50 hover:text-charcoal transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal"
+        className="rounded-full p-2 text-white/70 hover:bg-white/10 hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
       >
         <ScanIcon size={18} strokeWidth={1.5} />
       </button>

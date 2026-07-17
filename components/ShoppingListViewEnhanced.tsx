@@ -8,6 +8,7 @@ import {
   fetchEnhancedShoppingList,
   fetchItemSources,
   updateShoppingItemStatus,
+  updatePurchaseQty,
   removeShoppingItem,
   type ShoppingItemSource,
 } from '@/lib/api/shoppingList';
@@ -24,6 +25,7 @@ type ShoppingListItem = {
   name_es: string | null;
   category: string;
   qty_needed: number;
+  purchase_qty: number | null;
   unit_estimate: string | null;
   status: 'pending' | 'purchased' | 'archived';
   // Rich inventory fields (null if not linked)
@@ -134,6 +136,22 @@ export default function ShoppingListViewEnhanced({
     setCollapsedGroups(new Set(titles));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupBy, items.length > 0]);
+
+  const savePurchaseQty = async (itemId: string, raw: string) => {
+    const trimmed = raw.trim();
+    const value = trimmed === '' ? null : Number(trimmed);
+    if (value !== null && (Number.isNaN(value) || value < 0)) return;
+    const prev = items.find((i) => i.item_id === itemId)?.purchase_qty ?? null;
+    if (value === prev) return;
+    setItems((p) => p.map((i) => (i.item_id === itemId ? { ...i, purchase_qty: value } : i)));
+    try {
+      await updatePurchaseQty(itemId, value);
+    } catch (error) {
+      console.error('Error updating purchase quantity:', error);
+      setItems((p) => p.map((i) => (i.item_id === itemId ? { ...i, purchase_qty: prev } : i)));
+      showToast('Failed to update purchase quantity.', { variant: 'error' });
+    }
+  };
 
   const toggleStatus = async (itemId: string, currentStatus: string) => {
     const newStatus = (currentStatus === 'purchased' ? 'pending' : 'purchased') as 'pending' | 'purchased';
@@ -538,6 +556,38 @@ export default function ShoppingListViewEnhanced({
                   </span>
                 )}
               </div>
+            )}
+
+            {/* Purchase quantity: "how many units to buy", distinct from
+                qty_needed (the recipe-derived amount shown in the pill
+                above). Only shown on non-merged rows -- a merged row
+                represents multiple real underlying rows combined for
+                display, and there's no single correct real row to write a
+                typed value to (same reason "By Recipe" grouping disables
+                aggregation entirely). */}
+            {mergedCount === 1 && (
+              <div className="print:hidden flex items-center gap-1.5 mt-1.5">
+                <label htmlFor={`purchase-qty-${item.item_id}`} className="text-[10px] text-charcoal/50">
+                  {t('purchaseQtyLabel')}
+                </label>
+                <input
+                  id={`purchase-qty-${item.item_id}`}
+                  type="number"
+                  min={0}
+                  step="any"
+                  inputMode="decimal"
+                  defaultValue={item.purchase_qty ?? ''}
+                  key={`${item.item_id}-${item.purchase_qty ?? ''}`}
+                  placeholder={t('purchaseQtyPlaceholder')}
+                  onBlur={(e) => savePurchaseQty(item.item_id, e.target.value)}
+                  className="w-16 rounded-md border border-gold-light/40 px-1.5 py-0.5 text-[11px] text-charcoal focus:outline-none focus:ring-1 focus:ring-gold-dark"
+                />
+              </div>
+            )}
+            {item.purchase_qty !== null && (
+              <p className="hidden print:block text-[10px] text-charcoal/60">
+                {t('purchaseQtyLabel')}: {item.purchase_qty}
+              </p>
             )}
 
             {recipePills(item)}

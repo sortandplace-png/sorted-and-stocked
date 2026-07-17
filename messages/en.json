@@ -1,4 +1,84 @@
 {
+  "search": {
+    "triggerLabel": "Search",
+    "placeholder": "Search recipes, inventory, contacts, and more…",
+    "searching": "Searching…",
+    "noResults": "No matches.",
+    "kindRecipe": "Recipe",
+    "kindInventory": "Inventory",
+    "kindLocation": "Location",
+    "kindKnowledge": "House Manual",
+    "kindContact": "Contact",
+    "kindPreference": "Taste & Preferences",
+    "navigate": "navigate",
+    "open": "open",
+    "close": "close"
+  },
+  "auth": {
+    "contact": "Contact",
+    "wordmark": {
+      "broughtToYouBy": "brought to you by"
+    },
+    "welcome": {
+      "message": "Welcome home.",
+      "signIn": "Sign In",
+      "createAccount": "Create an Account",
+      "poweredBy": "A Sort + Place household app"
+    },
+    "signIn": {
+      "heading": "Welcome back",
+      "subtitle": "Sign in to your household",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Your password",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign In",
+      "submitting": "Signing in…",
+      "or": "or",
+      "googleSignIn": "Sign in with Google",
+      "googleSigningIn": "Signing in…",
+      "newHere": "New here?",
+      "createAnAccount": "Create an account"
+    },
+    "signUp": {
+      "heading": "Create your account",
+      "subtitle": "Set up your household in minutes",
+      "codeLabel": "Signup code",
+      "codePlaceholder": "The code you were given",
+      "householdLabel": "Household name",
+      "householdPlaceholder": "e.g. Smith Residence",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "At least 8 characters",
+      "confirmPasswordLabel": "Confirm password",
+      "confirmPasswordPlaceholder": "Repeat your password",
+      "passwordMismatch": "Passwords don't match.",
+      "genericError": "Something went wrong.",
+      "submit": "Create Account",
+      "submitting": "Creating account…",
+      "or": "or",
+      "googleSignUp": "Sign up with Google",
+      "googleSigningUp": "Signing up…",
+      "alreadyHaveAccount": "Already have an account?",
+      "signInLink": "Sign in"
+    },
+    "forgotPassword": {
+      "heading": "Reset your password",
+      "subtitle": "Enter your email and we'll send a reset link.",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "you@example.com",
+      "submit": "Send Reset Link",
+      "submitting": "Sending…",
+      "checkInbox": "Check your inbox",
+      "inboxMessage": "If an account exists for {email}, you'll receive a link to reset your password within a few minutes.",
+      "backToSignInBtn": "Back to Sign In",
+      "tryDifferent": "Try a different address",
+      "backToSignInLink": "Back to sign in"
+    }
+  },
   "nav": {
     "dashboard": "Dashboard",
     "inventory": "Inventory",
@@ -29,9 +109,6 @@
     "save": "Save",
     "saving": "Saving…",
     "revert": "Revert",
-    "search": "Search",
-    "searchShortcut": "Search (Cmd+K)",
-    "findLabel": "Find",
     "signOut": "Sign out",
     "unknown": "someone"
   },
@@ -179,7 +256,9 @@
     "loadingStaples": "Loading staples…",
     "failedToAdd": "Failed to add item.",
     "revertedToast": "Failed to update — reverted.",
-    "queuedToast": "Saved — will sync when back online."
+    "queuedToast": "Saved — will sync when back online.",
+    "purchaseQtyLabel": "Buy",
+    "purchaseQtyPlaceholder": "Qty"
   },
   "labels": {
     "title": "Print Item Labels",
@@ -260,6 +339,9 @@
     "inProgress": "In Progress:",
     "headsUp": "Heads Up:"
   },
+  "myDay": {
+    "staffNoteHeading": "Today's note for staff"
+  },
   "dashboard": {
     "shabbosModeActive": "Shabbos Mode Active",
     "todayHeader": "Today",
@@ -283,7 +365,7 @@
     "meal": "meal",
     "meals": "meals",
     "quickActions": {
-      "planMeal": "Plan Meal",
+      "planMeal": "Meal Plan",
       "planMealSubtitle": "This week's menu",
       "scanItem": "Scan Item",
       "scanItemSubtitle": "Quick lookup",
@@ -401,15 +483,9 @@
       "hideAria": "Hide {label}",
       "showAria": "Show {label}",
       "allHidden": "All widgets hidden — tap Edit widgets to bring one back.",
-      "labelHomePulseScore": "Home Pulse Score",
       "labelTodaysMealPlan": "Today's Meal Plan",
       "labelLowStockAlerts": "Low Stock Alerts",
       "labelHolidayCountdown": "Shabbos/Yom Tov Countdown",
-      "notAvailable": "Not available yet.",
-      "stock": "Stock",
-      "tasks": "Tasks",
-      "listFreshness": "List freshness",
-      "outOf100": "/ 100",
       "nothingPlannedToday": "Nothing planned for today.",
       "viewFullPlan": "View full plan →",
       "allStocked": "Everything's stocked up.",

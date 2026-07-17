@@ -9,12 +9,22 @@ import PrepAheadAssistant from '@/components/PrepAheadAssistant'
 import ThisWeeksMealsList from '@/components/ThisWeeksMealsList'
 import LocationZmanim from '@/components/LocationZmanim'
 import DashboardWidgets from '@/components/DashboardWidgets'
+import Pin from '@/components/PinAccent'
 import { COURSES } from '@/lib/course-constants'
 import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
 import { getNextObservance } from '@/lib/get-next-observance'
-import { getWidgetPrefs, getHomePulseScore, getTodaysMealPlan, getLowStockAlerts } from '@/lib/dashboard-widgets-data'
+import { getWidgetPrefs, getTodaysMealPlan, getLowStockAlerts } from '@/lib/dashboard-widgets-data'
 import { getPreferredSource } from '@/lib/reorder-sources'
 import ReorderSourcePills from '@/components/ReorderSourcePills'
+import {
+  getOmerStatus,
+  getIsErevYomTov,
+  getIsFastDayToday,
+  getRoshChodeshStatus,
+  getMajorHolidayToday,
+  getIsNineDays,
+  resolveTriggerType,
+} from '@/lib/calendar-trigger-type'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -72,26 +82,6 @@ async function getHebrewInfo(): Promise<{ day: number | null; hebrewText: string
   }
 }
 
-// Same real Hebcal omer logic as /api/tools/halachic-calendar (the
-// existing Halachic Calendar tool card) -- duplicated rather than
-// fetched over HTTP since this is already a server component and an
-// internal fetch would need an absolute URL for no real benefit.
-async function getOmerStatus(): Promise<string | null> {
-  try {
-    const now = new Date()
-    const res = await fetch(
-      `https://www.hebcal.com/hebcal?cfg=json&v=1&year=${now.getFullYear()}&month=${now.getMonth() + 1}&o=on`,
-      { next: { revalidate: 3600 } }
-    )
-    const data = await res.json()
-    const today = format(now, 'yyyy-MM-dd')
-    const omerItem = data.items?.find((i: any) => i.category === 'omer' && i.date?.startsWith(today))
-    return omerItem?.title ?? null
-  } catch {
-    return null
-  }
-}
-
 // Same real Hebcal maj=on query as /api/tools/halachic-calendar's
 // getNextErevPesach -- duplicated for the same reason getOmerStatus() above
 // is (already a server component, no benefit to an internal HTTP round trip).
@@ -114,46 +104,6 @@ async function getDaysUntilPesach(): Promise<number | null> {
     const erevPesach = candidates[0]
     if (!erevPesach) return null
     return Math.round((new Date(erevPesach.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-  } catch {
-    return null
-  }
-}
-
-type RoshChodeshStatus = { isToday: boolean; monthName: string; daysUntil: number } | null
-
-// How far ahead the "Rosh Chodesh [Month] in N days" nudge starts showing --
-// tunable; picked from the middle of the suggested 3-5 day range.
-const ROSH_CHODESH_LOOKAHEAD_DAYS = 5
-
-// Same nx=on Hebcal query/category Hebcal itself uses for Rosh Chodesh --
-// same fetch-and-filter shape as getOmerStatus/getDaysUntilPesach above
-// rather than a second date-math engine. A 30-day Hebrew month produces two
-// consecutive-date items with the same title (Rosh Chodesh spans both the
-// last day of the outgoing month and the first of the incoming one) -- only
-// the earlier date is used for "days until" / "is today" so a 2-day month
-// doesn't get counted twice or show the wrong lead time.
-async function getRoshChodeshStatus(todayStr: string): Promise<RoshChodeshStatus> {
-  try {
-    const now = new Date()
-    const years = [now.getFullYear(), now.getFullYear() + 1]
-    const events: { title: string; date: string }[] = []
-    for (const year of years) {
-      const res = await fetch(`https://www.hebcal.com/hebcal?cfg=json&v=1&year=${year}&nx=on`, {
-        next: { revalidate: 3600 * 24 },
-      })
-      const data = await res.json()
-      events.push(...(data.items ?? []).filter((i: any) => i.category === 'roshchodesh'))
-    }
-    const monthNameOf = (title: string) => title.replace(/^Rosh Chodesh /, '')
-    const todayItem = events.find((e) => e.date === todayStr)
-    if (todayItem) {
-      return { isToday: true, monthName: monthNameOf(todayItem.title), daysUntil: 0 }
-    }
-    const next = events.filter((e) => e.date > todayStr).sort((a, b) => a.date.localeCompare(b.date))[0]
-    if (!next) return null
-    const daysUntil = Math.round((new Date(next.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-    if (daysUntil > ROSH_CHODESH_LOOKAHEAD_DAYS) return null
-    return { isToday: false, monthName: monthNameOf(next.title), daysUntil }
   } catch {
     return null
   }
@@ -216,22 +166,6 @@ async function getChametzCountdown(propertyId: string, daysUntilPesach: number |
   return data ?? []
 }
 
-// yom_tov_dates isn't property-scoped (shared calendar data, same table
-// the header countdown pill already reads) -- a plain date match is enough.
-async function getIsErevYomTov(tomorrowStr: string): Promise<boolean> {
-  const supabase = await createClient()
-  const { data } = await supabase.from('yom_tov_dates').select('date').eq('date', tomorrowStr).maybeSingle()
-  return !!data
-}
-
-// Same shared, non-property-scoped fast_days table getNextObservance()
-// already reads -- a plain date match, same pattern as getIsErevYomTov
-// above just checking today instead of tomorrow.
-async function getIsFastDayToday(todayStr: string): Promise<boolean> {
-  const supabase = await createClient()
-  const { data } = await supabase.from('fast_days').select('date').eq('date', todayStr).maybeSingle()
-  return !!data
-}
 
 // Reuses getUpcomingEruvTavshilin (lib/yom-tov.ts) rather than a second
 // date engine -- that function already accounts for the real halachic rule
@@ -569,27 +503,6 @@ async function getUserRole(propertyId: string): Promise<string | null> {
 // Candle/Pantry/Meal Plan), `sm` for the Quick Action tiles. Not used on
 // Readiness or the stat cards -- neither is part of the reference mockup's
 // own pinned-card set.
-function Pin({ size = 'lg' }: { size?: 'lg' | 'sm' }) {
-  const dim = size === 'lg' ? 11 : 10
-  const top = size === 'lg' ? 13 : 11
-  const right = size === 'lg' ? 14 : 12
-  return (
-    <span
-      className="absolute rounded-full pointer-events-none"
-      style={{
-        top,
-        right,
-        width: dim,
-        height: dim,
-        background: 'radial-gradient(circle at 36% 30%, #F8E8B8 0%, #C6A46E 52%, #7A4E18 100%)',
-        boxShadow: '0 1px 3px rgba(0,0,0,.26), inset 0 .5px .5px rgba(255,255,255,.3)',
-        zIndex: 2,
-      }}
-      aria-hidden="true"
-    />
-  )
-}
-
 async function getTehillim(hebrewDay: number | null) {
   if (!hebrewDay) return null
   const supabase = await createClient()
@@ -605,7 +518,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const { id: propertyId } = await params
   const t = await getTranslations('dashboard')
   const locale = await getLocale()
-  const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount, widgetPrefs, homePulseScore, todaysMeals, lowStockItems, nextObservance] = await Promise.all([
+  const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount, widgetPrefs, todaysMeals, lowStockItems, nextObservance] = await Promise.all([
     getData(propertyId),
     getHebcal(),
     getHebrewInfo(),
@@ -618,7 +531,6 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     getPrepAheadEnabled(propertyId),
     getInventoryCount(propertyId),
     getWidgetPrefs(propertyId),
-    getHomePulseScore(propertyId),
     getTodaysMealPlan(propertyId),
     getLowStockAlerts(propertyId),
     getNextObservance(),
@@ -686,7 +598,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   // Persistent Halachic Calendar widget (separate from the existing Tools
   // Hub card, which stays as-is): Sefira count + candle-lighting time,
   // shown on Friday or Erev Yom Tov specifically.
-  const [omerTitle, isErevYomTov, eruvTavshilin, resetBanner, daysUntilPesach, roshChodeshStatus, isFastDayToday] = await Promise.all([
+  const [omerTitle, isErevYomTov, eruvTavshilin, resetBanner, daysUntilPesach, roshChodeshStatus, isFastDayToday, majorHolidayToday, isNineDaysToday] = await Promise.all([
     getOmerStatus(),
     getIsErevYomTov(easternTomorrowStr),
     getEruvTavshilinBanner(easternTodayStr),
@@ -694,6 +606,8 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     getDaysUntilPesach(),
     getRoshChodeshStatus(easternTodayStr),
     getIsFastDayToday(easternTodayStr),
+    getMajorHolidayToday(easternTodayStr),
+    getIsNineDays(),
   ])
   const showHalachicWidget = isEasternFriday || isErevYomTov
   const chametzItems = await getChametzCountdown(propertyId, daysUntilPesach)
@@ -701,15 +615,18 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   // Priority order for which single rotating tip/reflection shows today --
   // most specific real calendar moment wins; 'general' is the catch-all
   // when none of the others apply (the common case almost every day).
-  const todayTriggerType = roshChodeshStatus?.isToday
-    ? 'rosh_chodesh'
-    : isErevYomTov
-      ? 'pre_yomtov'
-      : omerTitle
-        ? 'omer'
-        : isFastDayToday
-          ? 'fast_day'
-          : 'general'
+  // resolveTriggerType() is shared with the Staff (My Day) landing page's
+  // notice banner (lib/calendar-trigger-type.ts) -- one priority chain,
+  // not two that could quietly drift apart.
+  const todayTriggerType = resolveTriggerType({
+    majorHolidayToday,
+    isFastDayToday,
+    isNineDaysToday,
+    isShabbos,
+    roshChodeshToday: !!roshChodeshStatus?.isToday,
+    omerTitle,
+    isErevYomTov,
+  })
   const dailyContent = await getDailyContent(propertyId, locale, todayTriggerType)
 
   // Real bug found and fixed, not assumed: meal_plan_entries is one row per
@@ -810,7 +727,17 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                   {propertyName}
                 </p>
               )}
-              <p lang="he" dir="rtl" className="font-display font-normal text-[62px] text-denim leading-[1.05] tracking-[0.02em] mb-[10px]">
+              {/* 62px (Figma's literal TodayCard.tsx value, matching what
+                  shipped) read as too dominant once the Reflection block
+                  below started carrying real content -- checked Figma's
+                  source directly for a distinct secondary/supporting size
+                  token before touching this, and there isn't one defined
+                  anywhere in TodayCard.tsx or the shared cardStyles.ts
+                  module Figma's own cards import from. 44px chosen as the
+                  midpoint of the requested 42-48px range, not invented
+                  outside it -- a one-line change if a different exact value
+                  is wanted. */}
+              <p lang="he" dir="rtl" className="font-display font-normal text-[44px] text-denim leading-[1.05] tracking-[0.02em] mb-[10px]">
                 {hebrewInfo.hebrewText}
               </p>
               <p className="font-interDisplay text-[11px] uppercase tracking-[0.1em] text-dusk mb-6">
@@ -872,11 +799,20 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               {t('candle.label')}
             </div>
             <div
+              // backgroundSize: 'cover' is the CSS-background equivalent of
+              // object-fit: cover -- this already crops rather than
+              // stretches. If the live site still shows distortion, that's
+              // this exact fix not being deployed yet (this whole card was
+              // reworked to the fixed-height photo + denim header/footer
+              // structure at some point locally), not a remaining code bug --
+              // no other render site for this photo exists anywhere in the
+              // repo (confirmed via grep). backgroundRepeat added defensively.
               className="h-[140px] w-full bg-denim shrink-0"
               style={{
                 backgroundImage: `url('https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/dashboard-photos/candle.jpeg')`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
               }}
             />
             <div className="bg-denim px-5 py-[13px] flex-1 flex items-center justify-center">
@@ -998,7 +934,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                 key={label}
                 href={href}
                 aria-label={ariaLabel}
-                className="relative min-h-[152px] flex flex-col items-center justify-center gap-[11px] rounded-xl2 bg-mist border border-brass/30 py-[22px] px-[18px] shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+                className="relative min-h-[128px] flex flex-col items-center justify-center gap-[11px] rounded-xl2 bg-mist border border-brass/30 py-[14px] px-[18px] shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
               >
                 <Pin size="sm" />
                 <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{label}</span>
@@ -1091,7 +1027,6 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         <DashboardWidgets
           propertyId={propertyId}
           initialPrefs={widgetPrefs}
-          homePulseScore={homePulseScore}
           todaysMeals={todaysMeals}
           lowStockItems={lowStockItems}
           nextObservance={nextObservance}

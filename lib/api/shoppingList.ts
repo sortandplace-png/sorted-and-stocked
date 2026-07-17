@@ -9,6 +9,7 @@ export interface EnhancedShoppingItem {
   name_es: string | null;
   category: string;
   qty_needed: number;
+  purchase_qty: number | null;
   unit_estimate: string | null;
   status: 'pending' | 'purchased';
   // Rich inventory fields (null if unmapped ingredient)
@@ -69,6 +70,24 @@ export async function updateShoppingItemStatus(
   if (error) {
     console.error('Error updating item status:', error.message);
     throw new Error(`Failed to update item: ${error.message}`);
+  }
+}
+
+/**
+ * Set how many units to actually buy (distinct from qty_needed, the recipe-
+ * derived amount). Null clears it back to "not yet decided".
+ */
+export async function updatePurchaseQty(itemId: string, purchaseQty: number | null): Promise<void> {
+  const supabase = createClient();
+
+  const { error } = await supabase
+    .from('shopping_list_items')
+    .update({ purchase_qty: purchaseQty })
+    .eq('id', itemId);
+
+  if (error) {
+    console.error('Error updating purchase quantity:', error.message);
+    throw new Error(`Failed to update purchase quantity: ${error.message}`);
   }
 }
 

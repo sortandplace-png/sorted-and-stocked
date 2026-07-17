@@ -1,4 +1,84 @@
 {
+  "search": {
+    "triggerLabel": "Buscar",
+    "placeholder": "Buscar recetas, inventario, contactos y más…",
+    "searching": "Buscando…",
+    "noResults": "Sin resultados.",
+    "kindRecipe": "Receta",
+    "kindInventory": "Inventario",
+    "kindLocation": "Ubicación",
+    "kindKnowledge": "Manual del Hogar",
+    "kindContact": "Contacto",
+    "kindPreference": "Gustos y Preferencias",
+    "navigate": "navegar",
+    "open": "abrir",
+    "close": "cerrar"
+  },
+  "auth": {
+    "contact": "Contacto",
+    "wordmark": {
+      "broughtToYouBy": "presentado por"
+    },
+    "welcome": {
+      "message": "Bienvenido a casa.",
+      "signIn": "Iniciar sesión",
+      "createAccount": "Crear una cuenta",
+      "poweredBy": "Una app del hogar de Sort + Place"
+    },
+    "signIn": {
+      "heading": "Bienvenido de nuevo",
+      "subtitle": "Accede a tu hogar",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "tu@ejemplo.com",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "Tu contraseña",
+      "rememberMe": "Recordarme",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "submit": "Iniciar sesión",
+      "submitting": "Iniciando sesión…",
+      "or": "o",
+      "googleSignIn": "Iniciar sesión con Google",
+      "googleSigningIn": "Iniciando sesión…",
+      "newHere": "¿Primera vez aquí?",
+      "createAnAccount": "Crear una cuenta"
+    },
+    "signUp": {
+      "heading": "Crea tu cuenta",
+      "subtitle": "Configura tu hogar en minutos",
+      "codeLabel": "Código de registro",
+      "codePlaceholder": "El código que te dieron",
+      "householdLabel": "Nombre del hogar",
+      "householdPlaceholder": "ej. Residencia Smith",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "tu@ejemplo.com",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "Al menos 8 caracteres",
+      "confirmPasswordLabel": "Confirmar contraseña",
+      "confirmPasswordPlaceholder": "Repite tu contraseña",
+      "passwordMismatch": "Las contraseñas no coinciden.",
+      "genericError": "Algo salió mal.",
+      "submit": "Crear cuenta",
+      "submitting": "Creando cuenta…",
+      "or": "o",
+      "googleSignUp": "Registrarse con Google",
+      "googleSigningUp": "Registrando…",
+      "alreadyHaveAccount": "¿Ya tienes una cuenta?",
+      "signInLink": "Inicia sesión"
+    },
+    "forgotPassword": {
+      "heading": "Recuperar contraseña",
+      "subtitle": "Escribe tu correo y te enviaremos un enlace.",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "tu@ejemplo.com",
+      "submit": "Enviar enlace",
+      "submitting": "Enviando…",
+      "checkInbox": "Revisa tu correo",
+      "inboxMessage": "Si existe una cuenta para {email}, recibirás un enlace para restablecer tu contraseña en unos minutos.",
+      "backToSignInBtn": "Volver al inicio de sesión",
+      "tryDifferent": "Probar con otro correo",
+      "backToSignInLink": "Volver al inicio de sesión"
+    }
+  },
   "nav": {
     "dashboard": "Panel",
     "inventory": "Inventario",
@@ -29,9 +109,6 @@
     "save": "Guardar",
     "saving": "Guardando…",
     "revert": "Deshacer",
-    "search": "Buscar",
-    "searchShortcut": "Buscar (Cmd+K)",
-    "findLabel": "Buscar",
     "signOut": "Cerrar sesión",
     "unknown": "alguien"
   },
@@ -179,7 +256,9 @@
     "loadingStaples": "Cargando básicos…",
     "failedToAdd": "Error al agregar el artículo.",
     "revertedToast": "Error al actualizar — revertido.",
-    "queuedToast": "Guardado — se sincronizará cuando vuelva la conexión."
+    "queuedToast": "Guardado — se sincronizará cuando vuelva la conexión.",
+    "purchaseQtyLabel": "Comprar",
+    "purchaseQtyPlaceholder": "Cant."
   },
   "labels": {
     "title": "Imprimir Etiquetas",
@@ -260,6 +339,9 @@
     "inProgress": "En Progreso:",
     "headsUp": "Atención:"
   },
+  "myDay": {
+    "staffNoteHeading": "Nota de hoy para el personal"
+  },
   "dashboard": {
     "shabbosModeActive": "Modo Shabat Activo",
     "todayHeader": "Hoy",
@@ -283,7 +365,7 @@
     "meal": "comida",
     "meals": "comidas",
     "quickActions": {
-      "planMeal": "Planificar Comida",
+      "planMeal": "Plan de Comidas",
       "planMealSubtitle": "El menú de esta semana",
       "scanItem": "Escanear Artículo",
       "scanItemSubtitle": "Búsqueda rápida",
@@ -401,15 +483,9 @@
       "hideAria": "Ocultar {label}",
       "showAria": "Mostrar {label}",
       "allHidden": "Todos los widgets están ocultos — toque Editar widgets para mostrar uno.",
-      "labelHomePulseScore": "Puntaje del Hogar",
       "labelTodaysMealPlan": "Plan de Comidas de Hoy",
       "labelLowStockAlerts": "Alertas de Bajo Inventario",
       "labelHolidayCountdown": "Cuenta Regresiva de Shabat/Yom Tov",
-      "notAvailable": "Aún no disponible.",
-      "stock": "Existencias",
-      "tasks": "Tareas",
-      "listFreshness": "Actualidad de la lista",
-      "outOf100": "/ 100",
       "nothingPlannedToday": "Nada planificado para hoy.",
       "viewFullPlan": "Ver plan completo →",
       "allStocked": "Todo está bien abastecido.",

@@ -1,0 +1,237 @@
+// lib/calendar-trigger-type.ts
+// Single source of truth for calendar_content trigger-type detection --
+// used by both the Dashboard's Today card and the Staff (My Day) landing
+// page, so the holiday-matching logic only ever exists in one place. The
+// Dashboard already fetches most of these signals for its own display
+// purposes (Omer text, Rosh Chodesh countdown, etc.), so it imports the
+// individual functions below and calls the pure resolveTriggerType() with
+// values it already has. Callers that only need the final answer (like the
+// Staff page) can call getTodayTriggerType() instead, which does its own
+// minimal I/O internally.
+
+export type TriggerType =
+  | 'yom_kippur' | 'fast_day' | 'rosh_hashana' | 'pesach' | 'sukkot' | 'shavuot'
+  | 'purim' | 'chanukah' | 'nine_days' | 'shabbos' | 'rosh_chodesh' | 'omer'
+  | 'pre_yomtov' | 'general'
+
+export type MajorHolidayTrigger = 'yom_kippur' | 'rosh_hashana' | 'pesach' | 'sukkot' | 'shavuot' | 'purim' | 'chanukah'
+
+// Title-prefix matchers against Hebcal's real maj=on/min=on event set.
+// Rosh Hashana excludes "Rosh Hashana LaBehemot" (an obscure 1 Elul
+// agricultural date some Hebcal configs surface) so it can't fire a
+// three-week-early false positive. Purim matches exact titles, not a
+// substring check -- "Erev Purim" contains the substring "Purim" too,
+// caught by checking real Hebcal 2026 title output before this was trusted.
+const HOLIDAY_TITLE_MATCHERS: { type: MajorHolidayTrigger; test: (title: string) => boolean }[] = [
+  { type: 'yom_kippur', test: (t) => t.startsWith('Yom Kippur') },
+  { type: 'rosh_hashana', test: (t) => t.startsWith('Rosh Hashana') && !t.includes('LaBehemot') },
+  { type: 'pesach', test: (t) => t.startsWith('Pesach') },
+  { type: 'sukkot', test: (t) => t.startsWith('Sukkot') },
+  { type: 'shavuot', test: (t) => t.startsWith('Shavuot') },
+  { type: 'purim', test: (t) => t === 'Purim' || t.startsWith('Shushan Purim') },
+  { type: 'chanukah', test: (t) => t.startsWith('Chanukah') },
+]
+
+export async function getMajorHolidayToday(todayStr: string): Promise<MajorHolidayTrigger | null> {
+  try {
+    const now = new Date()
+    const years = [now.getFullYear(), now.getFullYear() + 1]
+    const events: { title: string; date: string }[] = []
+    for (const year of years) {
+      const res = await fetch(`https://www.hebcal.com/hebcal?cfg=json&v=1&year=${year}&maj=on&min=on`, {
+        next: { revalidate: 3600 * 24 },
+      })
+      const data = await res.json()
+      events.push(...(data.items ?? []))
+    }
+    const todaysTitles = events.filter((e) => e.date === todayStr).map((e) => e.title)
+    for (const matcher of HOLIDAY_TITLE_MATCHERS) {
+      if (todaysTitles.some(matcher.test)) return matcher.type
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+// The Nine Days (1-9 Av) aren't a discrete Hebcal title/event -- they're a
+// Hebrew-date range -- so this reads the /converter endpoint. Day 10
+// (Tisha B'Av itself) is deliberately NOT included -- it's already caught
+// by the higher-priority fast_day check, which is the intended handoff.
+export async function getIsNineDays(): Promise<boolean> {
+  try {
+    const today = new Date().toISOString().slice(0, 10)
+    const res = await fetch(`https://www.hebcal.com/converter?cfg=json&date=${today}&g2h=1`, { next: { revalidate: 86400 } })
+    const data = await res.json()
+    return data.hm === 'Av' && typeof data.hd === 'number' && data.hd >= 1 && data.hd <= 9
+  } catch {
+    return false
+  }
+}
+
+// Same shared, non-property-scoped fast_days table getNextObservance()
+// reads -- a plain date match.
+export async function getIsFastDayToday(todayStr: string): Promise<boolean> {
+  const { createClient } = await import('@/lib/supabase/server')
+  const supabase = await createClient()
+  const { data } = await supabase.from('fast_days').select('date').eq('date', todayStr).maybeSingle()
+  return !!data
+}
+
+// yom_tov_dates isn't property-scoped (shared calendar data) -- a plain
+// date match against tomorrow is enough.
+export async function getIsErevYomTov(tomorrowStr: string): Promise<boolean> {
+  const { createClient } = await import('@/lib/supabase/server')
+  const supabase = await createClient()
+  const { data } = await supabase.from('yom_tov_dates').select('date').eq('date', tomorrowStr).maybeSingle()
+  return !!data
+}
+
+// Same real Hebcal omer logic used elsewhere in this app -- fetch-and-filter
+// against the o=on category, not a second date-math engine.
+export async function getOmerStatus(): Promise<string | null> {
+  try {
+    const now = new Date()
+    const res = await fetch(
+      `https://www.hebcal.com/hebcal?cfg=json&v=1&year=${now.getFullYear()}&month=${now.getMonth() + 1}&o=on`,
+      { next: { revalidate: 3600 } }
+    )
+    const data = await res.json()
+    const today = now.toISOString().slice(0, 10)
+    const omerItem = data.items?.find((i: any) => i.category === 'omer' && i.date?.startsWith(today))
+    return omerItem?.title ?? null
+  } catch {
+    return null
+  }
+}
+
+export type RoshChodeshStatus = { isToday: boolean; monthName: string; daysUntil: number } | null
+
+const ROSH_CHODESH_LOOKAHEAD_DAYS = 5
+
+// Same nx=on Hebcal query/category Hebcal itself uses for Rosh Chodesh.
+export async function getRoshChodeshStatus(todayStr: string): Promise<RoshChodeshStatus> {
+  try {
+    const now = new Date()
+    const years = [now.getFullYear(), now.getFullYear() + 1]
+    const events: { title: string; date: string }[] = []
+    for (const year of years) {
+      const res = await fetch(`https://www.hebcal.com/hebcal?cfg=json&v=1&year=${year}&nx=on`, {
+        next: { revalidate: 3600 * 24 },
+      })
+      const data = await res.json()
+      events.push(...(data.items ?? []).filter((i: any) => i.category === 'roshchodesh'))
+    }
+    const monthNameOf = (title: string) => title.replace(/^Rosh Chodesh /, '')
+    const todayItem = events.find((e) => e.date === todayStr)
+    if (todayItem) {
+      return { isToday: true, monthName: monthNameOf(todayItem.title), daysUntil: 0 }
+    }
+    const next = events.filter((e) => e.date > todayStr).sort((a, b) => a.date.localeCompare(b.date))[0]
+    if (!next) return null
+    const daysUntil = Math.round((new Date(next.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    if (daysUntil > ROSH_CHODESH_LOOKAHEAD_DAYS) return null
+    return { isToday: false, monthName: monthNameOf(next.title), daysUntil }
+  } catch {
+    return null
+  }
+}
+
+// Priority order per spec: yom_kippur > fast_day > rosh_hashana > pesach >
+// sukkot > shavuot > purim > chanukah > nine_days > shabbos > rosh_chodesh >
+// omer > pre_yomtov > general. yom_kippur is checked ahead of fast_day on
+// purpose -- Yom Kippur IS a fast day, but should read as the Yom Tov
+// itself, not the generic fast-day trigger.
+export function resolveTriggerType(inputs: {
+  majorHolidayToday: MajorHolidayTrigger | null
+  isFastDayToday: boolean
+  isNineDaysToday: boolean
+  isShabbos: boolean
+  roshChodeshToday: boolean
+  omerTitle: string | null
+  isErevYomTov: boolean
+}): TriggerType {
+  const { majorHolidayToday, isFastDayToday, isNineDaysToday, isShabbos, roshChodeshToday, omerTitle, isErevYomTov } = inputs
+  if (majorHolidayToday === 'yom_kippur') return 'yom_kippur'
+  if (isFastDayToday) return 'fast_day'
+  if (majorHolidayToday === 'rosh_hashana') return 'rosh_hashana'
+  if (majorHolidayToday === 'pesach') return 'pesach'
+  if (majorHolidayToday === 'sukkot') return 'sukkot'
+  if (majorHolidayToday === 'shavuot') return 'shavuot'
+  if (majorHolidayToday === 'purim') return 'purim'
+  if (majorHolidayToday === 'chanukah') return 'chanukah'
+  if (isNineDaysToday) return 'nine_days'
+  if (isShabbos) return 'shabbos'
+  if (roshChodeshToday) return 'rosh_chodesh'
+  if (omerTitle) return 'omer'
+  if (isErevYomTov) return 'pre_yomtov'
+  return 'general'
+}
+
+function easternDateParts(now: Date) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'short',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now)
+  return Object.fromEntries(parts.map((p) => [p.type, p.value]))
+}
+
+// Convenience all-in-one for callers that only need the final resolved
+// type, not each individual signal (e.g. the Staff landing page, which
+// doesn't otherwise fetch any Hebcal data). Internally calls the exact same
+// functions above plus its own minimal candle/havdalah check for Shabbos,
+// so it can never disagree with the Dashboard's own computation of the
+// same day -- same Lakewood, NJ geonameid the rest of this app already uses.
+export async function getTodayTriggerType(): Promise<TriggerType> {
+  const now = new Date()
+  const partsMap = easternDateParts(now)
+  const isEasternFriday = partsMap.weekday === 'Fri'
+  const isEasternSaturday = partsMap.weekday === 'Sat'
+  const todayUTC = Date.UTC(
+    parseInt(partsMap.year ?? '1970', 10),
+    parseInt(partsMap.month ?? '1', 10) - 1,
+    parseInt(partsMap.day ?? '1', 10)
+  )
+  const todayDate = new Date(todayUTC)
+  const todayStr = `${todayDate.getUTCFullYear()}-${String(todayDate.getUTCMonth() + 1).padStart(2, '0')}-${String(todayDate.getUTCDate()).padStart(2, '0')}`
+  const tomorrowDate = new Date(todayUTC + 24 * 60 * 60 * 1000)
+  const tomorrowStr = `${tomorrowDate.getUTCFullYear()}-${String(tomorrowDate.getUTCMonth() + 1).padStart(2, '0')}-${String(tomorrowDate.getUTCDate()).padStart(2, '0')}`
+
+  let isShabbos = false
+  try {
+    const res = await fetch('https://www.hebcal.com/shabbat?cfg=json&geonameid=5100280&M=on', { next: { revalidate: 86400 } })
+    const data = await res.json()
+    const candle = data.items?.find((i: any) => i.category === 'candles')
+    const havdalah = data.items?.find((i: any) => i.category === 'havdalah')
+    isShabbos = !!(
+      (isEasternFriday && candle?.date && now > new Date(new Date(candle.date).getTime() - 3600000)) ||
+      (isEasternSaturday && havdalah?.date && now < new Date(havdalah.date))
+    )
+  } catch {
+    // leave isShabbos false
+  }
+
+  const [majorHolidayToday, isFastDayToday, isNineDaysToday, roshChodeshStatus, omerTitle, isErevYomTov] = await Promise.all([
+    getMajorHolidayToday(todayStr),
+    getIsFastDayToday(todayStr),
+    getIsNineDays(),
+    getRoshChodeshStatus(todayStr),
+    getOmerStatus(),
+    getIsErevYomTov(tomorrowStr),
+  ])
+
+  return resolveTriggerType({
+    majorHolidayToday,
+    isFastDayToday,
+    isNineDaysToday,
+    isShabbos,
+    roshChodeshToday: !!roshChodeshStatus?.isToday,
+    omerTitle,
+    isErevYomTov,
+  })
+}

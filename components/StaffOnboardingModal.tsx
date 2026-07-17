@@ -161,7 +161,7 @@ export default function StaffOnboardingModal({
               <p className="text-center text-sm text-charcoal/60 leading-relaxed mb-5">{t('screen3Sub')}</p>
               <div className="grid grid-cols-2 gap-2.5">
                 {[
-                  { Icon: Calendar, label: 'Plan Meal' },
+                  { Icon: Calendar, label: 'Meal Plan' },
                   { Icon: Scan, label: 'Scan Item' },
                   { Icon: Plus, label: 'Add Recipe' },
                   { Icon: ShoppingCart, label: 'Shopping List' },

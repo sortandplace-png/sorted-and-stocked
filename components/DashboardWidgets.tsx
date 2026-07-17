@@ -1,39 +1,40 @@
 // components/DashboardWidgets.tsx
-// Dashboard Widgets v1 -- 4 fixed cards (Home Pulse Score, Today's Meal
-// Plan, Low Stock Alerts, Shabbos/Yom Tov Countdown), all additive to the
-// existing Dashboard content. Visibility/order persisted per-user,
-// per-property in dashboard_widget_prefs (migration 090); RLS scopes every
-// row to auth.uid(), so this upserts directly from the browser client, same
+// Dashboard Widgets v1 -- 3 fixed cards (Today's Meal Plan, Low Stock
+// Alerts, Shabbos/Yom Tov Countdown), all additive to the existing
+// Dashboard content. Home Pulse Score was removed 2026-07-16 -- its
+// underlying scoring formula was unreliable (see home_pulse_score view),
+// not a UI issue, so it came off the page entirely rather than being
+// patched around. Visibility/order persisted per-user, per-property in
+// dashboard_widget_prefs (migration 090); RLS scopes every row to
+// auth.uid(), so this upserts directly from the browser client, same
 // pattern as PrepAheadAssistant's feature-flag toggle.
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Activity, Settings2, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { Settings2, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
-import type { WidgetKey, WidgetPrefs, HomePulseScore, TodaysMealEntry, LowStockItem } from '@/lib/dashboard-widgets-data';
+import Pin from '@/components/PinAccent';
+import type { WidgetKey, WidgetPrefs, TodaysMealEntry, LowStockItem } from '@/lib/dashboard-widgets-data';
 import type { UpcomingObservance } from '@/lib/get-next-observance';
 
 export default function DashboardWidgets({
   propertyId,
   initialPrefs,
-  homePulseScore,
   todaysMeals,
   lowStockItems,
   nextObservance,
 }: {
   propertyId: string;
   initialPrefs: WidgetPrefs;
-  homePulseScore: HomePulseScore;
   todaysMeals: TodaysMealEntry[];
   lowStockItems: LowStockItem[];
   nextObservance: UpcomingObservance | null;
 }) {
   const t = useTranslations('dashboard.widgets');
   const WIDGET_LABELS: Record<WidgetKey, string> = {
-    home_pulse_score: t('labelHomePulseScore'),
     todays_meal_plan: t('labelTodaysMealPlan'),
     low_stock_alerts: t('labelLowStockAlerts'),
     holiday_countdown: t('labelHolidayCountdown'),
@@ -89,112 +90,93 @@ export default function DashboardWidgets({
   }
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-[11px] tracking-[0.16em] uppercase font-bold text-denim">{t('sectionTitle')}</span>
+    <div className="mb-8 rounded-xl3 border border-cardBorder shadow-card overflow-hidden bg-card">
+      {/* Same denim-strip header pattern as Pantry/Meal Plan/Quick Capture
+          (bg-denim, white, 10px, semibold, tracking-[0.17em], uppercase,
+          py-[11px] px-5) -- "Edit widgets" moves inside the bar itself,
+          same right-aligned-within-the-bar placement the Figma source uses
+          for Erev Shabbos Prep's status chip + chevron. Brass reads far
+          more legibly here than it did on the old white/cream card (a real
+          accessibility win, not just a style match) -- warm gold on dark
+          denim clears contrast easily where brass-on-white did not. */}
+      <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5 flex items-center justify-between">
+        <span>{t('sectionTitle')}</span>
         <button
           onClick={() => setEditing((v) => !v)}
-          className="flex items-center gap-1 text-[11px] font-bold text-brass underline underline-offset-2"
+          className="flex items-center gap-1 normal-case tracking-normal font-semibold text-[11px] text-brass hover:text-white transition-colors"
         >
           <Settings2 size={13} strokeWidth={2.25} aria-hidden="true" />
           {editing ? t('done') : t('editWidgets')}
         </button>
       </div>
 
-      {editing && (
-        <div className="space-y-2 mb-4">
-          {orderedKeys.map((key, i) => (
-            <div key={key} className="flex items-center justify-between gap-3 p-3 rounded-xl2 border border-cardBorder bg-card">
-              <span className={`text-sm font-medium ${prefs[key].isVisible ? 'text-denim' : 'text-dusk'}`}>{WIDGET_LABELS[key]}</span>
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => move(key, -1)}
-                  disabled={saving || i === 0}
-                  className="p-1 text-dusk hover:text-denim disabled:opacity-30"
-                  aria-label={t('moveUpAria', { label: WIDGET_LABELS[key] })}
-                >
-                  <ChevronUp size={16} aria-hidden="true" />
-                </button>
-                <button
-                  onClick={() => move(key, 1)}
-                  disabled={saving || i === orderedKeys.length - 1}
-                  className="p-1 text-dusk hover:text-denim disabled:opacity-30"
-                  aria-label={t('moveDownAria', { label: WIDGET_LABELS[key] })}
-                >
-                  <ChevronDown size={16} aria-hidden="true" />
-                </button>
-                <button
-                  onClick={() => toggleVisible(key)}
-                  disabled={saving}
-                  className="p-1 text-dusk hover:text-denim disabled:opacity-30"
-                  aria-label={prefs[key].isVisible ? t('hideAria', { label: WIDGET_LABELS[key] }) : t('showAria', { label: WIDGET_LABELS[key] })}
-                >
-                  {prefs[key].isVisible ? <Eye size={16} aria-hidden="true" /> : <EyeOff size={16} aria-hidden="true" />}
-                </button>
+      <div className="p-5">
+        {editing && (
+          <div className="space-y-2 mb-4">
+            {orderedKeys.map((key, i) => (
+              <div key={key} className="flex items-center justify-between gap-3 p-3 rounded-xl2 border border-cardBorder bg-card">
+                <span className={`text-sm font-medium ${prefs[key].isVisible ? 'text-denim' : 'text-dusk'}`}>{WIDGET_LABELS[key]}</span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={() => move(key, -1)}
+                    disabled={saving || i === 0}
+                    className="p-1 text-dusk hover:text-denim disabled:opacity-30"
+                    aria-label={t('moveUpAria', { label: WIDGET_LABELS[key] })}
+                  >
+                    <ChevronUp size={16} aria-hidden="true" />
+                  </button>
+                  <button
+                    onClick={() => move(key, 1)}
+                    disabled={saving || i === orderedKeys.length - 1}
+                    className="p-1 text-dusk hover:text-denim disabled:opacity-30"
+                    aria-label={t('moveDownAria', { label: WIDGET_LABELS[key] })}
+                  >
+                    <ChevronDown size={16} aria-hidden="true" />
+                  </button>
+                  <button
+                    onClick={() => toggleVisible(key)}
+                    disabled={saving}
+                    className="p-1 text-dusk hover:text-denim disabled:opacity-30"
+                    aria-label={prefs[key].isVisible ? t('hideAria', { label: WIDGET_LABELS[key] }) : t('showAria', { label: WIDGET_LABELS[key] })}
+                  >
+                    {prefs[key].isVisible ? <Eye size={16} aria-hidden="true" /> : <EyeOff size={16} aria-hidden="true" />}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
 
-      {visibleKeys.length === 0 ? (
-        !editing && <p className="text-sm text-dusk">{t('allHidden')}</p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {visibleKeys.map((key) => {
-            if (key === 'home_pulse_score') return <HomePulseScoreCard key={key} title={WIDGET_LABELS.home_pulse_score} data={homePulseScore} />;
-            if (key === 'todays_meal_plan') return <TodaysMealPlanCard key={key} title={WIDGET_LABELS.todays_meal_plan} propertyId={propertyId} meals={todaysMeals} />;
-            if (key === 'low_stock_alerts') return <LowStockAlertsCard key={key} title={WIDGET_LABELS.low_stock_alerts} propertyId={propertyId} items={lowStockItems} />;
-            return <HolidayCountdownCard key={key} title={WIDGET_LABELS.holiday_countdown} observance={nextObservance} />;
-          })}
-        </div>
-      )}
+        {visibleKeys.length === 0 ? (
+          !editing && <p className="text-sm text-dusk">{t('allHidden')}</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {visibleKeys.map((key) => {
+              if (key === 'todays_meal_plan') return <TodaysMealPlanCard key={key} title={WIDGET_LABELS.todays_meal_plan} propertyId={propertyId} meals={todaysMeals} />;
+              if (key === 'low_stock_alerts') return <LowStockAlertsCard key={key} title={WIDGET_LABELS.low_stock_alerts} propertyId={propertyId} items={lowStockItems} />;
+              return <HolidayCountdownCard key={key} title={WIDGET_LABELS.holiday_countdown} observance={nextObservance} />;
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
+// Exact ActionTile visual language (app/properties/[id]/dashboard/page.tsx's
+// quick-action tiles): bg-mist, border-brass/30, rounded-xl2 (20px, not the
+// old xl3/28px), shadow-card/hover:shadow-cardHover, py-[14px] px-[18px]
+// (pulled from the tile literally, not estimated -- cramped for this
+// denser content, but that's what was asked for), and the same brass pin
+// dot in the same top-right position. Eyebrow label matches the tile
+// eyebrow exactly: 9px, tracking-[0.2em], uppercase, font-semibold, brass.
 function WidgetCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl3 border border-cardBorder shadow-card hover:shadow-cardHover transition-shadow p-5 bg-card">
-      <h3 className="text-xs font-bold uppercase tracking-wider text-denim mb-2.5">{title}</h3>
+    <div className="relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow py-[14px] px-[18px]">
+      <Pin size="sm" />
+      <h3 className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass mb-2.5">{title}</h3>
       {children}
     </div>
-  );
-}
-
-function HomePulseScoreCard({ title, data }: { title: string; data: HomePulseScore }) {
-  const t = useTranslations('dashboard.widgets');
-  if (!data) {
-    return (
-      <WidgetCard title={title}>
-        <p className="text-sm text-dusk">{t('notAvailable')}</p>
-      </WidgetCard>
-    );
-  }
-  const rows: [string, number][] = [
-    [t('stock'), data.stockScore],
-    [t('tasks'), data.taskScore],
-    [t('listFreshness'), data.listFreshnessScore],
-  ];
-  return (
-    <WidgetCard title={title}>
-      <div className="flex items-baseline gap-1.5 mb-3">
-        <Activity size={16} strokeWidth={2} className="text-brass" aria-hidden="true" />
-        <span className="text-3xl font-display text-denim">{Math.round(data.pulseScore)}</span>
-        <span className="text-xs text-dusk">{t('outOf100')}</span>
-      </div>
-      <div className="space-y-1.5">
-        {rows.map(([label, score]) => (
-          <div key={label} className="flex items-center gap-2">
-            <span className="text-xs text-dusk w-24 shrink-0">{label}</span>
-            <div className="flex-1 bg-mist h-1.5 rounded-full overflow-hidden">
-              <div className="bg-brass h-1.5" style={{ width: `${Math.max(0, Math.min(100, score))}%` }} />
-            </div>
-            <span className="text-xs text-denim w-7 text-right shrink-0">{Math.round(score)}</span>
-          </div>
-        ))}
-      </div>
-    </WidgetCard>
   );
 }
 

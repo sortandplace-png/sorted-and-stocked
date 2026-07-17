@@ -9,6 +9,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { resilientUpdate } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
@@ -16,7 +17,7 @@ import { SkeletonList } from '@/components/Skeleton';
 import ShiftHandoverClient from '@/components/ShiftHandoverClient';
 import ToolModal from '@/components/ToolModal';
 import KitchenOpsToolModal from '@/components/KitchenOpsToolModal';
-import { Camera, ShoppingCart, Timer } from 'lucide-react';
+import { Camera, ShoppingCart, Timer, Info } from 'lucide-react';
 
 type Status = 'open' | 'in_progress' | 'done';
 type Priority = 'low' | 'medium' | 'high';
@@ -42,7 +43,8 @@ const PRIORITY_STYLE: Record<Priority, string> = {
   low: 'bg-sage/10 text-sage',
 };
 
-export default function MyDayClient({ propertyId }: { propertyId: string }) {
+export default function MyDayClient({ propertyId, staffNote }: { propertyId: string; staffNote: string | null }) {
+  const t = useTranslations('myDay');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCapture, setShowCapture] = useState(false);
@@ -116,6 +118,22 @@ export default function MyDayClient({ propertyId }: { propertyId: string }) {
       <p className="text-sm text-charcoal/50 mb-4">
         {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
       </p>
+
+      {/* Calendar-driven staff notice -- plain, high-contrast, instructional
+          copy for people who may not know the Jewish calendar at all, not a
+          reflection/spiritual note (that's the separate Dashboard tip).
+          Only rendered when calendar_content actually has a staff_note for
+          today's resolved trigger_type (server-computed, general/omer
+          always excluded) -- absent entirely otherwise, no empty-state box. */}
+      {staffNote && (
+        <div className="bg-charcoal text-white rounded-2xl p-4 mb-5 flex gap-3 items-start">
+          <Info size={18} className="text-gold shrink-0 mt-0.5" aria-hidden="true" />
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-gold mb-1">{t('staffNoteHeading')}</p>
+            <p className="text-sm leading-relaxed">{staffNote}</p>
+          </div>
+        </div>
+      )}
 
       {/* Today's Tasks, Capture, Shopping List, Kitchen Timer -- the whole
           staff home view. Capture and Kitchen Timer open as modals right

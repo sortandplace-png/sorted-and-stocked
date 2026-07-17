@@ -5,13 +5,12 @@
 import { format } from 'date-fns';
 import { createClient } from '@/lib/supabase/server';
 
-export const WIDGET_KEYS = ['home_pulse_score', 'todays_meal_plan', 'low_stock_alerts', 'holiday_countdown'] as const;
+export const WIDGET_KEYS = ['todays_meal_plan', 'low_stock_alerts', 'holiday_countdown'] as const;
 export type WidgetKey = (typeof WIDGET_KEYS)[number];
 
 export type WidgetPrefs = Record<WidgetKey, { isVisible: boolean; sortOrder: number }>;
 
 const DEFAULT_PREFS: WidgetPrefs = {
-  home_pulse_score: { isVisible: true, sortOrder: 0 },
   todays_meal_plan: { isVisible: true, sortOrder: 1 },
   low_stock_alerts: { isVisible: true, sortOrder: 2 },
   holiday_countdown: { isVisible: true, sortOrder: 3 },
@@ -42,45 +41,33 @@ export async function getWidgetPrefs(propertyId: string): Promise<WidgetPrefs> {
   return prefs;
 }
 
-export type HomePulseScore = {
-  pulseScore: number;
-  stockScore: number;
-  taskScore: number;
-  listFreshnessScore: number;
-} | null;
-
-export async function getHomePulseScore(propertyId: string): Promise<HomePulseScore> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('home_pulse_score')
-    .select('pulse_score, stock_score, task_score, list_freshness_score')
-    .eq('property_id', propertyId)
-    .maybeSingle();
-  if (!data) return null;
-  return {
-    pulseScore: data.pulse_score,
-    stockScore: data.stock_score,
-    taskScore: data.task_score,
-    listFreshnessScore: data.list_freshness_score,
-  };
-}
-
 export type TodaysMealEntry = { mealSlot: string; course: string; name: string };
 
+// course_icons.display_name has the real label for every course slug
+// ("kids_platter" -> "Kids platter", "vege" -> "Vegetable", etc.) -- no FK
+// from meal_plan_entries.course to course_icons.course, so this can't be a
+// PostgREST embedded-relation select. course_icons is a small, fixed
+// reference table (8 rows), so one extra query and an in-memory lookup is
+// simpler and cheaper than adding a schema relationship just for this.
 export async function getTodaysMealPlan(propertyId: string): Promise<TodaysMealEntry[]> {
   const supabase = await createClient();
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const { data } = await supabase
-    .from('meal_plan_entries')
-    .select('meal_slot, course, custom_name, sequence, recipes(name)')
-    .eq('property_id', propertyId)
-    .eq('plan_date', todayStr)
-    .order('meal_slot')
-    .order('sequence');
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
+  const [{ data }, { data: courseIcons }] = await Promise.all([
+    supabase
+      .from('meal_plan_entries')
+      .select('meal_slot, course, custom_name, sequence, recipes(name)')
+      .eq('property_id', propertyId)
+      .eq('plan_date', todayStr)
+      .order('meal_slot')
+      .order('sequence'),
+    supabase.from('course_icons').select('course, display_name'),
+  ]);
+
+  const courseLabels = new Map((courseIcons ?? []).map((c) => [c.course, c.display_name]));
 
   return (data ?? []).map((e: any) => ({
     mealSlot: e.meal_slot ?? 'meal',
-    course: e.course ?? '',
+    course: e.course ? (courseLabels.get(e.course) ?? e.course) : '',
     name: e.custom_name || e.recipes?.name || 'Untitled',
   }));
 }

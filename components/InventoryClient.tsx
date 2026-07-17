@@ -91,6 +91,14 @@ type ItemFormState = {
   unit: string;
   supplier: string;
   unit_cost: string;
+  // Create-only. There's no inventory_item_id to attach a reorder_sources
+  // row to before the item exists, so this is never shown or read once
+  // form.id is set -- ReorderSourcesEditor takes over entirely at that
+  // point, same as History/Bracha's "only after creation" pattern. Kept
+  // here (rather than dropped, as an earlier pass this session did) so
+  // creating an item and giving it a reorder link stays the one-motion
+  // action it's always been -- see create_inventory_item_with_source.
+  reorder_link: string;
   photo_url: string;
   expiration_date: string;
   opened_date: string;
@@ -101,10 +109,6 @@ type ItemFormState = {
   updated_at: string | null;
 };
 
-// reorder_link isn't a form field anymore -- it's now a read-only mirror
-// of whichever reorder_sources row is preferred (kept in sync by a DB
-// trigger, see supabase/migrations/093), managed instead through
-// ReorderSourcesEditor once the item exists.
 const EMPTY_FORM: ItemFormState = {
   id: null,
   name: '',
@@ -115,6 +119,7 @@ const EMPTY_FORM: ItemFormState = {
   unit: 'pcs',
   supplier: '',
   unit_cost: '',
+  reorder_link: '',
   photo_url: '',
   expiration_date: '',
   opened_date: '',
@@ -122,6 +127,25 @@ const EMPTY_FORM: ItemFormState = {
   print_label: true,
   updated_at: null,
 };
+
+// create_inventory_item_with_source needs a retailer name alongside the
+// URL (reorder_sources.retailer_name is NOT NULL) -- the old create-item
+// field was just a bare URL, so one is guessed from the hostname rather
+// than adding a second input and changing what the form looks like. Best
+// effort only: if this comes back empty (unparseable input), the RPC's
+// own COALESCE falls back to a generic "Other" rather than failing the
+// whole save. Renaming to the real retailer is one tap away afterward via
+// ReorderSourcesEditor once the item exists.
+function deriveRetailerName(rawUrl: string): string {
+  try {
+    const withScheme = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+    const hostname = new URL(withScheme).hostname.replace(/^www\./, '');
+    const base = hostname.split('.')[0];
+    return base ? base.charAt(0).toUpperCase() + base.slice(1) : '';
+  } catch {
+    return '';
+  }
+}
 
 // Plain Drive "file/d/.../view" links aren't directly viewable as <img> src.
 // Drive's thumbnail endpoint CAN be hotlinked for shared files, though —
@@ -543,6 +567,9 @@ export default function InventoryClient({
       unit: item.unit,
       supplier: item.supplier ?? '',
       unit_cost: item.unit_cost !== null ? String(item.unit_cost) : '',
+      // Never shown/read once editing an existing item -- see the
+      // ItemFormState field comment.
+      reorder_link: '',
       photo_url: item.photo_url ?? '',
       expiration_date: item.expiration_date ?? '',
       opened_date: item.opened_date ?? '',
@@ -708,60 +735,103 @@ export default function InventoryClient({
         });
       }
     } else {
-      // Supplying the id ourselves (rather than letting the DB default
-      // generate one) means the local optimistic row and the real server
-      // row share the same id from the start — no separate id-reconciling
-      // re-fetch needed afterward, and no risk of that re-fetch matching
-      // the wrong row when another item shares the same name.
-      const result = await resilientInsert(supabase, 'inventory_items', { ...payload, id });
-      setSaving(false);
-      if (!result.ok) {
-        setError(result.error);
-        showToast('Failed to add item.', { variant: 'error' });
-        return;
-      }
-      // qr_code is DB-trigger-generated on insert — unknown here until the
-      // next reload; null is accurate, not a placeholder to fix later.
-      // pesach_status isn't part of the add-item form (a deliberate separate
-      // classification, not a quick-add field) -- the DB column default
-      // applies server-side, matched here for the optimistic local row.
-      // last_counted_at is never set on INSERT (see the DB trigger) -- a
-      // brand-new item is always "not yet counted."
-      // updated_at defaults to now() server-side on insert -- approximated
-      // here the same way, only relevant as the version-check baseline if
-      // this exact item gets edited again before the next reload.
-      setItems((prev) => [
-        ...prev,
-        {
-          ...payload,
-          id,
-          // Not part of the add-item form (only ever populated via bulk
-          // backfill) -- null is accurate for a brand-new item, same as
-          // qr_code/last_counted_at above.
-          name_es: null,
-          qr_code: null,
-          pesach_status: 'needs_review',
-          last_counted_at: null,
-          updated_at: new Date().toISOString(),
-          // A brand-new item has no reorder_sources yet -- gated on form.id
-          // upstream, so there's no CRUD to have produced any.
-          reorder_link: null,
-          reorder_sources: null,
-        },
-      ]);
-      if (photoUploadError) {
-        showToast(`Item added, but the photo failed to upload: ${photoUploadError}`, {
-          variant: 'error',
-          durationMs: 8000,
-        });
-      } else {
-        showToast(result.queued ? 'Added — will sync when back online.' : 'Item added.', {
-          variant: 'success',
-        });
-      }
+      const reorderUrl = form.reorder_link.trim();
+      const reorderRetailer = reorderUrl ? deriveRetailerName(reorderUrl) : '';
+      const optimisticSources = reorderUrl
+        ? [{ id: crypto.randomUUID(), retailer_name: reorderRetailer || 'Other', url: reorderUrl, is_preferred: true }]
+        : null;
+      const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
 
-      if (!result.queued && !payload.photo_url) {
-        setPhotoPromptItem({ id, name: payload.name });
+      if (offline) {
+        // create_inventory_item_with_source is a plain RPC call, not
+        // something the offline-write queue (resilient-write.ts) knows how
+        // to replay -- it only understands insert/update/delete against a
+        // single table. Falls back to the pre-RPC pattern instead (supply
+        // the id ourselves, plain insert, same as this whole branch used
+        // to work before create_inventory_item_with_source existed) so
+        // item creation still works with no connection; a same-motion
+        // reorder link becomes a second queued insert against the id
+        // already generated above, which the FIFO offline queue replays
+        // after the item it depends on. The atomic RPC (else branch) is
+        // used whenever there's actually a connection to use it.
+        const result = await resilientInsert(supabase, 'inventory_items', { ...payload, id });
+        if (reorderUrl && result.ok) {
+          await resilientInsert(supabase, 'reorder_sources', {
+            property_id: propertyId,
+            inventory_item_id: id,
+            retailer_name: reorderRetailer || 'Other',
+            url: reorderUrl,
+            is_preferred: true,
+          });
+        }
+        setSaving(false);
+        if (!result.ok) {
+          setError(result.error);
+          showToast('Failed to add item.', { variant: 'error' });
+          return;
+        }
+        // qr_code is DB-trigger-generated on insert — unknown here until the
+        // next reload; null is accurate, not a placeholder to fix later.
+        // pesach_status isn't part of the add-item form (a deliberate separate
+        // classification, not a quick-add field) -- the DB column default
+        // applies server-side, matched here for the optimistic local row.
+        // last_counted_at is never set on INSERT (see the DB trigger) -- a
+        // brand-new item is always "not yet counted."
+        // updated_at defaults to now() server-side on insert -- approximated
+        // here the same way, only relevant as the version-check baseline if
+        // this exact item gets edited again before the next reload.
+        setItems((prev) => [
+          ...prev,
+          {
+            ...payload,
+            id,
+            name_es: null,
+            qr_code: null,
+            pesach_status: 'needs_review',
+            last_counted_at: null,
+            updated_at: new Date().toISOString(),
+            reorder_link: reorderUrl || null,
+            reorder_sources: optimisticSources,
+          },
+        ]);
+        if (photoUploadError) {
+          showToast(`Item added, but the photo failed to upload: ${photoUploadError}`, {
+            variant: 'error',
+            durationMs: 8000,
+          });
+        } else {
+          showToast('Added — will sync when back online.', { variant: 'success' });
+        }
+        if (!payload.photo_url) setPhotoPromptItem({ id, name: payload.name });
+      } else {
+        // Atomic: the item and its first reorder source (if a URL was
+        // given) insert in one server-side transaction, so this stays the
+        // same one-motion action it's always been from the staff member's
+        // side -- see create_inventory_item_with_source
+        // (supabase/migrations). Returns the real row (real qr_code,
+        // real DB-assigned id), so there's no optimistic approximation
+        // needed here the way the offline branch above needs one.
+        const { data: newItem, error: rpcError } = await supabase.rpc('create_inventory_item_with_source', {
+          item_data: payload,
+          source_retailer_name: reorderRetailer || null,
+          source_url: reorderUrl || null,
+        });
+        setSaving(false);
+        if (rpcError || !newItem) {
+          setError(rpcError?.message ?? 'Failed to add item.');
+          showToast('Failed to add item.', { variant: 'error' });
+          return;
+        }
+        setItems((prev) => [...prev, { ...newItem, reorder_sources: optimisticSources }]);
+        if (photoUploadError) {
+          showToast(`Item added, but the photo failed to upload: ${photoUploadError}`, {
+            variant: 'error',
+            durationMs: 8000,
+          });
+        } else {
+          showToast('Item added.', { variant: 'success' });
+        }
+        if (!payload.photo_url) setPhotoPromptItem({ id: newItem.id, name: newItem.name });
       }
     }
 
@@ -1798,6 +1868,18 @@ function ItemFormSheet({
               />
             </div>
           </div>
+
+          {!form.id && (
+            <div>
+              <FieldLabel>Reorder Link</FieldLabel>
+              <input
+                className={fieldClass}
+                placeholder="URL"
+                value={form.reorder_link}
+                onChange={(e) => onChange({ ...form, reorder_link: e.target.value })}
+              />
+            </div>
+          )}
 
           <div>
             <FieldLabel>Photo</FieldLabel>
