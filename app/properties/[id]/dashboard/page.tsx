@@ -633,26 +633,23 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               </div>
             }
           >
-            <div className={`flex-1 flex flex-col items-center justify-center text-center pt-9 px-6 pb-8 ${isShabbos ? 'bg-amber-100' : 'bg-card'}`}>
+            <div className={`flex-1 flex flex-col items-center justify-center text-center py-[16px] px-[20px] gap-[8px] ${isShabbos ? 'bg-amber-100' : 'bg-card'}`}>
               {propertyName && (
-                <p className="text-[10px] tracking-[0.18em] uppercase font-normal text-brass border-b border-brass inline-block pb-1.5 mb-[22px]">
+                <p className="text-[10px] tracking-[0.18em] uppercase font-normal text-brass border-b border-brass inline-block pb-1.5">
                   {propertyName}
                 </p>
               )}
-              {/* 62px (Figma's literal TodayCard.tsx value, matching what
-                  shipped) read as too dominant once the Reflection block
-                  below started carrying real content -- checked Figma's
-                  source directly for a distinct secondary/supporting size
-                  token before touching this, and there isn't one defined
-                  anywhere in TodayCard.tsx or the shared cardStyles.ts
-                  module Figma's own cards import from. 44px chosen as the
-                  midpoint of the requested 42-48px range, not invented
-                  outside it -- a one-line change if a different exact value
-                  is wanted. */}
-              <p lang="he" dir="rtl" className="font-display font-normal text-[44px] text-denim leading-[1.05] tracking-[0.02em] mb-[10px]">
+              {/* Compact pass (2026-07-17): the card was reading as a hero
+                  banner rather than compact/informational -- 44px brought
+                  down to 32px, still font-display/Cormorant, and every
+                  child's individual margin classes replaced by a single
+                  gap-[8px] on this flex container so spacing between
+                  elements stays uniform (and correctly skips elements that
+                  don't render, like a manual-margin chain can't). */}
+              <p lang="he" dir="rtl" className="font-display font-normal text-[32px] text-denim leading-[1.05] tracking-[0.02em]">
                 {hebrewInfo.hebrewText}
               </p>
-              <p className="font-interDisplay text-[11px] uppercase tracking-[0.1em] text-dusk mb-6">
+              <p className="font-interDisplay text-[11px] uppercase tracking-[0.1em] text-dusk">
                 {format(now, 'EEEE, MMMM d')}
               </p>
               <div className="flex items-center justify-center gap-2 flex-wrap">
@@ -671,9 +668,9 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                   <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">{t('shabbosModeActive')}</span>
                 )}
               </div>
-              {omerTitle && <p className="text-xs text-dusk mt-3">{omerTitle}</p>}
+              {omerTitle && <p className="text-xs text-dusk">{omerTitle}</p>}
               {roshChodeshStatus && (
-                <p className="text-xs text-brass font-medium mt-3">
+                <p className="text-xs text-brass font-medium">
                   {roshChodeshStatus.isToday
                     ? t('roshChodesh.today', { month: roshChodeshStatus.monthName })
                     : t('roshChodesh.upcoming', { month: roshChodeshStatus.monthName, days: roshChodeshStatus.daysUntil })}
@@ -685,7 +682,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                   palette as everything else in this card so it reads as
                   part of Today, not a separate feature bolted on. */}
               {dailyContent && (
-                <div className="mt-4 pt-4 border-t border-cardBorder/60 max-w-[320px]">
+                <div className="pt-2 border-t border-cardBorder/60 max-w-[320px]">
                   <p className="text-[10px] tracking-[0.14em] uppercase font-semibold text-brass mb-1">{dailyContent.title}</p>
                   <p className="text-xs text-dusk leading-relaxed">{dailyContent.body}</p>
                 </div>
@@ -717,13 +714,17 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             <div
               // backgroundSize: 'cover' is the CSS-background equivalent of
               // object-fit: cover -- this already crops rather than
-              // stretches. If the live site still shows distortion, that's
-              // this exact fix not being deployed yet (this whole card was
-              // reworked to the fixed-height photo + denim header/footer
-              // structure at some point locally), not a remaining code bug --
-              // no other render site for this photo exists anywhere in the
-              // repo (confirmed via grep). backgroundRepeat added defensively.
-              className="h-[140px] w-full bg-denim shrink-0"
+              // stretches. backgroundRepeat added defensively.
+              //
+              // 140px -> 70px (2026-07-17 compact pass): the explicit
+              // instruction for this card was cut off mid-sentence right
+              // after "The photo" -- inferred from the shared "roughly
+              // half" height target stated for both this card and Today,
+              // since the photo is the single largest fixed-height
+              // contributor here. Flagging this as an inference, not a
+              // literal instruction -- say the word if a different value
+              // was intended.
+              className="h-[70px] w-full bg-denim shrink-0"
               style={{
                 backgroundImage: `url('https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/dashboard-photos/candle.jpeg')`,
                 backgroundSize: 'cover',
