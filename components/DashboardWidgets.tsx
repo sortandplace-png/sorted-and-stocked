@@ -25,6 +25,7 @@ import { Settings2, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import Pin from '@/components/PinAccent';
+import { useCardCollapse } from '@/lib/useCardCollapse';
 import type { WidgetKey, WidgetPrefs, TodaysMealEntry, LowStockItem } from '@/lib/dashboard-widgets-data';
 
 type PrepAheadReminder = { recipeId: string | null; recipeName: string; planDate: string; prepLeadDays: number | null };
@@ -202,12 +203,18 @@ export default function DashboardWidgets({
 // denser content, but that's what was asked for), and the same brass pin
 // dot in the same top-right position. Eyebrow label matches the tile
 // eyebrow exactly: 9px, tracking-[0.2em], uppercase, font-semibold, brass.
-function WidgetCard({ title, children }: { title: string; children: React.ReactNode }) {
+function WidgetCard({ cardId, title, children }: { cardId: string; title: string; children: React.ReactNode }) {
+  const { collapsed, toggle } = useCardCollapse(cardId);
   return (
     <div className="relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow py-[14px] px-[18px]">
-      <Pin size="sm" />
+      <Pin size="sm" collapsed={collapsed} onToggle={toggle} />
       <h3 className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass mb-2.5">{title}</h3>
-      {children}
+      <div
+        className="grid transition-[grid-template-rows] duration-200 ease-out"
+        style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
+      >
+        <div className="overflow-hidden min-h-0">{children}</div>
+      </div>
     </div>
   );
 }
@@ -247,6 +254,7 @@ function TodaysMealPlanCard({
   isShabbosOrYomTov: boolean;
 }) {
   const t = useTranslations('dashboard.widgets');
+  const { collapsed, toggle } = useCardCollapse('todays-meal-plan');
   const bySlot = meals.reduce<Record<string, TodaysMealEntry[]>>((acc, m) => {
     (acc[m.mealSlot] ??= []).push(m);
     return acc;
@@ -261,60 +269,67 @@ function TodaysMealPlanCard({
   }
 
   return (
-    <div className="relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow overflow-hidden flex min-h-[140px]">
-      <Pin size="sm" />
-      <div className="flex-1 py-[14px] px-[18px]">
-        <h3 className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass mb-2.5">{title}</h3>
-        {meals.length === 0 ? (
-          <p className="text-sm text-dusk">{t('nothingPlannedToday')}</p>
-        ) : (
-          <div className="space-y-2">
-            {Object.entries(bySlot).map(([slot, rawEntries]) => {
-              const entries = orderedEntries(slot, rawEntries);
-              if (entries.length === 0) return null;
-              return (
-                <div key={slot}>
-                  <p className="text-[10.5px] uppercase tracking-wide font-bold text-dusk mb-1">{slot}</p>
-                  <ul className="space-y-0.5">
-                    {entries.map((e, i) => (
-                      <li key={i} className="text-sm text-denim">
-                        {e.course && <span className="text-dusk">{e.course}: </span>}
-                        {e.recipeId ? (
-                          <Link
-                            href={`/properties/${propertyId}/recipes/${e.recipeId}`}
-                            className="text-brass hover:underline underline-offset-2"
-                          >
-                            {e.name}
-                          </Link>
-                        ) : (
-                          e.name
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
-        )}
-        <Link href={`/properties/${propertyId}/meal-plan`} className="inline-block mt-2.5 text-[11px] font-bold text-brass underline underline-offset-2">
-          {t('viewFullPlan')}
-        </Link>
-      </div>
+    <div className="relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow overflow-hidden flex flex-col min-h-[140px]">
+      <Pin size="sm" collapsed={collapsed} onToggle={toggle} />
+      <h3 className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass pt-[14px] px-[18px] pb-2.5">{title}</h3>
       <div
-        className="w-[42%] shrink-0"
-        style={{
-          backgroundImage: "url('/meal-plan-card.png.png')",
-          backgroundSize: 'cover',
-          // 'center' was already set, but the pot itself sits left-of-center
-          // in the source photo (its handle extends further left still) --
-          // in this narrow 42%-wide slice, a center-anchored crop was
-          // clipping the pot's left edge while showing mostly empty counter
-          // space on the right. Anchoring left instead keeps the pot (and
-          // its handle) in frame.
-          backgroundPosition: 'left center',
-        }}
-      />
+        className="flex-1 grid transition-[grid-template-rows] duration-200 ease-out"
+        style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
+      >
+        <div className="overflow-hidden flex flex-1 min-h-0">
+          <div className="flex-1 px-[18px] pb-[14px]">
+            {meals.length === 0 ? (
+              <p className="text-sm text-dusk">{t('nothingPlannedToday')}</p>
+            ) : (
+              <div className="space-y-2">
+                {Object.entries(bySlot).map(([slot, rawEntries]) => {
+                  const entries = orderedEntries(slot, rawEntries);
+                  if (entries.length === 0) return null;
+                  return (
+                    <div key={slot}>
+                      <p className="text-[10.5px] uppercase tracking-wide font-bold text-dusk mb-1">{slot}</p>
+                      <ul className="space-y-0.5">
+                        {entries.map((e, i) => (
+                          <li key={i} className="text-sm text-denim">
+                            {e.course && <span className="text-dusk">{e.course}: </span>}
+                            {e.recipeId ? (
+                              <Link
+                                href={`/properties/${propertyId}/recipes/${e.recipeId}`}
+                                className="text-brass hover:underline underline-offset-2"
+                              >
+                                {e.name}
+                              </Link>
+                            ) : (
+                              e.name
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <Link href={`/properties/${propertyId}/meal-plan`} className="inline-block mt-2.5 text-[11px] font-bold text-brass underline underline-offset-2">
+              {t('viewFullPlan')}
+            </Link>
+          </div>
+          <div
+            className="w-[42%] shrink-0"
+            style={{
+              backgroundImage: "url('/meal-plan-card.png.png')",
+              backgroundSize: 'cover',
+              // 'center' was already set, but the pot itself sits left-of-center
+              // in the source photo (its handle extends further left still) --
+              // in this narrow 42%-wide slice, a center-anchored crop was
+              // clipping the pot's left edge while showing mostly empty counter
+              // space on the right. Anchoring left instead keeps the pot (and
+              // its handle) in frame.
+              backgroundPosition: 'left center',
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -323,7 +338,7 @@ function LowStockAlertsCard({ title, propertyId, items }: { title: string; prope
   const t = useTranslations('dashboard.widgets');
   const preview = items.slice(0, 5);
   return (
-    <WidgetCard title={title}>
+    <WidgetCard cardId="low-stock-alerts" title={title}>
       {items.length === 0 ? (
         <p className="text-sm text-dusk">{t('allStocked')}</p>
       ) : (
@@ -374,7 +389,7 @@ function PrepAheadWidgetCard({
   const t = useTranslations('dashboard.prepAhead');
   const [isEnabled, setIsEnabled] = useState(enabled);
   const [saving, setSaving] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const { collapsed, toggle } = useCardCollapse('prep-ahead');
   const supabase = createClient();
   const showToast = useToast();
 
@@ -400,60 +415,62 @@ function PrepAheadWidgetCard({
   }
 
   return (
-    <div className="relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow overflow-hidden flex min-h-[140px]">
-      <Pin size="sm" />
-      <div className="flex-1 py-[14px] px-[18px]">
-        <div className="flex items-center justify-between gap-2 mb-2.5">
-          {isEnabled ? (
-            <button onClick={() => setCollapsed((v) => !v)} className="flex items-center gap-2 text-left">
-              <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{title}</span>
-              <span className="text-xs text-dusk font-bold">({reminders.length})</span>
-              <span className="text-dusk text-sm">{collapsed ? '▸' : '▾'}</span>
-            </button>
-          ) : (
-            <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{title}</span>
-          )}
-          {canManage && (
-            <button
-              onClick={() => setPrepAheadEnabled(!isEnabled)}
-              disabled={saving}
-              className="text-xs text-dusk underline disabled:opacity-40 shrink-0"
-            >
-              {isEnabled ? t('turnOff') : t('turnOn')}
-            </button>
-          )}
-        </div>
-        {!isEnabled ? (
-          <p className="text-sm text-dusk">{t('off')}</p>
-        ) : collapsed ? null : reminders.length === 0 ? (
-          <p className="text-sm text-dusk">{t('nothingUpcoming')}</p>
-        ) : (
-          <ul className="space-y-1.5">
-            {reminders.map((r, i) => (
-              <li key={i} className="text-sm text-denim">
-                {r.recipeId ? (
-                  <Link href={`/properties/${propertyId}/recipes/${r.recipeId}`} className="font-semibold text-brass hover:underline underline-offset-2">
-                    {r.recipeName}
-                  </Link>
-                ) : (
-                  <span className="font-semibold">{r.recipeName}</span>
-                )}
-                {' '}— {t('freezerFriendlyScheduled')}{' '}
-                {format(parseISO(r.planDate), 'EEEE, MMM d')}
-                {r.prepLeadDays ? `; ${t('startPrep')} ${r.prepLeadDays} ${r.prepLeadDays === 1 ? t('day') : t('days')} ${t('ahead')}` : ` — ${t('pullOutAhead')}`}
-              </li>
-            ))}
-          </ul>
+    <div className="relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow overflow-hidden flex flex-col min-h-[140px]">
+      <Pin size="sm" collapsed={collapsed} onToggle={toggle} />
+      <div className="flex items-center justify-between gap-2 pt-[14px] px-[18px] pb-2.5">
+        <span className="flex items-center gap-2">
+          <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{title}</span>
+          {isEnabled && <span className="text-xs text-dusk font-bold">({reminders.length})</span>}
+        </span>
+        {canManage && (
+          <button
+            onClick={() => setPrepAheadEnabled(!isEnabled)}
+            disabled={saving}
+            className="text-xs text-dusk underline disabled:opacity-40 shrink-0"
+          >
+            {isEnabled ? t('turnOff') : t('turnOn')}
+          </button>
         )}
       </div>
       <div
-        className="w-[42%] shrink-0"
-        style={{
-          backgroundImage: "url('/prep-ahead-card.png.png')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      />
+        className="flex-1 grid transition-[grid-template-rows] duration-200 ease-out"
+        style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
+      >
+        <div className="overflow-hidden flex flex-1 min-h-0">
+          <div className="flex-1 px-[18px] pb-[14px]">
+            {!isEnabled ? (
+              <p className="text-sm text-dusk">{t('off')}</p>
+            ) : reminders.length === 0 ? (
+              <p className="text-sm text-dusk">{t('nothingUpcoming')}</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {reminders.map((r, i) => (
+                  <li key={i} className="text-sm text-denim">
+                    {r.recipeId ? (
+                      <Link href={`/properties/${propertyId}/recipes/${r.recipeId}`} className="font-semibold text-brass hover:underline underline-offset-2">
+                        {r.recipeName}
+                      </Link>
+                    ) : (
+                      <span className="font-semibold">{r.recipeName}</span>
+                    )}
+                    {' '}— {t('freezerFriendlyScheduled')}{' '}
+                    {format(parseISO(r.planDate), 'EEEE, MMM d')}
+                    {r.prepLeadDays ? `; ${t('startPrep')} ${r.prepLeadDays} ${r.prepLeadDays === 1 ? t('day') : t('days')} ${t('ahead')}` : ` — ${t('pullOutAhead')}`}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div
+            className="w-[42%] shrink-0"
+            style={{
+              backgroundImage: "url('/prep-ahead-card.png.png')",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -462,7 +479,7 @@ function ShoppingListSummaryCard({ propertyId, count }: { propertyId: string; co
   const t = useTranslations('dashboard.widgets');
   const td = useTranslations('dashboard');
   return (
-    <WidgetCard title={t('shoppingListLabel')}>
+    <WidgetCard cardId="shopping-list-summary" title={t('shoppingListLabel')}>
       <p className="text-lg font-display text-denim mb-2">
         {count} {count === 1 ? td('item') : td('items')}
       </p>

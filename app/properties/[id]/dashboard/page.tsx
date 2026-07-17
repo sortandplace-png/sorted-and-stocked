@@ -8,6 +8,7 @@ import FloatingScanButton from '@/components/FloatingScanButton'
 import LocationZmanim from '@/components/LocationZmanim'
 import DashboardWidgets from '@/components/DashboardWidgets'
 import Pin from '@/components/PinAccent'
+import CollapsibleCard from '@/components/CollapsibleCard'
 import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
 import { getWidgetPrefs, getTodaysMealPlan, getLowStockAlerts } from '@/lib/dashboard-widgets-data'
 import { getPreferredSource } from '@/lib/reorder-sources'
@@ -623,11 +624,15 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               unchanged (Hebrew date, English date, parsha, Tehillim, omer,
               Shabbos Mode indicator). Parsha pill is now solid denim/white
               (identity-defining); Tehillim pill stays light mist (routine). */}
-          <div className="relative col-span-12 md:col-span-7 rounded-xl3 border border-cardBorder shadow-card overflow-hidden flex flex-col transition-shadow hover:shadow-cardHover">
-            <Pin />
-            <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
-              {t('todayHeader')}
-            </div>
+          <CollapsibleCard
+            cardId="today"
+            className="relative col-span-12 md:col-span-7 rounded-xl3 border border-cardBorder shadow-card overflow-hidden flex flex-col transition-shadow hover:shadow-cardHover"
+            header={
+              <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
+                {t('todayHeader')}
+              </div>
+            }
+          >
             <div className={`flex-1 flex flex-col items-center justify-center text-center pt-9 px-6 pb-8 ${isShabbos ? 'bg-amber-100' : 'bg-card'}`}>
               {propertyName && (
                 <p className="text-[10px] tracking-[0.18em] uppercase font-normal text-brass border-b border-brass inline-block pb-1.5 mb-[22px]">
@@ -686,7 +691,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                 </div>
               )}
             </div>
-          </div>
+          </CollapsibleCard>
 
           {/* CANDLE LIGHTING -- Type B (header bar + fixed-height photo +
               footer bar), the only card using this three-part structure.
@@ -699,12 +704,16 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               LocationZmanim's real geolocation toggle is unchanged, just
               relocated into the footer bar -- variant="dark" already reads
               correctly on a solid dark background. */}
-          <div className="col-span-12 md:col-span-5 rounded-xl3 border border-cardBorder shadow-card overflow-hidden relative flex flex-col transition-shadow hover:shadow-cardHover">
-            <Pin />
-            <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5 flex items-center gap-2">
-              <Flame size={13} className="text-white/80" aria-hidden="true" />
-              {t('candle.label')}
-            </div>
+          <CollapsibleCard
+            cardId="candle-lighting"
+            className="col-span-12 md:col-span-5 rounded-xl3 border border-cardBorder shadow-card overflow-hidden relative flex flex-col transition-shadow hover:shadow-cardHover"
+            header={
+              <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5 flex items-center gap-2">
+                <Flame size={13} className="text-white/80" aria-hidden="true" />
+                {t('candle.label')}
+              </div>
+            }
+          >
             <div
               // backgroundSize: 'cover' is the CSS-background equivalent of
               // object-fit: cover -- this already crops rather than
@@ -730,7 +739,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                 defaultDateLabel={candleDateLabel}
               />
             </div>
-          </div>
+          </CollapsibleCard>
 
           {/* QUICK CAPTURE -- Type A (header bar + free content), replaces
               the old Readiness card in the same slot/position. NOT gated to
@@ -859,14 +868,16 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               full-width pass. Real photos still live in Supabase Storage
               (dashboard-photos/pantry.jpeg, mealplan.jpg); a mist fallback
               fill shows if either ever fails to load. */}
-          <Link
+          <CollapsibleCard
+            cardId="pantry"
             href={`/properties/${propertyId}/inventory`}
             className="col-span-12 md:col-span-6 rounded-xl3 border border-cardBorder shadow-card overflow-hidden flex flex-col transition-shadow hover:shadow-cardHover"
+            header={
+              <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
+                {t('pantryPillLabel')}
+              </div>
+            }
           >
-            <Pin />
-            <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
-              {t('pantryPillLabel')}
-            </div>
             <div className="flex-1 flex min-h-[120px]">
               <div
                 className="w-[42%] shrink-0 bg-mist"
@@ -883,16 +894,18 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                 <p className="text-[12px] text-dusk">{t('pantryCard.subtext')}</p>
               </div>
             </div>
-          </Link>
+          </CollapsibleCard>
 
-          <Link
+          <CollapsibleCard
+            cardId="meal-plan-this-week"
             href={`/properties/${propertyId}/meal-plan`}
             className="col-span-12 md:col-span-6 rounded-xl3 border border-cardBorder shadow-card overflow-hidden flex flex-col transition-shadow hover:shadow-cardHover"
+            header={
+              <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
+                {t('mealPlanPillLabel')}
+              </div>
+            }
           >
-            <Pin />
-            <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
-              {t('mealPlanPillLabel')}
-            </div>
             <div className="flex-1 flex min-h-[120px]">
               <div
                 className="w-[42%] shrink-0 bg-mist"
@@ -909,7 +922,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                 <p className="text-[12px] text-dusk">{t('mealPlanCard.subtext')}</p>
               </div>
             </div>
-          </Link>
+          </CollapsibleCard>
         </div>
 
         {/* Quick-glance overview -- 2 real counts (Meals Planned removed:
