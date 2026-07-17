@@ -143,27 +143,27 @@ export default async function SitemapPage({ params }: { params: Promise<{ id: st
       <h1 className="text-2xl font-display text-denim mb-1">Sitemap</h1>
       <p className="text-sm text-dusk mb-6">Every page in Sorted &amp; Stocked, organized by section.</p>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {sections.map((section) => (
           <div key={section.label} className="rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
             <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
               {section.label}
             </div>
             <div className="p-5">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-[14px]">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-[10px]">
                 {section.entries.map((entry) => {
                   const Icon = entry.icon;
                   return (
                     <Link
                       key={entry.href}
                       href={entry.href}
-                      className="relative min-h-[128px] flex flex-col items-center justify-center gap-[11px] rounded-xl2 bg-mist border border-brass/30 py-[14px] px-[18px] shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+                      className="relative min-h-[80px] flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 py-[10px] px-[14px] shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
                     >
                       <Pin size="sm" />
-                      <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{section.label}</span>
-                      <Icon size={36} className="text-denim" aria-hidden="true" />
-                      <span className="font-display font-normal text-[18px] text-denim text-center">{entry.label}</span>
-                      <span className="text-[11px] text-dusk text-center">{entry.subtitle}</span>
+                      <span className="text-[8px] tracking-[0.2em] uppercase font-semibold text-brass">{section.label}</span>
+                      <Icon size={20} className="text-denim" aria-hidden="true" />
+                      <span className="font-display font-normal text-[14px] text-denim text-center">{entry.label}</span>
+                      <span className="text-[9px] text-dusk text-center">{entry.subtitle}</span>
                     </Link>
                   );
                 })}

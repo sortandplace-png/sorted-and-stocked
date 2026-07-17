@@ -306,7 +306,13 @@ function TodaysMealPlanCard({
         style={{
           backgroundImage: "url('/meal-plan-card.png.png')",
           backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          // 'center' was already set, but the pot itself sits left-of-center
+          // in the source photo (its handle extends further left still) --
+          // in this narrow 42%-wide slice, a center-anchored crop was
+          // clipping the pot's left edge while showing mostly empty counter
+          // space on the right. Anchoring left instead keeps the pot (and
+          // its handle) in frame.
+          backgroundPosition: 'left center',
         }}
       />
     </div>

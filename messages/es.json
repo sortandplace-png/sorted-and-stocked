@@ -368,7 +368,7 @@
     "recipes": "recetas",
     "quickActions": {
       "planMeal": "Plan de Comidas",
-      "planMealSubtitle": "El menú de esta semana",
+      "planMealSubtitle": "Planificar esta semana",
       "recipesTile": "Recetas",
       "addRecipe": "Agregar Receta",
       "addRecipeSubtitle": "Nuevo plato",
