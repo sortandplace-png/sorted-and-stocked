@@ -30,6 +30,7 @@ import {
   ImagePlus,
   Layers,
   CalendarRange,
+  ListTodo,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -76,6 +77,7 @@ function buildSections(propertyId: string): Section[] {
         { href: p('/staff'), label: 'Staff', subtitle: 'Team & roles', icon: Users },
         { href: p('/shift-handover'), label: 'Shift Handover', subtitle: 'Pass the baton', icon: RotateCcw },
         { href: p('/tools/reset-checklist'), label: 'Reset for Next', subtitle: 'Post-use checklist', icon: RotateCcw },
+        { href: p('/tools/duty-roster'), label: 'Duty Roster', subtitle: 'Edit staff duties', icon: ListTodo },
       ],
     },
     {
