@@ -346,9 +346,12 @@ function LowStockAlertsCard({ title, propertyId, items }: { title: string; prope
 // directly from the old standalone PrepAheadAssistant component (enabled/
 // disabled feature-flag toggle, collapse toggle, reminder list, recipe
 // links) -- same content and course filtering, just reshaped into this
-// card's layout. /prep-ahead-card.png is a background-image div, not an
-// <img>, so a not-yet-uploaded file silently renders nothing rather than a
-// broken-image icon, same as the meal-plan card's image slot.
+// card's layout. /prep-ahead-card.png.png (Racquel's real filename, same
+// double-extension quirk as meal-plan-card.png.png -- kept as-is rather
+// than renamed, compressed in place from an 8.8MB upload down to ~50KB) is
+// a background-image div, not an <img>, so a missing file would silently
+// render nothing rather than a broken-image icon, same as the meal-plan
+// card's image slot.
 function PrepAheadWidgetCard({
   title,
   propertyId,
@@ -440,7 +443,7 @@ function PrepAheadWidgetCard({
       <div
         className="w-[42%] shrink-0"
         style={{
-          backgroundImage: "url('/prep-ahead-card.png')",
+          backgroundImage: "url('/prep-ahead-card.png.png')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
