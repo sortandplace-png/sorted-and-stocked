@@ -15,6 +15,7 @@ import { resilientUpdate } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import ShiftHandoverClient from '@/components/ShiftHandoverClient';
+import StaffDutyChecklist from '@/components/StaffDutyChecklist';
 import ToolModal from '@/components/ToolModal';
 import KitchenOpsToolModal from '@/components/KitchenOpsToolModal';
 import { Camera, ShoppingCart, Timer, Info } from 'lucide-react';
@@ -31,6 +32,9 @@ type Task = {
   category: string | null;
 };
 
+type DutyTask = { id: string; taskEn: string; taskEs: string; completed: boolean };
+type DutyArea = { areaEn: string; areaEs: string; tasks: DutyTask[] };
+
 const STATUS_OPTIONS: { key: Status; label: string }[] = [
   { key: 'open', label: 'Open' },
   { key: 'in_progress', label: 'In Progress' },
@@ -43,7 +47,21 @@ const PRIORITY_STYLE: Record<Priority, string> = {
   low: 'bg-sage/10 text-sage',
 };
 
-export default function MyDayClient({ propertyId, staffNote }: { propertyId: string; staffNote: string | null }) {
+export default function MyDayClient({
+  propertyId,
+  staffNote,
+  isStaff,
+  hasRosterKey,
+  dutyAreas,
+  todayStr,
+}: {
+  propertyId: string;
+  staffNote: string | null;
+  isStaff: boolean;
+  hasRosterKey: boolean;
+  dutyAreas: DutyArea[];
+  todayStr: string;
+}) {
   const t = useTranslations('myDay');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,6 +184,12 @@ export default function MyDayClient({ propertyId, staffNote }: { propertyId: str
       {showKitchenTimer && (
         <KitchenOpsToolModal slug="kitchen-timer" propertyId={propertyId} onClose={() => setShowKitchenTimer(false)} />
       )}
+
+      {/* Recurring daily duty checklist (staff_duty_templates, grouped by
+          area) -- distinct from the one-off assigned Today's Tasks list
+          below it. Staff-only: owner/manager visiting this page directly
+          see everything else here unchanged, just not this section. */}
+      {isStaff && <StaffDutyChecklist areas={dutyAreas} hasRosterKey={hasRosterKey} todayStr={todayStr} />}
 
       <h2 className="font-display text-lg text-denim mb-2">Today's Tasks</h2>
       {loading ? (

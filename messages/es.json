@@ -340,7 +340,13 @@
     "headsUp": "Atención:"
   },
   "myDay": {
-    "staffNoteHeading": "Nota de hoy para el personal"
+    "staffNoteHeading": "Nota de hoy para el personal",
+    "duties": {
+      "heading": "Tareas de Hoy",
+      "noRoster": "Aún no se ha asignado una lista de tareas — pídale a su gerente que configure una.",
+      "nothingNow": "No hay nada programado para este momento del día.",
+      "failedToUpdate": "Error al actualizar. Inténtelo de nuevo."
+    }
   },
   "dashboard": {
     "shabbosModeActive": "Modo Shabat Activo",

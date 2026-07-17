@@ -340,7 +340,13 @@
     "headsUp": "Heads Up:"
   },
   "myDay": {
-    "staffNoteHeading": "Today's note for staff"
+    "staffNoteHeading": "Today's note for staff",
+    "duties": {
+      "heading": "Today's Duties",
+      "noRoster": "No task roster assigned yet — ask your manager to set one up.",
+      "nothingNow": "Nothing scheduled for this time of day.",
+      "failedToUpdate": "Failed to update. Try again."
+    }
   },
   "dashboard": {
     "shabbosModeActive": "Shabbos Mode Active",
