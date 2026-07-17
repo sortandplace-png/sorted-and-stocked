@@ -452,12 +452,17 @@ async function getPrepAheadReminders(propertyId: string): Promise<PrepAheadRemin
   const todayStr = format(new Date(), 'yyyy-MM-dd')
   const horizon = format(new Date(Date.now() + PREP_AHEAD_WINDOW_DAYS * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
 
+  // Dip/salad/dessert are excluded even if freezer-friendly -- nobody needs
+  // a multi-day advance reminder for hummus or a salad dressing. course is
+  // a plain column on this table (not an embedded relation like tags), so
+  // this filters server-side rather than fetching rows just to discard them.
   const { data } = await supabase
     .from('meal_plan_entries')
     .select('plan_date, recipe_id, recipes(name, tags, prep_lead_days)')
     .eq('property_id', propertyId)
     .gt('plan_date', todayStr)
     .lte('plan_date', horizon)
+    .in('course', ['protein', 'soup', 'starch', 'vege'])
 
   return (data || [])
     .filter((e: any) => e.recipes?.tags?.includes('freezer-friendly'))

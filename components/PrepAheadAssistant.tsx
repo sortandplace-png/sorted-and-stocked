@@ -13,6 +13,7 @@ import { format, parseISO } from 'date-fns';
 import { Snowflake } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
+import Pin from '@/components/PinAccent';
 
 type Reminder = { recipeId: string | null; recipeName: string; planDate: string; prepLeadDays: number | null };
 
@@ -57,7 +58,8 @@ export default function PrepAheadAssistant({
 
   if (!enabled) {
     return (
-      <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4 flex items-center justify-between gap-3">
+      <div className="relative rounded-xl2 border border-brass/30 bg-mist shadow-card py-[14px] px-[18px] mb-4 flex items-center justify-between gap-3">
+        <Pin size="sm" />
         <p className="text-sm text-dusk">{t('off')}</p>
         <button
           onClick={() => setPrepAheadEnabled(true)}
@@ -70,14 +72,17 @@ export default function PrepAheadAssistant({
     );
   }
 
-  // New direction (2026-07-15): a full card, same as every other section on
-  // Home, replacing Bold Direction's borderless .collapsed-row treatment.
+  // Restyled to match the widget system exactly (mist fill, brass/30
+  // border, rounded-xl2, brass pin dot, brass eyebrow) -- was still on the
+  // old rounded-xl3/bg-card/cardBorder shell from the pre-widget-redesign
+  // "New direction" pass.
   return (
-    <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4">
+    <div className="relative rounded-xl2 border border-brass/30 bg-mist shadow-card py-[14px] px-[18px] mb-4">
+      <Pin size="sm" />
       <div className="flex items-center justify-between gap-2">
         <button onClick={() => setCollapsed((v) => !v)} className="flex items-center gap-2 text-left">
           <Snowflake size={14} strokeWidth={2} className="text-brass" aria-hidden="true" />
-          <span className="text-xs font-bold uppercase tracking-wider text-denim">{t('title')}</span>
+          <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{t('title')}</span>
           <span className="text-xs text-dusk font-bold">({reminders.length})</span>
           <span className="text-dusk text-sm">{collapsed ? '▸' : '▾'}</span>
         </button>

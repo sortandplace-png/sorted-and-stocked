@@ -41,7 +41,7 @@ export async function getWidgetPrefs(propertyId: string): Promise<WidgetPrefs> {
   return prefs;
 }
 
-export type TodaysMealEntry = { mealSlot: string; course: string; name: string };
+export type TodaysMealEntry = { mealSlot: string; course: string; name: string; recipeId: string | null };
 
 // course_icons.display_name has the real label for every course slug
 // ("kids_platter" -> "Kids platter", "vege" -> "Vegetable", etc.) -- no FK
@@ -55,7 +55,7 @@ export async function getTodaysMealPlan(propertyId: string): Promise<TodaysMealE
   const [{ data }, { data: courseIcons }] = await Promise.all([
     supabase
       .from('meal_plan_entries')
-      .select('meal_slot, course, custom_name, sequence, recipes(name)')
+      .select('meal_slot, course, custom_name, sequence, recipe_id, recipes(name)')
       .eq('property_id', propertyId)
       .eq('plan_date', todayStr)
       .order('meal_slot')
@@ -69,6 +69,10 @@ export async function getTodaysMealPlan(propertyId: string): Promise<TodaysMealE
     mealSlot: e.meal_slot ?? 'meal',
     course: e.course ? (courseLabels.get(e.course) ?? e.course) : '',
     name: e.custom_name || e.recipes?.name || 'Untitled',
+    // A custom-named entry (no recipe_id) or a linked recipe that's since
+    // been deleted (recipe_id set but the embed comes back null) both mean
+    // there's nowhere real to link -- only a genuine live recipe gets a link.
+    recipeId: e.recipe_id && e.recipes ? e.recipe_id : null,
   }));
 }
 

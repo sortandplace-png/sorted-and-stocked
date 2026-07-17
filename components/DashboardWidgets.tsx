@@ -180,6 +180,13 @@ function WidgetCard({ title, children }: { title: string; children: React.ReactN
   );
 }
 
+// Only this widget gets a fixed header image, so it builds its own shell
+// (matching WidgetCard's mist/brass-border/xl2/shadow/pin exactly) instead
+// of using the shared WidgetCard, which has no image slot. The image is a
+// background-image div, not an <img> -- same technique as the Candle
+// Lighting card's fixed-height photo band -- so a missing/failed
+// /meal-plan-card.png.png silently renders nothing rather than a broken-image
+// icon, which is exactly the "no fallback placeholder" behavior asked for.
 function TodaysMealPlanCard({ title, propertyId, meals }: { title: string; propertyId: string; meals: TodaysMealEntry[] }) {
   const t = useTranslations('dashboard.widgets');
   const bySlot = meals.reduce<Record<string, TodaysMealEntry[]>>((acc, m) => {
@@ -187,30 +194,51 @@ function TodaysMealPlanCard({ title, propertyId, meals }: { title: string; prope
     return acc;
   }, {});
   return (
-    <WidgetCard title={title}>
-      {meals.length === 0 ? (
-        <p className="text-sm text-dusk">{t('nothingPlannedToday')}</p>
-      ) : (
-        <div className="space-y-2">
-          {Object.entries(bySlot).map(([slot, entries]) => (
-            <div key={slot}>
-              <p className="text-[10.5px] uppercase tracking-wide font-bold text-dusk mb-1">{slot}</p>
-              <ul className="space-y-0.5">
-                {entries.map((e, i) => (
-                  <li key={i} className="text-sm text-denim">
-                    {e.course && <span className="text-dusk">{e.course}: </span>}
-                    {e.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      )}
-      <Link href={`/properties/${propertyId}/meal-plan`} className="inline-block mt-2.5 text-[11px] font-bold text-brass underline underline-offset-2">
-        {t('viewFullPlan')}
-      </Link>
-    </WidgetCard>
+    <div className="relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow overflow-hidden">
+      <Pin size="sm" />
+      <div
+        className="h-[140px] w-full"
+        style={{
+          backgroundImage: "url('/meal-plan-card.png.png')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      />
+      <div className="py-[14px] px-[18px]">
+        <h3 className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass mb-2.5">{title}</h3>
+        {meals.length === 0 ? (
+          <p className="text-sm text-dusk">{t('nothingPlannedToday')}</p>
+        ) : (
+          <div className="space-y-2">
+            {Object.entries(bySlot).map(([slot, entries]) => (
+              <div key={slot}>
+                <p className="text-[10.5px] uppercase tracking-wide font-bold text-dusk mb-1">{slot}</p>
+                <ul className="space-y-0.5">
+                  {entries.map((e, i) => (
+                    <li key={i} className="text-sm text-denim">
+                      {e.course && <span className="text-dusk">{e.course}: </span>}
+                      {e.recipeId ? (
+                        <Link
+                          href={`/properties/${propertyId}/recipes/${e.recipeId}`}
+                          className="text-brass hover:underline underline-offset-2"
+                        >
+                          {e.name}
+                        </Link>
+                      ) : (
+                        e.name
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+        <Link href={`/properties/${propertyId}/meal-plan`} className="inline-block mt-2.5 text-[11px] font-bold text-brass underline underline-offset-2">
+          {t('viewFullPlan')}
+        </Link>
+      </div>
+    </div>
   );
 }
 
