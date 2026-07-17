@@ -915,7 +915,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           <div className="col-span-12 grid grid-cols-2 sm:grid-cols-5 gap-[14px]">
             {([
               [`/properties/${propertyId}/meal-plan`, Calendar, t('quickActions.planMeal'), t('quickActions.planMealSubtitle'), undefined] as const,
-              [`/properties/${propertyId}/scan`, Scan, t('quickActions.scanItem'), t('quickActions.scanItemSubtitle'), t('quickActions.scanItemAria')] as const,
+              [`/properties/${propertyId}/recipes`, BookOpen, t('quickActions.recipesTile'), `${recipeCount} ${recipeCount === 1 ? t('recipe') : t('recipes')}`, undefined] as const,
               [`/properties/${propertyId}/recipes`, Plus, t('quickActions.addRecipe'), t('quickActions.addRecipeSubtitle'), undefined] as const,
               [`/properties/${propertyId}/shopping-list`, ShoppingCart, t('quickActions.shoppingList'), t('quickActions.shoppingListSubtitle'), undefined] as const,
               [`/properties/${propertyId}/inventory`, Package, t('quickActions.inventory'), t('quickActions.inventorySubtitle'), undefined] as const,
