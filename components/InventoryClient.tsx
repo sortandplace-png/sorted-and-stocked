@@ -45,7 +45,7 @@ const PESACH_STATUS_INFO: Record<
 > = {
   kosher_for_pesach: { label: 'Kosher for Pesach', icon: CheckCircle2, badgeClass: 'bg-sage/15 text-sage' },
   not_kosher_for_pesach: { label: 'Not for Pesach', icon: XCircle, badgeClass: 'bg-rust/15 text-rust' },
-  needs_review: { label: 'Needs Review', icon: HelpCircle, badgeClass: 'bg-gold text-charcoal font-semibold' },
+  needs_review: { label: 'Needs Review', icon: HelpCircle, badgeClass: 'bg-brass text-white font-semibold' },
 };
 
 type InventoryItem = {
@@ -1060,7 +1060,7 @@ export default function InventoryClient({
     return (
       <div
         key={item.id}
-        className="flex items-center gap-3 bg-white rounded-2xl shadow-sm shadow-charcoal/5 px-4 py-3.5 cursor-pointer hover:shadow-md hover:shadow-charcoal/10 transition-shadow"
+        className="flex items-center gap-3 bg-card rounded-2xl shadow-card px-4 py-3.5 cursor-pointer hover:shadow-cardHover transition-shadow"
         onClick={() => openEditForm(item)}
       >
         {hasThumb ? (
@@ -1068,20 +1068,20 @@ export default function InventoryClient({
           <img
             src={item.photo_url!}
             alt=""
-            className="w-14 h-14 rounded-xl object-cover shrink-0 bg-gold-light/20"
+            className="w-14 h-14 rounded-xl object-cover shrink-0 bg-mist"
             onError={() => setBrokenPhotoIds((prev) => new Set(prev).add(item.id))}
           />
         ) : (
-          <div className="w-14 h-14 rounded-xl bg-gold-light/20 shrink-0 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-xl bg-mist shrink-0 flex items-center justify-center">
             {(() => {
               const Icon = getItemIcon(item.name, item.category, categoryIconNames[item.category ?? '']);
-              return <Icon className="w-6 h-6 text-gold-dark" strokeWidth={1.75} />;
+              return <Icon className="w-6 h-6 text-brass" strokeWidth={1.75} />;
             })()}
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-charcoal truncate">{displayName(item)}</p>
-          <p className="text-xs text-charcoal/50 truncate mt-0.5">
+          <p className="font-medium text-denim truncate">{displayName(item)}</p>
+          <p className="text-xs text-dusk truncate mt-0.5">
             {[
               item.category ? `${categoryIcon(item.category)} ${item.category}` : null,
               showLocation ? locationName(item.location_id) : item.supplier,
@@ -1095,11 +1095,11 @@ export default function InventoryClient({
                 {item.current_qty} / {item.min_qty} {item.unit} — low
               </span>
             ) : notYetCounted ? (
-              <span className="text-xs font-medium text-gold-dark bg-gold-light/30 px-2.5 py-1 rounded-full">
+              <span className="text-xs font-medium text-brass bg-mist px-2.5 py-1 rounded-full">
                 Not yet counted
               </span>
             ) : (
-              <span className="text-xs text-charcoal/40">
+              <span className="text-xs text-dusk">
                 {item.current_qty} / {item.min_qty} {item.unit}
               </span>
             )}
@@ -1145,32 +1145,32 @@ export default function InventoryClient({
     <div className="max-w-md lg:max-w-6xl mx-auto p-4">
       {(pullDistance > 0 || refreshing) && (
         <div
-          className="flex justify-center text-xs text-charcoal/40 overflow-hidden transition-all"
+          className="flex justify-center text-xs text-dusk overflow-hidden transition-all"
           style={{ height: refreshing ? 32 : pullDistance }}
         >
           {refreshing ? 'Refreshing…' : pullDistance > 50 ? 'Release to refresh' : 'Pull to refresh'}
         </div>
       )}
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-display text-charcoal">Inventory</h1>
+        <h1 className="text-2xl font-display text-denim">Inventory</h1>
         <div className="flex gap-2">
           <a
             href={`/properties/${propertyId}/scan`}
-            className="w-11 h-11 flex items-center justify-center rounded-full bg-cream border border-charcoal/30 text-charcoal text-lg"
+            className="w-11 h-11 flex items-center justify-center rounded-full bg-linen border border-brass/30 text-denim text-lg"
             aria-label="Scan a label"
           >
             📷
           </a>
           <a
             href={`/properties/${propertyId}/print-labels`}
-            className="w-11 h-11 flex items-center justify-center rounded-full bg-cream border border-charcoal/30 text-charcoal text-lg"
+            className="w-11 h-11 flex items-center justify-center rounded-full bg-linen border border-brass/30 text-denim text-lg"
             aria-label="Print item labels"
           >
             🏷️
           </a>
           <button
             onClick={openNewItemForm}
-            className="text-sm font-medium bg-charcoal text-cream px-4 py-2 rounded-full"
+            className="text-sm font-medium bg-denim text-white px-4 py-2 rounded-full"
           >
             + Add item
           </button>
@@ -1182,35 +1182,35 @@ export default function InventoryClient({
       )}
 
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="rounded-2xl p-3 bg-white border border-gold-light/40 text-center">
-          <div className="text-xl font-display text-charcoal">{totalItemsCount}</div>
-          <div className="text-[11px] text-charcoal/50">Total Items</div>
+        <div className="rounded-2xl p-3 bg-card border border-cardBorder text-center">
+          <div className="text-xl font-display text-denim">{totalItemsCount}</div>
+          <div className="text-[11px] text-dusk">Total Items</div>
         </div>
         <button
           type="button"
           onClick={() => setBelowParOnly((v) => !v)}
           aria-pressed={belowParOnly}
-          className={`rounded-2xl p-3 bg-white border text-center transition-colors ${
-            belowParOnly ? 'border-rust' : 'border-gold-light/40'
+          className={`rounded-2xl p-3 bg-card border text-center transition-colors ${
+            belowParOnly ? 'border-rust' : 'border-cardBorder'
           }`}
         >
-          <div className={`text-xl font-display ${lowStockCount > 0 ? 'text-rust' : 'text-charcoal'}`}>
+          <div className={`text-xl font-display ${lowStockCount > 0 ? 'text-rust' : 'text-denim'}`}>
             {lowStockCount}
           </div>
-          <div className="text-[11px] text-charcoal/50">Low Stock</div>
+          <div className="text-[11px] text-dusk">Low Stock</div>
         </button>
         <button
           type="button"
           onClick={() => setExpiringSoon30Only((v) => !v)}
           aria-pressed={expiringSoon30Only}
-          className={`rounded-2xl p-3 bg-white border text-center transition-colors ${
-            expiringSoon30Only ? 'border-gold-dark' : 'border-gold-light/40'
+          className={`rounded-2xl p-3 bg-card border text-center transition-colors ${
+            expiringSoon30Only ? 'border-brass' : 'border-cardBorder'
           }`}
         >
-          <div className={`text-xl font-display ${expiringSoon30Count > 0 ? 'text-gold-dark' : 'text-charcoal'}`}>
+          <div className={`text-xl font-display ${expiringSoon30Count > 0 ? 'text-brass' : 'text-denim'}`}>
             {expiringSoon30Count}
           </div>
-          <div className="text-[11px] text-charcoal/50">Expiring Soon</div>
+          <div className="text-[11px] text-dusk">Expiring Soon</div>
         </button>
       </div>
 
@@ -1221,7 +1221,7 @@ export default function InventoryClient({
           feature card competing with the item browser below it. */}
       {canManage(role) && (
         <div className="flex items-center justify-between gap-3 px-1 mb-4">
-          <p className="text-xs text-charcoal/60">Pesach Mode</p>
+          <p className="text-xs text-dusk">Pesach Mode</p>
           <button
             onClick={togglePesachMode}
             disabled={savingPesachMode}
@@ -1229,11 +1229,11 @@ export default function InventoryClient({
             aria-checked={pesachModeEnabled}
             aria-label="Toggle Pesach Mode"
             className={`relative shrink-0 w-9 h-5 rounded-full transition-colors disabled:opacity-50 ${
-              pesachModeEnabled ? 'bg-gold-dark' : 'bg-gold-light/50'
+              pesachModeEnabled ? 'bg-brass' : 'bg-mist'
             }`}
           >
             <span
-              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-card shadow-sm transition-transform ${
                 pesachModeEnabled ? 'translate-x-4' : 'translate-x-0'
               }`}
             />
@@ -1241,16 +1241,16 @@ export default function InventoryClient({
         </div>
       )}
 
-      <div className="inline-flex rounded-full border border-gold-light/60 bg-white p-0.5 text-sm mb-4">
+      <div className="inline-flex rounded-full border border-cardBorder bg-card p-0.5 text-sm mb-4">
         <button
           onClick={() => setViewMode('rooms')}
-          className={`rounded-full px-4 py-1.5 ${viewMode === 'rooms' ? 'bg-gold-dark text-white' : 'text-charcoal/60'}`}
+          className={`rounded-full px-4 py-1.5 ${viewMode === 'rooms' ? 'bg-brass text-white' : 'text-dusk'}`}
         >
           Browse by Room
         </button>
         <button
           onClick={() => setViewMode('all')}
-          className={`rounded-full px-4 py-1.5 ${viewMode === 'all' ? 'bg-gold-dark text-white' : 'text-charcoal/60'}`}
+          className={`rounded-full px-4 py-1.5 ${viewMode === 'all' ? 'bg-brass text-white' : 'text-dusk'}`}
         >
           All Items
         </button>
@@ -1261,7 +1261,7 @@ export default function InventoryClient({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search items…"
-          className="flex-1 min-w-[140px] border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-white text-sm"
+          className="flex-1 min-w-[140px] border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-full px-4 py-2 bg-card text-sm"
         />
         {/* Browse by Room keeps its exact original filter UI (dropdown +
             toggle button) untouched -- it's a genuinely different, spatial
@@ -1271,7 +1271,7 @@ export default function InventoryClient({
             <select
               value={categoryFilter ?? ''}
               onChange={(e) => setCategoryFilter(e.target.value || null)}
-              className="border border-gold-light/60 rounded-full px-3 py-2 bg-white text-sm"
+              className="border border-cardBorder rounded-full px-3 py-2 bg-card text-sm"
             >
               <option value="">All categories</option>
               {categorySuggestions.map((c) => (
@@ -1283,7 +1283,7 @@ export default function InventoryClient({
             <button
               onClick={() => setBelowParOnly((v) => !v)}
               className={`text-sm px-4 py-2 rounded-full border shrink-0 ${
-                belowParOnly ? 'bg-rust text-white border-rust' : 'border-gold-light/60 text-charcoal'
+                belowParOnly ? 'bg-rust text-white border-rust' : 'border-cardBorder text-denim'
               }`}
             >
               Below par only
@@ -1355,10 +1355,10 @@ export default function InventoryClient({
                   onClick={() => toggleLetter(letter)}
                   className="w-full flex items-center gap-2 mb-2 text-left"
                 >
-                  <span className="font-display text-lg text-charcoal">{letter}</span>
-                  <span className="text-xs text-charcoal/40">({letterItems.length})</span>
-                  <span className="flex-1 border-t border-gold-light/40" />
-                  <span className="text-charcoal/40 text-sm">{collapsed ? '▸' : '▾'}</span>
+                  <span className="font-display text-lg text-denim">{letter}</span>
+                  <span className="text-xs text-dusk">({letterItems.length})</span>
+                  <span className="flex-1 border-t border-cardBorder" />
+                  <span className="text-dusk text-sm">{collapsed ? '▸' : '▾'}</span>
                 </button>
                 {!collapsed && (
                   <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
@@ -1376,10 +1376,10 @@ export default function InventoryClient({
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               <button
                 onClick={() => setLocationFilter(FAVORITES)}
-                className="text-left bg-gold-light/25 rounded-2xl shadow-sm shadow-charcoal/5 p-4 hover:bg-gold-light/40 transition-colors"
+                className="text-left bg-mist rounded-2xl shadow-card p-4 hover:bg-mist transition-colors"
               >
-                <p className="font-display text-lg text-charcoal truncate">⭐ Favorites</p>
-                <p className="text-xs text-charcoal/50 mt-1">
+                <p className="font-display text-lg text-denim truncate">⭐ Favorites</p>
+                <p className="text-xs text-dusk mt-1">
                   {favoriteIds.size} item{favoriteIds.size === 1 ? '' : 's'}
                 </p>
               </button>
@@ -1390,18 +1390,18 @@ export default function InventoryClient({
               <button
                 onClick={() => setLowStockFirst((v) => !v)}
                 className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-                  lowStockFirst ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70'
+                  lowStockFirst ? 'bg-brass text-white' : 'bg-card border border-cardBorder text-dusk'
                 }`}
               >
                 Low stock first
               </button>
               {allFloorNames.length > 1 && (
                 <>
-                  <span className="w-px h-5 bg-gold-light/60" aria-hidden="true" />
+                  <span className="w-px h-5 bg-cardBorder" aria-hidden="true" />
                   <button
                     onClick={() => setFloorFilter(null)}
                     className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-                      !floorFilter ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70'
+                      !floorFilter ? 'bg-brass text-white' : 'bg-card border border-cardBorder text-dusk'
                     }`}
                   >
                     All floors
@@ -1411,7 +1411,7 @@ export default function InventoryClient({
                       key={floor}
                       onClick={() => setFloorFilter(floor)}
                       className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-                        floorFilter === floor ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70'
+                        floorFilter === floor ? 'bg-brass text-white' : 'bg-card border border-cardBorder text-dusk'
                       }`}
                     >
                       {floor}
@@ -1424,7 +1424,7 @@ export default function InventoryClient({
           {roomGroupEntries.map(([groupName, summaries]) => (
             <div key={groupName}>
               {roomGroupEntries.length > 1 && (
-                <h2 className="text-xs font-medium uppercase tracking-wider text-gold-dark mb-2">{groupName}</h2>
+                <h2 className="text-xs font-medium uppercase tracking-wider text-brass mb-2">{groupName}</h2>
               )}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {summaries.map(({ location, count, lowCount }) => {
@@ -1434,16 +1434,16 @@ export default function InventoryClient({
                     <button
                       key={location}
                       onClick={() => setLocationFilter(loc ? loc.id : UNASSIGNED)}
-                      className="relative text-left bg-white rounded-2xl shadow-sm shadow-charcoal/5 overflow-hidden hover:bg-gold-light/15 transition-colors"
+                      className="relative text-left bg-card rounded-2xl shadow-card overflow-hidden hover:bg-mist transition-colors"
                     >
                       {loc?.photo_url && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={loc.photo_url} alt="" className="w-full h-20 object-cover" />
                       )}
                       <div className="p-4">
-                        <Icon className="w-5 h-5 text-gold-dark mb-1.5" strokeWidth={1.75} />
-                        <p className="font-display text-lg text-charcoal truncate">{location}</p>
-                        <p className="text-xs text-charcoal/50 mt-1">
+                        <Icon className="w-5 h-5 text-brass mb-1.5" strokeWidth={1.75} />
+                        <p className="font-display text-lg text-denim truncate">{location}</p>
+                        <p className="text-xs text-dusk mt-1">
                           {count} item{count === 1 ? '' : 's'}
                         </p>
                         {lowCount > 0 && (
@@ -1459,7 +1459,7 @@ export default function InventoryClient({
                             e.stopPropagation();
                             setPhotoUploadLocation(loc);
                           }}
-                          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-charcoal/60 hover:text-charcoal"
+                          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-card/90 shadow-sm flex items-center justify-center text-dusk hover:text-denim"
                           role="button"
                           aria-label={`Add photo of ${location}`}
                         >
@@ -1472,7 +1472,7 @@ export default function InventoryClient({
                             e.stopPropagation();
                             setPhotoUploadLocation(loc);
                           }}
-                          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/70 flex items-center justify-center text-charcoal/40 hover:text-charcoal hover:bg-white/90 transition-colors"
+                          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-card/70 flex items-center justify-center text-dusk hover:text-denim hover:bg-card/90 transition-colors"
                           role="button"
                           aria-label={`Replace photo of ${location}`}
                         >
@@ -1487,7 +1487,7 @@ export default function InventoryClient({
           ))}
           <button
             onClick={() => setShowNewRoom(true)}
-            className="text-left border-2 border-dashed border-gold-light rounded-2xl p-4 text-charcoal/60 hover:bg-gold-light/10 transition-colors w-full md:w-auto"
+            className="text-left border-2 border-dashed border-cardBorder rounded-2xl p-4 text-dusk hover:bg-mist transition-colors w-full md:w-auto"
           >
             <p className="font-display text-lg">+ Add room</p>
           </button>
@@ -1502,11 +1502,11 @@ export default function InventoryClient({
         <>
           <button
             onClick={() => setLocationFilter(null)}
-            className="flex items-center gap-1 text-sm text-charcoal mb-3 font-medium"
+            className="flex items-center gap-1 text-sm text-denim mb-3 font-medium"
           >
             ← Rooms
           </button>
-          <h2 className="font-display text-lg text-charcoal mb-2">
+          <h2 className="font-display text-lg text-denim mb-2">
             {locationFilter === FAVORITES ? '⭐ Favorites' : locationPath(locations, locationFilter)}
           </h2>
           {currentSubLocations.length > 0 && (
@@ -1515,9 +1515,9 @@ export default function InventoryClient({
                 <button
                   key={loc.id}
                   onClick={() => setLocationFilter(loc.id)}
-                  className="text-xs font-medium px-3 py-1.5 rounded-full bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/15 transition-colors"
+                  className="text-xs font-medium px-3 py-1.5 rounded-full bg-card border border-cardBorder text-dusk hover:bg-mist transition-colors"
                 >
-                  {loc.name} <span className="text-charcoal/40">({count})</span>
+                  {loc.name} <span className="text-dusk">({count})</span>
                 </button>
               ))}
             </div>
@@ -1531,10 +1531,10 @@ export default function InventoryClient({
                     onClick={() => toggleLetter(letter)}
                     className="w-full flex items-center gap-2 mb-2 text-left"
                   >
-                    <span className="font-display text-lg text-charcoal">{letter}</span>
-                    <span className="text-xs text-charcoal/40">({letterItems.length})</span>
-                    <span className="flex-1 border-t border-gold-light/40" />
-                    <span className="text-charcoal/40 text-sm">{collapsed ? '▸' : '▾'}</span>
+                    <span className="font-display text-lg text-denim">{letter}</span>
+                    <span className="text-xs text-dusk">({letterItems.length})</span>
+                    <span className="flex-1 border-t border-cardBorder" />
+                    <span className="text-dusk text-sm">{collapsed ? '▸' : '▾'}</span>
                   </button>
                   {!collapsed && (
                     <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
@@ -1549,7 +1549,7 @@ export default function InventoryClient({
       )}
 
       {(viewMode === 'all' ? allItemsDisplay : displayItems).length === 0 && (
-        <p className="text-sm text-charcoal/40 text-center mt-8">
+        <p className="text-sm text-dusk text-center mt-8">
           {hasActiveFilter
             ? 'No items match your search.'
             : locationFilter === FAVORITES
@@ -1560,19 +1560,19 @@ export default function InventoryClient({
         </p>
       )}
 
-      <div className="mt-8 pt-4 border-t border-gold-light/30">
-        <h2 className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-2">Inventory Ops Tools</h2>
+      <div className="mt-8 pt-4 border-t border-cardBorder">
+        <h2 className="text-xs font-medium uppercase tracking-wider text-dusk mb-2">Inventory Ops Tools</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {INVENTORY_OPS_LINKS.map((tool) => (
             <a
               key={tool.slug}
               href={`/properties/${propertyId}/tools/${tool.slug}`}
-              className="flex flex-col items-center text-center gap-2 bg-white rounded-xl2 shadow-sm shadow-charcoal/5 px-3 py-4 hover:shadow-md hover:shadow-charcoal/10 transition-shadow"
+              className="flex flex-col items-center text-center gap-2 bg-card rounded-xl2 shadow-card px-3 py-4 hover:shadow-cardHover transition-shadow"
             >
-              <span className="w-11 h-11 shrink-0 flex items-center justify-center rounded-full bg-gold/15 text-lg" aria-hidden="true">
+              <span className="w-11 h-11 shrink-0 flex items-center justify-center rounded-full bg-brass/15 text-lg" aria-hidden="true">
                 {tool.icon}
               </span>
-              <span className="text-xs font-bold text-charcoal">{tool.title}</span>
+              <span className="text-xs font-bold text-denim">{tool.title}</span>
             </a>
           ))}
         </div>
@@ -1636,29 +1636,29 @@ export default function InventoryClient({
       {showNewRoom && (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4" onClick={() => setShowNewRoom(false)}>
           <div
-            className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
+            className="bg-card w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="font-display text-xl text-charcoal mb-3">New room</h2>
+            <h2 className="font-display text-xl text-denim mb-3">New room</h2>
             <input
               value={newRoomName}
               onChange={(e) => setNewRoomName(e.target.value)}
               placeholder="e.g. Kitchen Pantry"
-              className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40 mb-4"
+              className="w-full border border-cardBorder rounded-2xl px-4 py-2.5 bg-linen/40 mb-4"
               autoFocus
               onKeyDown={(e) => e.key === 'Enter' && saveNewRoom()}
             />
             <div className="flex gap-2">
               <button
                 onClick={() => setShowNewRoom(false)}
-                className="flex-1 py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal"
+                className="flex-1 py-2.5 rounded-full bg-linen border border-brass/30 text-denim"
               >
                 Cancel
               </button>
               <button
                 onClick={saveNewRoom}
                 disabled={savingRoom || !newRoomName.trim()}
-                className="flex-1 py-2.5 rounded-full bg-charcoal text-cream disabled:opacity-40"
+                className="flex-1 py-2.5 rounded-full bg-denim text-white disabled:opacity-40"
               >
                 {savingRoom ? 'Saving…' : 'Save'}
               </button>
@@ -1708,11 +1708,11 @@ function groupByLocation(
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <label className="block text-xs font-medium text-charcoal/60 mb-1">{children}</label>;
+  return <label className="block text-xs font-medium text-dusk mb-1">{children}</label>;
 }
 
 const fieldClass =
-  'w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-2.5 bg-cream/40';
+  'w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-2xl px-4 py-2.5 bg-linen/40';
 
 function ItemFormSheet({
   form,
@@ -1768,10 +1768,10 @@ function ItemFormSheet({
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4" onClick={onCancel}>
       <div
-        className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
+        className="bg-card w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="font-display text-xl text-charcoal mb-3">{form.id ? 'Edit item' : 'New item'}</h2>
+        <h2 className="font-display text-xl text-denim mb-3">{form.id ? 'Edit item' : 'New item'}</h2>
 
         <div className="space-y-4">
           <div>
@@ -1817,7 +1817,7 @@ function ItemFormSheet({
           </div>
 
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-gold-dark mb-2">Quantity</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-brass mb-2">Quantity</p>
             <div className="grid grid-cols-2 gap-2 mb-2">
               <div>
                 <FieldLabel>On Hand</FieldLabel>
@@ -1896,20 +1896,20 @@ function ItemFormSheet({
                 <img
                   src={displayedPhoto}
                   alt=""
-                  className="w-full h-40 object-cover rounded-2xl border border-gold-light/60"
+                  className="w-full h-40 object-cover rounded-2xl border border-cardBorder"
                 />
                 <div className="flex gap-2 mt-2">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-xs font-medium"
+                    className="flex-1 py-2 rounded-full bg-linen border border-brass/30 text-denim text-xs font-medium"
                   >
                     Replace photo
                   </button>
                   <button
                     type="button"
                     onClick={removePhoto}
-                    className="flex-1 py-2 rounded-full bg-cream border border-rust/40 text-rust text-xs font-medium"
+                    className="flex-1 py-2 rounded-full bg-linen border border-rust/40 text-rust text-xs font-medium"
                   >
                     Remove photo
                   </button>
@@ -1919,7 +1919,7 @@ function ItemFormSheet({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full h-24 rounded-2xl border-2 border-dashed border-gold-light/60 text-charcoal/50 text-sm font-medium hover:bg-gold-light/10 transition"
+                className="w-full h-24 rounded-2xl border-2 border-dashed border-cardBorder text-dusk text-sm font-medium hover:bg-mist transition"
               >
                 + Add a photo
               </button>
@@ -1929,13 +1929,13 @@ function ItemFormSheet({
           <div>
             <FieldLabel>Barcode</FieldLabel>
             <div className="flex items-center gap-2">
-              <span className="flex-1 text-sm text-charcoal/60 font-mono border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40 truncate">
+              <span className="flex-1 text-sm text-dusk font-mono border border-cardBorder rounded-2xl px-4 py-2.5 bg-linen/40 truncate">
                 {form.qr_code ?? 'Generated on save'}
               </span>
               {form.id && (
                 <a
                   href={`/properties/${propertyId}/scan`}
-                  className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-cream border border-charcoal/30 text-charcoal text-lg"
+                  className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-linen border border-brass/30 text-denim text-lg"
                   aria-label="Scan"
                 >
                   📷
@@ -1964,13 +1964,13 @@ function ItemFormSheet({
             />
           </div>
 
-          <label className="flex items-center justify-between bg-cream/40 border border-gold-light/60 rounded-2xl px-4 py-2.5 cursor-pointer">
-            <span className="text-sm text-charcoal">Print Label</span>
+          <label className="flex items-center justify-between bg-linen/40 border border-cardBorder rounded-2xl px-4 py-2.5 cursor-pointer">
+            <span className="text-sm text-denim">Print Label</span>
             <input
               type="checkbox"
               checked={form.print_label}
               onChange={(e) => onChange({ ...form, print_label: e.target.checked })}
-              className="h-5 w-5 accent-gold-dark rounded"
+              className="h-5 w-5 accent-brass rounded"
             />
           </label>
         </div>
@@ -1978,14 +1978,14 @@ function ItemFormSheet({
         <div className="flex gap-2 mt-4">
           <button
             onClick={onCancel}
-            className="flex-1 py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal"
+            className="flex-1 py-2.5 rounded-full bg-linen border border-brass/30 text-denim"
           >
             Cancel
           </button>
           <button
             onClick={onSave}
             disabled={saving || !form.name.trim()}
-            className="flex-1 py-2.5 rounded-full bg-charcoal text-cream disabled:opacity-40"
+            className="flex-1 py-2.5 rounded-full bg-denim text-white disabled:opacity-40"
           >
             {saving ? 'Saving…' : 'Save'}
           </button>
@@ -1999,21 +1999,21 @@ function ItemFormSheet({
         {form.id && <ReorderSourcesEditor itemId={form.id} propertyId={propertyId} />}
 
         {form.id && isFoodCategory(form.category) && (
-          <div className="mt-5 pt-4 border-t border-gold-light/40">
+          <div className="mt-5 pt-4 border-t border-cardBorder">
             <InventoryBracha itemId={form.id} itemName={form.name} />
           </div>
         )}
 
         {form.id && (
-          <div className="mt-5 pt-4 border-t border-gold-light/40 space-y-2">
+          <div className="mt-5 pt-4 border-t border-cardBorder space-y-2">
             {lastPurchased && (
-              <p className="text-xs text-charcoal/60 bg-gold-light/15 rounded-lg px-3 py-2">
+              <p className="text-xs text-dusk bg-mist rounded-lg px-3 py-2">
                 Last purchased{' '}
                 {lastPurchased.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
               </p>
             )}
             {restockInterval !== null && (
-              <p className="text-xs text-charcoal/60 bg-gold-light/15 rounded-lg px-3 py-2">
+              <p className="text-xs text-dusk bg-mist rounded-lg px-3 py-2">
                 Usually restocked every ~{restockInterval} day{restockInterval === 1 ? '' : 's'}
               </p>
             )}
@@ -2022,7 +2022,7 @@ function ItemFormSheet({
                 a date, and this ships now rather than waiting on more usage
                 data, per the standing instruction not to fake a forecast. */}
             {restockInterval !== null && lastPurchased && (
-              <p className="text-xs text-charcoal/60 bg-gold-light/15 rounded-lg px-3 py-2">
+              <p className="text-xs text-dusk bg-mist rounded-lg px-3 py-2">
                 At that pace, likely to run out around{' '}
                 {new Date(lastPurchased.getTime() + restockInterval * 24 * 60 * 60 * 1000).toLocaleDateString(
                   undefined,
@@ -2031,7 +2031,7 @@ function ItemFormSheet({
               </p>
             )}
             {restockInterval === null && !lastPurchased && (
-              <p className="text-xs text-charcoal/40 bg-gold-light/15 rounded-lg px-3 py-2">
+              <p className="text-xs text-dusk bg-mist rounded-lg px-3 py-2">
                 Not enough usage history yet to predict restock timing.
               </p>
             )}
@@ -2039,24 +2039,24 @@ function ItemFormSheet({
         )}
 
         {form.id && (
-          <div className="mt-5 pt-4 border-t border-gold-light/40">
-            <p className="text-xs font-display italic text-charcoal/70 mb-2">History</p>
+          <div className="mt-5 pt-4 border-t border-cardBorder">
+            <p className="text-xs font-display italic text-dusk mb-2">History</p>
             {historyLoading ? (
-              <p className="text-xs text-charcoal/40">Loading…</p>
+              <p className="text-xs text-dusk">Loading…</p>
             ) : history.length === 0 ? (
-              <p className="text-xs text-charcoal/40">No changes recorded yet.</p>
+              <p className="text-xs text-dusk">No changes recorded yet.</p>
             ) : (
               <ul className="space-y-1.5 max-h-40 overflow-y-auto">
                 {history.map((h) => (
-                  <li key={h.id} className="text-xs text-charcoal/60">
-                    <span className="text-charcoal/40">
+                  <li key={h.id} className="text-xs text-dusk">
+                    <span className="text-dusk">
                       {new Date(h.created_at).toLocaleDateString(undefined, {
                         month: 'short',
                         day: 'numeric',
                       })}
                     </span>{' '}
                     — {describeHistoryEntry(h)}
-                    {h.actor_name && <span className="text-charcoal/40"> · {h.actor_name}</span>}
+                    {h.actor_name && <span className="text-dusk"> · {h.actor_name}</span>}
                   </li>
                 ))}
               </ul>
