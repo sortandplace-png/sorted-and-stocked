@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getTranslations, getLocale } from 'next-intl/server'
 import { format, parseISO } from 'date-fns'
-import { Calendar, Camera, Clock, Package, Plus, Scan, ShoppingBag, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, UtensilsCrossed } from 'lucide-react'
+import { Calendar, Camera, Clock, Package, Plus, Scan, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, UtensilsCrossed } from 'lucide-react'
 import FloatingScanButton from '@/components/FloatingScanButton'
 import LocationZmanim from '@/components/LocationZmanim'
 import DashboardWidgets from '@/components/DashboardWidgets'
@@ -311,7 +311,7 @@ async function getData(propertyId: string) {
     supabase.from('meal_plan_entries').select('plan_date, meal_slot, recipe_id, course, recipes(name, name_es, kosher_type)').eq('property_id', propertyId).gte('plan_date', startStr).lte('plan_date', endStr).order('plan_date'),
     supabase.from('inventory_items').select('category, name, current_qty, min_qty, photo_url, reorder_link, reorder_sources(id, retailer_name, url, is_preferred)').eq('property_id', propertyId).order('category'),
     list
-      ? supabase.from('shopping_list_items').select('id, name, category, qty_needed, status, inventory_items(photo_url, reorder_link, reorder_sources(id, retailer_name, url, is_preferred))').eq('shopping_list_id', list.id).eq('status', 'pending').order('category')
+      ? supabase.from('shopping_list_items').select('id, name, category, qty_needed, status, inventory_items(name_es, photo_url, reorder_link, reorder_sources(id, retailer_name, url, is_preferred))').eq('shopping_list_id', list.id).eq('status', 'pending').order('category')
       : Promise.resolve({ data: [] as any[] })
   ])
   return { meals: meals.data || [], inventory: inventory.data || [], shopping: shopping.data || [] }
@@ -582,10 +582,21 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   // shopping-list-with-photos section further down this page); this just
   // reuses that same embed rather than a second query. Capped at 5 to match
   // the same preview-list convention Low Stock Alerts already uses.
+  // SS-150: widened from {id, name, photoUrl} so the "At a Glance" tile can
+  // carry the same qty/Order-button functionality as the standalone
+  // Shopping List card below it -- reuses the same `shopping` embed
+  // (inventory_items.reorder_sources), no second query.
   const shoppingListPreview = shopping.slice(0, 5).map((s: any) => ({
     id: s.id,
     name: s.name,
+    // shopping_list_items has no name_es of its own (confirmed against the
+    // real schema) -- get_shopping_list_with_inventory's own RPC pulls ES
+    // display text from the linked inventory_items row for the same
+    // reason, same join used here.
+    nameEs: s.inventory_items?.name_es ?? null,
     photoUrl: s.inventory_items?.photo_url ?? null,
+    qtyNeeded: s.qty_needed ?? null,
+    reorderSources: s.inventory_items?.reorder_sources ?? null,
   }))
 
   const now = new Date()
@@ -690,22 +701,6 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   // plan_date+meal_slot pair -- 7 that week, not 38.
   const distinctMealCount = new Set(meals.map((m: any) => `${m.plan_date}|${m.meal_slot}`)).size
 
-  // categoryLabels keeps the English keys ('Produce', 'Meat', ...) for
-  // matching against the real shopping_list_items.category column, which
-  // isn't itself translated -- only the on-screen label swaps per locale.
-  const categoryLabels: Record<string, string> = {
-    Produce: t('shoppingListCard.categoryProduce'),
-    Meat: t('shoppingListCard.categoryMeat'),
-    Dairy: t('shoppingListCard.categoryDairy'),
-    Pantry: t('shoppingListCard.categoryPantry'),
-    Bakery: t('shoppingListCard.categoryBakery'),
-    Frozen: t('shoppingListCard.categoryFrozen'),
-  }
-  const categories = ['Produce', 'Meat', 'Dairy', 'Pantry', 'Bakery', 'Frozen']
-  const shoppingByCat = categories.map(cat => ({
-    cat,
-    items: shopping.filter(s => s.category?.toLowerCase().includes(cat.toLowerCase()))
-  })).filter(g => g.items.length > 0)
 
   // Dashboard preview only — dedupe by name and drop zero-stock rows (most
   // inventory rows are still zero pending a physical count pass; showing
@@ -1153,62 +1148,16 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             day-by-day breakdown) was removed from the Dashboard entirely --
             it still exists on the real Plan page, just not duplicated here.
             The "THIS WEEK" pantry-style card above (photo + meal count,
-            linking to /meal-plan) stays untouched. This used to be a
-            lg:grid-cols-3 row splitting 2/3 to that list and 1/3 to this
-            Shopping List/Inventory sidebar -- now that the left side is
-            gone, the sidebar keeps its original narrow card width instead
-            of stretching full-bleed. */}
+            linking to /meal-plan) stays untouched. SS-150: the standalone
+            Shopping List card that used to open this sidebar (category-
+            grouped, checkbox/photo/qty/Order-button rows) was deleted --
+            the "At a Glance" Shopping List tile above (DashboardWidgets.tsx)
+            now carries that exact same functionality per-item, so this was
+            a genuine duplicate once the tile did the job, not just a
+            visual echo. Inventory preview keeps its original narrow card
+            width instead of stretching full-bleed now that it's the only
+            card left in this column. */}
         <div className="max-w-md space-y-4">
-            <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-6">
-              <h2 className="font-display text-xl font-semibold mb-1 flex items-center gap-2 text-denim">
-                <ShoppingBag size={19} strokeWidth={1.5} className="text-brass" aria-hidden="true" /> {t('shoppingListCard.heading')}
-              </h2>
-              <p className="text-sm text-dusk mb-4">{shopping.length} {shopping.length === 1 ? t('item') : t('items')}</p>
-
-              <div className="space-y-4">
-                {shoppingByCat.map(group => (
-                  <div key={group.cat}>
-                    <div className="flex items-center gap-2 font-medium mb-2 text-denim">
-                      <span className={`w-3 h-3 rounded-full ${group.cat === 'Meat' ? 'bg-rust' : group.cat === 'Dairy' ? 'bg-dairy' : 'bg-sage'}`}></span>
-                      {categoryLabels[group.cat]}
-                    </div>
-                    <div className="space-y-2 ml-5">
-                      {group.items.map((item: any, i) => (
-                        <div key={i} className="flex items-center gap-2.5 text-sm p-2 bg-linen border border-cardBorder rounded-lg hover:bg-mist/50 transition">
-                          <input type="checkbox" className="rounded border-cardBorder text-brass" aria-label={t('shoppingListCard.markPurchasedAria', { item: item.name })} />
-                          {item.inventory_items?.photo_url && <img src={item.inventory_items.photo_url} alt="" className="w-8 h-8 object-cover rounded" />}
-                          <div className="flex-1">
-                            <div className="font-medium text-denim">{item.name}</div>
-                            <div className="text-xs text-dusk">{item.qty_needed}</div>
-                          </div>
-                          {(item.inventory_items?.reorder_sources?.length ?? 0) > 1 ? (
-                            <ReorderSourcePills sources={item.inventory_items.reorder_sources} variant="conceptB" />
-                          ) : (
-                            getPreferredSource(item.inventory_items?.reorder_sources) && (
-                              <a href={getPreferredSource(item.inventory_items.reorder_sources)!.url} target="_blank" rel="noopener noreferrer" className="text-brass hover:text-denim text-xs font-medium px-2 py-1 bg-mist rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim">
-                                {t('shoppingListCard.order')}
-                              </a>
-                            )
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                {shopping.length === 0 && (
-                  <div className="text-center py-6 border border-dashed border-cardBorder rounded-xl">
-                    <p className="text-sm text-dusk mb-3">{t('shoppingListCard.emptyMessage')}</p>
-                    <Link
-                      href={`/properties/${propertyId}/shopping-list`}
-                      className="inline-block bg-denim text-white px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition"
-                    >
-                      {t('shoppingListCard.goToShoppingList')}
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-
             <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-6">
               <h3 className="font-display text-lg font-semibold mb-3 flex items-center gap-2 text-denim">
                 <Package size={19} strokeWidth={1.5} className="text-brass" aria-hidden="true" /> {t('inventoryCard.heading')}

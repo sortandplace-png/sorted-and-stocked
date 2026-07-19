@@ -19,7 +19,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { format, parseISO } from 'date-fns';
 import { Settings2, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -27,6 +27,9 @@ import { useToast } from '@/components/Toast';
 import Pin from '@/components/PinAccent';
 import { useCardCollapse } from '@/lib/useCardCollapse';
 import type { WidgetKey, WidgetPrefs, TodaysMealEntry, LowStockItem } from '@/lib/dashboard-widgets-data';
+import { updateShoppingItemStatus } from '@/lib/api/shoppingList';
+import { getPreferredSource, type ReorderSource } from '@/lib/reorder-sources';
+import ReorderSourcePills from '@/components/ReorderSourcePills';
 
 type PrepAheadReminder = { recipeId: string | null; recipeName: string; planDate: string; prepLeadDays: number | null };
 
@@ -47,7 +50,7 @@ export default function DashboardWidgets({
   todaysMeals: TodaysMealEntry[];
   lowStockItems: LowStockItem[];
   shoppingListCount: number;
-  shoppingListPreview: { id: string; name: string; photoUrl: string | null }[];
+  shoppingListPreview: { id: string; name: string; nameEs: string | null; photoUrl: string | null; qtyNeeded: number | null; reorderSources: ReorderSource[] | null }[];
   prepAheadReminders: PrepAheadReminder[];
   prepAheadEnabled: boolean;
   canManagePrepAhead: boolean;
@@ -396,8 +399,19 @@ function TodaysMealPlanCard({
 // -- replaces the old layout, which showed name-only rows next to one
 // detached PhotoMosaic block that had no connection to which item was
 // which. No image slot on WidgetCard means the plain (non-image) shell.
+//
+// SS-150: Order button added (genuinely missing before -- the old row had
+// no reorder action at all). No checkbox here, unlike the Shopping List
+// tile below: a low-stock row is a standing inventory record, not a
+// pending purchase, so there's no "purchased" state to toggle. A "check to
+// add to the shopping list" action would be new, undiscussed behavior --
+// this property may already auto-restock low items onto the list
+// (migration 068's toggle) -- so it's left out rather than guessed at.
 function LowStockAlertsCard({ title, propertyId, items }: { title: string; propertyId: string; items: LowStockItem[] }) {
   const t = useTranslations('dashboard.widgets');
+  const tShop = useTranslations('dashboard.shoppingListCard');
+  const locale = useLocale();
+  const displayName = (item: LowStockItem) => (locale === 'es' && item.nameEs ? item.nameEs : item.name);
   const preview = items.slice(0, 5);
   return (
     <WidgetCard cardId="low-stock-alerts" title={title}>
@@ -405,25 +419,42 @@ function LowStockAlertsCard({ title, propertyId, items }: { title: string; prope
         <p className="text-sm text-dusk">{t('allStocked')}</p>
       ) : (
         <ul className="space-y-1.5">
-          {preview.map((item) => (
-            <li key={item.id}>
-              <Link
-                href={`/properties/${propertyId}/inventory?item=${item.id}`}
-                className="flex items-center gap-2 hover:underline"
-              >
-                {item.photoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.photoUrl} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0 bg-mist" />
+          {preview.map((item) => {
+            const preferred = getPreferredSource(item.reorderSources);
+            return (
+              <li key={item.id} className="flex items-center gap-2">
+                <Link
+                  href={`/properties/${propertyId}/inventory?item=${item.id}`}
+                  className="flex items-center gap-2 flex-1 min-w-0 hover:underline"
+                >
+                  {item.photoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.photoUrl} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0 bg-mist" />
+                  ) : (
+                    <span className="w-8 h-8 rounded-lg bg-mist shrink-0" />
+                  )}
+                  <span className="flex-1 min-w-0 truncate text-sm text-denim">{displayName(item)}</span>
+                  <span className="text-rust font-medium text-xs shrink-0">
+                    {item.currentQty}/{item.minQty}
+                  </span>
+                </Link>
+                {(item.reorderSources?.length ?? 0) > 1 ? (
+                  <ReorderSourcePills sources={item.reorderSources!} variant="conceptB" />
                 ) : (
-                  <span className="w-8 h-8 rounded-lg bg-mist shrink-0" />
+                  preferred && (
+                    <a
+                      href={preferred.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 text-brass hover:text-denim text-[11px] font-medium px-2 py-1 bg-mist rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+                    >
+                      {tShop('order')}
+                    </a>
+                  )
                 )}
-                <span className="flex-1 min-w-0 truncate text-sm text-denim">{item.name}</span>
-                <span className="text-rust font-medium text-xs shrink-0">
-                  {item.currentQty}/{item.minQty}
-                </span>
-              </Link>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
       {items.length > preview.length && <p className="text-xs text-dusk mt-1.5">{t('moreCount', { count: items.length - preview.length })}</p>}
@@ -558,9 +589,21 @@ function PrepAheadWidgetCard({
   );
 }
 
-// Was count-and-a-detached-mosaic only -- no actual items shown, unlike
-// every other card in this row. Now the same per-item photo+name row
-// format as Low Stock Alerts and the full Shopping List card below.
+// SS-150: was count-and-a-detached-mosaic only -- no actual items shown,
+// unlike every other card in this row. Now carries the same functionality
+// as the standalone Shopping List card that used to sit lower on this page
+// (deleted once this tile covered it): per-item photo, name, qty, a real
+// purchased-checkbox, and a working Order button. The old standalone
+// card's checkbox rendered but had no onChange at all -- decorative, not
+// functional -- so this isn't "copy what was there," it's the first time
+// this checkbox has ever actually done anything.
+//
+// Needs its own local copy of `preview`/`count`: the server props only
+// ever contain pending items (queried with .eq('status','pending')), so
+// checking a box has nothing to revert to from props -- it optimistically
+// drops the row and decrements the remaining-count line, then rolls both
+// back on a failed write. Matches the optimistic-update pattern
+// ShoppingListViewEnhanced.tsx already uses for the same status toggle.
 function ShoppingListSummaryCard({
   propertyId,
   count,
@@ -568,29 +611,86 @@ function ShoppingListSummaryCard({
 }: {
   propertyId: string;
   count: number;
-  preview: { id: string; name: string; photoUrl: string | null }[];
+  preview: { id: string; name: string; nameEs: string | null; photoUrl: string | null; qtyNeeded: number | null; reorderSources: ReorderSource[] | null }[];
 }) {
   const t = useTranslations('dashboard.widgets');
+  const tShop = useTranslations('dashboard.shoppingListCard');
+  const locale = useLocale();
+  const displayName = (item: { name: string; nameEs: string | null }) => (locale === 'es' && item.nameEs ? item.nameEs : item.name);
+  const showToast = useToast();
+  const [items, setItems] = useState(preview);
+  const [remaining, setRemaining] = useState(count);
+  const [pending, setPending] = useState<Set<string>>(new Set());
+
+  async function markPurchased(id: string) {
+    if (pending.has(id)) return;
+    const prevItems = items;
+    const prevRemaining = remaining;
+    setPending((p) => new Set(p).add(id));
+    setItems((cur) => cur.filter((i) => i.id !== id));
+    setRemaining((r) => Math.max(0, r - 1));
+    try {
+      await updateShoppingItemStatus(id, 'purchased');
+    } catch {
+      setItems(prevItems);
+      setRemaining(prevRemaining);
+      showToast(t('saveFailedToast'), { variant: 'error' });
+    } finally {
+      setPending((p) => {
+        const next = new Set(p);
+        next.delete(id);
+        return next;
+      });
+    }
+  }
+
   return (
     <WidgetCard cardId="shopping-list-summary" title={t('shoppingListLabel')}>
-      {preview.length === 0 ? (
+      {items.length === 0 ? (
         <p className="text-sm text-dusk">{t('nothingOnList')}</p>
       ) : (
         <ul className="space-y-1.5">
-          {preview.map((item) => (
-            <li key={item.id} className="flex items-center gap-2">
-              {item.photoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={item.photoUrl} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0 bg-mist" />
-              ) : (
-                <span className="w-8 h-8 rounded-lg bg-mist shrink-0" />
-              )}
-              <span className="flex-1 min-w-0 truncate text-sm text-denim">{item.name}</span>
-            </li>
-          ))}
+          {items.map((item) => {
+            const preferred = getPreferredSource(item.reorderSources);
+            return (
+              <li key={item.id} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  className="rounded border-cardBorder text-brass shrink-0 disabled:opacity-40"
+                  disabled={pending.has(item.id)}
+                  onChange={() => markPurchased(item.id)}
+                  aria-label={tShop('markPurchasedAria', { item: displayName(item) })}
+                />
+                {item.photoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.photoUrl} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0 bg-mist" />
+                ) : (
+                  <span className="w-8 h-8 rounded-lg bg-mist shrink-0" />
+                )}
+                <span className="flex-1 min-w-0">
+                  <span className="block truncate text-sm text-denim">{displayName(item)}</span>
+                  {item.qtyNeeded != null && <span className="block text-xs text-dusk">{item.qtyNeeded}</span>}
+                </span>
+                {(item.reorderSources?.length ?? 0) > 1 ? (
+                  <ReorderSourcePills sources={item.reorderSources!} variant="conceptB" />
+                ) : (
+                  preferred && (
+                    <a
+                      href={preferred.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 text-brass hover:text-denim text-[11px] font-medium px-2 py-1 bg-mist rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+                    >
+                      {tShop('order')}
+                    </a>
+                  )
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
-      {count > preview.length && <p className="text-xs text-dusk mt-1.5">{t('moreCount', { count: count - preview.length })}</p>}
+      {remaining > items.length && <p className="text-xs text-dusk mt-1.5">{t('moreCount', { count: remaining - items.length })}</p>}
       <Link href={`/properties/${propertyId}/shopping-list`} className="inline-block mt-2.5 text-[11px] font-bold text-brass underline underline-offset-2">
         {t('viewList')}
       </Link>

@@ -3,6 +3,7 @@
 // reads from data that already exists elsewhere in the app -- no new
 // tracking, same convention as the rest of app/properties/[id]/dashboard/page.tsx.
 import { createClient } from '@/lib/supabase/server';
+import type { ReorderSource } from '@/lib/reorder-sources';
 
 export const WIDGET_KEYS = ['todays_meal_plan', 'prep_ahead'] as const;
 export type WidgetKey = (typeof WIDGET_KEYS)[number];
@@ -104,7 +105,16 @@ export async function getTodaysMealPlan(propertyId: string): Promise<TodaysMealE
   }));
 }
 
-export type LowStockItem = { id: string; name: string; currentQty: number; minQty: number; category: string | null; photoUrl: string | null };
+export type LowStockItem = {
+  id: string;
+  name: string;
+  nameEs: string | null;
+  currentQty: number;
+  minQty: number;
+  category: string | null;
+  photoUrl: string | null;
+  reorderSources: ReorderSource[] | null;
+};
 
 export async function getLowStockAlerts(propertyId: string): Promise<LowStockItem[]> {
   const supabase = await createClient();
@@ -115,13 +125,34 @@ export async function getLowStockAlerts(propertyId: string): Promise<LowStockIte
   // tonight on the inventory count stat). get_low_stock_items() does the
   // comparison server-side instead (migration 091, photo_url added in 109).
   const { data } = await supabase.rpc('get_low_stock_items', { p_property_id: propertyId });
+  const rows = data ?? [];
 
-  return (data ?? []).map((item: any) => ({
+  // get_low_stock_items' RETURNS TABLE doesn't carry reorder_sources or
+  // name_es (adding a column means DROP + CREATE on a live function,
+  // deliberately not done this close to launch -- same caution as leaving
+  // next.config.js alone). A second, plain PostgREST embed keyed on the
+  // same ids the RPC already returned gets both the SS-150 Order button
+  // and SS-146's Spanish display name without touching that function.
+  const ids = rows.map((r: any) => r.id);
+  const extraById = new Map<string, { reorderSources: ReorderSource[]; nameEs: string | null }>();
+  if (ids.length > 0) {
+    const { data: extra } = await supabase
+      .from('inventory_items')
+      .select('id, name_es, reorder_sources(id, retailer_name, url, is_preferred)')
+      .in('id', ids);
+    for (const row of extra ?? []) {
+      extraById.set(row.id, { reorderSources: (row as any).reorder_sources ?? [], nameEs: (row as any).name_es ?? null });
+    }
+  }
+
+  return rows.map((item: any) => ({
     id: item.id,
     name: item.name,
+    nameEs: extraById.get(item.id)?.nameEs ?? null,
     currentQty: item.current_qty,
     minQty: item.min_qty,
     category: item.category,
     photoUrl: item.photo_url,
+    reorderSources: extraById.get(item.id)?.reorderSources ?? null,
   }));
 }
