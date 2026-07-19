@@ -7,7 +7,11 @@
 // to be stuck in instructions_en to actually be seen. Renders nothing when
 // empty, so recipes with no extracted notes don't show a dead card.
 export default function RecipeNotes({ notes }: { notes: string | null }) {
-  if (!notes || !notes.trim()) return null;
+  // Same literal token lib/recipe-provenance.ts's classifyProvenance()
+  // checks for -- an internal placeholder from the recipe import batch,
+  // never real content. Showing it verbatim reads as a real note to
+  // anyone viewing the recipe, staff included.
+  if (!notes || !notes.trim() || notes === 'placeholder-fill-batch2') return null;
 
   return (
     <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
