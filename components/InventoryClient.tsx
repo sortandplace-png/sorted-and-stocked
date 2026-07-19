@@ -45,7 +45,7 @@ const PESACH_STATUS_INFO: Record<
 > = {
   kosher_for_pesach: { label: 'Kosher for Pesach', icon: CheckCircle2, badgeClass: 'bg-sage/15 text-sage' },
   not_kosher_for_pesach: { label: 'Not for Pesach', icon: XCircle, badgeClass: 'bg-rust/15 text-rust' },
-  needs_review: { label: 'Needs Review', icon: HelpCircle, badgeClass: 'bg-brass text-white font-semibold' },
+  needs_review: { label: 'Needs Review', icon: HelpCircle, badgeClass: 'bg-denim text-white font-semibold' },
 };
 
 type InventoryItem = {
@@ -1229,7 +1229,7 @@ export default function InventoryClient({
             aria-checked={pesachModeEnabled}
             aria-label="Toggle Pesach Mode"
             className={`relative shrink-0 w-9 h-5 rounded-full transition-colors disabled:opacity-50 ${
-              pesachModeEnabled ? 'bg-brass' : 'bg-mist'
+              pesachModeEnabled ? 'bg-denim' : 'bg-mist'
             }`}
           >
             <span
@@ -1244,13 +1244,13 @@ export default function InventoryClient({
       <div className="inline-flex rounded-full border border-cardBorder bg-card p-0.5 text-sm mb-4">
         <button
           onClick={() => setViewMode('rooms')}
-          className={`rounded-full px-4 py-1.5 ${viewMode === 'rooms' ? 'bg-brass text-white' : 'text-dusk'}`}
+          className={`rounded-full px-4 py-1.5 ${viewMode === 'rooms' ? 'bg-denim text-white' : 'text-dusk'}`}
         >
           Browse by Room
         </button>
         <button
           onClick={() => setViewMode('all')}
-          className={`rounded-full px-4 py-1.5 ${viewMode === 'all' ? 'bg-brass text-white' : 'text-dusk'}`}
+          className={`rounded-full px-4 py-1.5 ${viewMode === 'all' ? 'bg-denim text-white' : 'text-dusk'}`}
         >
           All Items
         </button>
@@ -1390,7 +1390,7 @@ export default function InventoryClient({
               <button
                 onClick={() => setLowStockFirst((v) => !v)}
                 className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-                  lowStockFirst ? 'bg-brass text-white' : 'bg-card border border-cardBorder text-dusk'
+                  lowStockFirst ? 'bg-denim text-white' : 'bg-card border border-cardBorder text-dusk'
                 }`}
               >
                 Low stock first
@@ -1401,7 +1401,7 @@ export default function InventoryClient({
                   <button
                     onClick={() => setFloorFilter(null)}
                     className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-                      !floorFilter ? 'bg-brass text-white' : 'bg-card border border-cardBorder text-dusk'
+                      !floorFilter ? 'bg-denim text-white' : 'bg-card border border-cardBorder text-dusk'
                     }`}
                   >
                     All floors
@@ -1411,7 +1411,7 @@ export default function InventoryClient({
                       key={floor}
                       onClick={() => setFloorFilter(floor)}
                       className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-                        floorFilter === floor ? 'bg-brass text-white' : 'bg-card border border-cardBorder text-dusk'
+                        floorFilter === floor ? 'bg-denim text-white' : 'bg-card border border-cardBorder text-dusk'
                       }`}
                     >
                       {floor}

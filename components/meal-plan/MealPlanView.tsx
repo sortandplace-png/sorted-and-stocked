@@ -1092,13 +1092,13 @@ export default function MealPlanView({
         <div className="inline-flex rounded-full border border-cardBorder bg-card p-0.5 text-sm">
           <button
             onClick={() => setViewMode('week')}
-            className={`rounded-full px-4 py-1.5 ${viewMode === 'week' ? 'bg-brass text-white' : 'text-dusk'}`}
+            className={`rounded-full px-4 py-1.5 ${viewMode === 'week' ? 'bg-denim text-white' : 'text-dusk'}`}
           >
             {t('week')}
           </button>
           <button
             onClick={() => setViewMode('month')}
-            className={`rounded-full px-4 py-1.5 ${viewMode === 'month' ? 'bg-brass text-white' : 'text-dusk'}`}
+            className={`rounded-full px-4 py-1.5 ${viewMode === 'month' ? 'bg-denim text-white' : 'text-dusk'}`}
           >
             {t('month')}
           </button>
@@ -1126,7 +1126,7 @@ export default function MealPlanView({
             <button
               onClick={generateShoppingList}
               disabled={pushingToShopping}
-              className="rounded-full bg-brass px-4 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+              className="rounded-full bg-denim px-4 py-1.5 text-xs font-medium text-white disabled:opacity-40"
             >
               {pushingToShopping ? '…' : t('generateShoppingList')}
             </button>
@@ -1194,7 +1194,7 @@ export default function MealPlanView({
                   {day?.hasMeatDairyBuffer && (
                     <span
                       title={t('sameDayWarning')}
-                      className="h-2 w-2 rounded-full bg-brass shrink-0"
+                      className="h-2 w-2 rounded-full bg-rust shrink-0"
                     />
                   )}
                   {getPrepWarning(day?.entries ?? [], hcal?.candleLighting) && (
@@ -1440,7 +1440,7 @@ export default function MealPlanView({
                         <button
                           onClick={() => duplicateDay(dayDrawerOpen, duplicateTarget)}
                           disabled={!duplicateTarget || duplicating}
-                          className="rounded-full bg-brass px-3 py-1 text-[11px] font-medium text-white disabled:opacity-40"
+                          className="rounded-full bg-denim px-3 py-1 text-[11px] font-medium text-white disabled:opacity-40"
                         >
                           {duplicating ? '…' : 'Copy'}
                         </button>
@@ -1564,7 +1564,7 @@ export default function MealPlanView({
                               <button
                                 onClick={() => moveDish(entry, moveTargetDate)}
                                 disabled={!moveTargetDate || moving}
-                                className="rounded-full bg-brass px-3 py-1 text-[11px] font-medium text-white disabled:opacity-40"
+                                className="rounded-full bg-denim px-3 py-1 text-[11px] font-medium text-white disabled:opacity-40"
                               >
                                 {moving ? '…' : 'Move'}
                               </button>
@@ -1657,7 +1657,7 @@ export default function MealPlanView({
                       setQuickEditDish(null);
                       openPicker(date, entry.course, true, entry);
                     }}
-                    className="w-full rounded-full bg-brass text-white text-sm font-medium py-2"
+                    className="w-full rounded-full bg-denim text-white text-sm font-medium py-2"
                   >
                     Change
                   </button>
@@ -1998,7 +1998,7 @@ function MonthGrid({
                 )}
                 {day?.hasMeatDairyBuffer && (
                   <span className="flex items-center gap-0.5 whitespace-nowrap" title={t('sameDayWarning')}>
-                    <span className="h-2 w-2 rounded-full bg-brass shrink-0" aria-hidden />
+                    <span className="h-2 w-2 rounded-full bg-rust shrink-0" aria-hidden />
                     <span className="text-[9px] font-medium text-brass">{t('mdBuffer')}</span>
                   </span>
                 )}

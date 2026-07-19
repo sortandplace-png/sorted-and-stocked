@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
+import Pin from '@/components/PinAccent';
 import {
   Timer,
   Soup,
@@ -553,7 +554,7 @@ export default function RecipesGridView({
           {canManage(role) && (
             <button
               onClick={() => setShowNewRecipe(true)}
-              className="text-sm font-medium bg-brass text-white px-4 py-2 rounded-full hover:opacity-90 transition shadow-sm"
+              className="text-sm font-medium bg-denim text-white px-4 py-2 rounded-full hover:opacity-90 transition shadow-sm"
             >
               + {t('newRecipe')}
             </button>
@@ -815,7 +816,7 @@ export default function RecipesGridView({
             onClick={applyStagedFilters}
             disabled={!hasPendingChanges}
             className={`flex-1 min-h-11 rounded-full text-sm font-medium transition-colors ${
-              hasPendingChanges ? 'bg-brass text-white' : 'bg-mist text-dusk cursor-not-allowed'
+              hasPendingChanges ? 'bg-denim text-white' : 'bg-mist text-dusk cursor-not-allowed'
             }`}
           >
             Apply Filters ({stagedMatchCount})
@@ -973,6 +974,15 @@ export default function RecipesGridView({
                         }`}
                       >
                         <div className="relative w-full aspect-[4/3] bg-linen">
+                          {/* Decorative only (no onToggle -- recipe cards
+                              don't collapse), matching the same corner every
+                              other card in the app anchors its pin to. Sits
+                              close to the favorite-heart button below, which
+                              is the same top-right corner -- pointer-events
+                              is off on the dot itself so it can't block the
+                              tap target, but worth a visual look once this
+                              is live. */}
+                          <Pin size="sm" />
                           {recipe.photo_url && isDirectImageUrl(recipe.photo_url) ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -1110,7 +1120,7 @@ export default function RecipesGridView({
                                   key={tag}
                                   className={
                                     tag === 'NEW'
-                                      ? 'text-[10px] font-medium text-white bg-brass px-2 py-0.5 rounded-full'
+                                      ? 'text-[10px] font-medium text-white bg-denim px-2 py-0.5 rounded-full'
                                       : 'text-[10px] font-medium text-brass bg-brass/10 px-2 py-0.5 rounded-full'
                                   }
                                 >
