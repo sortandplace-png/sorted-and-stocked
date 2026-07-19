@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import Pin from '@/components/PinAccent';
+import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
 import {
   Timer,
   Soup,
@@ -226,14 +227,23 @@ export default function RecipesGridView({
   const router = useRouter();
   const supabase = createClient();
   const showToast = useToast();
-  const [search, setSearch] = useState('');
+  // Session-persisted (not plain useState) so a phone lock/backgrounding
+  // mid-browse doesn't lose the applied filters -- see
+  // lib/use-session-persisted-state.ts. The staged* mobile-filter-sheet
+  // versions further down deliberately stay on plain useState: they're
+  // in-progress picks that haven't been applied yet, not a real filter
+  // state worth restoring.
+  const [search, setSearch] = useSessionPersistedState('recipes-filter-search', '');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showNewRecipe, setShowNewRecipe] = useState(false);
   const [collapsedLetters, setCollapsedLetters] = useState<Set<string>>(new Set());
-  const [courseFilter, setCourseFilter] = useState<string | null>(null);
-  const [kosherFilter, setKosherFilter] = useState<string | null>(null);
-  const [occasionFilter, setOccasionFilter] = useState<Occasion | null>(null);
-  const [prepFilter, setPrepFilter] = useState<PrepKey | null>(null);
+  const [courseFilter, setCourseFilter] = useSessionPersistedState<string | null>('recipes-filter-course', null);
+  const [kosherFilter, setKosherFilter] = useSessionPersistedState<string | null>('recipes-filter-kosher', null);
+  const [occasionFilter, setOccasionFilter] = useSessionPersistedState<Occasion | null>(
+    'recipes-filter-occasion',
+    null
+  );
+  const [prepFilter, setPrepFilter] = useSessionPersistedState<PrepKey | null>('recipes-filter-prep', null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [expiringSoon, setExpiringSoon] = useState<ExpiringSoonRecipe[]>([]);

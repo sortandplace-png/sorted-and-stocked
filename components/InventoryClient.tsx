@@ -23,6 +23,7 @@ import { getPreferredSource, type ReorderSource } from '@/lib/reorder-sources';
 import { FilterPill, FilterPillRow } from '@/components/recipes/FilterPill';
 import { isFoodCategory } from '@/lib/foodCategories';
 import { compressImageToBlob } from '@/lib/compress-image';
+import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
 import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle } from 'lucide-react';
 
 type StorageLocation = {
@@ -247,7 +248,17 @@ export default function InventoryClient({
   // includes) uncleared items on the shopping list.
   const [pesachModeEnabled, setPesachModeEnabled] = useState(false);
   const [savingPesachMode, setSavingPesachMode] = useState(false);
-  const [pesachStatusFilter, setPesachStatusFilter] = useState<string | null>(null);
+  // Content filters below use sessionStorage-backed state (not plain
+  // useState) so a phone lock/backgrounding mid-walkthrough doesn't lose
+  // them -- see lib/use-session-persisted-state.ts. Room-navigation state
+  // (locationFilter, floorFilter, lowStockFirst above) deliberately stays
+  // on plain useState -- locationFilter already has its own correct
+  // URL-driven initialization (QR scans, search deep-links), and mixing
+  // that with session-restored state risks the two fighting each other.
+  const [pesachStatusFilter, setPesachStatusFilter] = useSessionPersistedState<string | null>(
+    'inventory-filter-pesachStatus',
+    null
+  );
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -266,7 +277,7 @@ export default function InventoryClient({
   >(null);
   const [newRoomName, setNewRoomName] = useState('');
   const [savingRoom, setSavingRoom] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useSessionPersistedState('inventory-filter-search', '');
   // search_inventory_items() results for the current query -- synonym-aware
   // (e.g. "garbage bags" finds "Trash Bags"), which a plain client-side
   // substring check on item.name can never do. `query` is stored alongside
@@ -276,12 +287,18 @@ export default function InventoryClient({
   // while the debounced RPC call is still in flight, so results don't flash
   // to empty on every keystroke.
   const [searchResults, setSearchResults] = useState<{ query: string; ids: Set<string> } | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
-  const [belowParOnly, setBelowParOnly] = useState(false);
-  const [expiringSoonOnly, setExpiringSoonOnly] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useSessionPersistedState<string | null>(
+    'inventory-filter-category',
+    null
+  );
+  const [belowParOnly, setBelowParOnly] = useSessionPersistedState('inventory-filter-belowPar', false);
+  const [expiringSoonOnly, setExpiringSoonOnly] = useSessionPersistedState('inventory-filter-expiringSoon', false);
   // Separate from expiringSoonOnly (4-day filter pill) -- this is the new
   // stat card's own 30-day filter.
-  const [expiringSoon30Only, setExpiringSoon30Only] = useState(false);
+  const [expiringSoon30Only, setExpiringSoon30Only] = useSessionPersistedState(
+    'inventory-filter-expiringSoon30',
+    false
+  );
   // 'rooms' = existing location drill-down, unchanged. 'all' = new flat
   // grid of every item regardless of room.
   const [viewMode, setViewMode] = useState<'rooms' | 'all'>('rooms');
