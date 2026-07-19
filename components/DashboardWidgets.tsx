@@ -169,7 +169,7 @@ export default function DashboardWidgets({
         {visibleKeys.length === 0 ? (
           !editing && <p className="text-sm text-dusk">{t('allHidden')}</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
             {visibleKeys.map((key) => {
               if (key === 'todays_meal_plan') return <TodaysMealPlanCard key={key} title={WIDGET_LABELS.todays_meal_plan} propertyId={propertyId} meals={todaysMeals} isShabbosOrYomTov={isShabbosOrYomTovDinner} />;
               return (
@@ -189,7 +189,7 @@ export default function DashboardWidgets({
         {/* Fixed row -- always shown, not part of the show/hide/reorder
             system above (Low Stock Alerts and the shopping-list count are
             operational, not optional). */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 items-stretch">
           <LowStockAlertsCard title={t('labelLowStockAlerts')} propertyId={propertyId} items={lowStockItems} />
           <ShoppingListSummaryCard propertyId={propertyId} count={shoppingListCount} photos={shoppingListPhotos} />
         </div>

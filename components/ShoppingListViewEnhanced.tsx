@@ -770,7 +770,7 @@ export default function ShoppingListViewEnhanced({
           treatment so both tabs feel like the same app rather than two
           different styles. Checked-off items don't appear here at all --
           they move to the single Completed section below. */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
         {groups.map(group => {
           if (group.items.length === 0) return null;
           const collapsed = collapsedGroups.has(group.title);
