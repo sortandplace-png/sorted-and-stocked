@@ -507,6 +507,7 @@
       "nothingPlannedToday": "Nothing planned for today.",
       "viewFullPlan": "View full plan →",
       "allStocked": "Everything's stocked up.",
+      "nothingOnList": "Nothing on the list right now.",
       "moreCount": "+{count} more",
       "viewInventory": "View inventory →"
     },

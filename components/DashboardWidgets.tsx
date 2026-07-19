@@ -36,7 +36,7 @@ export default function DashboardWidgets({
   todaysMeals,
   lowStockItems,
   shoppingListCount,
-  shoppingListPhotos,
+  shoppingListPreview,
   prepAheadReminders,
   prepAheadEnabled,
   canManagePrepAhead,
@@ -47,7 +47,7 @@ export default function DashboardWidgets({
   todaysMeals: TodaysMealEntry[];
   lowStockItems: LowStockItem[];
   shoppingListCount: number;
-  shoppingListPhotos: string[];
+  shoppingListPreview: { id: string; name: string; photoUrl: string | null }[];
   prepAheadReminders: PrepAheadReminder[];
   prepAheadEnabled: boolean;
   canManagePrepAhead: boolean;
@@ -191,7 +191,7 @@ export default function DashboardWidgets({
             operational, not optional). */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 items-stretch">
           <LowStockAlertsCard title={t('labelLowStockAlerts')} propertyId={propertyId} items={lowStockItems} />
-          <ShoppingListSummaryCard propertyId={propertyId} count={shoppingListCount} photos={shoppingListPhotos} />
+          <ShoppingListSummaryCard propertyId={propertyId} count={shoppingListCount} preview={shoppingListPreview} />
         </div>
       </div>
     </div>
@@ -391,23 +391,33 @@ function TodaysMealPlanCard({
   );
 }
 
+// Each row carries its own photo directly beside its name now, same
+// per-item row format the full Shopping List card already uses correctly
+// -- replaces the old layout, which showed name-only rows next to one
+// detached PhotoMosaic block that had no connection to which item was
+// which. No image slot on WidgetCard means the plain (non-image) shell.
 function LowStockAlertsCard({ title, propertyId, items }: { title: string; propertyId: string; items: LowStockItem[] }) {
   const t = useTranslations('dashboard.widgets');
   const preview = items.slice(0, 5);
-  const photos = items.map((i) => i.photoUrl).filter((url): url is string => !!url).slice(0, 4);
   return (
-    <WidgetCard cardId="low-stock-alerts" title={title} image={photos.length > 0 ? <PhotoMosaic photos={photos} /> : undefined}>
+    <WidgetCard cardId="low-stock-alerts" title={title}>
       {items.length === 0 ? (
         <p className="text-sm text-dusk">{t('allStocked')}</p>
       ) : (
-        <ul className="space-y-1">
+        <ul className="space-y-1.5">
           {preview.map((item) => (
             <li key={item.id}>
               <Link
                 href={`/properties/${propertyId}/inventory?item=${item.id}`}
-                className="text-sm text-denim flex items-center justify-between gap-2 hover:underline"
+                className="flex items-center gap-2 hover:underline"
               >
-                <span className="truncate">{item.name}</span>
+                {item.photoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.photoUrl} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0 bg-mist" />
+                ) : (
+                  <span className="w-8 h-8 rounded-lg bg-mist shrink-0" />
+                )}
+                <span className="flex-1 min-w-0 truncate text-sm text-denim">{item.name}</span>
                 <span className="text-rust font-medium text-xs shrink-0">
                   {item.currentQty}/{item.minQty}
                 </span>
@@ -548,19 +558,40 @@ function PrepAheadWidgetCard({
   );
 }
 
-function ShoppingListSummaryCard({ propertyId, count, photos }: { propertyId: string; count: number; photos: string[] }) {
+// Was count-and-a-detached-mosaic only -- no actual items shown, unlike
+// every other card in this row. Now the same per-item photo+name row
+// format as Low Stock Alerts and the full Shopping List card below.
+function ShoppingListSummaryCard({
+  propertyId,
+  count,
+  preview,
+}: {
+  propertyId: string;
+  count: number;
+  preview: { id: string; name: string; photoUrl: string | null }[];
+}) {
   const t = useTranslations('dashboard.widgets');
-  const td = useTranslations('dashboard');
   return (
-    <WidgetCard
-      cardId="shopping-list-summary"
-      title={t('shoppingListLabel')}
-      image={photos.length > 0 ? <PhotoMosaic photos={photos} /> : undefined}
-    >
-      <p className="text-lg font-display text-denim mb-2">
-        {count} {count === 1 ? td('item') : td('items')}
-      </p>
-      <Link href={`/properties/${propertyId}/shopping-list`} className="inline-block text-[11px] font-bold text-brass underline underline-offset-2">
+    <WidgetCard cardId="shopping-list-summary" title={t('shoppingListLabel')}>
+      {preview.length === 0 ? (
+        <p className="text-sm text-dusk">{t('nothingOnList')}</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {preview.map((item) => (
+            <li key={item.id} className="flex items-center gap-2">
+              {item.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={item.photoUrl} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0 bg-mist" />
+              ) : (
+                <span className="w-8 h-8 rounded-lg bg-mist shrink-0" />
+              )}
+              <span className="flex-1 min-w-0 truncate text-sm text-denim">{item.name}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {count > preview.length && <p className="text-xs text-dusk mt-1.5">{t('moreCount', { count: count - preview.length })}</p>}
+      <Link href={`/properties/${propertyId}/shopping-list`} className="inline-block mt-2.5 text-[11px] font-bold text-brass underline underline-offset-2">
         {t('viewList')}
       </Link>
     </WidgetCard>

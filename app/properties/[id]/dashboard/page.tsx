@@ -311,7 +311,7 @@ async function getData(propertyId: string) {
     supabase.from('meal_plan_entries').select('plan_date, meal_slot, recipe_id, course, recipes(name, name_es, kosher_type)').eq('property_id', propertyId).gte('plan_date', startStr).lte('plan_date', endStr).order('plan_date'),
     supabase.from('inventory_items').select('category, name, current_qty, min_qty, photo_url, reorder_link, reorder_sources(id, retailer_name, url, is_preferred)').eq('property_id', propertyId).order('category'),
     list
-      ? supabase.from('shopping_list_items').select('name, category, qty_needed, status, inventory_items(photo_url, reorder_link, reorder_sources(id, retailer_name, url, is_preferred))').eq('shopping_list_id', list.id).eq('status', 'pending').order('category')
+      ? supabase.from('shopping_list_items').select('id, name, category, qty_needed, status, inventory_items(photo_url, reorder_link, reorder_sources(id, retailer_name, url, is_preferred))').eq('shopping_list_id', list.id).eq('status', 'pending').order('category')
       : Promise.resolve({ data: [] as any[] })
   ])
   return { meals: meals.data || [], inventory: inventory.data || [], shopping: shopping.data || [] }
@@ -575,16 +575,18 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const tehillim = await getTehillim(hebrewInfo.day)
 
   // Shopping List widget's image: Racquel's own direction was "pics of
-  // ingredients" -- the real photos of whatever's actually pending on the
-  // list, not a generic stock shot. `shopping` already carries each item's
-  // linked inventory_items.photo_url (fetched in getData() above for the
-  // fuller shopping-list-with-photos section further down this page); this
-  // just reuses that same embed rather than a second query. Deduped since
-  // two different pending items could theoretically share one photo_url,
-  // and capped -- the mosaic only ever shows up to 4.
-  const shoppingListPhotos = Array.from(
-    new Set(shopping.map((s: any) => s.inventory_items?.photo_url).filter((url: unknown): url is string => !!url))
-  ).slice(0, 4)
+  // ingredients" -- the real items actually pending on the list, each with
+  // its own real photo (not a detached mosaic that loses the name-to-photo
+  // connection). `shopping` already carries each item's linked
+  // inventory_items.photo_url (fetched in getData() above for the fuller
+  // shopping-list-with-photos section further down this page); this just
+  // reuses that same embed rather than a second query. Capped at 5 to match
+  // the same preview-list convention Low Stock Alerts already uses.
+  const shoppingListPreview = shopping.slice(0, 5).map((s: any) => ({
+    id: s.id,
+    name: s.name,
+    photoUrl: s.inventory_items?.photo_url ?? null,
+  }))
 
   const now = new Date()
 
@@ -1081,7 +1083,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           todaysMeals={todaysMeals}
           lowStockItems={lowStockItems}
           shoppingListCount={shopping.length}
-          shoppingListPhotos={shoppingListPhotos}
+          shoppingListPreview={shoppingListPreview}
           prepAheadReminders={prepAheadReminders}
           prepAheadEnabled={prepAheadEnabled}
           canManagePrepAhead={isOwnerOrManager}
