@@ -27,6 +27,36 @@ import {
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+// Pure calendar-date arithmetic, deliberately not going through a real
+// Date-in-a-timezone conversion -- Date.UTC's Y/M/D fields already ARE the
+// Eastern calendar date by the time this is called, so anchoring the
+// arithmetic to UTC just keeps them from being reinterpreted through any
+// timezone at all (setUTCDate handles month/year rollover automatically).
+function addDays(y: number, m: number, d: number, days: number) {
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  dt.setUTCDate(dt.getUTCDate() + days)
+  return { year: dt.getUTCFullYear(), month: dt.getUTCMonth() + 1, day: dt.getUTCDate() }
+}
+
+async function fetchShabbat(y: number | string, m: number | string, d: number | string) {
+  const res = await fetch(
+    `https://www.hebcal.com/shabbat?cfg=json&geonameid=5100280&M=on&lg=he&gy=${y}&gm=${m}&gd=${d}`,
+    { next: { revalidate: 86400 } }
+  )
+  const data = await res.json()
+  return {
+    candle: data.items?.find((i: any) => i.category === 'candles'),
+    havdalah: data.items?.find((i: any) => i.category === 'havdalah'),
+    // Was stripping the English string "Candle lighting: " out of candle.title
+    // — but with lg=he, candle.title is Hebrew, so that .replace() was always
+    // a silent no-op and this was actually rendering the candle-lighting
+    // item's raw Hebrew text as if it were the parsha name. The real parsha
+    // name lives on its own item, category === 'parashat' (confirmed live
+    // against the real Hebcal response).
+    parashat: data.items?.find((i: any) => i.category === 'parashat'),
+  }
+}
+
 async function getHebcal() {
   // Lakewood, NJ - geonameid 5100280. Candle-lighting/parsha only change
   // once a week and the Hebrew date only once a day — 1h revalidation was
@@ -55,20 +85,28 @@ async function getHebcal() {
   }).formatToParts(new Date())
   const eastMap = Object.fromEntries(eastern.map((p) => [p.type, p.value]))
   try {
-    const res = await fetch(
-      `https://www.hebcal.com/shabbat?cfg=json&geonameid=5100280&M=on&lg=he&gy=${eastMap.year}&gm=${eastMap.month}&gd=${eastMap.day}`,
-      { next: { revalidate: 86400 } }
-    )
-    const data = await res.json()
-    const candle = data.items?.find((i: any) => i.category === 'candles')
-    const havdalah = data.items?.find((i: any) => i.category === 'havdalah')
-    // Was stripping the English string "Candle lighting: " out of candle.title
-    // — but with lg=he, candle.title is Hebrew, so that .replace() was always
-    // a silent no-op and this was actually rendering the candle-lighting
-    // item's raw Hebrew text as if it were the parsha name. The real parsha
-    // name lives on its own item, category === 'parashat' (confirmed live
-    // against the real Hebcal response).
-    const parashat = data.items?.find((i: any) => i.category === 'parashat')
+    let { candle, havdalah, parashat } = await fetchShabbat(eastMap.year, eastMap.month, eastMap.day)
+
+    // Second real bug, same family as above: gy/gm/gd is a bare Gregorian
+    // calendar date with no time-of-day, so the query stays "Saturday" --
+    // and Hebcal keeps returning the Shabbos that JUST ended -- for the
+    // several hours between real Havdalah and real midnight. The Jewish
+    // day has already turned over; the Gregorian calendar date hasn't.
+    // Confirmed live: querying gd=<Saturday> at any time on that Saturday
+    // returns the identical Friday candle-lighting, whether it's 3pm or
+    // 11pm, since the request itself carries no hour. Fixed by comparing
+    // real now (a real Date instant) against the returned Havdalah's own
+    // ISO timestamp (carries its own UTC offset, safe to compare directly
+    // regardless of server timezone) -- once now is past it, the current
+    // Shabbos is genuinely over, so re-query one calendar day later. That's
+    // always enough: the only way "now > havdalah" can be true while still
+    // on the SAME Gregorian day as that havdalah is the Havdalah-to-
+    // midnight window, and +1 day always lands past midnight.
+    if (havdalah && new Date() > new Date(havdalah.date)) {
+      const next = addDays(Number(eastMap.year), Number(eastMap.month), Number(eastMap.day), 1)
+      ;({ candle, havdalah, parashat } = await fetchShabbat(next.year, next.month, next.day))
+    }
+
     return {
       // candle.date is a full ISO string with its own -04:00/-05:00 offset
       // (e.g. "2026-07-03T20:11:00-04:00"). Formatting it without an
