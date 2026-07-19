@@ -90,7 +90,7 @@ export async function getTodaysMealPlan(propertyId: string): Promise<TodaysMealE
   }));
 }
 
-export type LowStockItem = { id: string; name: string; currentQty: number; minQty: number; category: string | null };
+export type LowStockItem = { id: string; name: string; currentQty: number; minQty: number; category: string | null; photoUrl: string | null };
 
 export async function getLowStockAlerts(propertyId: string): Promise<LowStockItem[]> {
   const supabase = await createClient();
@@ -99,7 +99,7 @@ export async function getLowStockAlerts(propertyId: string): Promise<LowStockIte
   // filtering client-side would silently truncate on a property with more
   // rows than the project's max-rows cap (the exact bug found earlier
   // tonight on the inventory count stat). get_low_stock_items() does the
-  // comparison server-side instead (migration 091).
+  // comparison server-side instead (migration 091, photo_url added in 109).
   const { data } = await supabase.rpc('get_low_stock_items', { p_property_id: propertyId });
 
   return (data ?? []).map((item: any) => ({
@@ -108,5 +108,6 @@ export async function getLowStockAlerts(propertyId: string): Promise<LowStockIte
     currentQty: item.current_qty,
     minQty: item.min_qty,
     category: item.category,
+    photoUrl: item.photo_url,
   }));
 }

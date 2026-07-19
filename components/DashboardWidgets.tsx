@@ -36,6 +36,7 @@ export default function DashboardWidgets({
   todaysMeals,
   lowStockItems,
   shoppingListCount,
+  shoppingListPhotos,
   prepAheadReminders,
   prepAheadEnabled,
   canManagePrepAhead,
@@ -46,6 +47,7 @@ export default function DashboardWidgets({
   todaysMeals: TodaysMealEntry[];
   lowStockItems: LowStockItem[];
   shoppingListCount: number;
+  shoppingListPhotos: string[];
   prepAheadReminders: PrepAheadReminder[];
   prepAheadEnabled: boolean;
   canManagePrepAhead: boolean;
@@ -189,7 +191,7 @@ export default function DashboardWidgets({
             operational, not optional). */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 items-start">
           <LowStockAlertsCard title={t('labelLowStockAlerts')} propertyId={propertyId} items={lowStockItems} />
-          <ShoppingListSummaryCard propertyId={propertyId} count={shoppingListCount} />
+          <ShoppingListSummaryCard propertyId={propertyId} count={shoppingListCount} photos={shoppingListPhotos} />
         </div>
       </div>
     </div>
@@ -203,18 +205,73 @@ export default function DashboardWidgets({
 // denser content, but that's what was asked for), and the same brass pin
 // dot in the same top-right position. Eyebrow label matches the tile
 // eyebrow exactly: 9px, tracking-[0.2em], uppercase, font-semibold, brass.
-function WidgetCard({ cardId, title, children }: { cardId: string; title: string; children: React.ReactNode }) {
+// `image`, when provided, switches to the same content-left/image-right
+// row TodaysMealPlanCard/PrepAheadWidgetCard already use (w-[42%] image
+// slot, min-h-[100px] floor so the mosaic has room to read as a grid
+// rather than a squished sliver) instead of the plain full-width layout --
+// padding moves from the outer container onto just the content column so
+// the image can reach the card's own edges, same as those two cards.
+// Omitting `image` keeps this component's original plain behavior
+// untouched (still used bare wherever a caller has no photo to show).
+function WidgetCard({
+  cardId,
+  title,
+  image,
+  children,
+}: {
+  cardId: string;
+  title: string;
+  image?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   const { collapsed, toggle } = useCardCollapse(cardId);
   return (
-    <div className="relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow py-[14px] px-[18px]">
+    <div
+      className={`relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow overflow-hidden flex flex-col ${
+        image ? (collapsed ? '' : 'min-h-[100px]') : 'py-[14px] px-[18px]'
+      }`}
+    >
       <Pin size="sm" collapsed={collapsed} onToggle={toggle} />
-      <h3 className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass mb-2.5">{title}</h3>
+      <h3
+        className={`text-[9px] tracking-[0.2em] uppercase font-semibold text-brass ${
+          image ? 'pt-[10px] px-[16px] pb-2' : 'mb-2.5'
+        }`}
+      >
+        {title}
+      </h3>
       <div
-        className="grid transition-[grid-template-rows] duration-200 ease-out"
+        className={`grid transition-[grid-template-rows] duration-200 ease-out ${collapsed ? '' : image ? 'flex-1' : ''}`}
         style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
       >
-        <div className="overflow-hidden min-h-0">{children}</div>
+        {image ? (
+          <div className="overflow-hidden flex min-h-0">
+            <div className="flex-1 min-w-0 px-[16px] pb-[10px]">{children}</div>
+            <div className="w-[42%] shrink-0">{image}</div>
+          </div>
+        ) : (
+          <div className="overflow-hidden min-h-0">{children}</div>
+        )}
       </div>
+    </div>
+  );
+}
+
+// Compact photo grid for the Low Stock Alerts / Shopping List image slots.
+// Racquel's own explicit direction, not a generic stock photo: "the items
+// that are low, same pic as inventory" / "pics of ingredients" -- reuse
+// each real item's existing photo_url rather than sourcing new stock
+// imagery. Adapts to however many photos are actually available (1-4);
+// callers filter out items with no photo before this ever sees them, and
+// pass undefined (not this component) when zero are available, so
+// WidgetCard falls back to its plain no-image layout instead of reserving
+// a blank 42% slot.
+function PhotoMosaic({ photos }: { photos: string[] }) {
+  const shown = photos.slice(0, 4);
+  return (
+    <div className={`grid h-full gap-[2px] bg-cardBorder ${shown.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+      {shown.map((url, i) => (
+        <div key={i} style={{ backgroundImage: `url('${url}')`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+      ))}
     </div>
   );
 }
@@ -337,8 +394,9 @@ function TodaysMealPlanCard({
 function LowStockAlertsCard({ title, propertyId, items }: { title: string; propertyId: string; items: LowStockItem[] }) {
   const t = useTranslations('dashboard.widgets');
   const preview = items.slice(0, 5);
+  const photos = items.map((i) => i.photoUrl).filter((url): url is string => !!url).slice(0, 4);
   return (
-    <WidgetCard cardId="low-stock-alerts" title={title}>
+    <WidgetCard cardId="low-stock-alerts" title={title} image={photos.length > 0 ? <PhotoMosaic photos={photos} /> : undefined}>
       {items.length === 0 ? (
         <p className="text-sm text-dusk">{t('allStocked')}</p>
       ) : (
@@ -485,11 +543,15 @@ function PrepAheadWidgetCard({
   );
 }
 
-function ShoppingListSummaryCard({ propertyId, count }: { propertyId: string; count: number }) {
+function ShoppingListSummaryCard({ propertyId, count, photos }: { propertyId: string; count: number; photos: string[] }) {
   const t = useTranslations('dashboard.widgets');
   const td = useTranslations('dashboard');
   return (
-    <WidgetCard cardId="shopping-list-summary" title={t('shoppingListLabel')}>
+    <WidgetCard
+      cardId="shopping-list-summary"
+      title={t('shoppingListLabel')}
+      image={photos.length > 0 ? <PhotoMosaic photos={photos} /> : undefined}
+    >
       <p className="text-lg font-display text-denim mb-2">
         {count} {count === 1 ? td('item') : td('items')}
       </p>

@@ -528,6 +528,18 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const isOwnerOrManager = userRole === 'owner' || userRole === 'manager'
   const tehillim = await getTehillim(hebrewInfo.day)
 
+  // Shopping List widget's image: Racquel's own direction was "pics of
+  // ingredients" -- the real photos of whatever's actually pending on the
+  // list, not a generic stock shot. `shopping` already carries each item's
+  // linked inventory_items.photo_url (fetched in getData() above for the
+  // fuller shopping-list-with-photos section further down this page); this
+  // just reuses that same embed rather than a second query. Deduped since
+  // two different pending items could theoretically share one photo_url,
+  // and capped -- the mosaic only ever shows up to 4.
+  const shoppingListPhotos = Array.from(
+    new Set(shopping.map((s: any) => s.inventory_items?.photo_url).filter((url: unknown): url is string => !!url))
+  ).slice(0, 4)
+
   const now = new Date()
 
   // isFriday(now)/isSaturday(now)/now.getHours() all read the JS Date in
@@ -1015,6 +1027,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           todaysMeals={todaysMeals}
           lowStockItems={lowStockItems}
           shoppingListCount={shopping.length}
+          shoppingListPhotos={shoppingListPhotos}
           prepAheadReminders={prepAheadReminders}
           prepAheadEnabled={prepAheadEnabled}
           canManagePrepAhead={isOwnerOrManager}
