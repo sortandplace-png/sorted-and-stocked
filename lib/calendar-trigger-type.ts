@@ -58,9 +58,17 @@ export async function getMajorHolidayToday(todayStr: string): Promise<MajorHolid
 // Hebrew-date range -- so this reads the /converter endpoint. Day 10
 // (Tisha B'Av itself) is deliberately NOT included -- it's already caught
 // by the higher-priority fast_day check, which is the intended handoff.
+//
+// Real bug found and fixed, not assumed, same family as the Candle Lighting
+// date bugs found earlier tonight: toISOString() is ALWAYS UTC regardless
+// of caller timezone, so on any Eastern evening at/after 8pm (EDT, UTC-4)
+// this was already reading TOMORROW's Hebrew date. Anchored to the real
+// Eastern calendar date instead, same Intl.DateTimeFormat technique used
+// everywhere else in this app.
 export async function getIsNineDays(): Promise<boolean> {
   try {
-    const today = new Date().toISOString().slice(0, 10)
+    const eastMap = easternDateParts(new Date())
+    const today = `${eastMap.year}-${eastMap.month}-${eastMap.day}`
     const res = await fetch(`https://www.hebcal.com/converter?cfg=json&date=${today}&g2h=1`, { next: { revalidate: 86400 } })
     const data = await res.json()
     return data.hm === 'Av' && typeof data.hd === 'number' && data.hd >= 1 && data.hd <= 9
@@ -89,15 +97,22 @@ export async function getIsErevYomTov(tomorrowStr: string): Promise<boolean> {
 
 // Same real Hebcal omer logic used elsewhere in this app -- fetch-and-filter
 // against the o=on category, not a second date-math engine.
+//
+// Real bug found and fixed, not assumed: both getFullYear()/getMonth() (the
+// query params) and toISOString() (the match key) read/format in whatever
+// timezone the runtime itself defaults to -- Vercel is UTC, not Eastern --
+// so this could fetch the wrong month AND fail to match the right day near
+// a month boundary or any Eastern evening. Anchored to the real Eastern
+// calendar date throughout, same pattern used everywhere else in this app.
 export async function getOmerStatus(): Promise<string | null> {
   try {
-    const now = new Date()
+    const eastMap = easternDateParts(new Date())
     const res = await fetch(
-      `https://www.hebcal.com/hebcal?cfg=json&v=1&year=${now.getFullYear()}&month=${now.getMonth() + 1}&o=on`,
+      `https://www.hebcal.com/hebcal?cfg=json&v=1&year=${eastMap.year}&month=${eastMap.month}&o=on`,
       { next: { revalidate: 3600 } }
     )
     const data = await res.json()
-    const today = now.toISOString().slice(0, 10)
+    const today = `${eastMap.year}-${eastMap.month}-${eastMap.day}`
     const omerItem = data.items?.find((i: any) => i.category === 'omer' && i.date?.startsWith(today))
     return omerItem?.title ?? null
   } catch {
@@ -184,9 +199,21 @@ function easternDateParts(now: Date) {
 // Convenience all-in-one for callers that only need the final resolved
 // type, not each individual signal (e.g. the Staff landing page, which
 // doesn't otherwise fetch any Hebcal data). Internally calls the exact same
-// functions above plus its own minimal candle/havdalah check for Shabbos,
-// so it can never disagree with the Dashboard's own computation of the
-// same day -- same Lakewood, NJ geonameid the rest of this app already uses.
+// functions above plus its own minimal candle/havdalah check for Shabbos --
+// this comment used to claim that meant it "can never disagree with the
+// Dashboard's own computation of the same day," but that was never actually
+// true: this is a separate, independent fetch, not a shared call, and it
+// carried neither of the two real bugs already found and fixed in the
+// Dashboard's own getHebcal() -- (1) a dateless /shabbat query returns
+// Hebcal's own implicit "today," not real wall-clock time, and (2) even
+// with an explicit date, gy/gm/gd has no time-of-day, so it keeps returning
+// the just-ended Shabbos for the several hours between real Havdalah and
+// real midnight. Confirmed live tonight: this exact duplication meant the
+// Staff My Day notice banner (the only caller of this function) could still
+// show stale Shabbos-related content on a real Sunday even after the
+// Dashboard's own version was fixed, since they were never actually the
+// same code. Fixed here with the identical two-part fix, reusing the
+// Eastern date parts already computed below instead of re-deriving them.
 export async function getTodayTriggerType(): Promise<TriggerType> {
   const now = new Date()
   const partsMap = easternDateParts(now)
@@ -204,10 +231,25 @@ export async function getTodayTriggerType(): Promise<TriggerType> {
 
   let isShabbos = false
   try {
-    const res = await fetch('https://www.hebcal.com/shabbat?cfg=json&geonameid=5100280&M=on', { next: { revalidate: 86400 } })
-    const data = await res.json()
-    const candle = data.items?.find((i: any) => i.category === 'candles')
-    const havdalah = data.items?.find((i: any) => i.category === 'havdalah')
+    const fetchShabbat = async (y: number | string, m: number | string, d: number | string) => {
+      const res = await fetch(
+        `https://www.hebcal.com/shabbat?cfg=json&geonameid=5100280&M=on&gy=${y}&gm=${m}&gd=${d}`,
+        { next: { revalidate: 86400 } }
+      )
+      const data = await res.json()
+      return {
+        candle: data.items?.find((i: any) => i.category === 'candles'),
+        havdalah: data.items?.find((i: any) => i.category === 'havdalah'),
+      }
+    }
+    let { candle, havdalah } = await fetchShabbat(partsMap.year, partsMap.month, partsMap.day)
+    if (havdalah && now > new Date(havdalah.date)) {
+      ;({ candle, havdalah } = await fetchShabbat(
+        tomorrowDate.getUTCFullYear(),
+        tomorrowDate.getUTCMonth() + 1,
+        tomorrowDate.getUTCDate()
+      ))
+    }
     isShabbos = !!(
       (isEasternFriday && candle?.date && now > new Date(new Date(candle.date).getTime() - 3600000)) ||
       (isEasternSaturday && havdalah?.date && now < new Date(havdalah.date))
