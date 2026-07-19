@@ -976,12 +976,10 @@ export default function RecipesGridView({
                         <div className="relative w-full aspect-[4/3] bg-linen">
                           {/* Decorative only (no onToggle -- recipe cards
                               don't collapse), matching the same corner every
-                              other card in the app anchors its pin to. Sits
-                              close to the favorite-heart button below, which
-                              is the same top-right corner -- pointer-events
-                              is off on the dot itself so it can't block the
-                              tap target, but worth a visual look once this
-                              is live. */}
+                              other card in the app anchors its pin to. The
+                              favorite-heart button below lives in the
+                              opposite (bottom-right) corner specifically to
+                              stay clear of this. */}
                           <Pin size="sm" />
                           {recipe.photo_url && isDirectImageUrl(recipe.photo_url) ? (
                             // eslint-disable-next-line @next/next/no-img-element
@@ -1001,7 +999,7 @@ export default function RecipesGridView({
                           {currentUserId && (
                             <button
                               onClick={(e) => toggleFavorite(recipe.id, e)}
-                              className="absolute top-0 right-0 w-11 h-11 flex items-center justify-center"
+                              className="absolute bottom-0 right-0 w-11 h-11 flex items-center justify-center"
                               aria-label={favoriteIds.has(recipe.id) ? 'Remove from favorites' : 'Add to favorites'}
                             >
                               <span className="w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center">
