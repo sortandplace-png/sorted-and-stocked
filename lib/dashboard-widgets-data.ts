@@ -2,7 +2,6 @@
 // Server-side data fetchers for the 4 Dashboard Widgets v1 cards. Each
 // reads from data that already exists elsewhere in the app -- no new
 // tracking, same convention as the rest of app/properties/[id]/dashboard/page.tsx.
-import { format } from 'date-fns';
 import { createClient } from '@/lib/supabase/server';
 
 export const WIDGET_KEYS = ['todays_meal_plan', 'prep_ahead'] as const;
@@ -50,7 +49,22 @@ export type TodaysMealEntry = { mealSlot: string; course: string; courseSlug: st
 // simpler and cheaper than adding a schema relationship just for this.
 export async function getTodaysMealPlan(propertyId: string): Promise<TodaysMealEntry[]> {
   const supabase = await createClient();
-  const todayStr = format(new Date(), 'yyyy-MM-dd')
+  // Real bug found and fixed, not assumed, same family as getHebcal()/
+  // getHebrewInfo() in dashboard/page.tsx: format(new Date(), ...) with no
+  // timeZone reads the server runtime's own local time -- Vercel defaults
+  // to UTC, not Eastern -- so on any Eastern evening at/after 8pm (EDT,
+  // UTC-4) this was already querying TOMORROW's plan_date, either showing
+  // meals that haven't happened yet or silently returning nothing for a
+  // real today with meals actually planned. Anchored to the real Eastern
+  // calendar date instead.
+  const eastern = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date())
+  const eastMap = Object.fromEntries(eastern.map((p) => [p.type, p.value]))
+  const todayStr = `${eastMap.year}-${eastMap.month}-${eastMap.day}`
   const [{ data }, { data: courseIcons }] = await Promise.all([
     supabase
       .from('meal_plan_entries')
