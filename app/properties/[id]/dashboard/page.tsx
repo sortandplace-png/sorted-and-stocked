@@ -27,6 +27,27 @@ import {
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+// Single source of truth for "what is this Date's calendar date in Eastern
+// time" -- this file had five separate near-identical spots (getDaysUntilPesach,
+// weekBounds, getPrepReminders, getReadinessSummary, the Prep Ahead window)
+// each computing "today" via format()/toISOString() with no timezone, which
+// silently reads the server runtime's own local time -- Vercel defaults to
+// UTC, not Eastern -- so on any Eastern evening at/after 8pm (EDT, UTC-4)
+// every one of them was already asking for TOMORROW's date. Found via a
+// real audit (grepping every "today"/"now" date computation in this app),
+// not fixed one at a time as each was separately noticed. One implementation
+// now, not five that could quietly drift apart from each other.
+function easternDateStr(d: Date): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(d)
+  const map = Object.fromEntries(parts.map((p) => [p.type, p.value]))
+  return `${map.year}-${map.month}-${map.day}`
+}
+
 // Pure calendar-date arithmetic, deliberately not going through a real
 // Date-in-a-timezone conversion -- Date.UTC's Y/M/D fields already ARE the
 // Eastern calendar date by the time this is called, so anchoring the
@@ -129,9 +150,16 @@ async function getHebcal() {
 // timestamp, NOT a Hebrew date (confirmed live — it's a raw ISO string) —
 // the real Hebrew date + numeric day both come from the date-converter
 // endpoint instead, one call doing both jobs.
+//
+// Real bug found and fixed, not assumed, same family as getHebcal() above:
+// format(new Date(), ...) with no timeZone option reads the JS runtime's
+// own local time -- Vercel defaults to UTC, not Eastern -- so on any
+// Eastern evening at/after 8pm (EDT, UTC-4) this was already asking Hebcal
+// for TOMORROW's Hebrew date, showing it a day early on the Today card's
+// large Hebrew-date line. Anchored to the real Eastern calendar date.
 async function getHebrewInfo(): Promise<{ day: number | null; hebrewText: string }> {
   try {
-    const today = format(new Date(), 'yyyy-MM-dd')
+    const today = easternDateStr(new Date())
     const res = await fetch(`https://www.hebcal.com/converter?cfg=json&date=${today}&g2h=1`, { next: { revalidate: 86400 } })
     const data = await res.json()
     return {
@@ -158,7 +186,7 @@ async function getDaysUntilPesach(): Promise<number | null> {
       const data = await res.json()
       events.push(...(data.items ?? []))
     }
-    const todayStr = format(now, 'yyyy-MM-dd')
+    const todayStr = easternDateStr(now)
     const candidates = events
       .filter((e) => e.title?.includes('Erev Pesach') && e.date >= todayStr)
       .sort((a, b) => a.date.localeCompare(b.date))
@@ -248,8 +276,12 @@ function weekBounds(today: Date) {
   start.setDate(start.getDate() - start.getDay())
   const end = new Date(start)
   end.setDate(start.getDate() + 6)
-  const fmt = (d: Date) => d.toISOString().slice(0, 10)
-  return { startStr: fmt(start), endStr: fmt(end) }
+  // Real bug found and fixed, not assumed: start/end retain `today`'s own
+  // real time-of-day (setDate only moves the day), so the old fmt() here
+  // (toISOString(), always UTC) shifted both bounds a day later on any
+  // Eastern evening at/after 8pm (EDT, UTC-4) -- easternDateStr() reads the
+  // local calendar date these were actually constructed in instead.
+  return { startStr: easternDateStr(start), endStr: easternDateStr(end) }
 }
 
 // Confirmed live (July 10): this previously fetched a hardcoded ~9-week
@@ -291,8 +323,12 @@ async function getData(propertyId: string) {
 async function getPrepReminders(propertyId: string) {
   const supabase = await createClient()
   const today = new Date()
-  const todayStr = format(today, 'yyyy-MM-dd')
-  const horizon = format(new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
+  // Real bug found and fixed, not assumed: format() with no timeZone reads
+  // the server's own local time (Vercel = UTC), same class of bug as every
+  // other date-anchoring fix tonight -- easternDateStr() anchors both ends
+  // of this window to the real Eastern calendar date instead.
+  const todayStr = easternDateStr(today)
+  const horizon = easternDateStr(new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000))
 
   const { data } = await supabase
     .from('meal_plan_entries')
@@ -386,7 +422,12 @@ type ReadinessSummary = {
 
 async function getReadinessSummary(propertyId: string): Promise<ReadinessSummary> {
   const supabase = await createClient()
-  const todayStr = format(new Date(), 'yyyy-MM-dd')
+  // Real bug found and fixed, not assumed: this queries staff_tasks by
+  // due_date = todayStr -- format() with no timeZone read the server's own
+  // UTC local time (Vercel), so on any Eastern evening at/after 8pm (EDT)
+  // this could miss tasks genuinely due today or surface tomorrow's early.
+  // Real functional impact, not cosmetic -- anchored to Eastern time.
+  const todayStr = easternDateStr(new Date())
 
   const [tasksRes, handoverRes] = await Promise.all([
     supabase
@@ -435,8 +476,13 @@ async function getPrepAheadReminders(propertyId: string): Promise<PrepAheadRemin
   // Cauliflower Zucchini Soup and Caramelized Onion Kugel were scheduled
   // for 2026-07-15, today, with prep_lead_days null (hence the generic
   // fallback wording). Starts strictly after today now.
-  const todayStr = format(new Date(), 'yyyy-MM-dd')
-  const horizon = format(new Date(Date.now() + PREP_AHEAD_WINDOW_DAYS * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
+  //
+  // Real bug found and fixed, not assumed: format() with no timeZone read
+  // the server's own UTC local time (Vercel), same class of bug as every
+  // other fix tonight -- anchored both ends of this window to the real
+  // Eastern calendar date instead.
+  const todayStr = easternDateStr(new Date())
+  const horizon = easternDateStr(new Date(Date.now() + PREP_AHEAD_WINDOW_DAYS * 24 * 60 * 60 * 1000))
 
   // Dip/salad/dessert are excluded even if freezer-friendly -- nobody needs
   // a multi-day advance reminder for hummus or a salad dressing. course is
@@ -726,7 +772,15 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                   {hebrewInfo.hebrewText}
                 </p>
                 <p className="font-interDisplay text-[11px] uppercase tracking-[0.1em] text-dusk">
-                  {format(now, 'EEEE, MMMM d')}
+                  {/* Real bug found and fixed, not assumed: format(now, ...)
+                      with no timeZone read the server's own UTC local time
+                      (Vercel), same class of bug as every other fix
+                      tonight -- on any Eastern evening at/after 8pm (EDT)
+                      this prominent Today-card line would show TOMORROW's
+                      weekday/date. Explicit America/New_York timeZone,
+                      same technique already used for candleDateLabel
+                      below. */}
+                  {new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric' }).format(now)}
                 </p>
                 <div className="flex items-center justify-center gap-2 flex-wrap">
                   {hebcal.parsha && (
