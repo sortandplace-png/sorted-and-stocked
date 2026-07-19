@@ -7,14 +7,15 @@
 // name (Sorted & Stocked) anywhere in the app -- real gap, could confuse
 // a new user about the connection between the two.
 //
-// Concept B (denim/brass) styling is scoped to the Dashboard route only,
-// same as every other Concept-B token in this app so far -- every other
-// page this Footer renders on (login, signup, properties picker, etc.)
-// hasn't moved off the charcoal/gold palette yet, so this can't just
-// recolor globally. usePathname (not a prop threaded through the shared
-// property layout, which renders this same Footer for every child route)
-// is what makes the Dashboard-only scoping possible without touching the
-// layout or duplicating a second footer on top of this one.
+// Concept B (denim/brass) styling is scoped route-by-route as each page
+// migrates, not applied globally -- most pages this Footer renders on
+// (login, signup, etc.) still haven't moved off the charcoal/gold
+// palette. usePathname (not a prop threaded through the shared property
+// layout, which renders this same Footer for every child route) is what
+// makes per-route scoping possible without touching the layout or
+// duplicating a second footer on top of this one. The properties picker
+// (exact path /properties, no property id yet) joined the Dashboard route
+// here once it migrated too.
 'use client';
 
 import Link from 'next/link';
@@ -22,7 +23,7 @@ import { usePathname } from 'next/navigation';
 
 export default function Footer({ propertyId }: { propertyId?: string }) {
   const pathname = usePathname();
-  const conceptB = pathname?.endsWith('/dashboard') ?? false;
+  const conceptB = (pathname?.endsWith('/dashboard') || pathname === '/properties') ?? false;
 
   // Concept B (Dashboard only): one unified line, uniform 12px Inter/denim
   // for every item including the attribution text, brass bullet separators

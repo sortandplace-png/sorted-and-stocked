@@ -19,12 +19,12 @@ function PropertyLink({ property, compact }: { property: PropertyEntry; compact?
   return (
     <Link
       href={`/properties/${property.id}/${destination}`}
-      className={`flex items-center justify-between bg-white rounded-2xl shadow-sm shadow-charcoal/5 hover:bg-gold-light/15 transition-colors ${
+      className={`flex items-center justify-between bg-card rounded-xl2 shadow-card hover:shadow-cardHover transition-shadow ${
         compact ? 'px-4 py-2.5' : 'px-4 py-3'
       }`}
     >
-      <span className={`text-charcoal ${compact ? 'text-sm' : ''}`}>{property.name}</span>
-      <span className="text-xs text-charcoal/50 capitalize">{property.role}</span>
+      <span className={`text-denim ${compact ? 'text-sm' : ''}`}>{property.name}</span>
+      <span className="text-xs text-dusk capitalize">{property.role}</span>
     </Link>
   );
 }
@@ -49,16 +49,16 @@ export default function PropertiesPickerList({ groups }: { groups: HouseholdGrou
             <button
               onClick={() => setExpandedKey(isExpanded ? null : group.key)}
               aria-expanded={isExpanded}
-              className="w-full flex items-center justify-between bg-white rounded-2xl shadow-sm shadow-charcoal/5 px-4 py-3 hover:bg-gold-light/15 transition-colors"
+              className="w-full flex items-center justify-between bg-card rounded-xl2 shadow-card hover:shadow-cardHover transition-shadow px-4 py-3"
             >
-              <span className="text-charcoal">{group.householdName ?? 'Properties'}</span>
-              <span className="flex items-center gap-1.5 text-xs text-charcoal/40">
+              <span className="text-denim">{group.householdName ?? 'Properties'}</span>
+              <span className="flex items-center gap-1.5 text-xs text-dusk">
                 {group.properties.length} properties
                 <ChevronDown size={14} strokeWidth={2} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} aria-hidden="true" />
               </span>
             </button>
             {isExpanded && (
-              <ul className="mt-1.5 ml-3 space-y-1.5 border-l-2 border-gold-light/40 pl-3">
+              <ul className="mt-1.5 ml-3 space-y-1.5 border-l-2 border-brass/30 pl-3">
                 {group.properties.map((property) => (
                   <li key={property.id}>
                     <PropertyLink property={property} compact />

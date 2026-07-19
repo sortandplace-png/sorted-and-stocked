@@ -62,12 +62,12 @@ export default async function PropertiesPage() {
   const groups = [...groupsByKey.values()];
 
   return (
-    <div className="min-h-screen bg-cream px-6 pt-12">
+    <div className="min-h-screen bg-linen px-6 pt-12">
       <div className="max-w-sm mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
             <LogoMark className="w-8 h-8" />
-            <h1 className="font-display text-2xl text-charcoal leading-tight">Your properties</h1>
+            <h1 className="font-display text-2xl text-denim leading-tight">Your properties</h1>
           </div>
           <LogoutButton variant="light" />
         </div>
@@ -77,7 +77,7 @@ export default async function PropertiesPage() {
         {groups.length > 0 ? (
           <PropertiesPickerList groups={groups} />
         ) : (
-          <p className="text-sm text-charcoal/40 mb-6">
+          <p className="text-sm text-dusk mb-6">
             You're not part of any property yet.
           </p>
         )}
@@ -85,15 +85,15 @@ export default async function PropertiesPage() {
         {memberships && memberships.length > 1 && (
           <Link
             href="/procurement"
-            className="block text-center py-2.5 rounded-full bg-gold-light/40 text-charcoal text-sm font-medium mb-2"
+            className="block text-center py-2.5 rounded-full bg-brass text-white text-sm font-medium mb-2"
           >
-            🛒 Shop for multiple properties at once
+            Shop for multiple properties at once
           </Link>
         )}
 
         <Link
           href="/properties/new"
-          className="block text-center py-2.5 rounded-full border border-charcoal/30 text-charcoal text-sm font-medium"
+          className="block text-center py-2.5 rounded-full border border-brass/30 text-denim text-sm font-medium"
         >
           + Add a property
         </Link>
