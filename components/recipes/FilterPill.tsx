@@ -38,22 +38,22 @@ export function FilterPill({
     <button onClick={onClick} title={title} className="min-h-11 flex items-center justify-center">
       <span
         className={`flex ${hebrew !== undefined ? 'flex-col items-center gap-0.5' : 'items-center gap-1.5 leading-tight'} text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${
-          active ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+          active ? 'bg-brass text-white' : 'bg-card border border-cardBorder text-dusk hover:bg-mist'
         }`}
       >
         <span className="flex items-center gap-1.5 leading-tight">
           {Icon ? (
-            <Icon className={`w-3.5 h-3.5 ${active ? 'text-charcoal' : 'text-gold-dark'}`} strokeWidth={1.75} aria-hidden="true" />
+            <Icon className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-brass'}`} strokeWidth={1.75} aria-hidden="true" />
           ) : (
             <span className="text-xs leading-none" aria-hidden="true">{iconEmoji}</span>
           )}
           {label}
           {hebrew === undefined && (
-            <span className={active ? 'text-charcoal/60' : 'text-charcoal/40'}>({count})</span>
+            <span className={active ? 'text-white/70' : 'text-dusk'}>({count})</span>
           )}
         </span>
         {hebrew !== undefined && (
-          <span className={`flex items-center gap-1 text-[10px] leading-tight ${active ? 'text-charcoal/60' : 'text-charcoal/40'}`}>
+          <span className={`flex items-center gap-1 text-[10px] leading-tight ${active ? 'text-white/70' : 'text-dusk'}`}>
             <span>({count})</span>
             {hebrew && (
               <span lang="he" dir="rtl">
@@ -76,7 +76,7 @@ export function FilterPillRow({
 }) {
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-3">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wider text-dusk mb-3">{label}</p>
       <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">{children}</div>
     </div>
   );
