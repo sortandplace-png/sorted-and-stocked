@@ -6,6 +6,7 @@ import { ExternalLink, ShoppingCart, ChevronDown, Copy } from 'lucide-react';
 interface IngredientShoppingLinkProps {
   ingredient: {
     name: string;
+    name_es?: string | null;
     quantity?: number | null;
     unit?: string | null;
     reorder_link?: string | null;
@@ -13,6 +14,14 @@ interface IngredientShoppingLinkProps {
     alternative_stores?: string[] | null;
     is_strictly_kosher?: boolean | null;
   };
+  // Display-only, defaults to the plain English name -- copyToClipboard is
+  // the one real user-facing text this component produces. Store search
+  // URLs deliberately stay keyed on ingredient.name (English) regardless of
+  // this prop: they're queries against English-language US retailer sites
+  // (Amazon, Walmart, Gourmet Glatt...), not display text, so localizing
+  // them would silently return worse search results, not translate
+  // anything a user reads.
+  displayName?: string;
   recipeNames?: string[];
   onAddToList?: () => void;
   addingToList?: boolean;
@@ -45,6 +54,7 @@ const STORE_INFO: Record<string, { name: string; url: (ing: string) => string }>
 
 export default function IngredientShoppingLink({
   ingredient,
+  displayName,
   recipeNames = [],
   onAddToList,
   addingToList,
@@ -57,7 +67,7 @@ export default function IngredientShoppingLink({
   const alternativeStores = (ingredient.alternative_stores || []).slice(0, 5);
 
   function copyToClipboard() {
-    const text = `${ingredient.quantity || ''} ${ingredient.unit || ''} ${ingredient.name}`.trim();
+    const text = `${ingredient.quantity || ''} ${ingredient.unit || ''} ${displayName ?? ingredient.name}`.trim();
     navigator.clipboard.writeText(text);
   }
 
@@ -68,7 +78,7 @@ export default function IngredientShoppingLink({
           href={ingredient.reorder_link}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-7 h-7 flex items-center justify-center rounded-full border border-gold-light/60 text-gold-dark hover:bg-gold-light/10 transition"
+          className="w-7 h-7 flex items-center justify-center rounded-full border border-brass/30 text-brass hover:bg-mist transition"
           title={primaryStoreInfo ? `Buy at ${primaryStoreInfo.name}` : 'Reorder link'}
         >
           <ExternalLink size={14} strokeWidth={1.75} />
@@ -79,7 +89,7 @@ export default function IngredientShoppingLink({
         <button
           onClick={onAddToList}
           disabled={addingToList}
-          className="w-7 h-7 flex items-center justify-center rounded-full border border-gold-light/60 text-gold-dark hover:bg-gold-light/10 transition disabled:opacity-40"
+          className="w-7 h-7 flex items-center justify-center rounded-full border border-brass/30 text-brass hover:bg-mist transition disabled:opacity-40"
           title="Add to shopping list"
         >
           <ShoppingCart size={14} strokeWidth={1.75} />
@@ -88,7 +98,7 @@ export default function IngredientShoppingLink({
 
       <button
         onClick={copyToClipboard}
-        className="w-7 h-7 flex items-center justify-center rounded-full border border-gold-light/60 text-gold-dark hover:bg-gold-light/10 transition"
+        className="w-7 h-7 flex items-center justify-center rounded-full border border-brass/30 text-brass hover:bg-mist transition"
         title="Copy ingredient"
       >
         <Copy size={14} strokeWidth={1.75} />
@@ -98,14 +108,14 @@ export default function IngredientShoppingLink({
         <div className="relative">
           <button
             onClick={() => setShowStoreDropdown(!showStoreDropdown)}
-            className="w-7 h-7 flex items-center justify-center rounded-full border border-gold-light/60 text-charcoal/60 hover:bg-gold-light/10 transition"
+            className="w-7 h-7 flex items-center justify-center rounded-full border border-brass/30 text-dusk hover:bg-mist transition"
             title="Other stores"
           >
             <ChevronDown size={14} strokeWidth={1.75} />
           </button>
 
           {showStoreDropdown && (
-            <div className="absolute top-full mt-1 left-0 bg-white border border-gold-light/40 rounded-lg shadow-md z-10 min-w-[160px]">
+            <div className="absolute top-full mt-1 left-0 bg-card border border-cardBorder rounded-lg shadow-cardHover z-10 min-w-[160px]">
               {alternativeStores.map((storeCode, idx) => {
                 const storeInfo = STORE_INFO[storeCode];
                 if (!storeInfo) return null;
@@ -115,7 +125,7 @@ export default function IngredientShoppingLink({
                     href={storeInfo.url(ingredient.name)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block px-3 py-2 text-sm text-charcoal hover:bg-gold-light/10 transition border-b border-gold-light/20 last:border-b-0"
+                    className="block px-3 py-2 text-sm text-denim hover:bg-mist transition border-b border-cardBorder last:border-b-0"
                   >
                     {storeInfo.name}
                   </a>
@@ -130,15 +140,15 @@ export default function IngredientShoppingLink({
         <div className="relative ml-1">
           <button
             onClick={() => setShowRecipes(!showRecipes)}
-            className="text-xs text-charcoal/40 hover:text-charcoal/60 underline"
+            className="text-xs text-dusk hover:text-denim underline"
           >
             {recipeNames.length} recipe{recipeNames.length !== 1 ? 's' : ''}
           </button>
 
           {showRecipes && (
-            <div className="absolute top-full mt-1 left-0 bg-white border border-gold-light/40 rounded-lg shadow-md p-2 z-10 text-xs max-w-xs">
+            <div className="absolute top-full mt-1 left-0 bg-card border border-cardBorder rounded-lg shadow-cardHover p-2 z-10 text-xs max-w-xs">
               {recipeNames.map((name, i) => (
-                <div key={i} className="text-charcoal/70 py-0.5">
+                <div key={i} className="text-dusk py-0.5">
                   • {name}
                 </div>
               ))}

@@ -69,6 +69,7 @@ function kosherPillClass(kosherType: string) {
 interface Ingredient {
   id: string;
   name: string;
+  name_es?: string | null;
   quantity: number | null;
   unit: string | null;
   category: string | null;
@@ -451,14 +452,25 @@ export default function RecipeDetailClient({
     return `${n} serving${n === 1 ? '' : 's'}`;
   }
 
+  // SS-146: falls back to the English name whenever name_es is null, same
+  // convention as the recipe-name/instructions toggles above -- never
+  // renders blank. approxGrams() below stays on the raw English i.name
+  // deliberately: it's a weight-estimation lookup against English keyword
+  // matching (e.g. "egg" -> ~50g), not a display value, so localizing it
+  // would silently break the match instead of translating anything a user
+  // sees.
+  function displayIngredientName(i: Ingredient) {
+    return lang === 'es' && i.name_es ? i.name_es : i.name;
+  }
+
   function formatQty(i: Ingredient) {
     if (i.quantity == null) {
       // Nothing to scale — the amount is baked into the name text itself
       // (e.g. "2 segmented grapefruits") or it's a to-taste item.
-      return [i.unit, i.name].filter(Boolean).join(' ');
+      return [i.unit, displayIngredientName(i)].filter(Boolean).join(' ');
     }
     const scaledQty = i.quantity * scaleFactor;
-    const base = [formatScaledNumber(scaledQty), i.unit, i.name].filter(Boolean).join(' ');
+    const base = [formatScaledNumber(scaledQty), i.unit, displayIngredientName(i)].filter(Boolean).join(' ');
     const grams = approxGrams(scaledQty, i.unit, i.name);
     return grams != null ? `${base} (approx ${grams}g)` : base;
   }
@@ -901,13 +913,14 @@ export default function RecipeDetailClient({
                             checked={!!checkedIds[i.id]}
                             onChange={(e) => setCheckedIds((c) => ({ ...c, [i.id]: e.target.checked }))}
                             className={`accent-brass ${view === 'staff' ? 'h-6 w-6' : 'h-4 w-4'}`}
-                            aria-label={`Check off ${i.name}`}
+                            aria-label={`Check off ${displayIngredientName(i)}`}
                           />
                         </label>
                         <div className={`flex-1 ${checkedIds[i.id] ? 'opacity-40 line-through' : ''}`}>
                           <div className={view === 'staff' ? 'text-xl' : ''}>{formatQty(i)}</div>
                           <IngredientShoppingLink
                             ingredient={i}
+                            displayName={displayIngredientName(i)}
                             recipeNames={[recipe.name]}
                             onAddToList={canManage(role) ? () => addToShoppingList(i) : undefined}
                             addingToList={!!addingToListIds[i.id]}

@@ -20,9 +20,13 @@ export async function fetchRecipeWithIngredients(recipeId: string) {
   }
 
   // Fetch ingredients with shopping link data
+  // name_es added for SS-146 -- was missing from this select entirely, so
+  // every ingredient's name_es read as undefined at runtime regardless of
+  // what's actually in the column (confirmed live: 2355/2355 rows
+  // populated), even though the Ingredient type below already declared it.
   const { data: ingredients, error: ingredientError } = await supabase
     .from('recipe_ingredients')
-    .select('id, name, quantity, unit, category, reorder_link, primary_store, alternative_stores, is_strictly_kosher, photo_url, section_label')
+    .select('id, name, name_es, quantity, unit, category, reorder_link, primary_store, alternative_stores, is_strictly_kosher, photo_url, section_label')
     .eq('recipe_id', recipeId)
     .order('section_label', { nullsFirst: true })
     .order('category');
