@@ -567,7 +567,7 @@ export default function RecipesGridView({
   }
 
   return (
-    <div className="max-w-md lg:max-w-6xl mx-auto p-4">
+    <div className="max-w-md lg:max-w-6xl mx-auto p-4 bg-mist">
       <div className="flex items-start justify-between mb-4 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-display font-bold text-denim">{t('title')}</h1>

@@ -554,7 +554,15 @@
     "provenanceExternalUnverified": "External Source — Unverified",
     "provenanceFamily": "Real Family Recipe",
     "provenanceUnknown": "Unknown",
-    "provenanceAmbiguous": "Ambiguous"
+    "provenanceAmbiguous": "Ambiguous",
+    "kitchenOps": "Kitchen Ops",
+    "pairsWellWith": "Pairs well with",
+    "kitchenOpsTools": {
+      "kitchenTimer": "Kitchen Timer",
+      "scaleServings": "Scale Servings",
+      "resetForNext": "Reset for Next",
+      "prepTimeline": "Prep Timeline"
+    }
   },
   "recipeTags": {
     "9x13": "9x13",

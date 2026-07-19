@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { LOCALE_COOKIE } from '@/i18n/locale-constants';
-import { Printer, Share2, History as HistoryIcon, Heart, MoreVertical, Pencil, Copy, Trash2 } from 'lucide-react';
+import { Printer, Share2, History as HistoryIcon, Heart, MoreVertical, Pencil, Copy, Trash2, Timer, Scale, RotateCcw, ListChecks } from 'lucide-react';
+import Pin from '@/components/PinAccent';
 import NewRecipeModal from '@/components/NewRecipeModal';
 import { createClient } from '@/lib/supabase/client';
 import { kosherIcon } from '@/lib/icon-maps';
@@ -39,11 +40,14 @@ import { bedikasTolaimIngredients, BEDIKAS_TOLAIM_NOTE } from '@/lib/bedikas-tol
 // exactly -- these are two separate hardcoded lists for the same 4 tools, so
 // a rename in one and not the other silently produces different labels for
 // the same tool depending which page you're on.
+// Same 4 tools, same Lucide icons /sitemap already uses for them (Timer,
+// Scale, RotateCcw, ListChecks) -- was emoji, a different icon language
+// than the rest of the app's real icon-tile system.
 const KITCHEN_OPS_LINKS = [
-  { slug: 'kitchen-timer', icon: '⏱️', title: 'Kitchen Timer' },
-  { slug: 'guest-scaler', icon: '🎉', title: 'Scale Servings' },
-  { slug: 'reset-checklist', icon: '🧹', title: 'Reset for Next' },
-  { slug: 'prep-timeline', icon: '⏳', title: 'Prep Timeline' },
+  { slug: 'kitchen-timer', icon: Timer, titleKey: 'kitchenOpsTools.kitchenTimer' },
+  { slug: 'guest-scaler', icon: Scale, titleKey: 'kitchenOpsTools.scaleServings' },
+  { slug: 'reset-checklist', icon: RotateCcw, titleKey: 'kitchenOpsTools.resetForNext' },
+  { slug: 'prep-timeline', icon: ListChecks, titleKey: 'kitchenOpsTools.prepTimeline' },
 ];
 import { formatScaledNumber } from '@/lib/scale-quantity';
 import { formatMinutes } from '@/lib/format-time';
@@ -247,13 +251,21 @@ export default function RecipeDetailClient({
     }
   }, [searchParams, recipe, role, propertyId, recipeId, router]);
 
-  // "Pairs well with": recipes from a DIFFERENT course that share at least
-  // one occasion with this one (both Shabbos, both Weekday, etc.) --
-  // approximates what would actually go on the same table. Falls back to
-  // same-occasion regardless of course if that first pass comes up short,
-  // rather than showing nothing. Verified against a real Shabbos soup
-  // recipe before considering this done (36 real Shabbos mains/sides/
-  // desserts came back, not other soups).
+  // "Pairs well with": Racquel's real meal-completion rule, not a generic
+  // "different course, same occasion" grab-bag (the old version could and
+  // did surface two proteins and a dressing under a vege recipe -- nothing
+  // stopped it). Each course names the exact 3 courses that complete a
+  // real meal around it; soup is the one optional 4th add-on everywhere
+  // except its own row (a soup recipe doesn't suggest another soup as a
+  // bonus). Courses with no defined meal-completion role (dessert, dip,
+  // kids_platter) show nothing here rather than a made-up rule.
+  const PAIRING_RULES: Partial<Record<Course, Course[]>> = {
+    soup: ['protein', 'starch', 'vege'],
+    vege: ['protein', 'starch', 'salad'],
+    protein: ['starch', 'vege', 'salad'],
+    starch: ['protein', 'vege', 'salad'],
+    salad: ['protein', 'starch', 'vege'],
+  };
   useEffect(() => {
     if (!recipe) return;
     (async () => {
@@ -295,34 +307,49 @@ export default function RecipeDetailClient({
       const candidates = allowPesach ? rawCandidates : rawCandidates.filter((c) => !c.is_pesach);
       const currentOccasions = occasionSet(recipe);
 
-      const differentCourseMatches = candidates.filter(
-        (c) => c.course !== recipe.course && sharesOccasion(occasionSet(c), currentOccasions)
-      );
+      const requiredCourses = PAIRING_RULES[recipe.course as Course];
+      if (!requiredCourses) {
+        // No defined meal-completion role for this recipe's own course
+        // (dessert, dip, kids_platter) -- nothing grounded to suggest, so
+        // nothing renders, same "no rule, no badge" standard as provenance.
+        setPairsWellWith([]);
+        return;
+      }
 
-      let pool = differentCourseMatches;
-      if (pool.length < 2) {
-        const anyOccasionMatches = candidates.filter((c) => sharesOccasion(occasionSet(c), currentOccasions));
-        const seen = new Set(pool.map((p) => p.id));
-        for (const c of anyOccasionMatches) {
-          if (!seen.has(c.id)) {
-            pool.push(c);
-            seen.add(c.id);
-          }
+      // One random pick per required course; falls back to any occasion
+      // within that SAME course (never a different course) only if no
+      // same-occasion match exists for it, so a slot is far more likely to
+      // be filled than left empty while still never becoming a same-course
+      // duplicate or an off-rule suggestion.
+      function pickForCourse(course: Course, excludeIds: Set<string>) {
+        const inCourse = candidates.filter((c) => c.course === course && !excludeIds.has(c.id));
+        const sameOccasion = inCourse.filter((c) => sharesOccasion(occasionSet(c), currentOccasions));
+        const pool = sameOccasion.length > 0 ? sameOccasion : inCourse;
+        if (pool.length === 0) return null;
+        return pool[Math.floor(Math.random() * pool.length)];
+      }
+
+      const usedIds = new Set<string>([recipeId]);
+      const picks: NonNullable<ReturnType<typeof pickForCourse>>[] = [];
+      for (const course of requiredCourses) {
+        const pick = pickForCourse(course, usedIds);
+        if (pick) {
+          picks.push(pick);
+          usedIds.add(pick.id);
         }
       }
 
-      // Shuffle so repeat visits surface variety instead of always the
-      // same alphabetically-first 4 (e.g. desserts) out of a larger pool --
-      // but the shuffle picked WHICH 4 show up, it shouldn't also decide
-      // the order they're displayed in. Real bug confirmed live: two soups
-      // landing adjacent, protein/salad appearing before soup. Re-sorted
-      // into the same canonical course order (Dip/Kids Platter/Soup/
-      // Protein/Starch/Vege/Salad/Dessert-last) already used on the
-      // Dashboard's This Week's Meals, after the random pick, not instead
-      // of it.
+      // Soup is the one optional 4th add-on, and only once all 3 required
+      // slots are actually filled -- an extra only makes sense once the
+      // meal's real requirements are covered. A soup recipe doesn't get a
+      // bonus soup suggested under itself.
+      if (recipe.course !== 'soup' && picks.length === requiredCourses.length) {
+        const soupPick = pickForCourse('soup', usedIds);
+        if (soupPick) picks.push(soupPick);
+      }
+
       const courseOrderIndex = new Map(COURSES.map((c, i) => [c.key, i]));
-      const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 4);
-      const ordered = shuffled.sort(
+      const ordered = picks.sort(
         (a, b) => (courseOrderIndex.get(a.course as Course) ?? 99) - (courseOrderIndex.get(b.course as Course) ?? 99)
       );
       setPairsWellWith(ordered.map((c) => ({ id: c.id, name: c.name, photo_url: c.photo_url, course: c.course })));
@@ -518,7 +545,7 @@ export default function RecipeDetailClient({
   const hasEnglish = !!recipe.instructions_en;
 
   return (
-    <div className="max-w-md lg:max-w-6xl mx-auto p-4 print:max-w-full">
+    <div className="max-w-md lg:max-w-6xl mx-auto p-4 print:max-w-full bg-mist">
       <div className="flex items-center justify-between mb-4 print:hidden gap-2 flex-wrap">
         {/* Recipes is always reachable regardless of entry point (recipe
             grid, meal-plan substitution swap, or the global Command
@@ -561,7 +588,7 @@ export default function RecipeDetailClient({
                 await navigator.clipboard.writeText(url);
               }
             }}
-            className="text-sm font-medium border border-brass text-brass px-4 py-2 rounded-full hover:bg-mist transition flex items-center gap-1.5"
+            className="text-sm font-medium bg-denim text-white px-4 py-2 rounded-full hover:opacity-90 transition flex items-center gap-1.5"
           >
             <Share2 size={14} strokeWidth={1.75} /> Share
           </button>
@@ -1012,37 +1039,39 @@ export default function RecipeDetailClient({
       </div>
 
       <div className="mt-8 print:hidden">
-        <h2 className="text-xs font-medium uppercase tracking-wider text-dusk mb-2">Kitchen Ops</h2>
-        {/* Same card shape as the Tools Hub page (rounded-xl2, circular icon
-            badge), sized down for a footer dock living inside an
-            already-long recipe page rather than a full page of its own --
-            not extracted as a shared component with Tools Hub's card since
-            the two contexts genuinely need different sizing, and there are
-            only these two call sites. Tools Hub's own version is still on
-            the old white/gold-dark/charcoal palette, not part of this pass.
-            Fixed 2-col grid rather than 3-at-sm: with exactly 4 items,
-            3-per-row leaves an awkward 3+1 split; 2x2 stays clean at every
-            width. */}
-        {/* Opens as a modal over this recipe rather than navigating away --
+        <h2 className="text-xs font-medium uppercase tracking-wider text-dusk mb-2">{t('kitchenOps')}</h2>
+        {/* /sitemap's own tile language (bg-mist, border-brass/30, Lucide
+            icon, pin dot) -- was bg-card with a circular emoji badge, a
+            different icon system than the rest of the app's real icon-tile
+            pattern. Pin stays here (unlike the recipe-card grid above,
+            which had its per-card pins removed): these 4 are a small, fixed
+            set of tool shortcuts, functionally the same as a /sitemap nav
+            tile, not a dynamic per-recipe data list -- same reasoning
+            /sitemap's own tiles keep theirs.
+            Opens as a modal over this recipe rather than navigating away --
             confirmed live that all 4 previously used a plain <Link> to a
             full page route with no way back except the browser's native
             back button. The Tools Hub page's own versions of these same
             tools (app/properties/[id]/tools/page.tsx) are untouched and
             still navigate normally, since a standalone-page launch has
-            nothing to "get back to." */}
+            nothing to "get back to." Fixed 2-col grid rather than 3-at-sm:
+            with exactly 4 items, 3-per-row leaves an awkward 3+1 split;
+            2x2 stays clean at every width. */}
         <div className="grid grid-cols-2 gap-2">
-          {KITCHEN_OPS_LINKS.map((tool) => (
-            <button
-              key={tool.slug}
-              onClick={() => setOpenKitchenOpsTool(tool.slug as KitchenOpsSlug)}
-              className="flex flex-col items-center text-center gap-2 bg-card rounded-xl2 shadow-card px-3 py-4 hover:shadow-cardHover transition-shadow"
-            >
-              <span className="w-11 h-11 shrink-0 flex items-center justify-center rounded-full bg-mist text-lg" aria-hidden="true">
-                {tool.icon}
-              </span>
-              <span className="text-xs font-bold text-denim">{tool.title}</span>
-            </button>
-          ))}
+          {KITCHEN_OPS_LINKS.map((tool) => {
+            const Icon = tool.icon;
+            return (
+              <button
+                key={tool.slug}
+                onClick={() => setOpenKitchenOpsTool(tool.slug as KitchenOpsSlug)}
+                className="relative flex flex-col items-center text-center gap-1.5 bg-mist border border-brass/30 rounded-xl2 shadow-card px-3 py-4 hover:shadow-cardHover transition-shadow"
+              >
+                <Pin size="sm" />
+                <Icon size={20} className="text-denim" aria-hidden="true" />
+                <span className="text-xs font-bold text-denim">{t(tool.titleKey)}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -1058,7 +1087,7 @@ export default function RecipeDetailClient({
 
       {pairsWellWith.length > 0 && (
         <div className="mt-8 print:hidden">
-          <h2 className="text-xs font-medium uppercase tracking-wider text-dusk mb-2">Pairs well with</h2>
+          <h2 className="text-xs font-medium uppercase tracking-wider text-dusk mb-2">{t('pairsWellWith')}</h2>
           <div className="flex gap-3 overflow-x-auto pb-1">
             {pairsWellWith.map((s) => (
               <Link

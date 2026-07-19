@@ -38,7 +38,7 @@ export function FilterPill({
     <button onClick={onClick} title={title} className="min-h-11 flex items-center justify-center">
       <span
         className={`flex ${hebrew !== undefined ? 'flex-col items-center gap-0.5' : 'items-center gap-1.5 leading-tight'} text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${
-          active ? 'bg-denim text-white' : 'bg-card border border-cardBorder text-dusk hover:bg-mist'
+          active ? 'bg-denim text-white' : 'bg-mist border border-brass/30 text-dusk hover:bg-card'
         }`}
       >
         <span className="flex items-center gap-1.5 leading-tight">

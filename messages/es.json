@@ -554,7 +554,15 @@
     "provenanceExternalUnverified": "Fuente Externa — Sin Verificar",
     "provenanceFamily": "Receta Familiar Real",
     "provenanceUnknown": "Desconocido",
-    "provenanceAmbiguous": "Ambiguo"
+    "provenanceAmbiguous": "Ambiguo",
+    "kitchenOps": "Operaciones de Cocina",
+    "pairsWellWith": "Combina bien con",
+    "kitchenOpsTools": {
+      "kitchenTimer": "Temporizador de Cocina",
+      "scaleServings": "Ajustar Porciones",
+      "resetForNext": "Preparar para el Siguiente",
+      "prepTimeline": "Cronograma de Preparación"
+    }
   },
   "recipeTags": {
     "9x13": "9x13",
