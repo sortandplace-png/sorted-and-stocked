@@ -2,40 +2,38 @@
 // The gap neither existing photo tool actually covers: IdentifyItemClient
 // always creates a brand-new pending capture_staging row (AI-named, held
 // for later review), and CapturePhotoClient explicitly defers "what item
-// is this" to a separate cleanup pass. Tonight's 600+-item photo backlog
-// is existing items missing photos, not new items -- so this searches
-// inventory_items directly and writes photo_url immediately, no review
-// queue, so the person actually restocking closes that item's gap on the
-// spot instead of it landing in a pile for someone else next month.
+// is this" to a separate cleanup pass. This is the direct-add path: scan
+// or photograph something, name + quantity, straight into inventory_items
+// via add_scanned_pantry_item, no review queue.
 //
 // Camera-first, not search-first (2026-07-19): standing in a pantry
 // holding a product, opening to a text field asking you to type was
-// backwards. The photo is captured up front and held locally; search is
-// now the second step, used only to say which item the already-taken
-// photo belongs to.
+// backwards. The photo is captured up front and held locally; the form
+// below it is just name + quantity, not a search-and-pick list -- the RPC
+// does its own upsert-by-name (existing item -> quantity updated, new name
+// -> inserted), so there's nothing to search for.
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
-import { resilientUpdate } from '@/lib/resilient-write';
 import { compressImageToBlob } from '@/lib/compress-image';
 import { useToast } from '@/components/Toast';
-import { Camera, Search } from 'lucide-react';
+import { Camera } from 'lucide-react';
 import Pin from '@/components/PinAccent';
 
-type MatchItem = { id: string; name: string; photo_url: string | null };
+type NameSuggestion = { id: string; name: string };
 
 export default function QuickPhotoCaptureClient({ propertyId }: { propertyId: string }) {
   const [capturedFile, setCapturedFile] = useState<File | null>(null);
   const [capturedPreviewUrl, setCapturedPreviewUrl] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<MatchItem[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [name, setName] = useState('');
+  const [quantity, setQuantity] = useState('1');
+  const [suggestions, setSuggestions] = useState<NameSuggestion[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const supabase = createClient();
   const showToast = useToast();
   const t = useTranslations('quickPhotoCapture');
@@ -51,51 +49,81 @@ export default function QuickPhotoCaptureClient({ propertyId }: { propertyId: st
     if (capturedPreviewUrl) URL.revokeObjectURL(capturedPreviewUrl);
     setCapturedFile(null);
     setCapturedPreviewUrl(null);
-    setQuery('');
-    setResults([]);
+    setName('');
+    setQuantity('1');
+    setSuggestions([]);
   }
 
-  function handleQueryChange(value: string) {
-    setQuery(value);
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    if (value.trim().length < 2) {
-      setResults([]);
+  useEffect(() => {
+    if (!name.trim()) {
+      setSuggestions([]);
       return;
     }
-    searchTimer.current = setTimeout(async () => {
-      setSearching(true);
+    if (nameTimer.current) clearTimeout(nameTimer.current);
+    nameTimer.current = setTimeout(async () => {
       const { data } = await supabase
         .from('inventory_items')
-        .select('id, name, photo_url')
+        .select('id, name')
         .eq('property_id', propertyId)
-        .ilike('name', `%${value.trim()}%`)
+        .ilike('name', `%${name.trim()}%`)
         .order('name')
-        .limit(8);
-      setResults(data ?? []);
-      setSearching(false);
+        .limit(5);
+      setSuggestions(data ?? []);
     }, 300);
-  }
+    return () => {
+      if (nameTimer.current) clearTimeout(nameTimer.current);
+    };
+  }, [name, propertyId, supabase]);
 
-  async function attachToItem(item: MatchItem) {
-    if (!capturedFile || uploading) return;
-    setUploading(true);
+  async function handleSubmit() {
+    if (!capturedFile || !name.trim() || submitting) return;
+    const qty = Number(quantity);
+    if (Number.isNaN(qty) || qty < 0) return;
+    setSubmitting(true);
     try {
       const compressed = await compressImageToBlob(capturedFile);
-      const path = `${propertyId}/${item.id}-${Date.now()}.jpg`;
+      const path = `${propertyId}/scan-${Date.now()}.jpg`;
       const { error: uploadError } = await supabase.storage
         .from('item-photos')
         .upload(path, compressed, { contentType: 'image/jpeg' });
       if (uploadError) throw new Error(uploadError.message);
-      const { data } = supabase.storage.from('item-photos').getPublicUrl(path);
-      const result = await resilientUpdate(supabase, 'inventory_items', { id: item.id }, { photo_url: data.publicUrl });
-      if (!result.ok) throw new Error(result.error);
+      const { data: photoData } = supabase.storage.from('item-photos').getPublicUrl(path);
+
+      // p_ai_category, p_ai_location_hint, p_ai_kosher_guess all left null --
+      // this flow has no AI category/location source, and the kosher-guess
+      // parameter specifically needs its own real UI treatment (or explicit
+      // sign-off that a raw disclaimer line in `notes` is OK for staff to
+      // read) before it's ever passed. Not this pass.
+      const { data, error } = await supabase.rpc('add_scanned_pantry_item', {
+        p_property_id: propertyId,
+        p_name: name.trim(),
+        p_quantity: qty,
+        p_photo_url: photoData.publicUrl,
+      });
+      if (error) throw new Error(error.message);
+
+      const result = data as { action: 'inserted' | 'updated'; id: string; name: string };
+
+      const { data: itemRow } = await supabase
+        .from('inventory_items')
+        .select('location_id, locations(name)')
+        .eq('id', result.id)
+        .single();
+      const locationName = (itemRow?.locations as unknown as { name: string } | null)?.name ?? null;
+
+      const mainToast =
+        result.action === 'inserted'
+          ? t('addedToast', { item: result.name })
+          : t('updatedToast', { item: result.name, quantity: qty });
+      const locationLine = locationName ? t('landedInLocation', { location: locationName }) : t('noLocationPrompt');
+
+      showToast(`${mainToast} ${locationLine}`, { variant: locationName ? 'success' : 'default' });
       setSavedCount((c) => c + 1);
-      showToast(t('savedToast', { item: item.name }), { variant: 'success' });
       retake();
     } catch {
       showToast(t('failedToast'), { variant: 'error' });
     } finally {
-      setUploading(false);
+      setSubmitting(false);
     }
   }
 
@@ -140,60 +168,63 @@ export default function QuickPhotoCaptureClient({ propertyId }: { propertyId: st
             <button
               type="button"
               onClick={retake}
-              disabled={uploading}
+              disabled={submitting}
               className="shrink-0 text-xs text-brass hover:text-denim px-1.5 disabled:opacity-50"
             >
               {t('retake')}
             </button>
           </div>
 
-          <div className="relative mb-3">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dusk" aria-hidden="true" />
+          <div className="mb-3">
+            <label className="block text-xs font-medium text-dusk mb-1">{t('nameLabel')}</label>
             <input
               type="text"
-              value={query}
-              onChange={(e) => handleQueryChange(e.target.value)}
-              placeholder={t('searchPlaceholder')}
-              className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-2xl pl-10 pr-4 py-2.5 bg-card"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t('namePlaceholder')}
               autoFocus
-              disabled={uploading}
+              disabled={submitting}
+              className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-2xl px-4 py-2.5 bg-card disabled:opacity-50"
+            />
+            {suggestions.length > 0 && (
+              <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                {suggestions.map((s) => (
+                  <li key={s.id}>
+                    <button
+                      type="button"
+                      onClick={() => setName(s.name)}
+                      className="text-xs text-brass bg-mist px-2.5 py-1 rounded-full"
+                    >
+                      {s.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-dusk mb-1">{t('quantityLabel')}</label>
+            <input
+              type="number"
+              min={0}
+              step="any"
+              inputMode="decimal"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              disabled={submitting}
+              className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-2xl px-4 py-2.5 bg-card disabled:opacity-50"
             />
           </div>
 
-          {searching && <p className="text-xs text-dusk">{t('searching')}</p>}
-
-          {!searching && query.trim().length >= 2 && results.length === 0 && (
-            <p className="text-xs text-dusk">{t('noResults')}</p>
-          )}
-
-          {results.length > 0 && (
-            <ul className="space-y-1.5">
-              {results.map((item) => (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    onClick={() => attachToItem(item)}
-                    disabled={uploading}
-                    className="w-full flex items-center gap-3 bg-card rounded-2xl shadow-card px-4 py-3 text-left hover:shadow-cardHover transition-shadow disabled:opacity-50"
-                  >
-                    {item.photo_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={item.photo_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 bg-mist" />
-                    ) : (
-                      <span className="w-10 h-10 rounded-lg bg-mist shrink-0 flex items-center justify-center text-dusk">
-                        <Camera size={16} aria-hidden="true" />
-                      </span>
-                    )}
-                    <span className="flex-1 min-w-0">
-                      <span className="block font-medium text-denim truncate">{item.name}</span>
-                      {!item.photo_url && <span className="text-xs text-rust">{t('missingPhoto')}</span>}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {uploading && <p className="text-xs text-dusk mt-2">{t('uploading')}</p>}
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting || !name.trim()}
+            className="w-full py-3 rounded-full bg-denim text-white text-sm font-medium disabled:opacity-40"
+          >
+            {submitting ? t('uploading') : t('submitButton')}
+          </button>
         </div>
       )}
     </div>
