@@ -957,11 +957,31 @@ export default function RecipesGridView({
                 <button
                   onClick={() => toggleLetter(letter)}
                   className="w-full flex items-center gap-2 mb-2 text-left"
+                  aria-label={`${letter}, ${groupRecipes.length} recipes, ${collapsed ? 'collapsed' : 'expanded'}`}
+                  aria-expanded={!collapsed}
                 >
                   <span className="font-display text-lg text-denim">{letter}</span>
                   <span className="text-xs text-dusk">({groupRecipes.length})</span>
                   <span className="flex-1 border-t border-cardBorder" />
-                  <span className="text-dusk text-sm">{collapsed ? '▸' : '▾'}</span>
+                  {/* Same brass pin-dot visual language as everything else --
+                      not the shared PinAccent component itself, since that
+                      one's top/right offsets are tuned for an absolute
+                      corner-of-a-card placement, not an inline flex row like
+                      this one. Same gradient/shadow values, same collapsed-
+                      state ring convention, just rendered inline instead. The
+                      whole row stays the real tap target (this button), so
+                      the dot itself stays non-interactive -- a nested
+                      interactive control here would be invalid HTML. */}
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{
+                      background: 'radial-gradient(circle at 36% 30%, #F8E8B8 0%, #C6A46E 52%, #7A4E18 100%)',
+                      boxShadow: collapsed
+                        ? '0 1px 3px rgba(0,0,0,.26), inset 0 .5px .5px rgba(255,255,255,.3), 0 0 0 2px rgba(198,164,110,0.4)'
+                        : '0 1px 3px rgba(0,0,0,.26), inset 0 .5px .5px rgba(255,255,255,.3)',
+                    }}
+                    aria-hidden="true"
+                  />
                 </button>
                 {!collapsed && (
                   <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
