@@ -18,11 +18,11 @@ export type ProvenanceCategory =
   | 'ambiguous';
 
 export const PROVENANCE_INFO: Record<ProvenanceCategory, { label: string; badgeClass: string }> = {
-  placeholder: { label: 'Placeholder / Auto-filled', badgeClass: 'bg-charcoal/10 text-charcoal/60' },
+  placeholder: { label: 'Placeholder / Auto-filled', badgeClass: 'bg-mist text-dusk' },
   ai_researched: { label: 'AI-Researched', badgeClass: 'bg-dairy/15 text-dairy' },
-  external_unverified: { label: 'External Source — Unverified', badgeClass: 'bg-gold text-charcoal font-semibold' },
+  external_unverified: { label: 'External Source — Unverified', badgeClass: 'bg-denim text-white font-semibold' },
   family: { label: 'Real Family Recipe', badgeClass: 'bg-sage/15 text-sage' },
-  unknown: { label: 'Unknown', badgeClass: 'bg-charcoal/5 text-charcoal/40' },
+  unknown: { label: 'Unknown', badgeClass: 'bg-mist text-dusk' },
   ambiguous: { label: 'Ambiguous', badgeClass: 'bg-rust/10 text-rust' },
 };
 

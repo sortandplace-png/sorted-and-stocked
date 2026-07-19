@@ -51,6 +51,21 @@ import { approxGrams } from '@/lib/metric-conversion';
 import { useToast } from '@/components/Toast';
 import { SITE_URL } from '@/lib/site-url';
 
+// Same kosher-type color mapping as the Recipes grid card
+// (components/recipes/RecipesGridView.tsx) -- kept as its own copy rather
+// than a shared import since it's a small, stable 3-entry lookup with only
+// these two call sites.
+const KOSHER_PILL_COLORS: Record<string, string> = {
+  Meat: 'bg-rust/10 text-rust border-rust/20',
+  Dairy: 'bg-dairy/10 text-dairy border-dairy/20',
+  Parve: 'bg-sage/10 text-sage border-sage/20',
+};
+
+function kosherPillClass(kosherType: string) {
+  const base = kosherType.startsWith('Parve') ? 'Parve' : kosherType;
+  return KOSHER_PILL_COLORS[base] ?? 'bg-mist text-denim border-cardBorder';
+}
+
 interface Ingredient {
   id: string;
   name: string;
@@ -449,14 +464,14 @@ export default function RecipeDetailClient({
   }
 
   if (loading) {
-    return <div className="max-w-md mx-auto p-4 text-sm text-charcoal/40">Loading recipe…</div>;
+    return <div className="max-w-md mx-auto p-4 text-sm text-dusk">Loading recipe…</div>;
   }
 
   if (error || !recipe) {
     return (
       <div className="max-w-md mx-auto p-4">
         <p className="text-sm text-rust">{error ?? 'Recipe not found.'}</p>
-        <Link href={`/properties/${propertyId}/meal-plan`} className="text-sm text-charcoal mt-2 inline-block">
+        <Link href={`/properties/${propertyId}/meal-plan`} className="text-sm text-denim mt-2 inline-block">
           ← Back to meal plan
         </Link>
       </div>
@@ -475,11 +490,11 @@ export default function RecipeDetailClient({
             stays as a second, always-visible shortcut alongside it rather
             than something that only makes sense from one path in. */}
         <div className="flex items-center gap-3">
-          <Link href={`/properties/${propertyId}/recipes`} className="text-sm text-charcoal font-medium">
+          <Link href={`/properties/${propertyId}/recipes`} className="text-sm text-denim font-medium">
             ← Recipes
           </Link>
-          <span className="text-charcoal/20" aria-hidden="true">•</span>
-          <Link href={`/properties/${propertyId}/meal-plan`} className="text-sm text-charcoal/60 font-medium">
+          <span className="text-dusk" aria-hidden="true">•</span>
+          <Link href={`/properties/${propertyId}/meal-plan`} className="text-sm text-dusk font-medium">
             Meal plan
           </Link>
         </div>
@@ -490,9 +505,9 @@ export default function RecipeDetailClient({
               className="w-11 h-11 -m-1 flex items-center justify-center"
               aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
             >
-              <span className="w-9 h-9 flex items-center justify-center rounded-full border border-gold-light/60 hover:bg-gold-light/10 transition">
+              <span className="w-9 h-9 flex items-center justify-center rounded-full border border-brass/30 hover:bg-mist transition">
                 <Heart
-                  className={isFavorite ? 'w-4 h-4 fill-gold text-gold' : 'w-4 h-4 text-charcoal/40'}
+                  className={isFavorite ? 'w-4 h-4 fill-brass text-brass' : 'w-4 h-4 text-dusk'}
                   strokeWidth={1.75}
                 />
               </span>
@@ -510,14 +525,14 @@ export default function RecipeDetailClient({
                 await navigator.clipboard.writeText(url);
               }
             }}
-            className="text-sm font-medium border border-gold text-gold-dark px-4 py-2 rounded-full hover:bg-gold/5 transition flex items-center gap-1.5"
+            className="text-sm font-medium border border-brass text-brass px-4 py-2 rounded-full hover:bg-mist transition flex items-center gap-1.5"
           >
             <Share2 size={14} strokeWidth={1.75} /> Share
           </button>
           {canManage(role) && (
             <button
               onClick={() => setShowHistory(true)}
-              className="text-sm font-medium border border-gold-light/60 text-charcoal/60 px-4 py-2 rounded-full hover:bg-gold-light/10 transition flex items-center gap-1.5"
+              className="text-sm font-medium border border-brass/30 text-dusk px-4 py-2 rounded-full hover:bg-mist transition flex items-center gap-1.5"
             >
               <HistoryIcon size={14} strokeWidth={1.75} /> History
             </button>
@@ -535,7 +550,7 @@ export default function RecipeDetailClient({
               onClick={() => setShowMenu((v) => !v)}
               aria-label="More actions"
               aria-expanded={showMenu}
-              className="w-11 h-11 flex items-center justify-center rounded-full border border-gold-light/60 hover:bg-gold-light/10 transition"
+              className="w-11 h-11 flex items-center justify-center rounded-full border border-brass/30 hover:bg-mist transition"
             >
               <MoreVertical size={16} strokeWidth={1.75} />
             </button>
@@ -544,14 +559,14 @@ export default function RecipeDetailClient({
               <>
                 {/* Click-outside catcher */}
                 <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                <div className="absolute right-0 top-12 z-20 bg-white rounded-2xl shadow-lg shadow-charcoal/10 border border-gold-light/40 w-48 overflow-hidden">
+                <div className="absolute right-0 top-12 z-20 bg-card rounded-2xl shadow-cardHover border border-cardBorder w-48 overflow-hidden">
                   {canManage(role) && (
                     <button
                       onClick={() => {
                         setShowMenu(false);
                         setShowEditModal(true);
                       }}
-                      className="w-full min-h-11 flex items-center gap-2 px-4 text-sm text-charcoal hover:bg-gold-light/10 transition"
+                      className="w-full min-h-11 flex items-center gap-2 px-4 text-sm text-denim hover:bg-mist transition"
                     >
                       <Pencil size={14} strokeWidth={1.75} /> Edit
                     </button>
@@ -563,7 +578,7 @@ export default function RecipeDetailClient({
                         duplicateRecipe();
                       }}
                       disabled={duplicating}
-                      className="w-full min-h-11 flex items-center gap-2 px-4 text-sm text-charcoal hover:bg-gold-light/10 transition disabled:opacity-40"
+                      className="w-full min-h-11 flex items-center gap-2 px-4 text-sm text-denim hover:bg-mist transition disabled:opacity-40"
                     >
                       <Copy size={14} strokeWidth={1.75} /> {duplicating ? 'Duplicating…' : 'Duplicate'}
                     </button>
@@ -573,7 +588,7 @@ export default function RecipeDetailClient({
                       setShowMenu(false);
                       window.print();
                     }}
-                    className="w-full min-h-11 flex items-center gap-2 px-4 text-sm text-charcoal hover:bg-gold-light/10 transition"
+                    className="w-full min-h-11 flex items-center gap-2 px-4 text-sm text-denim hover:bg-mist transition"
                   >
                     <Printer size={14} strokeWidth={1.75} /> Print
                   </button>
@@ -591,7 +606,7 @@ export default function RecipeDetailClient({
                         }
                       }}
                       disabled={checkingDelete}
-                      className="w-full min-h-11 flex items-center gap-2 px-4 text-sm text-rust hover:bg-rust/5 transition border-t border-gold-light/40 disabled:opacity-40"
+                      className="w-full min-h-11 flex items-center gap-2 px-4 text-sm text-rust hover:bg-rust/5 transition border-t border-cardBorder disabled:opacity-40"
                     >
                       <Trash2 size={14} strokeWidth={1.75} /> {checkingDelete ? 'Checking…' : 'Delete'}
                     </button>
@@ -605,12 +620,12 @@ export default function RecipeDetailClient({
 
       {deleteBlockMessage && (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4" onClick={() => setDeleteBlockMessage(null)}>
-          <div className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-sm mx-auto" onClick={(e) => e.stopPropagation()}>
-            <h2 className="font-display text-xl text-charcoal mb-1">Can't delete this recipe</h2>
-            <p className="text-sm text-charcoal/60 mb-4">{deleteBlockMessage}</p>
+          <div className="bg-card w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-sm mx-auto" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-display text-xl text-denim mb-1">Can't delete this recipe</h2>
+            <p className="text-sm text-dusk mb-4">{deleteBlockMessage}</p>
             <button
               onClick={() => setDeleteBlockMessage(null)}
-              className="w-full py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal"
+              className="w-full py-2.5 rounded-full bg-linen border border-brass/30 text-denim"
             >
               Got it
             </button>
@@ -620,15 +635,15 @@ export default function RecipeDetailClient({
 
       {confirmingDelete && (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4" onClick={() => setConfirmingDelete(false)}>
-          <div className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-sm mx-auto" onClick={(e) => e.stopPropagation()}>
-            <h2 className="font-display text-xl text-charcoal mb-1">Delete this recipe?</h2>
-            <p className="text-sm text-charcoal/60 mb-4">
+          <div className="bg-card w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-sm mx-auto" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-display text-xl text-denim mb-1">Delete this recipe?</h2>
+            <p className="text-sm text-dusk mb-4">
               "{recipe.name}" and its ingredient list will be permanently deleted. This can't be undone.
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setConfirmingDelete(false)}
-                className="flex-1 py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal"
+                className="flex-1 py-2.5 rounded-full bg-linen border border-brass/30 text-denim"
               >
                 Cancel
               </button>
@@ -692,33 +707,33 @@ export default function RecipeDetailClient({
         <img
           src={recipe.photo_url}
           alt=""
-          className="w-full h-64 sm:h-80 object-cover rounded-3xl border border-gold-light/40 shadow-sm mb-4 print:h-32"
+          className="w-full h-64 sm:h-80 object-cover rounded-3xl border border-cardBorder shadow-sm mb-4 print:h-32"
         />
       ) : (
-        <div className="w-full h-64 sm:h-80 rounded-3xl border border-gold-light/40 bg-gold-light/10 flex items-center justify-center mb-4 print:hidden">
+        <div className="w-full h-64 sm:h-80 rounded-3xl border border-cardBorder bg-mist flex items-center justify-center mb-4 print:hidden">
           {(() => {
             const Icon = getRecipeIcon(recipe.course);
-            return <Icon className="w-16 h-16 text-gold-dark/50" strokeWidth={1.25} />;
+            return <Icon className="w-16 h-16 text-brass/50" strokeWidth={1.25} />;
           })()}
         </div>
       )}
 
-      <h1 className="font-display text-3xl text-charcoal mb-1">
+      <h1 className="font-display text-3xl text-denim mb-1">
         {lang === 'es' && recipe.name_es ? recipe.name_es : recipe.name}
       </h1>
       {recipe.name_es && (
-        <p className="text-sm italic text-charcoal/50 -mt-1 mb-2">
+        <p className="text-sm italic text-dusk -mt-1 mb-2">
           {lang === 'es' ? recipe.name : recipe.name_es}
         </p>
       )}
       <div className="flex items-center gap-1.5 flex-wrap mb-2">
         {recipe.kosher_type && (
-          <span className="inline-block text-xs font-medium text-charcoal bg-gold-light/30 border border-gold-light/50 px-2.5 py-1 rounded-full">
+          <span className={`inline-block text-xs font-medium border px-2.5 py-1 rounded-full ${kosherPillClass(recipe.kosher_type)}`}>
             {kosherIcon(recipe.kosher_type)} {recipe.kosher_type}
           </span>
         )}
         {recipe.approx_total_minutes && (
-          <span className="text-xs font-medium text-charcoal/60 bg-cream border border-gold-light/40 px-2.5 py-1 rounded-full">
+          <span className="text-xs font-medium text-dusk bg-linen border border-cardBorder px-2.5 py-1 rounded-full">
             ⏱ {formatMinutes(recipe.approx_total_minutes)}
           </span>
         )}
@@ -742,8 +757,8 @@ export default function RecipeDetailClient({
               key={tag}
               className={
                 tag === 'NEW'
-                  ? 'text-[10px] font-medium text-cream bg-gold px-2 py-0.5 rounded-full'
-                  : 'text-[10px] font-medium text-gold-dark bg-gold/10 px-2 py-0.5 rounded-full'
+                  ? 'text-[10px] font-medium text-white bg-denim px-2 py-0.5 rounded-full'
+                  : 'text-[10px] font-medium text-brass bg-mist px-2 py-0.5 rounded-full'
               }
             >
               {tag}
@@ -753,11 +768,11 @@ export default function RecipeDetailClient({
       )}
 
       <div className="print:hidden mb-4 flex items-center gap-2 flex-wrap">
-        <div className="inline-flex rounded-full border border-gold-light/60 bg-white p-0.5 text-sm">
+        <div className="inline-flex rounded-full border border-cardBorder bg-card p-0.5 text-sm">
           <button
             onClick={() => setView('owner')}
             className={`rounded-full px-4 py-1.5 transition-colors ${
-              view === 'owner' ? 'bg-gold-dark text-white' : 'text-charcoal/60'
+              view === 'owner' ? 'bg-denim text-white' : 'text-dusk'
             }`}
           >
             Owner view
@@ -765,18 +780,18 @@ export default function RecipeDetailClient({
           <button
             onClick={() => setView('staff')}
             className={`rounded-full px-4 py-1.5 transition-colors ${
-              view === 'staff' ? 'bg-gold-dark text-white' : 'text-charcoal/60'
+              view === 'staff' ? 'bg-denim text-white' : 'text-dusk'
             }`}
           >
             Staff cook view
           </button>
         </div>
-        <div className="inline-flex rounded-full border border-gold-light/60 bg-white p-0.5 text-sm">
+        <div className="inline-flex rounded-full border border-cardBorder bg-card p-0.5 text-sm">
           <button
             onClick={() => setLang('en')}
             aria-pressed={lang === 'en'}
             className={`rounded-full px-3 py-1.5 transition-colors ${
-              lang === 'en' ? 'bg-gold-dark text-white' : 'text-charcoal/60'
+              lang === 'en' ? 'bg-denim text-white' : 'text-dusk'
             }`}
           >
             EN
@@ -785,7 +800,7 @@ export default function RecipeDetailClient({
             onClick={() => setLang('es')}
             aria-pressed={lang === 'es'}
             className={`rounded-full px-3 py-1.5 transition-colors ${
-              lang === 'es' ? 'bg-gold-dark text-white' : 'text-charcoal/60'
+              lang === 'es' ? 'bg-denim text-white' : 'text-dusk'
             }`}
           >
             ES
@@ -799,25 +814,25 @@ export default function RecipeDetailClient({
       />
 
       <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
-      <div className="bg-white rounded-xl2 shadow-sm shadow-charcoal/5 p-5 mb-4 print:shadow-none print:border print:border-gold-light">
+      <div className="bg-card rounded-xl2 shadow-card p-5 mb-4 print:shadow-none print:border print:border-cardBorder">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="font-display text-lg text-charcoal">
+          <h2 className="font-display text-lg text-denim">
             {lang === 'es' ? 'Ingredientes' : 'Ingredients'}
           </h2>
           <div className="flex items-center gap-2 print:hidden">
             <button
               onClick={() => setTargetServings((s) => Math.max(1, (s ?? baseServings) - 1))}
-              className="w-7 h-7 rounded-full border border-gold-light/60 text-charcoal text-sm leading-none"
+              className="w-7 h-7 rounded-full border border-brass/30 text-denim text-sm leading-none"
               aria-label="Fewer servings"
             >
               −
             </button>
-            <span className="text-sm text-charcoal w-24 text-center">
+            <span className="text-sm text-denim w-24 text-center">
               {servingsLabel(targetServings ?? baseServings)}
             </span>
             <button
               onClick={() => setTargetServings((s) => (s ?? baseServings) + 1)}
-              className="w-7 h-7 rounded-full border border-gold-light/60 text-charcoal text-sm leading-none"
+              className="w-7 h-7 rounded-full border border-brass/30 text-denim text-sm leading-none"
               aria-label="More servings"
             >
               +
@@ -825,43 +840,43 @@ export default function RecipeDetailClient({
           </div>
         </div>
         {isScaled && (
-          <p className="text-xs text-gold-dark mb-2 print:hidden">
+          <p className="text-xs text-brass mb-2 print:hidden">
             Scaled from {baseServings} to {targetServings} servings — amounts rounded to the nearest ¼ for easier measuring.
           </p>
         )}
-        <p className="hidden print:block text-xs text-charcoal/50 mb-2">
+        <p className="hidden print:block text-xs text-dusk mb-2">
           {lang === 'es' ? 'Rinde' : 'Serves'} {targetServings ?? baseServings}
           {isScaled ? ` (${lang === 'es' ? 'escalado de' : 'scaled from'} ${baseServings})` : ''}
         </p>
         {bedikahIngredients.length > 0 && (
           <div className="bg-sage/10 border border-sage/20 rounded-xl px-3 py-2 mb-3 print:hidden">
-            <p className="text-xs font-medium text-charcoal mb-0.5">
+            <p className="text-xs font-medium text-denim mb-0.5">
               🔎 Bedikas Tolaim: {bedikahIngredients.join(', ')}
             </p>
-            <p className="text-xs text-charcoal/60">{BEDIKAS_TOLAIM_NOTE}</p>
+            <p className="text-xs text-dusk">{BEDIKAS_TOLAIM_NOTE}</p>
           </div>
         )}
         {ingredients.length === 0 ? (
-          <p className="text-sm text-charcoal/40">No ingredients recorded for this recipe.</p>
+          <p className="text-sm text-dusk">No ingredients recorded for this recipe.</p>
         ) : (
           <div className="space-y-4">
             {ingredientGroups.map((group, groupIdx) => (
               <div key={group.label ?? `_base_${groupIdx}`}>
                 {group.label && (
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-gold-dark mb-1.5">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-brass mb-1.5">
                     {group.label}
                   </h3>
                 )}
-                <ul className="space-y-2 divide-y divide-gold-light/15">
+                <ul className="space-y-2 divide-y divide-cardBorder">
                   {group.items.map((i) => (
-                    <li key={i.id} className="text-sm text-charcoal pt-2 first:pt-0">
+                    <li key={i.id} className="text-sm text-denim pt-2 first:pt-0">
                       <div className="flex gap-2 print:hidden items-start">
                         <label className="flex items-center justify-center w-11 h-11 -m-3 -mt-3.5 shrink-0 cursor-pointer">
                           <input
                             type="checkbox"
                             checked={!!checkedIds[i.id]}
                             onChange={(e) => setCheckedIds((c) => ({ ...c, [i.id]: e.target.checked }))}
-                            className={`accent-gold ${view === 'staff' ? 'h-6 w-6' : 'h-4 w-4'}`}
+                            className={`accent-brass ${view === 'staff' ? 'h-6 w-6' : 'h-4 w-4'}`}
                             aria-label={`Check off ${i.name}`}
                           />
                         </label>
@@ -876,7 +891,7 @@ export default function RecipeDetailClient({
                         </div>
                       </div>
                       <div className="hidden print:flex gap-2">
-                        <span className="text-gold-dark shrink-0">•</span>
+                        <span className="text-brass shrink-0">•</span>
                         {formatQty(i)}
                       </div>
                     </li>
@@ -893,15 +908,15 @@ export default function RecipeDetailClient({
           <div className="grid grid-cols-1 print:grid-cols-2 gap-4">
             {hasEnglish && (
               <div
-                className={`bg-white rounded-xl2 shadow-sm shadow-charcoal/5 p-5 print:shadow-none print:border print:border-gold-light ${
+                className={`bg-card rounded-xl2 shadow-card p-5 print:shadow-none print:border print:border-cardBorder ${
                   lang === 'es' && hasSpanish ? 'hidden print:block' : ''
                 }`}
               >
-                <h2 className="font-display text-lg text-charcoal mb-2">Instructions</h2>
-                <div className="text-sm text-charcoal space-y-2 leading-relaxed">
+                <h2 className="font-display text-lg text-denim mb-2">Instructions</h2>
+                <div className="text-sm text-denim space-y-2 leading-relaxed">
                   {recipe.instructions_en!.split(' | ').map((step, idx) => (
                     <p key={idx}>
-                      <span className="text-gold-dark font-medium">{idx + 1}.</span> {step}
+                      <span className="text-brass font-medium">{idx + 1}.</span> {step}
                     </p>
                   ))}
                 </div>
@@ -909,15 +924,15 @@ export default function RecipeDetailClient({
             )}
             {hasSpanish && (
               <div
-                className={`bg-white rounded-xl2 shadow-sm shadow-charcoal/5 p-5 print:shadow-none print:border print:border-gold-light ${
+                className={`bg-card rounded-xl2 shadow-card p-5 print:shadow-none print:border print:border-cardBorder ${
                   lang === 'en' && hasEnglish ? 'hidden print:block' : ''
                 }`}
               >
-                <h2 className="font-display text-lg text-charcoal mb-2">Instrucciones</h2>
-                <div className="text-sm text-charcoal space-y-2 leading-relaxed">
+                <h2 className="font-display text-lg text-denim mb-2">Instrucciones</h2>
+                <div className="text-sm text-denim space-y-2 leading-relaxed">
                   {recipe.instructions_es!.split(' | ').map((step, idx) => (
                     <p key={idx}>
-                      <span className="text-gold-dark font-medium">{idx + 1}.</span> {step}
+                      <span className="text-brass font-medium">{idx + 1}.</span> {step}
                     </p>
                   ))}
                 </div>
@@ -927,7 +942,7 @@ export default function RecipeDetailClient({
         )}
 
         {!hasEnglish && !hasSpanish && (
-          <p className="text-sm text-charcoal/40 text-center mt-4">
+          <p className="text-sm text-dusk text-center mt-4">
             No written instructions on file for this recipe yet.
           </p>
         )}
@@ -959,15 +974,17 @@ export default function RecipeDetailClient({
       </div>
 
       <div className="mt-8 print:hidden">
-        <h2 className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-2">Kitchen Ops</h2>
-        {/* Same real tokens as the Tools Hub redesign (white card, rounded-xl2,
-            gold-dark circular badge, charcoal heading), sized down for a
-            footer dock living inside an already-long recipe page rather than
-            a full page of its own -- not extracted as a shared component
-            with Tools Hub's card since the two contexts genuinely need
-            different sizing, and there are only these two call sites. Fixed
-            2-col grid rather than 3-at-sm: with exactly 4 items, 3-per-row
-            leaves an awkward 3+1 split; 2x2 stays clean at every width. */}
+        <h2 className="text-xs font-medium uppercase tracking-wider text-dusk mb-2">Kitchen Ops</h2>
+        {/* Same card shape as the Tools Hub page (rounded-xl2, circular icon
+            badge), sized down for a footer dock living inside an
+            already-long recipe page rather than a full page of its own --
+            not extracted as a shared component with Tools Hub's card since
+            the two contexts genuinely need different sizing, and there are
+            only these two call sites. Tools Hub's own version is still on
+            the old white/gold-dark/charcoal palette, not part of this pass.
+            Fixed 2-col grid rather than 3-at-sm: with exactly 4 items,
+            3-per-row leaves an awkward 3+1 split; 2x2 stays clean at every
+            width. */}
         {/* Opens as a modal over this recipe rather than navigating away --
             confirmed live that all 4 previously used a plain <Link> to a
             full page route with no way back except the browser's native
@@ -980,12 +997,12 @@ export default function RecipeDetailClient({
             <button
               key={tool.slug}
               onClick={() => setOpenKitchenOpsTool(tool.slug as KitchenOpsSlug)}
-              className="flex flex-col items-center text-center gap-2 bg-white rounded-xl2 shadow-sm shadow-charcoal/5 px-3 py-4 hover:shadow-md hover:shadow-charcoal/10 transition-shadow"
+              className="flex flex-col items-center text-center gap-2 bg-card rounded-xl2 shadow-card px-3 py-4 hover:shadow-cardHover transition-shadow"
             >
-              <span className="w-11 h-11 shrink-0 flex items-center justify-center rounded-full bg-gold/15 text-lg" aria-hidden="true">
+              <span className="w-11 h-11 shrink-0 flex items-center justify-center rounded-full bg-mist text-lg" aria-hidden="true">
                 {tool.icon}
               </span>
-              <span className="text-xs font-bold text-charcoal">{tool.title}</span>
+              <span className="text-xs font-bold text-denim">{tool.title}</span>
             </button>
           ))}
         </div>
@@ -1003,23 +1020,23 @@ export default function RecipeDetailClient({
 
       {pairsWellWith.length > 0 && (
         <div className="mt-8 print:hidden">
-          <h2 className="text-xs font-medium uppercase tracking-wider text-charcoal/40 mb-2">Pairs well with</h2>
+          <h2 className="text-xs font-medium uppercase tracking-wider text-dusk mb-2">Pairs well with</h2>
           <div className="flex gap-3 overflow-x-auto pb-1">
             {pairsWellWith.map((s) => (
               <Link
                 key={s.id}
                 href={`/properties/${propertyId}/recipes/${s.id}`}
-                className="shrink-0 w-32 bg-white rounded-xl border border-gold-light/40 shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors"
+                className="shrink-0 w-32 bg-card rounded-xl border border-cardBorder shadow-card overflow-hidden hover:border-brass/40 transition-colors"
               >
-                <div className="w-full h-20 bg-cream flex items-center justify-center">
+                <div className="w-full h-20 bg-mist flex items-center justify-center">
                   {s.photo_url && isDirectImageUrl(s.photo_url) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={s.photo_url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-2xl text-charcoal/20">🍽️</span>
+                    <span className="text-2xl text-dusk">🍽️</span>
                   )}
                 </div>
-                <p className="p-2 text-xs font-medium text-charcoal leading-snug line-clamp-2">{s.name}</p>
+                <p className="p-2 text-xs font-medium text-denim leading-snug line-clamp-2">{s.name}</p>
               </Link>
             ))}
           </div>
