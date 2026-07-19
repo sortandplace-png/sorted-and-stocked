@@ -966,6 +966,14 @@ export default function MealPlanView({
         const newDow = newDate.getDay();
         const isShabbos = newDow === 5 || newDow === 6;
 
+        // SS-149: extend/repeat runs weeks forward with no per-day review at
+        // creation time, so this is the one write path that could silently
+        // land real meal rows on a future fast day (fixed Hebrew date, not
+        // weekly-periodic, so a template week's offset drifts onto one
+        // eventually) without ever showing "+ add" being pressed. Same
+        // table/lookup already used for the Nine Days meat check just below.
+        if (fastDays[newDateStr]) continue;
+
         // Standing rule: Kids Platter never appears Fri/Sat/Sun (confirmed
         // live, existing rows on those days were removed in the same pass
         // that added this check) — skip it here rather than let the
@@ -1170,7 +1178,16 @@ export default function MealPlanView({
             const hcal = hebcal[dateStr];
             const day = days[dateStr];
             const fastDay = fastDays[dateStr];
-            const hasMajorFastConflict = fastDay?.severity === 'major' && (day?.entries.length ?? 0) > 0;
+            // SS-149: blackout applies to the fast day's own date only --
+            // fastDays is keyed one row per fast day, so Erev Tisha B'Av/
+            // Erev Yom Kippur and the day after (motzei-fast/break-fast)
+            // simply have no entry here and are untouched, same as every
+            // other ordinary day. The pre-existing Nine Days meat
+            // restriction (isInNineDays below) is a separate, already-
+            // correct mechanism and is left alone -- it already permits
+            // non-meat planning on Erev Tisha B'Av, which is what "stays
+            // fully plannable" requires there.
+            const isFastDayBlackout = !!fastDay;
 
             return (
               <div
@@ -1239,14 +1256,14 @@ export default function MealPlanView({
                     Day options →
                   </button>
                 </div>
-                {hasMajorFastConflict && (
-                  <div className="flex items-start gap-2 px-4 py-2 bg-rust/10 border-b border-rust/20">
+                {isFastDayBlackout ? (
+                  <div className="flex items-start gap-2 px-4 py-3">
                     <AlertTriangle className="h-4 w-4 text-rust shrink-0 mt-0.5" />
                     <p className="text-xs text-rust font-medium">
-                      {fastDay!.holiday_name}: {fastDay!.note}
+                      {fastDay!.holiday_name}: {fastDay!.note || 'No meals planned -- fast day.'}
                     </p>
                   </div>
-                )}
+                ) : (
                 <div className="divide-y divide-cardBorder">
                   {COURSES.filter(
                     ({ key }) =>
@@ -1335,6 +1352,7 @@ export default function MealPlanView({
                     ].filter(Boolean);
                   })}
                 </div>
+                )}
               </div>
             );
           })}
@@ -1415,6 +1433,18 @@ export default function MealPlanView({
               </button>
             </div>
 
+            {/* SS-149: same blackout as the week/month grids, but this
+                drawer is the actual add/edit surface both of them open into
+                -- the real enforcement point, not just a visual echo. */}
+            {fastDays[dayDrawerOpen] ? (
+              <div className="flex items-start gap-2 px-5 py-4">
+                <AlertTriangle className="h-4 w-4 text-rust shrink-0 mt-0.5" />
+                <p className="text-sm text-rust font-medium">
+                  {fastDays[dayDrawerOpen]!.holiday_name}: {fastDays[dayDrawerOpen]!.note || 'No meals planned -- fast day.'}
+                </p>
+              </div>
+            ) : (
+            <>
             {canEdit && (
               <div className="px-5 py-3 flex items-center gap-4 border-b border-cardBorder">
                 <div className="relative">
@@ -1607,6 +1637,8 @@ export default function MealPlanView({
                   ))}
                 </div>
               </div>
+            )}
+            </>
             )}
           </div>
         </div>
@@ -2032,7 +2064,9 @@ function MonthGrid({
             )}
             <div className="mt-1 space-y-1">
               {entries.length === 0 ? (
-                <p className="text-[10px] text-dusk italic">{t('nothingPlanned')}</p>
+                <p className="text-[10px] text-dusk italic">
+                  {fastDay ? `${fastDay.holiday_name} -- no meals` : t('nothingPlanned')}
+                </p>
               ) : (
                 <>
                   {entries.slice(0, 5).map((e) => {
