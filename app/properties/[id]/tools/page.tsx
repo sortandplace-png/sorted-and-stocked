@@ -94,6 +94,12 @@ const TOOLS = [
     description: 'Bulk-upload house photos and match each to a real room.',
   },
   {
+    slug: 'photo-worklist',
+    icon: '📷',
+    title: 'Photo Worklist',
+    description: "Items a web search couldn't confirm — photograph what's actually on the shelf.",
+  },
+  {
     slug: 'takeout-directory',
     icon: '🥡',
     title: 'Local Takeout Directory',
@@ -194,7 +200,7 @@ const GROUPS: {
       // Location-based pair first (House Manual, Pantry Zone Map), then the
       // people/contact-based pair (Contacts & Vendors, Borrowed & Lent).
       { key: 'reference', label: 'Reference', slugs: ['knowledge-base', 'pantry-zones', 'contacts', 'borrowed-items'] },
-      { key: 'capture-tools', label: 'Capture Tools', slugs: ['capture-inbox', 'capture-photo', 'identify-item', 'photo-review'] },
+      { key: 'capture-tools', label: 'Capture Tools', slugs: ['capture-inbox', 'capture-photo', 'identify-item', 'photo-review', 'photo-worklist'] },
       {
         key: 'admin-cleanup',
         label: 'Admin Cleanup',

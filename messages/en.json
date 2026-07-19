@@ -308,6 +308,16 @@
     "failedToast": "Failed to save photo.",
     "sessionCount": "{count, plural, one {# photo added this session} other {# photos added this session}}"
   },
+  "photoWorklist": {
+    "title": "Photo Worklist",
+    "subtitle": "These items need a real photo of what's actually on the shelf — a web search couldn't confirm the right one.",
+    "allDone": "Nothing left on this list.",
+    "takePhotoButton": "Take photo",
+    "uploading": "Saving…",
+    "savedToast": "Photo saved for {item}.",
+    "failedToast": "Failed to save photo.",
+    "sessionCount": "{count, plural, one {# photo added this session} other {# photos added this session}}"
+  },
   "staffOnboarding": {
     "next": "Next",
     "back": "Back",

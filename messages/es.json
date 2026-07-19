@@ -308,6 +308,16 @@
     "failedToast": "No se pudo guardar la foto.",
     "sessionCount": "{count, plural, one {# foto agregada en esta sesión} other {# fotos agregadas en esta sesión}}"
   },
+  "photoWorklist": {
+    "title": "Lista de Fotos Pendientes",
+    "subtitle": "Estos artículos necesitan una foto real de lo que hay en el estante — una búsqueda web no pudo confirmar cuál es el correcto.",
+    "allDone": "No queda nada en esta lista.",
+    "takePhotoButton": "Tomar foto",
+    "uploading": "Guardando…",
+    "savedToast": "Foto guardada para {item}.",
+    "failedToast": "No se pudo guardar la foto.",
+    "sessionCount": "{count, plural, one {# foto agregada en esta sesión} other {# fotos agregadas en esta sesión}}"
+  },
   "staffOnboarding": {
     "next": "Siguiente",
     "back": "Atrás",
