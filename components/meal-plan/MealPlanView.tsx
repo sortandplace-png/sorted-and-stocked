@@ -1073,11 +1073,11 @@ export default function MealPlanView({
   return (
     <div className="max-w-md lg:max-w-6xl mx-auto p-4">
       <div className="hidden print:block mb-3">
-        <h1 className="font-display text-2xl text-charcoal">
+        <h1 className="font-display text-2xl text-denim">
           {viewMode === 'week' ? 'Meal Plan' : 'Meal Plan — ' + anchor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
         </h1>
         {viewMode === 'week' && (
-          <p className="text-sm text-charcoal/50">
+          <p className="text-sm text-dusk">
             {weekDates[0].toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} –{' '}
             {weekDates[6].toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
           </p>
@@ -1089,16 +1089,16 @@ export default function MealPlanView({
       )}
 
       <div className="print:hidden mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-full border border-gold-light/60 bg-white p-0.5 text-sm">
+        <div className="inline-flex rounded-full border border-cardBorder bg-card p-0.5 text-sm">
           <button
             onClick={() => setViewMode('week')}
-            className={`rounded-full px-4 py-1.5 ${viewMode === 'week' ? 'bg-gold-dark text-white' : 'text-charcoal/60'}`}
+            className={`rounded-full px-4 py-1.5 ${viewMode === 'week' ? 'bg-brass text-white' : 'text-dusk'}`}
           >
             {t('week')}
           </button>
           <button
             onClick={() => setViewMode('month')}
-            className={`rounded-full px-4 py-1.5 ${viewMode === 'month' ? 'bg-gold-dark text-white' : 'text-charcoal/60'}`}
+            className={`rounded-full px-4 py-1.5 ${viewMode === 'month' ? 'bg-brass text-white' : 'text-dusk'}`}
           >
             {t('month')}
           </button>
@@ -1107,7 +1107,7 @@ export default function MealPlanView({
         <div className="flex items-center gap-3">
           <button
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 rounded-full border border-gold px-3 py-1.5 text-xs font-medium text-gold-dark"
+            className="inline-flex items-center gap-1.5 rounded-full border border-brass px-3 py-1.5 text-xs font-medium text-brass"
           >
             <Printer className="h-3.5 w-3.5" />
             {viewMode === 'week' ? t('printWeek') : t('printMonth')}
@@ -1117,7 +1117,7 @@ export default function MealPlanView({
               onClick={repeatWeekForward}
               disabled={repeatingWeek}
               title="Copy this week's meals to next week (won't overwrite anything already planned)"
-              className="rounded-full border border-gold px-4 py-1.5 text-xs font-medium text-gold-dark disabled:opacity-40"
+              className="rounded-full border border-brass px-4 py-1.5 text-xs font-medium text-brass disabled:opacity-40"
             >
               {repeatingWeek ? '…' : 'Repeat next week →'}
             </button>
@@ -1126,7 +1126,7 @@ export default function MealPlanView({
             <button
               onClick={generateShoppingList}
               disabled={pushingToShopping}
-              className="rounded-full bg-gold px-4 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+              className="rounded-full bg-brass px-4 py-1.5 text-xs font-medium text-white disabled:opacity-40"
             >
               {pushingToShopping ? '…' : t('generateShoppingList')}
             </button>
@@ -1136,7 +1136,7 @@ export default function MealPlanView({
               onClick={() => extendMealPlan(4)}
               disabled={extending}
               title="Repeat the last planned week forward 4 more weeks, wherever the plan currently ends"
-              className="rounded-full bg-cream border border-charcoal/30 px-4 py-1.5 text-xs font-medium text-charcoal disabled:opacity-40"
+              className="rounded-full bg-linen border border-brass/30 px-4 py-1.5 text-xs font-medium text-denim disabled:opacity-40"
             >
               {extending ? '…' : 'Extend plan +4 weeks'}
             </button>
@@ -1146,13 +1146,13 @@ export default function MealPlanView({
 
       {canEdit && viewMode === 'week' && (
         <div className="print:hidden -mt-2 mb-4 flex items-center justify-between flex-wrap gap-1">
-          <p className="text-xs text-charcoal/40">
+          <p className="text-xs text-dusk">
             Only courses linked to a saved recipe (not typed-in text) have ingredients to add.
           </p>
           {justGeneratedList && (
             <Link
               href={`/properties/${propertyId}/shopping-list`}
-              className="text-xs font-medium text-charcoal underline"
+              className="text-xs font-medium text-denim underline"
             >
               Go to shopping list →
             </Link>
@@ -1176,25 +1176,25 @@ export default function MealPlanView({
               <div
                 key={dateStr}
                 className={
-                  'rounded-2xl bg-white shadow-sm shadow-charcoal/5 overflow-hidden' +
-                  (isToday ? ' ring-2 ring-gold' : '') +
+                  'rounded-2xl bg-card shadow-card overflow-hidden' +
+                  (isToday ? ' ring-2 ring-brass' : '') +
                   (printOnlyDate && printOnlyDate !== dateStr ? ' print:hidden' : '')
                 }
               >
                 <div
                   className={
-                    'flex items-center gap-2 px-4 py-2 ' + (isShabbos ? 'bg-charcoal/10' : 'bg-gold-light/15')
+                    'flex items-center gap-2 px-4 py-2 ' + (isShabbos ? 'bg-denim/10' : 'bg-mist')
                   }
                 >
-                  <span className="text-xs font-semibold text-charcoal">{DAY_LABELS[i]}</span>
-                  <span className="text-xs text-charcoal/50">
+                  <span className="text-xs font-semibold text-denim">{DAY_LABELS[i]}</span>
+                  <span className="text-xs text-dusk">
                     {d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </span>
-                  {hcal?.isErevShabbos && <Flame className="h-3 w-3 text-gold-dark" />}
+                  {hcal?.isErevShabbos && <Flame className="h-3 w-3 text-brass" />}
                   {day?.hasMeatDairyBuffer && (
                     <span
                       title={t('sameDayWarning')}
-                      className="h-2 w-2 rounded-full bg-gold shrink-0"
+                      className="h-2 w-2 rounded-full bg-brass shrink-0"
                     />
                   )}
                   {getPrepWarning(day?.entries ?? [], hcal?.candleLighting) && (
@@ -1205,7 +1205,7 @@ export default function MealPlanView({
                   {fastDay?.severity === 'minor' && (
                     <span
                       title={fastDay.note}
-                      className="text-[10px] font-medium text-charcoal/60 bg-gold-light/40 px-2 py-0.5 rounded-full shrink-0"
+                      className="text-[10px] font-medium text-dusk bg-mist px-2 py-0.5 rounded-full shrink-0"
                     >
                       {fastDay.holiday_name}
                     </span>
@@ -1217,8 +1217,8 @@ export default function MealPlanView({
                         (hcal.isFast
                           ? 'text-rust bg-rust/10'
                           : hcal.isYomTov
-                          ? 'text-cream bg-charcoal'
-                          : 'text-charcoal bg-gold-light/50')
+                          ? 'text-white bg-denim'
+                          : 'text-denim bg-mist')
                       }
                       title={hcal.titles.join(' · ')}
                     >
@@ -1226,15 +1226,15 @@ export default function MealPlanView({
                       {hcal.titles.join(' · ')}
                     </span>
                   ) : isShabbos ? (
-                    <span className="ml-auto text-[10px] font-semibold text-charcoal bg-gold-light/50 px-2 py-0.5 rounded-full">
+                    <span className="ml-auto text-[10px] font-semibold text-denim bg-mist px-2 py-0.5 rounded-full">
                       ✨ Shabbos
                     </span>
                   ) : null}
                 </div>
-                <div className="print:hidden flex items-center px-4 py-1.5 border-b border-gold-light/20">
+                <div className="print:hidden flex items-center px-4 py-1.5 border-b border-cardBorder">
                   <button
                     onClick={() => openDayDrawer(dateStr)}
-                    className="text-[11px] font-medium text-gold-dark ml-auto"
+                    className="text-[11px] font-medium text-brass ml-auto"
                   >
                     Day options →
                   </button>
@@ -1247,7 +1247,7 @@ export default function MealPlanView({
                     </p>
                   </div>
                 )}
-                <div className="divide-y divide-gold-light/20">
+                <div className="divide-y divide-cardBorder">
                   {COURSES.filter(
                     ({ key }) =>
                       (key !== 'dessert' || isShabbos || entriesFor(dateStr, key).length > 0) &&
@@ -1274,18 +1274,18 @@ export default function MealPlanView({
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={photo} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
                             ) : (
-                              <span className="w-12 h-12 rounded-lg bg-gold-light/25 shrink-0 flex items-center justify-center text-lg">
+                              <span className="w-12 h-12 rounded-lg bg-mist shrink-0 flex items-center justify-center text-lg">
                                 {icon}
                               </span>
                             )}
-                            <span className="text-[11px] text-charcoal/40 w-14 shrink-0">
+                            <span className="text-[11px] text-dusk w-14 shrink-0">
                               {tCourse(key)}
                               {rows.length > 1 ? ` ${idx + 1}` : ''}
                             </span>
                             {linkedRecipeId ? (
                               <Link
                                 href={`/properties/${propertyId}/recipes/${linkedRecipeId}`}
-                                className="flex-1 min-w-0 text-sm text-charcoal truncate underline decoration-gold-light decoration-2 underline-offset-2"
+                                className="flex-1 min-w-0 text-sm text-denim truncate underline decoration-brass decoration-2 underline-offset-2"
                               >
                                 {name}
                               </Link>
@@ -1296,16 +1296,16 @@ export default function MealPlanView({
                                 className="flex-1 text-left min-w-0 text-sm disabled:cursor-default"
                               >
                                 {name ? (
-                                  <span className="text-charcoal truncate block">{name}</span>
+                                  <span className="text-denim truncate block">{name}</span>
                                 ) : (
-                                  <span className="text-charcoal/25">{canEdit ? '+ add' : ''}</span>
+                                  <span className="text-dusk">{canEdit ? '+ add' : ''}</span>
                                 )}
                               </button>
                             )}
                             {canEdit && linkedRecipeId && (
                               <button
                                 onClick={() => openPicker(dateStr, key, true, entry ?? undefined)}
-                                className="text-charcoal/30 text-xs shrink-0"
+                                className="text-dusk text-xs shrink-0"
                                 aria-label="Change"
                               >
                                 ✏️
@@ -1326,7 +1326,7 @@ export default function MealPlanView({
                         <div key={`${key}-add-another`} className="px-4 py-1.5">
                           <button
                             onClick={() => openPicker(dateStr, key)}
-                            className="text-[11px] text-gold-dark font-medium"
+                            className="text-[11px] text-brass font-medium"
                           >
                             + Add another {tCourse(key)}
                           </button>
@@ -1364,11 +1364,11 @@ export default function MealPlanView({
           }
           disabled={viewMode === 'week' && !isCurrentOrFutureWeek}
           title={viewMode === 'week' && !isCurrentOrFutureWeek ? 'Cannot navigate before today' : undefined}
-          className="text-sm text-charcoal underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
+          className="text-sm text-denim underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
         >
           ← Prev
         </button>
-        <button onClick={() => setAnchor(new Date())} className="text-sm text-charcoal/50">
+        <button onClick={() => setAnchor(new Date())} className="text-sm text-dusk">
           Today
         </button>
         <button
@@ -1380,7 +1380,7 @@ export default function MealPlanView({
               return next;
             })
           }
-          className="text-sm text-charcoal underline"
+          className="text-sm text-denim underline"
         >
           Next →
         </button>
@@ -1392,12 +1392,12 @@ export default function MealPlanView({
           onClick={closeDayDrawer}
         >
           <div
-            className="bg-cream w-full max-w-sm h-full overflow-y-auto shadow-2xl"
+            className="bg-linen w-full max-w-sm h-full overflow-y-auto shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-cream border-b border-gold-light/30 px-5 py-4 flex items-start justify-between z-10">
+            <div className="sticky top-0 bg-linen border-b border-cardBorder px-5 py-4 flex items-start justify-between z-10">
               <div>
-                <h2 className="font-display text-lg text-charcoal">
+                <h2 className="font-display text-lg text-denim">
                   {new Date(dayDrawerOpen + 'T12:00:00').toLocaleDateString(undefined, {
                     weekday: 'long',
                     month: 'short',
@@ -1405,42 +1405,42 @@ export default function MealPlanView({
                   })}
                 </h2>
                 {hebcal[dayDrawerOpen]?.hebrewDate && (
-                  <p className="text-xs text-charcoal/40" lang="he" dir="rtl">
+                  <p className="text-xs text-dusk" lang="he" dir="rtl">
                     {hebcal[dayDrawerOpen]!.hebrewDate}
                   </p>
                 )}
               </div>
-              <button onClick={closeDayDrawer} className="text-charcoal/40 text-xl leading-none" aria-label="Close">
+              <button onClick={closeDayDrawer} className="text-dusk text-xl leading-none" aria-label="Close">
                 ✕
               </button>
             </div>
 
             {canEdit && (
-              <div className="px-5 py-3 flex items-center gap-4 border-b border-gold-light/20">
+              <div className="px-5 py-3 flex items-center gap-4 border-b border-cardBorder">
                 <div className="relative">
                   <button
                     onClick={() => setDrawerDuplicateOpen((v) => !v)}
-                    className="text-xs font-medium text-gold-dark"
+                    className="text-xs font-medium text-brass"
                   >
                     Duplicate Day
                   </button>
                   {drawerDuplicateOpen && (
-                    <div className="absolute z-20 top-full left-0 mt-1 w-56 rounded-xl bg-white shadow-lg shadow-charcoal/10 border border-gold-light/40 p-3 space-y-2">
-                      <p className="text-[11px] text-charcoal/60">Copy this day's meals to:</p>
+                    <div className="absolute z-20 top-full left-0 mt-1 w-56 rounded-xl bg-card shadow-cardHover border border-cardBorder p-3 space-y-2">
+                      <p className="text-[11px] text-dusk">Copy this day's meals to:</p>
                       <input
                         type="date"
                         value={duplicateTarget}
                         onChange={(e) => setDuplicateTarget(e.target.value)}
-                        className="w-full rounded-lg border border-gold-light/60 px-2 py-1 text-xs text-charcoal"
+                        className="w-full rounded-lg border border-cardBorder px-2 py-1 text-xs text-denim"
                       />
                       <div className="flex justify-end gap-2">
-                        <button onClick={() => setDrawerDuplicateOpen(false)} className="text-[11px] text-charcoal/50">
+                        <button onClick={() => setDrawerDuplicateOpen(false)} className="text-[11px] text-dusk">
                           Cancel
                         </button>
                         <button
                           onClick={() => duplicateDay(dayDrawerOpen, duplicateTarget)}
                           disabled={!duplicateTarget || duplicating}
-                          className="rounded-full bg-gold-dark px-3 py-1 text-[11px] font-medium text-white disabled:opacity-40"
+                          className="rounded-full bg-brass px-3 py-1 text-[11px] font-medium text-white disabled:opacity-40"
                         >
                           {duplicating ? '…' : 'Copy'}
                         </button>
@@ -1450,14 +1450,14 @@ export default function MealPlanView({
                 </div>
                 <button
                   onClick={() => printDayFromDrawer(dayDrawerOpen)}
-                  className="text-xs font-medium text-gold-dark"
+                  className="text-xs font-medium text-brass"
                 >
                   Print Day
                 </button>
               </div>
             )}
 
-            <div className="divide-y divide-gold-light/20 bg-white">
+            <div className="divide-y divide-cardBorder bg-card">
               {COURSES.flatMap(({ key }) => {
                 const entries = entriesFor(dayDrawerOpen, key);
                 const canAddAnother = (key === 'dip' || key === 'salad') && entries.length > 0 && canEdit;
@@ -1468,26 +1468,26 @@ export default function MealPlanView({
                     <span className="text-base shrink-0" aria-hidden>
                       {kosherIcon(entry.recipes?.kosher_type ?? null)}
                     </span>
-                    <span className="text-[11px] text-charcoal/40 w-14 shrink-0">
+                    <span className="text-[11px] text-dusk w-14 shrink-0">
                       {tCourse(key)}
                       {arr.length > 1 ? ` ${idx + 1}` : ''}
                     </span>
                     {entry.recipe_id ? (
                       <Link
                         href={`/properties/${propertyId}/recipes/${entry.recipe_id}`}
-                        className="flex-1 min-w-0 text-sm text-charcoal truncate underline decoration-gold-light decoration-2 underline-offset-2"
+                        className="flex-1 min-w-0 text-sm text-denim truncate underline decoration-brass decoration-2 underline-offset-2"
                       >
                         {name}
                       </Link>
                     ) : (
-                      <span className="flex-1 min-w-0 text-sm text-charcoal truncate">{name}</span>
+                      <span className="flex-1 min-w-0 text-sm text-denim truncate">{name}</span>
                     )}
                     {(() => {
                       const warnings = entryWarnings[entryWarningKey(dayDrawerOpen, key, entry.sequence)];
                       if (!warnings || warnings.length === 0) return null;
                       return (
                         <AlertTriangle
-                          className="h-3.5 w-3.5 text-gold-dark shrink-0"
+                          className="h-3.5 w-3.5 text-brass shrink-0"
                           strokeWidth={2}
                           aria-label={warnings.join(' ')}
                         >
@@ -1499,21 +1499,21 @@ export default function MealPlanView({
                       <div className="relative shrink-0">
                         <button
                           onClick={() => setDishMenuOpen(dishMenuOpen === entry.id ? null : entry.id)}
-                          className="text-charcoal/40 text-sm px-1"
+                          className="text-dusk text-sm px-1"
                           aria-label="Dish options"
                         >
                           •••
                         </button>
                         {dishMenuOpen === entry.id && (
                           <div
-                            className="absolute z-20 top-full right-0 mt-1 w-44 rounded-xl bg-white shadow-lg shadow-charcoal/10 border border-gold-light/40 py-1"
+                            className="absolute z-20 top-full right-0 mt-1 w-44 rounded-xl bg-card shadow-cardHover border border-cardBorder py-1"
                             onMouseLeave={() => setDishMenuOpen(null)}
                           >
                             {entry.recipe_id && (
                               <Link
                                 href={`/properties/${propertyId}/recipes/${entry.recipe_id}`}
                                 onClick={() => setDishMenuOpen(null)}
-                                className="block w-full text-left px-3 py-1.5 text-xs text-charcoal hover:bg-gold-light/15"
+                                className="block w-full text-left px-3 py-1.5 text-xs text-denim hover:bg-mist"
                               >
                                 View recipe
                               </Link>
@@ -1523,7 +1523,7 @@ export default function MealPlanView({
                                 setDishMenuOpen(null);
                                 openPicker(dayDrawerOpen, key, true, entry);
                               }}
-                              className="block w-full text-left px-3 py-1.5 text-xs text-charcoal hover:bg-gold-light/15"
+                              className="block w-full text-left px-3 py-1.5 text-xs text-denim hover:bg-mist"
                             >
                               Change
                             </button>
@@ -1533,7 +1533,7 @@ export default function MealPlanView({
                                 setMoveDishOpen(entry.id);
                                 setMoveTargetDate('');
                               }}
-                              className="block w-full text-left px-3 py-1.5 text-xs text-charcoal hover:bg-gold-light/15"
+                              className="block w-full text-left px-3 py-1.5 text-xs text-denim hover:bg-mist"
                             >
                               Move to Another Day
                             </button>
@@ -1549,22 +1549,22 @@ export default function MealPlanView({
                           </div>
                         )}
                         {moveDishOpen === entry.id && (
-                          <div className="absolute z-20 top-full right-0 mt-1 w-56 rounded-xl bg-white shadow-lg shadow-charcoal/10 border border-gold-light/40 p-3 space-y-2">
-                            <p className="text-[11px] text-charcoal/60">Move to:</p>
+                          <div className="absolute z-20 top-full right-0 mt-1 w-56 rounded-xl bg-card shadow-cardHover border border-cardBorder p-3 space-y-2">
+                            <p className="text-[11px] text-dusk">Move to:</p>
                             <input
                               type="date"
                               value={moveTargetDate}
                               onChange={(e) => setMoveTargetDate(e.target.value)}
-                              className="w-full rounded-lg border border-gold-light/60 px-2 py-1 text-xs text-charcoal"
+                              className="w-full rounded-lg border border-cardBorder px-2 py-1 text-xs text-denim"
                             />
                             <div className="flex justify-end gap-2">
-                              <button onClick={() => setMoveDishOpen(null)} className="text-[11px] text-charcoal/50">
+                              <button onClick={() => setMoveDishOpen(null)} className="text-[11px] text-dusk">
                                 Cancel
                               </button>
                               <button
                                 onClick={() => moveDish(entry, moveTargetDate)}
                                 disabled={!moveTargetDate || moving}
-                                className="rounded-full bg-gold-dark px-3 py-1 text-[11px] font-medium text-white disabled:opacity-40"
+                                className="rounded-full bg-brass px-3 py-1 text-[11px] font-medium text-white disabled:opacity-40"
                               >
                                 {moving ? '…' : 'Move'}
                               </button>
@@ -1582,7 +1582,7 @@ export default function MealPlanView({
                       <div key={`${key}-add-another`} className="px-5 py-2">
                         <button
                           onClick={() => openPicker(dayDrawerOpen, key)}
-                          className="text-xs text-gold-dark font-medium"
+                          className="text-xs text-brass font-medium"
                         >
                           + Add another {tCourse(key)}
                         </button>
@@ -1594,13 +1594,13 @@ export default function MealPlanView({
 
             {canEdit && COURSES.filter(({ key }) => !entryFor(dayDrawerOpen, key)).length > 0 && (
               <div className="px-5 py-4">
-                <p className="text-[10px] uppercase tracking-wide text-charcoal/40 mb-2">Add course</p>
+                <p className="text-[10px] uppercase tracking-wide text-dusk mb-2">Add course</p>
                 <div className="flex flex-wrap gap-2">
                   {COURSES.filter(({ key }) => !entryFor(dayDrawerOpen, key)).map(({ key, icon }) => (
                     <button
                       key={key}
                       onClick={() => openPicker(dayDrawerOpen, key)}
-                      className="rounded-full border border-gold px-3 py-1.5 text-xs font-medium text-gold-dark"
+                      className="rounded-full border border-brass px-3 py-1.5 text-xs font-medium text-brass"
                     >
                       {icon} {tCourse(key)}
                     </button>
@@ -1618,7 +1618,7 @@ export default function MealPlanView({
           onClick={() => setQuickEditDish(null)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden"
+            className="bg-card rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {quickEditDish.entry.recipes?.photo_url && (
@@ -1629,7 +1629,7 @@ export default function MealPlanView({
               />
             )}
             <div className="p-4">
-              <p className="text-[11px] text-charcoal/50">
+              <p className="text-[11px] text-dusk">
                 {tCourse(quickEditDish.entry.course)} ·{' '}
                 {new Date(quickEditDish.date + 'T12:00:00').toLocaleDateString(undefined, {
                   weekday: 'long',
@@ -1641,12 +1641,12 @@ export default function MealPlanView({
                 <Link
                   href={`/properties/${propertyId}/recipes/${quickEditDish.entry.recipe_id}`}
                   onClick={() => setQuickEditDish(null)}
-                  className="font-display text-lg text-charcoal mt-0.5 block underline decoration-gold-light decoration-2 underline-offset-2"
+                  className="font-display text-lg text-denim mt-0.5 block underline decoration-brass decoration-2 underline-offset-2"
                 >
                   {displayName(quickEditDish.entry)}
                 </Link>
               ) : (
-                <p className="font-display text-lg text-charcoal mt-0.5">{displayName(quickEditDish.entry)}</p>
+                <p className="font-display text-lg text-denim mt-0.5">{displayName(quickEditDish.entry)}</p>
               )}
 
               {canEdit ? (
@@ -1657,7 +1657,7 @@ export default function MealPlanView({
                       setQuickEditDish(null);
                       openPicker(date, entry.course, true, entry);
                     }}
-                    className="w-full rounded-full bg-gold-dark text-white text-sm font-medium py-2"
+                    className="w-full rounded-full bg-brass text-white text-sm font-medium py-2"
                   >
                     Change
                   </button>
@@ -1677,7 +1677,7 @@ export default function MealPlanView({
                       setQuickEditDish(null);
                       openDayDrawer(date);
                     }}
-                    className="w-full text-center text-xs text-charcoal/50 py-1"
+                    className="w-full text-center text-xs text-dusk py-1"
                   >
                     View full day →
                   </button>
@@ -1689,7 +1689,7 @@ export default function MealPlanView({
                     setQuickEditDish(null);
                     openDayDrawer(date);
                   }}
-                  className="mt-4 w-full text-center text-xs text-charcoal/50 py-1"
+                  className="mt-4 w-full text-center text-xs text-dusk py-1"
                 >
                   View full day →
                 </button>
@@ -1705,14 +1705,14 @@ export default function MealPlanView({
           onClick={() => setEditing(null)}
         >
           <div
-            className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
+            className="bg-card w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="font-display text-xl text-charcoal mb-1">
+            <h2 className="font-display text-xl text-denim mb-1">
               {COURSES.find((c) => c.key === editing.course)?.icon}{' '}
               {tCourse(editing.course)}
             </h2>
-            <p className="text-xs text-charcoal/40 mb-3">
+            <p className="text-xs text-dusk mb-3">
               {new Date(editing.date).toLocaleDateString(undefined, {
                 weekday: 'long',
                 month: 'short',
@@ -1722,7 +1722,7 @@ export default function MealPlanView({
 
             {showIntentStep ? (
               <div className="space-y-2">
-                <p className="text-sm text-charcoal/60 mb-1">What's the reason for the swap?</p>
+                <p className="text-sm text-dusk mb-1">What's the reason for the swap?</p>
                 {(
                   [
                     ['too_much_work', 'Too much work'],
@@ -1737,14 +1737,14 @@ export default function MealPlanView({
                       setSwapIntent(key);
                       setShowIntentStep(false);
                     }}
-                    className="w-full text-left px-4 py-2.5 rounded-2xl bg-cream/60 text-charcoal text-sm border border-gold-light/40 hover:border-gold transition-colors"
+                    className="w-full text-left px-4 py-2.5 rounded-2xl bg-linen/60 text-denim text-sm border border-cardBorder hover:border-brass transition-colors"
                   >
                     {label}
                   </button>
                 ))}
                 <button
                   onClick={() => setShowIntentStep(false)}
-                  className="w-full text-center text-sm text-charcoal/40 mt-1 py-1"
+                  className="w-full text-center text-sm text-dusk mt-1 py-1"
                 >
                   Show me everything →
                 </button>
@@ -1752,13 +1752,13 @@ export default function MealPlanView({
             ) : (
               <>
             {swapIntent && (
-              <div className="flex items-center justify-between bg-gold-light/15 rounded-xl px-3 py-2 mb-3 text-xs text-charcoal/60">
+              <div className="flex items-center justify-between bg-mist rounded-xl px-3 py-2 mb-3 text-xs text-dusk">
                 <span>
                   Filtered for: {
                     { too_much_work: 'Too much work', kids_wont_eat: "Kids won't eat it", quicker: 'Need something quicker', different_protein: 'Different protein' }[swapIntent]
                   }
                 </span>
-                <button onClick={() => setSwapIntent(null)} className="text-charcoal/40 underline">
+                <button onClick={() => setSwapIntent(null)} className="text-dusk underline">
                   Clear
                 </button>
               </div>
@@ -1766,7 +1766,7 @@ export default function MealPlanView({
 
             {editing.course === 'kids_platter' && (
               <div className="mb-3">
-                <p className="text-xs text-charcoal/50 mb-2">
+                <p className="text-xs text-dusk mb-2">
                   Kids Platter was never really a recipe list — it's always been fixed combos. Tap one, or use
                   Quick entry for something else.
                 </p>
@@ -1794,8 +1794,8 @@ export default function MealPlanView({
                         }}
                         className={
                           isActive
-                            ? 'text-left px-4 py-2.5 rounded-2xl bg-charcoal text-cream font-semibold text-sm border border-charcoal'
-                            : 'text-left px-4 py-2.5 rounded-2xl bg-cream/60 text-charcoal text-sm border border-gold-light/40'
+                            ? 'text-left px-4 py-2.5 rounded-2xl bg-denim text-white font-semibold text-sm border border-denim'
+                            : 'text-left px-4 py-2.5 rounded-2xl bg-linen/60 text-denim text-sm border border-cardBorder'
                         }
                       >
                         {platter.label}
@@ -1811,8 +1811,8 @@ export default function MealPlanView({
                 onClick={() => setPickerMode('existing')}
                 className={
                   pickerMode === 'existing'
-                    ? 'flex-1 py-2 rounded-full bg-charcoal text-cream text-sm'
-                    : 'flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm'
+                    ? 'flex-1 py-2 rounded-full bg-denim text-white text-sm'
+                    : 'flex-1 py-2 rounded-full bg-linen border border-brass/30 text-denim text-sm'
                 }
               >
                 Pick a recipe
@@ -1821,8 +1821,8 @@ export default function MealPlanView({
                 onClick={() => setPickerMode('custom')}
                 className={
                   pickerMode === 'custom'
-                    ? 'flex-1 py-2 rounded-full bg-charcoal text-cream text-sm'
-                    : 'flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm'
+                    ? 'flex-1 py-2 rounded-full bg-denim text-white text-sm'
+                    : 'flex-1 py-2 rounded-full bg-linen border border-brass/30 text-denim text-sm'
                 }
               >
                 Quick entry
@@ -1840,8 +1840,8 @@ export default function MealPlanView({
                           onClick={() => setKosherFilter(kosherFilter === kt ? null : kt)}
                           className={
                             kosherFilter === kt
-                              ? 'text-xs px-3 py-1 rounded-full bg-charcoal text-cream'
-                              : 'text-xs px-3 py-1 rounded-full border border-gold-light text-charcoal'
+                              ? 'text-xs px-3 py-1 rounded-full bg-denim text-white'
+                              : 'text-xs px-3 py-1 rounded-full border border-cardBorder text-denim'
                           }
                         >
                           {kosherIcon(kt)} {kt}
@@ -1853,10 +1853,10 @@ export default function MealPlanView({
                     value={recipeSearch}
                     onChange={(e) => setRecipeSearch(e.target.value)}
                     placeholder="Type to search, e.g. chicken"
-                    className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40 mb-2"
+                    className="w-full border border-cardBorder rounded-2xl px-4 py-2.5 bg-linen/40 mb-2"
                     autoFocus
                   />
-                  <div className="max-h-48 overflow-y-auto border border-gold-light/40 rounded-2xl divide-y divide-gold-light/20">
+                  <div className="max-h-48 overflow-y-auto border border-cardBorder rounded-2xl divide-y divide-cardBorder">
                     {recipesForEditingCourse
                       .filter((r) => recipeTitle(r).toLowerCase().includes(recipeSearch.toLowerCase()))
                       .filter((r) => !kosherFilter || r.kosher_type === kosherFilter)
@@ -1866,8 +1866,8 @@ export default function MealPlanView({
                           onClick={() => setPickedRecipeId(r.id)}
                           className={
                             r.id === pickedRecipeId
-                              ? 'w-full text-left px-4 py-2.5 border-l-2 border-gold-active bg-gold-light/30 text-charcoal font-semibold text-sm'
-                              : 'w-full text-left px-4 py-2.5 border-l-2 border-transparent text-charcoal text-sm hover:bg-gold-light/10'
+                              ? 'w-full text-left px-4 py-2.5 border-l-2 border-brass bg-mist text-denim font-semibold text-sm'
+                              : 'w-full text-left px-4 py-2.5 border-l-2 border-transparent text-denim text-sm hover:bg-mist'
                           }
                         >
                           {recipeTitle(r)}
@@ -1876,14 +1876,14 @@ export default function MealPlanView({
                     {recipesForEditingCourse
                       .filter((r) => recipeTitle(r).toLowerCase().includes(recipeSearch.toLowerCase()))
                       .filter((r) => !kosherFilter || r.kosher_type === kosherFilter).length === 0 && (
-                      <p className="px-4 py-3 text-sm text-charcoal/40">
+                      <p className="px-4 py-3 text-sm text-dusk">
                         No match — try Quick entry instead, or add one from the Recipes page.
                       </p>
                     )}
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-charcoal/50 mb-3">
+                <p className="text-sm text-dusk mb-3">
                   No {tCourse(editing.course).toLowerCase()} recipes saved yet — add one from the Recipes page, or
                   use a quick entry.
                 </p>
@@ -1893,7 +1893,7 @@ export default function MealPlanView({
                 value={customName}
                 onChange={(e) => setCustomName(e.target.value)}
                 placeholder="Type what you're planning"
-                className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40 mb-3"
+                className="w-full border border-cardBorder rounded-2xl px-4 py-2.5 bg-linen/40 mb-3"
                 autoFocus
               />
             )}
@@ -1911,14 +1911,14 @@ export default function MealPlanView({
             <div className="flex gap-2">
               <button
                 onClick={() => setEditing(null)}
-                className="flex-1 py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal"
+                className="flex-1 py-2.5 rounded-full bg-linen border border-brass/30 text-denim"
               >
                 Cancel
               </button>
               <button
                 onClick={saveEntry}
                 disabled={saving || (pickerMode === 'custom' && !customName.trim())}
-                className="flex-1 py-2.5 rounded-full bg-charcoal text-cream disabled:opacity-40"
+                className="flex-1 py-2.5 rounded-full bg-denim text-white disabled:opacity-40"
               >
                 {saving ? 'Saving…' : 'Save'}
               </button>
@@ -1975,12 +1975,12 @@ function MonthGrid({
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') onDayClick(date);
             }}
-            className={`relative min-h-[124px] rounded-lg border p-2 text-xs text-left hover:border-gold transition-colors cursor-pointer ${
-              hcal?.isFast ? 'border-gold-light/40 bg-cream/60 text-charcoal/50' : 'border-gold-light/40 bg-white'
+            className={`relative min-h-[124px] rounded-lg border p-2 text-xs text-left hover:border-brass transition-colors cursor-pointer ${
+              hcal?.isFast ? 'border-cardBorder bg-linen/60 text-dusk' : 'border-cardBorder bg-card'
             }`}
           >
             {hcal?.isYomTov && (
-              <div className="absolute inset-x-0 top-0 rounded-t-lg bg-gold-light/40 px-1 py-0.5 text-center text-[9px] font-medium text-charcoal">
+              <div className="absolute inset-x-0 top-0 rounded-t-lg bg-mist px-1 py-0.5 text-center text-[9px] font-medium text-denim">
                 {t('yomTov')}
               </div>
             )}
@@ -1991,15 +1991,15 @@ function MonthGrid({
                   case these are meant to cover. */}
               <div className="flex items-center gap-1.5 flex-wrap justify-end">
                 {hcal?.isErevShabbos && (
-                  <span className="flex items-center gap-0.5 text-gold-dark whitespace-nowrap">
+                  <span className="flex items-center gap-0.5 text-brass whitespace-nowrap">
                     <Flame className="h-3 w-3 shrink-0" />
                     <span className="text-[9px] font-medium">{t('shabbos')}</span>
                   </span>
                 )}
                 {day?.hasMeatDairyBuffer && (
                   <span className="flex items-center gap-0.5 whitespace-nowrap" title={t('sameDayWarning')}>
-                    <span className="h-2 w-2 rounded-full bg-gold shrink-0" aria-hidden />
-                    <span className="text-[9px] font-medium text-gold-dark">{t('mdBuffer')}</span>
+                    <span className="h-2 w-2 rounded-full bg-brass shrink-0" aria-hidden />
+                    <span className="text-[9px] font-medium text-brass">{t('mdBuffer')}</span>
                   </span>
                 )}
                 {getPrepWarning(entries, hcal?.candleLighting) && (
@@ -2021,18 +2021,18 @@ function MonthGrid({
               </p>
             )}
             {fastDay?.severity === 'minor' && (
-              <p className="text-[10px] text-charcoal/50" title={fastDay.note}>
+              <p className="text-[10px] text-dusk" title={fastDay.note}>
                 {fastDay.holiday_name} (fast)
               </p>
             )}
             {hcal?.hebrewDate && (
-              <p className="text-[9px] text-charcoal/40" lang="he" dir="rtl">
+              <p className="text-[9px] text-dusk" lang="he" dir="rtl">
                 {hcal.hebrewDate}
               </p>
             )}
             <div className="mt-1 space-y-1">
               {entries.length === 0 ? (
-                <p className="text-[10px] text-charcoal/40 italic">{t('nothingPlanned')}</p>
+                <p className="text-[10px] text-dusk italic">{t('nothingPlanned')}</p>
               ) : (
                 <>
                   {entries.slice(0, 5).map((e) => {
@@ -2048,10 +2048,10 @@ function MonthGrid({
                           ev.stopPropagation();
                           onDishClick(date, e);
                         }}
-                        className="flex items-start gap-1 w-full text-left hover:bg-gold-light/10 rounded px-0.5 -mx-0.5"
+                        className="flex items-start gap-1 w-full text-left hover:bg-mist rounded px-0.5 -mx-0.5"
                       >
                         <span
-                          className={`mt-1 h-1.5 w-1.5 rounded-full shrink-0 ${dotColor ?? 'bg-charcoal/20'}`}
+                          className={`mt-1 h-1.5 w-1.5 rounded-full shrink-0 ${dotColor ?? 'bg-dusk/30'}`}
                           aria-hidden
                         />
                         {e.recipes?.photo_url ? (
@@ -2061,14 +2061,14 @@ function MonthGrid({
                             className="h-3.5 w-3.5 rounded-sm object-cover shrink-0 mt-0.5"
                           />
                         ) : (
-                          <DishIcon className="h-3 w-3 text-charcoal/40 shrink-0 mt-0.5" aria-hidden />
+                          <DishIcon className="h-3 w-3 text-dusk shrink-0 mt-0.5" aria-hidden />
                         )}
                         <span className="line-clamp-2 leading-snug">{name}</span>
                       </button>
                     );
                   })}
                   {entries.length > 5 && (
-                    <p className="text-[9px] text-charcoal/40 pl-3">+{entries.length - 5} more</p>
+                    <p className="text-[9px] text-dusk pl-3">+{entries.length - 5} more</p>
                   )}
                 </>
               )}
