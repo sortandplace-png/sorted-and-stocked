@@ -327,7 +327,7 @@ async function getReadinessSummary(propertyId: string): Promise<ReadinessSummary
   const [tasksRes, handoverRes] = await Promise.all([
     supabase
       .from('staff_tasks')
-      .select('completed')
+      .select('status')
       .eq('property_id', propertyId)
       .eq('due_date', todayStr),
     supabase
@@ -343,8 +343,8 @@ async function getReadinessSummary(propertyId: string): Promise<ReadinessSummary
   const latest = handoverRes.data as { note_text: string; created_at: string; profiles: { full_name: string | null } | null } | null
 
   return {
-    tasksDone: tasks.filter((t) => t.completed).length,
-    tasksOpen: tasks.filter((t) => !t.completed).length,
+    tasksDone: tasks.filter((t) => t.status === 'done').length,
+    tasksOpen: tasks.filter((t) => t.status !== 'done').length,
     latestHandover: latest
       ? { noteText: latest.note_text, authorName: latest.profiles?.full_name ?? null, createdAt: latest.created_at }
       : null,
