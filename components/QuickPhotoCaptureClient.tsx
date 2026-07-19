@@ -90,10 +90,11 @@ export default function QuickPhotoCaptureClient({ propertyId }: { propertyId: st
       const { data: photoData } = supabase.storage.from('item-photos').getPublicUrl(path);
 
       // p_ai_category, p_ai_location_hint, p_ai_kosher_guess all left null --
-      // this flow has no AI category/location source, and the kosher-guess
-      // parameter specifically needs its own real UI treatment (or explicit
-      // sign-off that a raw disclaimer line in `notes` is OK for staff to
-      // read) before it's ever passed. Not this pass.
+      // there is no AI vision source in this flow to derive any of these
+      // from. Parked by design until real AI vision exists; a human-typed
+      // guess would be a false kashrus statement, which is worse than no
+      // guess at all. Confirmed with Racquel -- supersedes any earlier
+      // "do not leave null" instruction for this specific parameter.
       const { data, error } = await supabase.rpc('add_scanned_pantry_item', {
         p_property_id: propertyId,
         p_name: name.trim(),
