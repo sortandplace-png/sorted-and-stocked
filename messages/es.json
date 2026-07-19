@@ -540,5 +540,55 @@
       "heading": "Comidas de esta semana",
       "nothingPlanned": "Nada planeado todavía esta semana."
     }
+  },
+  "kosherType": {
+    "meat": "Carne",
+    "dairy": "Lácteo",
+    "parve": "Parve"
+  },
+  "recipeDetail": {
+    "ownerView": "Vista de propietario",
+    "staffCookView": "Vista de cocina para personal",
+    "provenancePlaceholder": "Marcador de posición / Autocompletado",
+    "provenanceAiResearched": "Investigado por IA",
+    "provenanceExternalUnverified": "Fuente Externa — Sin Verificar",
+    "provenanceFamily": "Receta Familiar Real",
+    "provenanceUnknown": "Desconocido",
+    "provenanceAmbiguous": "Ambiguo"
+  },
+  "recipeTags": {
+    "9x13": "9x13",
+    "american": "Americana",
+    "ashkenazi": "Asquenazí",
+    "asian": "Asiática",
+    "basics": "Básicos",
+    "chanukah": "Janucá",
+    "dairy": "Lácteo",
+    "freezer-friendly": "Apto para Congelar",
+    "gebrokts": "Guebrokts",
+    "grill": "Parrilla",
+    "italian": "Italiana",
+    "jewish-classic": "Clásico Judío",
+    "kids platter": "Plato Infantil",
+    "kids-friendly": "Apto para Niños",
+    "kids-platter": "Plato Infantil",
+    "mediterranean": "Mediterránea",
+    "mexican": "Mexicana",
+    "NEW": "NUEVO",
+    "needs-quantity-confirmation": "Necesita Confirmar Cantidad",
+    "one-pan": "Una Sola Sartén",
+    "one-pot": "Una Sola Olla",
+    "oven": "Horno",
+    "pesach": "Pesaj",
+    "quick and easy": "Rápido y Fácil",
+    "quick-easy": "Rápido y Fácil",
+    "rosh-hashana": "Rosh Hashaná",
+    "sephardi": "Sefardí",
+    "shavuot": "Shavuot",
+    "slow-cooker": "Olla de Cocción Lenta",
+    "stove-top": "Estufa",
+    "sukkot": "Sucot",
+    "tu-bishvat": "Tu BiShvat",
+    "yom-kippur": "Yom Kipur"
   }
 }

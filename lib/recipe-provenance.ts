@@ -17,13 +17,17 @@ export type ProvenanceCategory =
   | 'unknown'
   | 'ambiguous';
 
-export const PROVENANCE_INFO: Record<ProvenanceCategory, { label: string; badgeClass: string }> = {
-  placeholder: { label: 'Placeholder / Auto-filled', badgeClass: 'bg-mist text-dusk' },
-  ai_researched: { label: 'AI-Researched', badgeClass: 'bg-dairy/15 text-dairy' },
-  external_unverified: { label: 'External Source — Unverified', badgeClass: 'bg-denim text-white font-semibold' },
-  family: { label: 'Real Family Recipe', badgeClass: 'bg-sage/15 text-sage' },
-  unknown: { label: 'Unknown', badgeClass: 'bg-mist text-dusk' },
-  ambiguous: { label: 'Ambiguous', badgeClass: 'bg-rust/10 text-rust' },
+// labelKey is a key under the "recipeDetail" translation namespace
+// (messages/en.json / es.json), not display text -- SS-132 caught this
+// rendering as hardcoded English regardless of locale. Callers do
+// t(info.labelKey).
+export const PROVENANCE_INFO: Record<ProvenanceCategory, { labelKey: string; badgeClass: string }> = {
+  placeholder: { labelKey: 'provenancePlaceholder', badgeClass: 'bg-mist text-dusk' },
+  ai_researched: { labelKey: 'provenanceAiResearched', badgeClass: 'bg-dairy/15 text-dairy' },
+  external_unverified: { labelKey: 'provenanceExternalUnverified', badgeClass: 'bg-denim text-white font-semibold' },
+  family: { labelKey: 'provenanceFamily', badgeClass: 'bg-sage/15 text-sage' },
+  unknown: { labelKey: 'provenanceUnknown', badgeClass: 'bg-mist text-dusk' },
+  ambiguous: { labelKey: 'provenanceAmbiguous', badgeClass: 'bg-rust/10 text-rust' },
 };
 
 const YIELD_PREFIX = /^(serves?|serving|yield)/i;

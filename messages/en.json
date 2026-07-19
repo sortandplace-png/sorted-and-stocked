@@ -540,5 +540,55 @@
       "heading": "This week's meals",
       "nothingPlanned": "Nothing planned yet this week."
     }
+  },
+  "kosherType": {
+    "meat": "Meat",
+    "dairy": "Dairy",
+    "parve": "Parve"
+  },
+  "recipeDetail": {
+    "ownerView": "Owner view",
+    "staffCookView": "Staff cook view",
+    "provenancePlaceholder": "Placeholder / Auto-filled",
+    "provenanceAiResearched": "AI-Researched",
+    "provenanceExternalUnverified": "External Source — Unverified",
+    "provenanceFamily": "Real Family Recipe",
+    "provenanceUnknown": "Unknown",
+    "provenanceAmbiguous": "Ambiguous"
+  },
+  "recipeTags": {
+    "9x13": "9x13",
+    "american": "American",
+    "ashkenazi": "Ashkenazi",
+    "asian": "Asian",
+    "basics": "Basics",
+    "chanukah": "Chanukah",
+    "dairy": "Dairy",
+    "freezer-friendly": "Freezer-Friendly",
+    "gebrokts": "Gebrokts",
+    "grill": "Grill",
+    "italian": "Italian",
+    "jewish-classic": "Jewish Classic",
+    "kids platter": "Kids Platter",
+    "kids-friendly": "Kid-Friendly",
+    "kids-platter": "Kids Platter",
+    "mediterranean": "Mediterranean",
+    "mexican": "Mexican",
+    "NEW": "NEW",
+    "needs-quantity-confirmation": "Needs Quantity Confirmation",
+    "one-pan": "One Pan",
+    "one-pot": "One Pot",
+    "oven": "Oven",
+    "pesach": "Pesach",
+    "quick and easy": "Quick and Easy",
+    "quick-easy": "Quick & Easy",
+    "rosh-hashana": "Rosh Hashana",
+    "sephardi": "Sephardi",
+    "shavuot": "Shavuot",
+    "slow-cooker": "Slow Cooker",
+    "stove-top": "Stovetop",
+    "sukkot": "Sukkot",
+    "tu-bishvat": "Tu BiShvat",
+    "yom-kippur": "Yom Kippur"
   }
 }

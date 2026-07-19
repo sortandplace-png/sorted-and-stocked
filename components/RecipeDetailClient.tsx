@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { LOCALE_COOKIE } from '@/i18n/locale-constants';
 import { Printer, Share2, History as HistoryIcon, Heart, MoreVertical, Pencil, Copy, Trash2 } from 'lucide-react';
 import NewRecipeModal from '@/components/NewRecipeModal';
@@ -177,6 +177,30 @@ export default function RecipeDetailClient({
     if (next === locale) return;
     document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000`;
     router.refresh();
+  }
+  // SS-132: "Owner view" / "Staff cook view" / the provenance badges were
+  // hardcoded English, rendering unchanged in ES mode. tTags/tKosher use
+  // try/catch, not t.has(), so a real tag or kosher_type value that isn't
+  // in the map yet degrades to showing the raw value instead of throwing
+  // and breaking the whole page (next-intl throws on a missing key, it
+  // doesn't return undefined -- same root cause as the nothingOnList bug).
+  const t = useTranslations('recipeDetail');
+  const tTags = useTranslations('recipeTags');
+  const tKosher = useTranslations('kosherType');
+  function tagLabel(tag: string): string {
+    try {
+      return tTags(tag);
+    } catch {
+      return tag;
+    }
+  }
+  function kosherTypeLabel(value: string): string {
+    const key = value.toLowerCase().startsWith('parve') ? 'parve' : value.toLowerCase();
+    try {
+      return tKosher(key);
+    } catch {
+      return value;
+    }
   }
   const [checkedIds, setCheckedIds] = useState<Record<string, boolean>>({});
   const [addingToListIds, setAddingToListIds] = useState<Record<string, boolean>>({});
@@ -423,7 +447,7 @@ export default function RecipeDetailClient({
   const isScaled = targetServings !== null && targetServings !== baseServings;
 
   function servingsLabel(n: number) {
-    if (lang === 'es') return `${n} porción${n === 1 ? '' : 'es'}`;
+    if (lang === 'es') return n === 1 ? '1 porción' : `${n} porciones`;
     return `${n} serving${n === 1 ? '' : 's'}`;
   }
 
@@ -729,12 +753,12 @@ export default function RecipeDetailClient({
       <div className="flex items-center gap-1.5 flex-wrap mb-2">
         {recipe.kosher_type && (
           <span className={`inline-block text-xs font-medium border px-2.5 py-1 rounded-full ${kosherPillClass(recipe.kosher_type)}`}>
-            {kosherIcon(recipe.kosher_type)} {recipe.kosher_type}
+            {kosherIcon(recipe.kosher_type)} {kosherTypeLabel(recipe.kosher_type)}
           </span>
         )}
         {recipe.approx_total_minutes && (
           <span className="text-xs font-medium text-dusk bg-linen border border-cardBorder px-2.5 py-1 rounded-full">
-            ⏱ {formatMinutes(recipe.approx_total_minutes)}
+            ⏱ {formatMinutes(recipe.approx_total_minutes, lang)}
           </span>
         )}
         {/* Manager-only: real content provenance, derived from the recipes
@@ -746,7 +770,7 @@ export default function RecipeDetailClient({
             const category = classifyProvenance(recipe.notes);
             const info = PROVENANCE_INFO[category];
             return (
-              <span className={`text-xs px-2.5 py-1 rounded-full ${info.badgeClass}`}>{info.label}</span>
+              <span className={`text-xs px-2.5 py-1 rounded-full ${info.badgeClass}`}>{t(info.labelKey)}</span>
             );
           })()}
       </div>
@@ -761,7 +785,7 @@ export default function RecipeDetailClient({
                   : 'text-[10px] font-medium text-brass bg-mist px-2 py-0.5 rounded-full'
               }
             >
-              {tag}
+              {tagLabel(tag)}
             </span>
           ))}
         </div>
@@ -775,7 +799,7 @@ export default function RecipeDetailClient({
               view === 'owner' ? 'bg-denim text-white' : 'text-dusk'
             }`}
           >
-            Owner view
+            {t('ownerView')}
           </button>
           <button
             onClick={() => setView('staff')}
@@ -783,7 +807,7 @@ export default function RecipeDetailClient({
               view === 'staff' ? 'bg-denim text-white' : 'text-dusk'
             }`}
           >
-            Staff cook view
+            {t('staffCookView')}
           </button>
         </div>
         <div className="inline-flex rounded-full border border-cardBorder bg-card p-0.5 text-sm">
