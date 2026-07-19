@@ -58,6 +58,10 @@ type InventoryItem = {
   current_qty: number;
   min_qty: number;
   unit: string;
+  // Set only for items bought by the case/pack -- null means the quantity
+  // stepper's long-press bulk-add stays off for this item. No existing
+  // data populates this; it's set per-item through the edit form.
+  case_size: number | null;
   supplier: string | null;
   unit_cost: number | null;
   reorder_link: string | null;
@@ -90,6 +94,7 @@ type ItemFormState = {
   current_qty: string;
   min_qty: string;
   unit: string;
+  case_size: string;
   supplier: string;
   unit_cost: string;
   // Create-only. There's no inventory_item_id to attach a reorder_sources
@@ -118,6 +123,7 @@ const EMPTY_FORM: ItemFormState = {
   current_qty: '0',
   min_qty: '0',
   unit: 'pcs',
+  case_size: '',
   supplier: '',
   unit_cost: '',
   reorder_link: '',
@@ -312,6 +318,33 @@ export default function InventoryClient({
   // image is reachable, so a broken link would otherwise render as the
   // browser's broken-image icon instead of falling back to the category icon.
   const [brokenPhotoIds, setBrokenPhotoIds] = useState<Set<string>>(new Set());
+  // Which item's stepper is currently showing its long-press bulk-add
+  // chips (+half-case/+full-case) -- at most one at a time, dismissed on
+  // any tap elsewhere or once a chip is used.
+  const [bulkAddItemId, setBulkAddItemId] = useState<string | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Set true the moment a long-press actually opens the bulk-add chips, so
+  // the mouseup/touchend that follows a real long-press doesn't also fire
+  // as an ordinary tap (which would both open the chips AND add +1).
+  const longPressFiredRef = useRef(false);
+
+  function startLongPress(item: InventoryItem) {
+    longPressFiredRef.current = false;
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressTimer.current = setTimeout(() => {
+      if (item.case_size) {
+        longPressFiredRef.current = true;
+        setBulkAddItemId(item.id);
+      }
+    }, 500);
+  }
+
+  function cancelLongPress() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
 
   const supabase = createClient();
   const role = usePropertyRole();
@@ -345,7 +378,7 @@ export default function InventoryClient({
         const { data, error } = await supabase
           .from('inventory_items')
           .select(
-            'id, name, name_es, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
+            'id, name, name_es, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
           )
           .eq('property_id', propertyId)
           .order('name')
@@ -477,6 +510,34 @@ export default function InventoryClient({
     }
   }
 
+  // The card-level replacement for "open the edit form just to bump a
+  // number" -- current_qty only, floored at 0. Plain resilientUpdate
+  // (not the version-checked save the full edit form uses) since a
+  // stepper is meant for fast repeated taps, and last_counted_at/
+  // low-stock-shopping-list/audit-history all follow for free from the
+  // existing DB triggers on this table (trg_inventory_items_last_counted_at,
+  // trg_inventory_low_stock, trg_log_inventory_item_change) -- nothing
+  // else needs to happen client-side here.
+  async function adjustQuantity(item: InventoryItem, delta: number) {
+    const newQty = Math.max(0, item.current_qty + delta);
+    if (newQty === item.current_qty) return;
+    // last_counted_at is optimistically stamped here too, matching what
+    // trg_inventory_items_last_counted_at does server-side on any real
+    // qty change -- otherwise a "Not yet counted" badge would keep
+    // showing until the next full reload despite the DB already being
+    // correct, since the optimistic update above only touches current_qty.
+    const previous = { current_qty: item.current_qty, last_counted_at: item.last_counted_at };
+    const nowIso = new Date().toISOString();
+    setItems((prev) =>
+      prev.map((i) => (i.id === item.id ? { ...i, current_qty: newQty, last_counted_at: nowIso } : i))
+    );
+    const result = await resilientUpdate(supabase, 'inventory_items', { id: item.id }, { current_qty: newQty });
+    if (!result.ok) {
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, ...previous } : i)));
+      showToast('Failed to update quantity.', { variant: 'error' });
+    }
+  }
+
   async function loadHistory(itemId: string) {
     setHistoryLoading(true);
     const { data } = await supabase
@@ -603,6 +664,7 @@ export default function InventoryClient({
       location_id: item.location_id ?? '',
       current_qty: String(item.current_qty),
       min_qty: String(item.min_qty),
+      case_size: item.case_size !== null ? String(item.case_size) : '',
       unit: item.unit,
       supplier: item.supplier ?? '',
       unit_cost: item.unit_cost !== null ? String(item.unit_cost) : '',
@@ -673,7 +735,7 @@ export default function InventoryClient({
     const { data: existing } = await supabase
       .from('inventory_items')
       .select(
-        'id, name, name_es, category, location_id, current_qty, min_qty, unit, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
+        'id, name, name_es, category, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
       )
       .eq('id', matchId)
       .single();
@@ -725,6 +787,7 @@ export default function InventoryClient({
       current_qty: Number(form.current_qty) || 0,
       min_qty: Number(form.min_qty) || 0,
       unit: form.unit.trim() || 'pcs',
+      case_size: form.case_size.trim() ? Number(form.case_size) : null,
       supplier: form.supplier.trim() || null,
       unit_cost: form.unit_cost.trim() ? Number(form.unit_cost) : null,
       photo_url: photoUrl,
@@ -1129,19 +1192,75 @@ export default function InventoryClient({
               .join(' · ')}
           </p>
           <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-            {low ? (
-              <span className="text-xs font-medium text-rust bg-rust/10 px-2.5 py-1 rounded-full">
-                {item.current_qty} / {item.min_qty} {item.unit} — low
-              </span>
-            ) : notYetCounted ? (
-              <span className="text-xs font-medium text-brass bg-mist px-2.5 py-1 rounded-full">
-                Not yet counted
-              </span>
-            ) : (
-              <span className="text-xs text-dusk">
-                {item.current_qty} / {item.min_qty} {item.unit}
-              </span>
-            )}
+            {(() => {
+              const colorClass = low ? 'text-rust bg-rust/10' : notYetCounted ? 'text-brass bg-mist' : 'text-dusk bg-mist';
+              const label = notYetCounted
+                ? 'Not yet counted'
+                : `${item.current_qty} / ${item.min_qty} ${item.unit}${low ? ' — low' : ''}`;
+              return (
+                <div className="flex flex-col gap-1">
+                  {/* Replaces the old tap-the-whole-card-to-open-the-edit-
+                      form path for the single most common edit: adjusting
+                      how much is on hand. stopPropagation everywhere here so
+                      the card's own onClick (open full edit form) doesn't
+                      also fire. */}
+                  <div className={`flex items-center gap-0.5 rounded-full pl-1 pr-1 py-1 ${colorClass}`} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => adjustQuantity(item, -1)}
+                      className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-sm font-bold hover:bg-black/10"
+                      aria-label={`Decrease ${displayName(item)} quantity`}
+                    >
+                      −
+                    </button>
+                    <span className="text-xs font-medium px-1 whitespace-nowrap">{label}</span>
+                    <button
+                      onClick={() => {
+                        if (longPressFiredRef.current) {
+                          longPressFiredRef.current = false;
+                          return;
+                        }
+                        adjustQuantity(item, 1);
+                      }}
+                      onMouseDown={() => startLongPress(item)}
+                      onMouseUp={cancelLongPress}
+                      onMouseLeave={cancelLongPress}
+                      onTouchStart={() => startLongPress(item)}
+                      onTouchEnd={cancelLongPress}
+                      className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-sm font-bold hover:bg-black/10"
+                      aria-label={
+                        item.case_size
+                          ? `Increase ${displayName(item)} quantity, hold for bulk add`
+                          : `Increase ${displayName(item)} quantity`
+                      }
+                    >
+                      +
+                    </button>
+                  </div>
+                  {bulkAddItemId === item.id && item.case_size && (
+                    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => {
+                          adjustQuantity(item, Math.round(item.case_size! / 2));
+                          setBulkAddItemId(null);
+                        }}
+                        className="text-[11px] font-medium text-denim bg-card border border-cardBorder px-2 py-1 rounded-full"
+                      >
+                        +{Math.round(item.case_size / 2)} (half case)
+                      </button>
+                      <button
+                        onClick={() => {
+                          adjustQuantity(item, item.case_size!);
+                          setBulkAddItemId(null);
+                        }}
+                        className="text-[11px] font-medium text-denim bg-card border border-cardBorder px-2 py-1 rounded-full"
+                      >
+                        +{item.case_size} (full case)
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             {pesachModeEnabled &&
               item.pesach_status !== 'not_applicable' &&
               (() => {
@@ -1883,6 +2002,17 @@ function ItemFormSheet({
                 className={fieldClass}
                 value={form.unit}
                 onChange={(e) => onChange({ ...form, unit: e.target.value })}
+              />
+            </div>
+            <div className="mt-2">
+              <FieldLabel>Case size (optional)</FieldLabel>
+              <input
+                type="number"
+                min="1"
+                placeholder="e.g. 12 -- enables quick bulk-add on the card"
+                className={fieldClass}
+                value={form.case_size}
+                onChange={(e) => onChange({ ...form, case_size: e.target.value })}
               />
             </div>
           </div>
