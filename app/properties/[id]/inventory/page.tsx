@@ -6,9 +6,16 @@ export default async function InventoryPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ location?: string; new?: string }>;
+  searchParams: Promise<{ location?: string; new?: string; item?: string }>;
 }) {
   const { id } = await params;
-  const { location, new: openNew } = await searchParams;
-  return <InventoryClient propertyId={id} initialLocationFilter={location ?? null} initialOpenNew={openNew === '1'} />;
+  const { location, new: openNew, item } = await searchParams;
+  return (
+    <InventoryClient
+      propertyId={id}
+      initialLocationFilter={location ?? null}
+      initialOpenNew={openNew === '1'}
+      initialItemId={item ?? null}
+    />
+  );
 }

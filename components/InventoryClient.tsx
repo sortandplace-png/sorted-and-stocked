@@ -209,10 +209,12 @@ export default function InventoryClient({
   propertyId,
   initialLocationFilter = null,
   initialOpenNew = false,
+  initialItemId = null,
 }: {
   propertyId: string;
   initialLocationFilter?: string | null;
   initialOpenNew?: boolean;
+  initialItemId?: string | null;
 }) {
   const locale = useLocale();
   const displayName = (item: { name: string; name_es: string | null }) =>
@@ -553,6 +555,26 @@ export default function InventoryClient({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialOpenNew, loading]);
+
+  // Arrived here via a search result or a Low Stock Alert click for one
+  // specific item -- the room-level QR-scan filter above gets someone into
+  // the right room, but still leaves them hunting a shelf's worth of items
+  // for the one they actually came for. This opens that exact item's real
+  // detail view (the same edit-form modal a manual tap on its card opens)
+  // and sets the room filter to match, so closing the modal lands on a
+  // sensibly-scoped list rather than the full unfiltered inventory.
+  const openedItemFromQueryRef = useRef(false);
+  useEffect(() => {
+    if (initialItemId && !loading && !openedItemFromQueryRef.current) {
+      const target = items.find((i) => i.id === initialItemId);
+      if (target) {
+        openedItemFromQueryRef.current = true;
+        setLocationFilter(target.location_id ?? null);
+        openEditForm(target);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialItemId, loading, items]);
 
   function openEditForm(item: InventoryItem) {
     setPendingPhotoFile(null);

@@ -130,7 +130,9 @@ export default function HeaderSearchClient({ propertyId }: { propertyId: string 
           id: i.id,
           primary: i.name,
           secondary: null,
-          href: `/properties/${propertyId}/inventory${i.location_id ? `?location=${i.location_id}` : ''}`,
+          // Deep-links straight to this exact item's detail view, not just
+          // its room -- see InventoryClient's initialItemId handling.
+          href: `/properties/${propertyId}/inventory?item=${i.id}`,
         })),
         ...(locations.data ?? []).map((l) => ({
           kind: 'location' as const,

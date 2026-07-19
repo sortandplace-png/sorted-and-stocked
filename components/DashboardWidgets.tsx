@@ -402,11 +402,16 @@ function LowStockAlertsCard({ title, propertyId, items }: { title: string; prope
       ) : (
         <ul className="space-y-1">
           {preview.map((item) => (
-            <li key={item.id} className="text-sm text-denim flex items-center justify-between gap-2">
-              <span className="truncate">{item.name}</span>
-              <span className="text-rust font-medium text-xs shrink-0">
-                {item.currentQty}/{item.minQty}
-              </span>
+            <li key={item.id}>
+              <Link
+                href={`/properties/${propertyId}/inventory?item=${item.id}`}
+                className="text-sm text-denim flex items-center justify-between gap-2 hover:underline"
+              >
+                <span className="truncate">{item.name}</span>
+                <span className="text-rust font-medium text-xs shrink-0">
+                  {item.currentQty}/{item.minQty}
+                </span>
+              </Link>
             </li>
           ))}
         </ul>
