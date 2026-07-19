@@ -219,6 +219,29 @@ export default function RecipesGridView({
   const role = usePropertyRole();
   const t = useTranslations('recipesGrid');
   const tCourse = useTranslations('course');
+  // SS-146: same try/catch-wrapped lookups RecipeDetailClient.tsx uses for
+  // the same two fields (SS-132) -- kosher_type casing is inconsistent in
+  // production (Dairy/meat/Meat/parve/Parve) and tags is free text, so
+  // neither is guaranteed to have a matching key; next-intl throws on a
+  // miss rather than returning undefined, hence the catch-and-fall-back-to-
+  // raw-value instead of a .has() precheck.
+  const tTags = useTranslations('recipeTags');
+  const tKosher = useTranslations('kosherType');
+  function tagLabel(tag: string): string {
+    try {
+      return tTags(tag);
+    } catch {
+      return tag;
+    }
+  }
+  function kosherTypeLabel(value: string): string {
+    const key = value.toLowerCase().startsWith('parve') ? 'parve' : value.toLowerCase();
+    try {
+      return tKosher(key);
+    } catch {
+      return value;
+    }
+  }
   const locale = useLocale();
   const displayName = (r: { name: string; name_es?: string | null }) =>
     locale === 'es' && r.name_es ? r.name_es : r.name;
@@ -930,10 +953,11 @@ export default function RecipesGridView({
                   <Link
                     key={r.id}
                     href={`/properties/${propertyId}/recipes/${r.id}`}
-                    className={`shrink-0 lg:shrink lg:flex lg:items-center lg:gap-2 w-32 lg:w-full rounded-xl border shadow-card overflow-hidden hover:shadow-cardHover transition-shadow ${
+                    className={`relative shrink-0 lg:shrink lg:flex lg:items-center lg:gap-2 w-32 lg:w-full rounded-xl border shadow-card overflow-hidden hover:shadow-cardHover transition-shadow ${
                       r.is_pesach ? 'bg-brass/[0.08] border-brass/40' : 'bg-card border-cardBorder'
                     }`}
                   >
+                    <Pin size="sm" />
                     <div className="w-full lg:w-12 h-20 lg:h-12 bg-linen flex items-center justify-center shrink-0">
                       {r.photo_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -1132,12 +1156,12 @@ export default function RecipesGridView({
                           <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
                             {recipe.kosher_type && (
                               <span className={`inline-block text-xs font-medium border px-2.5 py-1 rounded-full ${kosherPillClass(recipe.kosher_type)}`}>
-                                {kosherIcon(recipe.kosher_type)} {recipe.kosher_type}
+                                {kosherIcon(recipe.kosher_type)} {kosherTypeLabel(recipe.kosher_type)}
                               </span>
                             )}
                             {recipe.approx_total_minutes && (
                               <span className="text-xs font-medium text-dusk bg-linen border border-cardBorder px-2.5 py-1 rounded-full">
-                                ⏱ {formatMinutes(recipe.approx_total_minutes)}
+                                ⏱ {formatMinutes(recipe.approx_total_minutes, locale as 'en' | 'es')}
                               </span>
                             )}
                           </div>
@@ -1152,7 +1176,7 @@ export default function RecipesGridView({
                                       : 'text-[10px] font-medium text-brass bg-mist px-2 py-0.5 rounded-full'
                                   }
                                 >
-                                  {tag}
+                                  {tagLabel(tag)}
                                 </span>
                               ))}
                             </div>
