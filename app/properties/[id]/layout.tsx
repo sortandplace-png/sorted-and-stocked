@@ -9,6 +9,7 @@ import HeaderAvatarUpload from '@/components/HeaderAvatarUpload';
 import HeaderSearchClient from '@/components/HeaderSearchClient';
 import StaffOnboardingModal from '@/components/StaffOnboardingModal';
 import { LogoMark } from '@/components/Logo';
+import HeaderLogoLink from '@/components/HeaderLogoLink';
 import LocaleToggle from '@/components/LocaleToggle';
 import { PropertyRoleProvider, type PropertyRole } from '@/components/PropertyRoleContext';
 import PropertySwitcher from '@/components/PropertySwitcher';
@@ -84,7 +85,7 @@ export default async function PropertyLayout({
             move to Concept B in this pass. */}
         <header className="flex items-center justify-between px-4 py-3 bg-denim text-white sticky top-0 z-30 print:hidden">
           <div className="flex items-center gap-2.5 min-w-0">
-            <Link href={`/properties/${id}/dashboard`} className="flex items-center gap-2.5 shrink-0">
+            <HeaderLogoLink propertyId={id} className="flex items-center gap-2.5 shrink-0">
               <LogoMark className="w-9 h-9 shrink-0" />
               {/* Hidden below sm, same icon-only-on-mobile pattern as the
                   header's other elements (the search trigger, the
@@ -92,7 +93,7 @@ export default async function PropertyLayout({
                   straight into the property switcher next to it on narrow
                   screens since nothing here was letting it shrink. */}
               <span className="hidden sm:inline font-display text-lg whitespace-nowrap">Sorted &amp; Stocked</span>
-            </Link>
+            </HeaderLogoLink>
             <PropertySwitcher
               currentPropertyId={id}
               currentPropertyName={propertyName}

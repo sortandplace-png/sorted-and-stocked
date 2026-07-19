@@ -185,7 +185,13 @@ export default function ProcurementClient({
     <div className="min-h-screen bg-cream">
       <header className="flex items-center justify-between px-4 py-3 bg-cream text-charcoal border-b border-gold-light/40 sticky top-0 z-30 print:hidden">
         <div className="flex items-center gap-2.5 min-w-0">
-          <LogoMark className="w-9 h-9" />
+          {/* SS-021: Procurement isn't scoped to a single property (it
+              combines shopping across several), so there's no one dashboard
+              to send this to -- links to the properties picker instead,
+              same destination as this header's own "Properties" link below. */}
+          <Link href="/properties" className="flex items-center gap-2.5 shrink-0">
+            <LogoMark className="w-9 h-9" />
+          </Link>
           <span className="font-display text-lg">Procurement</span>
         </div>
         <Link href="/properties" className="text-sm text-charcoal/60">
