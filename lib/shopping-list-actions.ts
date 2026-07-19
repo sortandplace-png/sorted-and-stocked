@@ -71,17 +71,20 @@ export async function addIngredientsToShoppingList(
   // for a property with more real inventory than that (confirmed: 1048),
   // any ingredient name that happened to fall past row 1000 would silently
   // fail to link to its real inventory row.
-  const inventoryItems: { id: string; name: string }[] = [];
+  const inventoryItems: { id: string; name: string; category: string | null }[] = [];
   for (let offset = 0; ; offset += 1000) {
     const { data } = await supabase
       .from('inventory_items')
-      .select('id, name')
+      .select('id, name, category')
       .eq('property_id', propertyId)
       .range(offset, offset + 999);
     inventoryItems.push(...(data ?? []));
     if (!data || data.length < 1000) break;
   }
-  const inventoryIdByName = new Map(inventoryItems.map((i) => [i.name.trim().toLowerCase(), i.id]));
+  // Keyed by the same normalized name used for matching, so a linked row's
+  // name/category can defer to the canonical inventory record below instead
+  // of whatever wording the recipe's own ingredient line happened to use.
+  const inventoryByName = new Map(inventoryItems.map((i) => [i.name.trim().toLowerCase(), i]));
 
   // A staple like "Chicken Stock" or "Salt" shows up in most recipes in a
   // week — generateShoppingList() in MealPlanView.tsx passes every recipe's
@@ -115,17 +118,26 @@ export async function addIngredientsToShoppingList(
   if (keysToInsert.length > 0) {
     const rows = keysToInsert.map((key) => {
       const ing = groups.get(key)![0];
+      const linkedItem = inventoryByName.get(key);
       return {
         shopping_list_id: list!.id,
         // Quantity/unit are recorded per-source below in
         // shopping_list_item_sources already — baking them into the display
         // name too broke de-duplication (two entries of "Milk" at different
         // quantities never matched as the same item) for no benefit.
-        name: ing.name,
-        category: ing.category,
+        //
+        // Prefer the linked inventory item's own name/category over the
+        // recipe ingredient's wording when a real link exists -- the two
+        // can genuinely differ (recipe text is free-form, inventory names
+        // are canonical) even though they matched on normalized name, and
+        // showing the ingredient's own text here was landing wrong on the
+        // shopping list despite the link itself being correct. Unmatched
+        // ingredients (linkedItem undefined) have nothing else to use.
+        name: linkedItem?.name ?? ing.name,
+        category: linkedItem?.category ?? ing.category,
         qty_needed: 1,
         status: 'pending' as const,
-        inventory_item_id: inventoryIdByName.get(key) ?? null,
+        inventory_item_id: linkedItem?.id ?? null,
       };
     });
 
