@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'fs';
 import { config } from 'dotenv';
 
-config({ path: 'C:/Users/rockl/OneDrive/Desktop/sorted-and-stocked-files/.env.local' });
+config({ path: 'C:/Users/rockl/OneDrive/Desktop/Sort and Place/sorted-and-stocked-files/.env.local' });
 
 const [,, sourceUrl, idsArg] = process.argv;
 if (!sourceUrl || !idsArg) {
