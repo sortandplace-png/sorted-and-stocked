@@ -358,23 +358,23 @@ export default function ShoppingListViewEnhanced({
     const itemId = item.item_id;
     return (
       <div className="relative flex items-center gap-1 mt-1">
-        <span className="rounded-full bg-gold-light/20 px-2 py-0.5 text-[10px] text-charcoal">
+        <span className="rounded-full bg-mist px-2 py-0.5 text-[10px] text-denim">
           {sourceTitle(first)}
         </span>
         {rest.length > 0 && (
           <button
             onClick={() => setExpandedPills((e) => ({ ...e, [itemId]: !e[itemId] }))}
-            className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-medium text-gold-dark"
+            className="rounded-full bg-mist px-2 py-0.5 text-[10px] font-medium text-brass"
           >
             +{rest.length} more
           </button>
         )}
         {expandedPills[itemId] && rest.length > 0 && (
-          <div className="absolute left-0 top-6 z-10 w-56 rounded-lg border border-gold-light/40 bg-white p-2 shadow-lg">
+          <div className="absolute left-0 top-6 z-10 w-56 rounded-lg border border-cardBorder bg-card p-2 shadow-cardHover">
             {itemSources.map((s, i) => (
               <div key={s.recipe_id + '_' + i} className="flex justify-between py-0.5 text-xs">
                 <span>{sourceTitle(s)}</span>
-                <span className="text-charcoal/50">
+                <span className="text-dusk">
                   {s.quantity ?? ''} {s.unit ?? ''}
                 </span>
               </div>
@@ -530,7 +530,7 @@ export default function ShoppingListViewEnhanced({
     return (
       <div
         key={item.item_id}
-        className={`rounded-lg border bg-white border-gold-light/20 hover:border-gold-light/40 transition-colors ${
+        className={`rounded-lg border bg-card border-cardBorder hover:border-brass/30 transition-colors ${
           density === 'compact' ? 'p-2' : 'p-3'
         } ${isChecked ? 'opacity-60' : ''}`}
       >
@@ -539,7 +539,7 @@ export default function ShoppingListViewEnhanced({
           <button
             onClick={() => toggleStatusForDisplayItem(item)}
             disabled={isItemProcessing(item)}
-            className={`print:hidden flex-shrink-0 mt-0.5 text-charcoal hover:text-sage transition-colors ${
+            className={`print:hidden flex-shrink-0 mt-0.5 text-denim hover:text-sage transition-colors ${
               isItemProcessing(item) ? 'opacity-40 cursor-wait' : ''
             }`}
           >
@@ -550,23 +550,23 @@ export default function ShoppingListViewEnhanced({
             <img
               src={item.photo_url}
               alt={item.name}
-              className="h-14 w-14 rounded object-cover flex-shrink-0 bg-gold-light/10"
+              className="h-14 w-14 rounded object-cover flex-shrink-0 bg-mist"
               onError={() => setBrokenPhotoIds((prev) => new Set(prev).add(item.item_id))}
             />
           ) : (
-            <div className="h-14 w-14 rounded bg-gold-light/10 flex items-center justify-center text-[10px] text-charcoal/40 flex-shrink-0">
+            <div className="h-14 w-14 rounded bg-mist flex items-center justify-center text-[10px] text-dusk flex-shrink-0">
               No photo
             </div>
           )}
 
           <div className="flex-1 min-w-0">
             {/* Name, bilingual EN/ES stacked */}
-            <h4 className={`font-medium text-sm ${isChecked ? 'line-through text-charcoal/50' : 'text-charcoal'}`}>
+            <h4 className={`font-medium text-sm ${isChecked ? 'line-through text-dusk' : 'text-denim'}`}>
               {displayName(item)}
-              {mergedCount > 1 && <span className="text-charcoal/40 font-normal"> ×{mergedCount}</span>}
+              {mergedCount > 1 && <span className="text-dusk font-normal"> ×{mergedCount}</span>}
             </h4>
             {secondary && (
-              <p className={`text-xs italic ${isChecked ? 'line-through text-charcoal/30' : 'text-charcoal/50'}`}>
+              <p className={`text-xs italic ${isChecked ? 'line-through text-dusk' : 'text-dusk'}`}>
                 {secondary}
               </p>
             )}
@@ -575,7 +575,7 @@ export default function ShoppingListViewEnhanced({
             {(qty || (item.kosher_type && kosherStyle)) && (
               <div className="flex items-center gap-1.5 flex-wrap mt-1">
                 {qty && (
-                  <span className="rounded-full bg-gold/15 text-gold-dark px-2 py-0.5 text-[10px] font-medium">
+                  <span className="rounded-full bg-mist text-brass px-2 py-0.5 text-[10px] font-medium">
                     {Math.round(qty.qty * 100) / 100} {qty.unit}
                   </span>
                 )}
@@ -596,7 +596,7 @@ export default function ShoppingListViewEnhanced({
                 aggregation entirely). */}
             {mergedCount === 1 && (
               <div className="print:hidden flex items-center gap-1.5 mt-1.5">
-                <label htmlFor={`purchase-qty-${item.item_id}`} className="text-[10px] text-charcoal/50">
+                <label htmlFor={`purchase-qty-${item.item_id}`} className="text-[10px] text-dusk">
                   {t('purchaseQtyLabel')}
                 </label>
                 <input
@@ -609,12 +609,12 @@ export default function ShoppingListViewEnhanced({
                   key={`${item.item_id}-${item.purchase_qty ?? ''}`}
                   placeholder={t('purchaseQtyPlaceholder')}
                   onBlur={(e) => savePurchaseQty(item.item_id, e.target.value)}
-                  className="w-16 rounded-md border border-gold-light/40 px-1.5 py-0.5 text-[11px] text-charcoal focus:outline-none focus:ring-1 focus:ring-gold-dark"
+                  className="w-16 rounded-md border border-cardBorder px-1.5 py-0.5 text-[11px] text-denim focus:outline-none focus:ring-1 focus:ring-brass"
                 />
               </div>
             )}
             {item.purchase_qty !== null && (
-              <p className="hidden print:block text-[10px] text-charcoal/60">
+              <p className="hidden print:block text-[10px] text-dusk">
                 {t('purchaseQtyLabel')}: {item.purchase_qty}
               </p>
             )}
@@ -630,17 +630,17 @@ export default function ShoppingListViewEnhanced({
 
             {item.is_rich_item ? (
               <>
-                <div className="flex items-center gap-2 mt-2 text-xs text-charcoal/60 flex-wrap">
+                <div className="flex items-center gap-2 mt-2 text-xs text-dusk flex-wrap">
                   {item.supplier && (
-                    <span className="bg-gold-light/20 px-2 py-0.5 rounded-full">{item.supplier}</span>
+                    <span className="bg-mist px-2 py-0.5 rounded-full">{item.supplier}</span>
                   )}
                   {item.current_stock !== null && (
-                    <span className="bg-gold-light/20 px-2 py-0.5 rounded-full">
+                    <span className="bg-mist px-2 py-0.5 rounded-full">
                       In stock: {item.current_stock}
                     </span>
                   )}
                   {item.location_name && (
-                    <span className="bg-gold-light/20 px-2 py-0.5 rounded-full text-charcoal/70">
+                    <span className="bg-mist px-2 py-0.5 rounded-full text-dusk">
                       📍 {item.location_name}
                     </span>
                   )}
@@ -653,16 +653,16 @@ export default function ShoppingListViewEnhanced({
                       href={getPreferredSource(item.reorder_sources)!.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-gold-dark hover:text-charcoal transition-colors font-medium"
+                      className="inline-flex items-center gap-1 text-xs text-brass hover:text-denim transition-colors font-medium"
                     >
                       Reorder <ExternalLink className="h-3 w-3" />
                     </a>
                   ) : (
-                    <span className="text-xs text-charcoal/30">No reorder link</span>
+                    <span className="text-xs text-dusk">No reorder link</span>
                   )}
                   <button
                     onClick={() => deleteDisplayItem(item)}
-                    className="ml-auto text-charcoal/40 hover:text-rust transition-colors"
+                    className="ml-auto text-dusk hover:text-rust transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -670,10 +670,10 @@ export default function ShoppingListViewEnhanced({
               </>
             ) : (
               <div className="print:hidden flex items-center gap-2 mt-2">
-                <span className="text-xs text-charcoal/40">{item.category}</span>
+                <span className="text-xs text-dusk">{item.category}</span>
                 <button
                   onClick={() => deleteDisplayItem(item)}
-                  className="ml-auto text-charcoal/40 hover:text-rust transition-colors"
+                  className="ml-auto text-dusk hover:text-rust transition-colors"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -686,7 +686,7 @@ export default function ShoppingListViewEnhanced({
   }
 
   if (loading) {
-    return <div className="text-center py-12 text-charcoal/50">Loading shopping list...</div>;
+    return <div className="text-center py-12 text-dusk">Loading shopping list...</div>;
   }
 
   const groups = groupItems();
@@ -702,31 +702,31 @@ export default function ShoppingListViewEnhanced({
           onClick={() => setShowMoreMenu((v) => !v)}
           aria-label="More options"
           title="More options"
-          className="text-charcoal/60 hover:text-charcoal p-1"
+          className="text-dusk hover:text-denim p-1"
         >
           <MoreVertical className="h-4 w-4" />
         </button>
         {showMoreMenu && (
           <div
-            className="absolute right-0 top-8 z-20 w-64 rounded-2xl border border-gold-light/40 bg-white shadow-lg p-3 space-y-3"
+            className="absolute right-0 top-8 z-20 w-64 rounded-2xl border border-cardBorder bg-card shadow-cardHover p-3 space-y-3"
             onMouseLeave={() => setShowMoreMenu(false)}
           >
-            <label className="flex items-center justify-between text-sm text-charcoal">
+            <label className="flex items-center justify-between text-sm text-denim">
               <span>Aggregate duplicates</span>
               <input
                 type="checkbox"
                 checked={aggregateDuplicates}
                 onChange={(e) => setAggregateDuplicates(e.target.checked)}
-                className="h-4 w-4 accent-gold-dark rounded"
+                className="h-4 w-4 accent-brass rounded"
               />
             </label>
-            <label className="flex items-center justify-between text-sm text-charcoal">
+            <label className="flex items-center justify-between text-sm text-denim">
               <span>Show "convenient to grab" items</span>
               <input
                 type="checkbox"
                 checked={showNiceToHave}
                 onChange={(e) => setShowNiceToHave(e.target.checked)}
-                className="h-4 w-4 accent-gold-dark rounded"
+                className="h-4 w-4 accent-brass rounded"
               />
             </label>
             <button
@@ -739,15 +739,15 @@ export default function ShoppingListViewEnhanced({
             >
               Clear checked ({completedItems.length})
             </button>
-            <div className="border-t border-gold-light/30 pt-3">
-              <p className="text-xs text-charcoal/40 mb-1.5">Density</p>
-              <div className="inline-flex rounded-full border border-gold-light/60 p-0.5 text-xs">
+            <div className="border-t border-cardBorder pt-3">
+              <p className="text-xs text-dusk mb-1.5">Density</p>
+              <div className="inline-flex rounded-full border border-cardBorder bg-card p-0.5 text-xs">
                 {(['comfortable', 'compact'] as const).map((d) => (
                   <button
                     key={d}
                     onClick={() => setDensity(d)}
                     className={`rounded-full px-3 py-1 capitalize ${
-                      density === d ? 'bg-gold-dark text-white' : 'text-charcoal/60'
+                      density === d ? 'bg-denim text-white' : 'text-dusk'
                     }`}
                   >
                     {d}
@@ -755,13 +755,13 @@ export default function ShoppingListViewEnhanced({
                 ))}
               </div>
             </div>
-            <div className="border-t border-gold-light/30 pt-3 flex items-center gap-4">
+            <div className="border-t border-cardBorder pt-3 flex items-center gap-4">
               <button
                 onClick={() => {
                   shareWhatsApp();
                   setShowMoreMenu(false);
                 }}
-                className="flex items-center gap-1.5 text-sm text-charcoal/70 hover:text-charcoal"
+                className="flex items-center gap-1.5 text-sm text-dusk hover:text-denim"
               >
                 <MessageCircle className="h-4 w-4" /> Share
               </button>
@@ -770,7 +770,7 @@ export default function ShoppingListViewEnhanced({
                   window.print();
                   setShowMoreMenu(false);
                 }}
-                className="flex items-center gap-1.5 text-sm text-charcoal/70 hover:text-charcoal"
+                className="flex items-center gap-1.5 text-sm text-dusk hover:text-denim"
               >
                 <Printer className="h-4 w-4" /> Print
               </button>
@@ -787,8 +787,8 @@ export default function ShoppingListViewEnhanced({
             onClick={() => setGroupBy(option)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
               groupBy === option
-                ? 'bg-gold text-charcoal'
-                : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+                ? 'bg-denim text-white'
+                : 'bg-card border border-cardBorder text-dusk hover:bg-mist'
             }`}
           >
             {/* Renamed per request -- confirmed this toggle and the
@@ -815,7 +815,7 @@ export default function ShoppingListViewEnhanced({
           return (
             <div
               key={group.title}
-              className="bg-white rounded-2xl border border-gold-light/40 shadow-sm shadow-charcoal/5 p-4"
+              className="bg-card rounded-2xl border border-cardBorder shadow-card p-4"
             >
               <button
                 onClick={() => toggleGroup(group.title)}
@@ -826,7 +826,7 @@ export default function ShoppingListViewEnhanced({
                     recipes and have no photo to show). Same photo-or-
                     fallback treatment as item cards elsewhere in this file. */}
                 {group.photoUrl !== undefined && (
-                  <span className="w-8 h-8 rounded-md overflow-hidden bg-cream shrink-0 flex items-center justify-center">
+                  <span className="w-8 h-8 rounded-md overflow-hidden bg-mist shrink-0 flex items-center justify-center">
                     {group.photoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={group.photoUrl} alt="" className="w-full h-full object-cover" />
@@ -835,10 +835,10 @@ export default function ShoppingListViewEnhanced({
                     )}
                   </span>
                 )}
-                <span className="font-display text-lg text-charcoal">{group.title}</span>
-                <span className="text-xs text-charcoal/40">({group.items.length})</span>
-                <span className="flex-1 border-t border-gold-light/40" />
-                <span className="text-charcoal/40 text-sm">{collapsed ? '▸' : '▾'}</span>
+                <span className="font-display text-lg text-denim">{group.title}</span>
+                <span className="text-xs text-dusk">({group.items.length})</span>
+                <span className="flex-1 border-t border-cardBorder" />
+                <span className="text-dusk text-sm">{collapsed ? '▸' : '▾'}</span>
               </button>
               {!collapsed && <div className="space-y-2">{group.items.map(renderItemCard)}</div>}
             </div>
@@ -852,30 +852,30 @@ export default function ShoppingListViewEnhanced({
           secondary to what's actually needed, but still worth seeing before
           the fully-done section at the very bottom. */}
       {showNiceToHave && (
-        <div className="print:hidden bg-white rounded-2xl border border-gold-light/40 shadow-sm shadow-charcoal/5 p-4">
+        <div className="print:hidden bg-card rounded-2xl border border-cardBorder shadow-card p-4">
           <div className="flex items-center gap-2 mb-2">
-            <span className="font-display text-lg text-charcoal/70">Convenient to grab</span>
-            <span className="text-xs text-charcoal/40">({niceToHaveItems.length})</span>
+            <span className="font-display text-lg text-dusk">Convenient to grab</span>
+            <span className="text-xs text-dusk">({niceToHaveItems.length})</span>
           </div>
-          <p className="text-xs text-charcoal/40 mb-3">
+          <p className="text-xs text-dusk mb-3">
             Not low yet, but close -- worth grabbing if you're already buying nearby stuff.
           </p>
           {niceToHaveItems.length === 0 ? (
-            <p className="text-sm text-charcoal/40">Nothing sitting in that range right now.</p>
+            <p className="text-sm text-dusk">Nothing sitting in that range right now.</p>
           ) : (
             <ul className="space-y-1.5">
               {niceToHaveItems.map((item) => (
                 <li key={item.id} className="flex items-center gap-3">
                   {item.photo_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.photo_url} alt="" className="h-10 w-10 rounded object-cover flex-shrink-0 bg-gold-light/10" />
+                    <img src={item.photo_url} alt="" className="h-10 w-10 rounded object-cover flex-shrink-0 bg-mist" />
                   ) : (
-                    <div className="h-10 w-10 rounded bg-gold-light/10 flex-shrink-0" />
+                    <div className="h-10 w-10 rounded bg-mist flex-shrink-0" />
                   )}
-                  <span className="flex-1 min-w-0 truncate text-sm text-charcoal/70">
+                  <span className="flex-1 min-w-0 truncate text-sm text-dusk">
                     {locale === 'es' && item.name_es ? item.name_es : item.name}
                   </span>
-                  <span className="shrink-0 text-xs text-charcoal/40">
+                  <span className="shrink-0 text-xs text-dusk">
                     {item.current_qty} / {item.min_qty} {item.unit}
                   </span>
                 </li>
@@ -890,15 +890,15 @@ export default function ShoppingListViewEnhanced({
           items at reduced opacity with strikethrough text (renderItemCard's
           isChecked styling), unchanged here. */}
       {completedItems.length > 0 && (
-        <div className="print:hidden bg-white rounded-2xl border border-gold-light/40 shadow-sm shadow-charcoal/5 p-4">
+        <div className="print:hidden bg-card rounded-2xl border border-cardBorder shadow-card p-4">
           <button
             onClick={() => setCompletedExpanded((v) => !v)}
             className="w-full flex items-center gap-2 text-left"
           >
-            <span className="font-display text-lg text-charcoal/60">Completed</span>
-            <span className="text-xs text-charcoal/40">({completedItems.length})</span>
-            <span className="flex-1 border-t border-gold-light/40" />
-            <span className="text-charcoal/40 text-sm">{completedExpanded ? '▾' : '▸'}</span>
+            <span className="font-display text-lg text-dusk">Completed</span>
+            <span className="text-xs text-dusk">({completedItems.length})</span>
+            <span className="flex-1 border-t border-cardBorder" />
+            <span className="text-dusk text-sm">{completedExpanded ? '▾' : '▸'}</span>
           </button>
           {completedExpanded && (
             <div className="space-y-2 mt-3">{aggregateItems(completedItems).map(renderItemCard)}</div>
@@ -908,15 +908,15 @@ export default function ShoppingListViewEnhanced({
 
       {items.length === 0 && (
         <div className="text-center py-12 px-4">
-          <div className="mx-auto mb-3 w-14 h-14 rounded-full bg-gold-light/25 flex items-center justify-center">
-            <ShoppingCart className="h-6 w-6 text-gold-dark" strokeWidth={1.75} aria-hidden="true" />
+          <div className="mx-auto mb-3 w-14 h-14 rounded-full bg-mist flex items-center justify-center">
+            <ShoppingCart className="h-6 w-6 text-brass" strokeWidth={1.75} aria-hidden="true" />
           </div>
-          <p className="text-sm text-charcoal/60 mb-1">{t('emptyTitle')}</p>
-          <p className="text-xs text-charcoal/40 mb-4">{t('emptySubtitle')}</p>
+          <p className="text-sm text-dusk mb-1">{t('emptyTitle')}</p>
+          <p className="text-xs text-dusk mb-4">{t('emptySubtitle')}</p>
           <button
             onClick={handleGenerateFromWeek}
             disabled={generating}
-            className="inline-flex items-center gap-1.5 bg-gold-dark text-white px-5 py-2.5 rounded-full text-sm font-medium hover:opacity-90 transition disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 bg-denim text-white px-5 py-2.5 rounded-full text-sm font-medium hover:opacity-90 transition disabled:opacity-40"
           >
             <Sparkles className="h-4 w-4" />
             {generating ? t('generating') : t('generateFromWeek')}
@@ -924,7 +924,7 @@ export default function ShoppingListViewEnhanced({
         </div>
       )}
 
-      <div className="text-xs text-charcoal/40 pt-2 border-t border-gold-light/20">
+      <div className="text-xs text-dusk pt-2 border-t border-cardBorder">
         {items.length} items total
       </div>
     </div>
