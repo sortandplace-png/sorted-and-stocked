@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
+import Pin from '@/components/PinAccent';
 
 export type PropertyEntry = { id: string; name: string; role: string };
 export type HouseholdGroup = { key: string; householdName: string | null; properties: PropertyEntry[] };
@@ -19,10 +20,11 @@ function PropertyLink({ property, compact }: { property: PropertyEntry; compact?
   return (
     <Link
       href={`/properties/${property.id}/${destination}`}
-      className={`flex items-center justify-between bg-card rounded-xl2 shadow-card hover:shadow-cardHover transition-shadow ${
+      className={`relative flex items-center justify-between bg-card rounded-xl2 shadow-card hover:shadow-cardHover transition-shadow ${
         compact ? 'px-4 py-2.5' : 'px-4 py-3'
       }`}
     >
+      <Pin size="sm" />
       <span className={`text-denim ${compact ? 'text-sm' : ''}`}>{property.name}</span>
       <span className="text-xs text-dusk capitalize">{property.role}</span>
     </Link>
@@ -49,8 +51,9 @@ export default function PropertiesPickerList({ groups }: { groups: HouseholdGrou
             <button
               onClick={() => setExpandedKey(isExpanded ? null : group.key)}
               aria-expanded={isExpanded}
-              className="w-full flex items-center justify-between bg-card rounded-xl2 shadow-card hover:shadow-cardHover transition-shadow px-4 py-3"
+              className="relative w-full flex items-center justify-between bg-card rounded-xl2 shadow-card hover:shadow-cardHover transition-shadow px-4 py-3"
             >
+              <Pin size="sm" />
               <span className="text-denim">{group.householdName ?? 'Properties'}</span>
               <span className="flex items-center gap-1.5 text-xs text-dusk">
                 {group.properties.length} properties

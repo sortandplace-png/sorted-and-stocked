@@ -62,7 +62,7 @@ export default async function PropertiesPage() {
   const groups = [...groupsByKey.values()];
 
   return (
-    <div className="min-h-screen bg-linen px-6 pt-12">
+    <div className="min-h-screen bg-mist px-6 pt-12">
       <div className="max-w-sm mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
@@ -85,7 +85,7 @@ export default async function PropertiesPage() {
         {memberships && memberships.length > 1 && (
           <Link
             href="/procurement"
-            className="block text-center py-2.5 rounded-full bg-brass text-white text-sm font-medium mb-2"
+            className="block text-center py-2.5 rounded-full bg-denim text-white text-sm font-medium mb-2"
           >
             Shop for multiple properties at once
           </Link>
