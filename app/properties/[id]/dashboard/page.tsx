@@ -762,14 +762,18 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             candleContent={
               <>
                 <div
-                  // backgroundSize: 'cover' is the CSS-background equivalent
-                  // of object-fit: cover -- this already crops rather than
-                  // stretches. backgroundRepeat added defensively. 110px is
-                  // a fixed floor, independent of the height-match above --
-                  // when both cards are expanded the match now comes from
-                  // TodayCandleLightingRow's stretch, not from this photo's
-                  // own height chasing Today's.
-                  className="h-[110px] w-full bg-denim shrink-0"
+                  // Per Racquel's reference image, the photo is meant to
+                  // dominate this card -- large majority of the height, thin
+                  // header, compact footer -- not just a slightly-taller
+                  // strip above a big padded footer. So the flex-1 that used
+                  // to live on the footer below now lives here instead: this
+                  // grows to absorb any extra height from the Today
+                  // height-match (TodayCandleLightingRow's stretch), while
+                  // the 230px min-height is the floor for every other case
+                  // (standalone, or Today collapsed). backgroundSize: cover
+                  // means growing this never stretches/distorts the photo,
+                  // it just shows more of it.
+                  className="min-h-[230px] w-full bg-denim flex-1"
                   style={{
                     backgroundImage: `url('https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/dashboard-photos/candle.jpeg')`,
                     backgroundSize: 'cover',
@@ -777,7 +781,15 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                     backgroundRepeat: 'no-repeat',
                   }}
                 />
-                <div className="bg-denim px-5 py-[20px] flex-1 flex items-center justify-center">
+                {/* shrink-0 + no flex-1: this used to be the element that
+                    grew to absorb extra height (see above), which is exactly
+                    why it read as an oversized block -- LocationZmanim's own
+                    dark variant already renders as two tight lines, all the
+                    extra bulk was this wrapper's padding centered in leftover
+                    flex space, not the content itself. Now it always sizes
+                    to its own content, matching the reference's "compact
+                    footer, two tight lines." */}
+                <div className="bg-denim px-5 py-4 flex items-center justify-center shrink-0">
                   <LocationZmanim
                     variant="dark"
                     propertyName={propertyName}
