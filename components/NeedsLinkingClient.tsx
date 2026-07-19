@@ -271,8 +271,8 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Needs Linking</h1>
-      <p className={`text-sm text-charcoal/50 ${autoLinkResult && autoLinkResult.linked > 0 ? 'mb-1' : 'mb-4'}`}>
+      <h1 className="text-2xl font-display text-denim mb-1">Needs Linking</h1>
+      <p className={`text-sm text-dusk ${autoLinkResult && autoLinkResult.linked > 0 ? 'mb-1' : 'mb-4'}`}>
         {groups.length} ingredient{groups.length === 1 ? '' : 's'} still need a real inventory link.
       </p>
       {autoLinkResult && autoLinkResult.linked > 0 && (
@@ -287,14 +287,14 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
       )}
 
       {active ? (
-        <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+        <div className="bg-card rounded-2xl shadow-card p-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-display text-lg text-charcoal">{active.name}</h2>
-            <button onClick={() => setActiveName(null)} className="text-sm text-charcoal/40 hover:text-charcoal">
+            <h2 className="font-display text-lg text-denim">{active.name}</h2>
+            <button onClick={() => setActiveName(null)} className="text-sm text-dusk hover:text-denim">
               Back
             </button>
           </div>
-          <p className="text-xs text-charcoal/50 mb-3">
+          <p className="text-xs text-dusk mb-3">
             Appears unlinked in {active.count} recipe{active.count === 1 ? '' : 's'}. Linking updates all of them.
           </p>
 
@@ -303,16 +303,16 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search inventory items…"
             autoFocus
-            className="w-full border border-gold-light/60 rounded-full px-4 py-2 text-sm mb-2"
+            className="w-full border border-cardBorder rounded-full px-4 py-2 text-sm mb-2"
           />
           {inventoryOptions.length > 0 && (
-            <div className="border border-gold-light/40 rounded-xl divide-y divide-gold-light/20 mb-4 max-h-56 overflow-y-auto">
+            <div className="border border-cardBorder rounded-xl divide-y divide-cardBorder mb-4 max-h-56 overflow-y-auto">
               {inventoryOptions.map((opt) => (
                 <button
                   key={opt.id}
                   onClick={() => linkNamesTo([active.name], opt.id, opt.name)}
                   disabled={working}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-gold-light/10 disabled:opacity-40"
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-mist disabled:opacity-40"
                 >
                   {opt.name}
                 </button>
@@ -324,14 +324,14 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
             <button
               onClick={() => markNamesIgnored([active.name])}
               disabled={working}
-              className="w-full text-sm text-charcoal/50 hover:text-charcoal underline disabled:opacity-40"
+              className="w-full text-sm text-dusk hover:text-denim underline disabled:opacity-40"
             >
               Ignore — real ingredient, just not inventory-tracked
             </button>
             <button
               onClick={() => markNamesNotFood([active.name])}
               disabled={working}
-              className="w-full text-sm text-charcoal/50 hover:text-charcoal underline disabled:opacity-40"
+              className="w-full text-sm text-dusk hover:text-denim underline disabled:opacity-40"
             >
               Not actually a purchasable ingredient (mark not-food)
             </button>
@@ -340,27 +340,27 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
       ) : (
         <div className="space-y-5">
           {waterGroups.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 overflow-hidden">
+            <div className="bg-card rounded-2xl shadow-card overflow-hidden">
               <button
                 onClick={() => setWaterExpanded((v) => !v)}
                 className="w-full flex items-center justify-between px-4 py-3 text-left"
               >
                 <span>
-                  <span className="block font-display text-lg text-charcoal">💧 Water group</span>
-                  <span className="block text-xs text-charcoal/50">
+                  <span className="block font-display text-lg text-denim">💧 Water group</span>
+                  <span className="block text-xs text-dusk">
                     {waterGroups.length} variant{waterGroups.length === 1 ? '' : 's'} · {waterTotalMentions} appearance
                     {waterTotalMentions === 1 ? '' : 's'}
                   </span>
                 </span>
-                <span className="text-charcoal/40 text-sm">{waterExpanded ? '▲' : '▼'}</span>
+                <span className="text-dusk text-sm">{waterExpanded ? '▲' : '▼'}</span>
               </button>
 
               {waterExpanded && (
                 <ul className="px-4 pb-2 space-y-1">
                   {waterGroups.map((g) => (
-                    <li key={g.name} className="text-xs text-charcoal/60 flex items-center justify-between">
+                    <li key={g.name} className="text-xs text-dusk flex items-center justify-between">
                       <span className="truncate">{g.name}</span>
-                      <span className="text-charcoal/40 shrink-0 ml-2">
+                      <span className="text-dusk shrink-0 ml-2">
                         {g.count}×
                       </span>
                     </li>
@@ -368,11 +368,11 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
                 </ul>
               )}
 
-              <div className="px-4 pb-4 pt-1 border-t border-gold-light/30">
+              <div className="px-4 pb-4 pt-1 border-t border-cardBorder">
                 {waterSuggestion && (
-                  <p className="text-xs text-charcoal/50 mb-2">
-                    Suggested match: <span className="font-medium text-charcoal">{waterSuggestion.name}</span>{' '}
-                    <span className="text-gold-dark">({Math.round(waterSuggestion.similarity * 100)}% match)</span>
+                  <p className="text-xs text-dusk mb-2">
+                    Suggested match: <span className="font-medium text-denim">{waterSuggestion.name}</span>{' '}
+                    <span className="text-brass">({Math.round(waterSuggestion.similarity * 100)}% match)</span>
                   </p>
                 )}
                 <div className="flex flex-wrap gap-2">
@@ -380,7 +380,7 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
                     <button
                       onClick={() => linkNamesTo(waterGroups.map((g) => g.name), waterSuggestion.id, waterSuggestion.name)}
                       disabled={working}
-                      className="text-xs font-medium bg-gold-dark text-white px-3 py-1.5 rounded-full disabled:opacity-40"
+                      className="text-xs font-medium bg-denim text-white px-3 py-1.5 rounded-full disabled:opacity-40"
                     >
                       Link all to {waterSuggestion.name}
                     </button>
@@ -391,14 +391,14 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
                       setBulkSearch('water');
                     }}
                     disabled={working}
-                    className="text-xs font-medium border border-gold-light/60 text-charcoal px-3 py-1.5 rounded-full disabled:opacity-40"
+                    className="text-xs font-medium border border-brass/30 text-denim px-3 py-1.5 rounded-full disabled:opacity-40"
                   >
                     Link All to Inventory Item…
                   </button>
                   <button
                     onClick={() => markNamesIgnored(waterGroups.map((g) => g.name))}
                     disabled={working}
-                    className="text-xs font-medium border border-gold-light/60 text-charcoal px-3 py-1.5 rounded-full disabled:opacity-40"
+                    className="text-xs font-medium border border-brass/30 text-denim px-3 py-1.5 rounded-full disabled:opacity-40"
                   >
                     Ignore All Water
                   </button>
@@ -411,16 +411,16 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
                       onChange={(e) => setBulkSearch(e.target.value)}
                       placeholder="Search inventory items…"
                       autoFocus
-                      className="w-full border border-gold-light/60 rounded-full px-4 py-2 text-sm mb-2"
+                      className="w-full border border-cardBorder rounded-full px-4 py-2 text-sm mb-2"
                     />
                     {bulkOptions.length > 0 && (
-                      <div className="border border-gold-light/40 rounded-xl divide-y divide-gold-light/20 max-h-40 overflow-y-auto">
+                      <div className="border border-cardBorder rounded-xl divide-y divide-cardBorder max-h-40 overflow-y-auto">
                         {bulkOptions.map((opt) => (
                           <button
                             key={opt.id}
                             onClick={() => linkNamesTo(waterGroups.map((g) => g.name), opt.id, opt.name)}
                             disabled={working}
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-gold-light/10 disabled:opacity-40"
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-mist disabled:opacity-40"
                           >
                             {opt.name}
                           </button>
@@ -436,19 +436,19 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
           {otherGroups.length > 0 && (
             <div>
               {waterGroups.length > 0 && (
-                <h2 className="text-xs font-medium uppercase tracking-wider text-gold-dark mb-2">Other ingredients</h2>
+                <h2 className="text-xs font-medium uppercase tracking-wider text-brass mb-2">Other ingredients</h2>
               )}
               <ul className="space-y-2">
                 {otherGroups.map((group) => (
                   <li
                     key={group.name}
-                    className="flex items-center gap-2 bg-white rounded-xl shadow-sm shadow-charcoal/5 px-3 py-3"
+                    className="flex items-center gap-2 bg-card rounded-xl shadow-card px-3 py-3"
                   >
                     <input
                       type="checkbox"
                       checked={selectedNames.has(group.name)}
                       onChange={() => toggleSelected(group.name)}
-                      className="h-4 w-4 accent-gold-dark rounded shrink-0"
+                      className="h-4 w-4 accent-brass rounded shrink-0"
                       aria-label={`Select ${group.name}`}
                     />
                     <button
@@ -458,8 +458,8 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
                       }}
                       className="flex-1 flex items-center justify-between text-left"
                     >
-                      <span className="text-sm font-medium text-charcoal">{group.name}</span>
-                      <span className="text-xs text-charcoal/40 shrink-0 ml-2">
+                      <span className="text-sm font-medium text-denim">{group.name}</span>
+                      <span className="text-xs text-dusk shrink-0 ml-2">
                         {group.count} recipe{group.count === 1 ? '' : 's'}
                       </span>
                     </button>
@@ -470,8 +470,8 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
           )}
 
           {selectedNames.size > 0 && (
-            <div className="sticky bottom-4 bg-white rounded-2xl shadow-md shadow-charcoal/10 border border-gold-light/40 p-3">
-              <p className="text-xs text-charcoal/50 mb-2">{selectedNames.size} selected</p>
+            <div className="sticky bottom-4 bg-card rounded-2xl shadow-cardHover border border-cardBorder p-3">
+              <p className="text-xs text-dusk mb-2">{selectedNames.size} selected</p>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => {
@@ -479,21 +479,21 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
                     setBulkSearch('');
                   }}
                   disabled={working}
-                  className="text-xs font-medium bg-gold-dark text-white px-3 py-1.5 rounded-full disabled:opacity-40"
+                  className="text-xs font-medium bg-denim text-white px-3 py-1.5 rounded-full disabled:opacity-40"
                 >
                   Link selected to…
                 </button>
                 <button
                   onClick={() => markNamesIgnored([...selectedNames])}
                   disabled={working}
-                  className="text-xs font-medium border border-gold-light/60 text-charcoal px-3 py-1.5 rounded-full disabled:opacity-40"
+                  className="text-xs font-medium border border-brass/30 text-denim px-3 py-1.5 rounded-full disabled:opacity-40"
                 >
                   Ignore selected
                 </button>
                 <button
                   onClick={() => setSelectedNames(new Set())}
                   disabled={working}
-                  className="text-xs text-charcoal/50 underline px-1 py-1.5"
+                  className="text-xs text-dusk underline px-1 py-1.5"
                 >
                   Clear
                 </button>
@@ -506,16 +506,16 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
                     onChange={(e) => setBulkSearch(e.target.value)}
                     placeholder="Search inventory items…"
                     autoFocus
-                    className="w-full border border-gold-light/60 rounded-full px-4 py-2 text-sm mb-2"
+                    className="w-full border border-cardBorder rounded-full px-4 py-2 text-sm mb-2"
                   />
                   {bulkOptions.length > 0 && (
-                    <div className="border border-gold-light/40 rounded-xl divide-y divide-gold-light/20 max-h-40 overflow-y-auto">
+                    <div className="border border-cardBorder rounded-xl divide-y divide-cardBorder max-h-40 overflow-y-auto">
                       {bulkOptions.map((opt) => (
                         <button
                           key={opt.id}
                           onClick={() => linkNamesTo([...selectedNames], opt.id, opt.name)}
                           disabled={working}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-gold-light/10 disabled:opacity-40"
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-mist disabled:opacity-40"
                         >
                           {opt.name}
                         </button>
