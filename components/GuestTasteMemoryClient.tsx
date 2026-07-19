@@ -44,7 +44,7 @@ const PREFERENCE_LABELS: Record<PreferenceType, string> = {
 
 const PREFERENCE_STYLES: Record<PreferenceType, string> = {
   like: 'text-sage',
-  dislike: 'text-charcoal/60',
+  dislike: 'text-dusk',
   allergy: 'text-rust font-semibold',
   sensitivity: 'text-rust',
 };
@@ -231,28 +231,28 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Guest &amp; Family Taste Memory</h1>
-      <p className="text-sm text-charcoal/50 mb-4">
+      <h1 className="text-2xl font-display text-denim mb-1">Guest &amp; Family Taste Memory</h1>
+      <p className="text-sm text-dusk mb-4">
         Likes, dislikes, allergies, and sensitivities — kept with the person, not just the meal.
       </p>
 
       {canManage(role) && (
-        <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-2">
-          <h2 className="font-display text-lg text-charcoal mb-1">Add a person</h2>
+        <div className="bg-card rounded-2xl shadow-card p-4 mb-6 space-y-2">
+          <h2 className="font-display text-lg text-denim mb-1">Add a person</h2>
           <div>
             <FieldLabel>Name</FieldLabel>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Name"
-              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+              className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
             />
           </div>
-          <div className="flex bg-cream rounded-full border border-gold-light/60 p-0.5 text-sm">
+          <div className="flex bg-card rounded-full border border-cardBorder p-0.5 text-sm">
             <button
               onClick={() => setPersonType('family')}
               className={`flex-1 py-1.5 rounded-full transition-colors ${
-                personType === 'family' ? 'bg-gold-dark text-white' : 'text-charcoal/60'
+                personType === 'family' ? 'bg-denim text-white' : 'text-dusk'
               }`}
             >
               Family
@@ -260,18 +260,18 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
             <button
               onClick={() => setPersonType('guest')}
               className={`flex-1 py-1.5 rounded-full transition-colors ${
-                personType === 'guest' ? 'bg-gold-dark text-white' : 'text-charcoal/60'
+                personType === 'guest' ? 'bg-denim text-white' : 'text-dusk'
               }`}
             >
               Guest
             </button>
           </div>
-          <label className="flex items-center gap-2 text-sm text-charcoal/70 px-1">
+          <label className="flex items-center gap-2 text-sm text-dusk px-1">
             <input
               type="checkbox"
               checked={active}
               onChange={(e) => setActive(e.target.checked)}
-              className="h-4 w-4 accent-gold"
+              className="h-4 w-4 accent-brass"
             />
             Active
           </label>
@@ -282,17 +282,17 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
               onChange={(e) => setPersonNotes(e.target.value)}
               placeholder="Notes (optional)"
               rows={2}
-              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+              className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
             />
           </div>
           <div>
             <FieldLabel>Link to a Contacts &amp; Vendors entry (optional)</FieldLabel>
             {linkedContact ? (
-              <div className="flex items-center justify-between border border-gold-light/60 rounded-xl px-3 py-2 text-sm">
-                <span className="text-charcoal truncate">{linkedContact.name}</span>
+              <div className="flex items-center justify-between border border-cardBorder rounded-xl px-3 py-2 text-sm">
+                <span className="text-denim truncate">{linkedContact.name}</span>
                 <button
                   onClick={() => setLinkedContact(null)}
-                  className="text-charcoal/30 hover:text-rust shrink-0 ml-2"
+                  className="text-dusk hover:text-rust shrink-0 ml-2"
                   aria-label="Clear linked contact"
                 >
                   ✕
@@ -305,10 +305,10 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
                   onFocus={ensureContactsLoaded}
                   onChange={(e) => setContactLinkSearch(e.target.value)}
                   placeholder="Search contacts…"
-                  className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm mb-1"
+                  className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm mb-1"
                 />
                 {contactLinkSearch.trim() && (
-                  <div className="max-h-36 overflow-y-auto border border-gold-light/40 rounded-xl divide-y divide-gold-light/20">
+                  <div className="max-h-36 overflow-y-auto border border-cardBorder rounded-xl divide-y divide-cardBorder">
                     {(contacts ?? [])
                       .filter((c) => c.name.toLowerCase().includes(contactLinkSearch.toLowerCase()))
                       .slice(0, 20)
@@ -319,7 +319,7 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
                             setLinkedContact(c);
                             setContactLinkSearch('');
                           }}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-gold-light/10 truncate"
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-mist truncate"
                         >
                           {c.name}
                         </button>
@@ -332,7 +332,7 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
           <button
             onClick={addPerson}
             disabled={savingPerson || !name.trim()}
-            className="w-full py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
+            className="w-full py-2.5 rounded-full bg-denim text-white font-medium disabled:opacity-40"
           >
             {savingPerson ? 'Saving…' : 'Add person'}
           </button>
@@ -340,7 +340,7 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
       )}
 
       {people.length === 0 && (
-        <p className="text-sm text-charcoal/40 text-center py-8">
+        <p className="text-sm text-dusk text-center py-8">
           {canManage(role)
             ? 'No one added yet — use the form above to add a family member or guest.'
             : 'No one added yet. Ask a manager to add someone.'}
@@ -353,29 +353,29 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
           return (
             <li
               key={person.id}
-              className={`bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-3 ${!person.active ? 'opacity-50' : ''}`}
+              className={`bg-card rounded-2xl shadow-card p-3 ${!person.active ? 'opacity-50' : ''}`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-medium text-sm text-charcoal">
+                  <p className="font-medium text-sm text-denim">
                     {person.name}{' '}
-                    <span className="text-xs font-normal text-charcoal/40">
+                    <span className="text-xs font-normal text-dusk">
                       · {person.person_type === 'family' ? 'Family' : 'Guest'}
                       {!person.active && ' · inactive'}
                     </span>
                   </p>
-                  {person.notes && <p className="text-xs text-charcoal/50 mt-0.5">{person.notes}</p>}
+                  {person.notes && <p className="text-xs text-dusk mt-0.5">{person.notes}</p>}
                   {person.contact && (
-                    <div className="flex flex-wrap gap-2 mt-1 text-xs text-charcoal/60">
-                      {person.contact.phone && <a href={`tel:${person.contact.phone}`} className="hover:text-charcoal">📞 {person.contact.phone}</a>}
-                      {person.contact.email && <a href={`mailto:${person.contact.email}`} className="hover:text-charcoal">✉️ {person.contact.email}</a>}
+                    <div className="flex flex-wrap gap-2 mt-1 text-xs text-dusk">
+                      {person.contact.phone && <a href={`tel:${person.contact.phone}`} className="hover:text-denim">📞 {person.contact.phone}</a>}
+                      {person.contact.email && <a href={`mailto:${person.contact.email}`} className="hover:text-denim">✉️ {person.contact.email}</a>}
                     </div>
                   )}
                 </div>
                 {canManage(role) && (
                   <button
                     onClick={() => removePerson(person.id)}
-                    className="text-xs text-charcoal/30 hover:text-rust shrink-0"
+                    className="text-xs text-dusk hover:text-rust shrink-0"
                     aria-label={`Delete ${person.name}`}
                   >
                     ✕
@@ -391,16 +391,16 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
                         <span className={PREFERENCE_STYLES[pref.preference_type]}>
                           {PREFERENCE_LABELS[pref.preference_type]}
                         </span>
-                        <span className="text-charcoal"> · {pref.subject}</span>
+                        <span className="text-denim"> · {pref.subject}</span>
                         {(pref.recipe?.name || pref.inventory_item?.name) && (
-                          <span className="text-charcoal/40"> ({pref.recipe?.name ?? pref.inventory_item?.name})</span>
+                          <span className="text-dusk"> ({pref.recipe?.name ?? pref.inventory_item?.name})</span>
                         )}
-                        {pref.notes && <span className="text-charcoal/40"> — {pref.notes}</span>}
+                        {pref.notes && <span className="text-dusk"> — {pref.notes}</span>}
                       </span>
                       {canManage(role) && (
                         <button
                           onClick={() => removePreference(pref.id)}
-                          className="text-charcoal/30 hover:text-rust shrink-0"
+                          className="text-dusk hover:text-rust shrink-0"
                           aria-label="Delete preference"
                         >
                           ✕
@@ -413,14 +413,14 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
 
               {canManage(role) &&
                 (openPrefFor === person.id ? (
-                  <div className="mt-3 pt-3 border-t border-gold-light/40 space-y-2">
-                    <div className="flex bg-cream rounded-full border border-gold-light/60 p-0.5 text-xs">
+                  <div className="mt-3 pt-3 border-t border-cardBorder space-y-2">
+                    <div className="flex bg-card rounded-full border border-cardBorder p-0.5 text-xs">
                       {(['like', 'dislike', 'allergy', 'sensitivity'] as PreferenceType[]).map((t) => (
                         <button
                           key={t}
                           onClick={() => setPrefType(t)}
                           className={`flex-1 py-1.5 rounded-full transition-colors ${
-                            prefType === t ? 'bg-gold-dark text-white' : 'text-charcoal/60'
+                            prefType === t ? 'bg-denim text-white' : 'text-dusk'
                           }`}
                         >
                           {PREFERENCE_LABELS[t]}
@@ -433,7 +433,7 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
                         placeholder="e.g. peanuts, cilantro"
-                        className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+                        className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
                         autoFocus
                       />
                     </div>
@@ -444,8 +444,8 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
                           onClick={() => setLink(t)}
                           className={`px-3 py-1 rounded-full border ${
                             linkType === t
-                              ? 'bg-gold-dark text-white border-gold'
-                              : 'bg-white text-charcoal/60 border-gold-light/60'
+                              ? 'bg-denim text-white border-denim'
+                              : 'bg-card text-dusk border-cardBorder'
                           }`}
                         >
                           {t === 'none' ? 'No link' : t === 'recipe' ? 'Recipe' : 'Inventory item'}
@@ -455,11 +455,11 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
                     {linkType !== 'none' && (
                       <div>
                         {linkedItem ? (
-                          <div className="flex items-center justify-between border border-gold-light/60 rounded-xl px-3 py-2 text-sm">
-                            <span className="text-charcoal truncate">{linkedItem.name}</span>
+                          <div className="flex items-center justify-between border border-cardBorder rounded-xl px-3 py-2 text-sm">
+                            <span className="text-denim truncate">{linkedItem.name}</span>
                             <button
                               onClick={() => setLinkedItem(null)}
-                              className="text-charcoal/30 hover:text-rust shrink-0 ml-2"
+                              className="text-dusk hover:text-rust shrink-0 ml-2"
                               aria-label="Clear selection"
                             >
                               ✕
@@ -471,18 +471,18 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
                               value={linkSearch}
                               onChange={(e) => setLinkSearch(e.target.value)}
                               placeholder={linkType === 'recipe' ? 'Search recipes…' : 'Search inventory…'}
-                              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm mb-1"
+                              className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm mb-1"
                             />
                             {linkSearch.trim() && (
-                              <div className="max-h-36 overflow-y-auto border border-gold-light/40 rounded-xl divide-y divide-gold-light/20">
+                              <div className="max-h-36 overflow-y-auto border border-cardBorder rounded-xl divide-y divide-cardBorder">
                                 {filteredLookup.length === 0 && (
-                                  <p className="px-3 py-2 text-xs text-charcoal/40">No matches.</p>
+                                  <p className="px-3 py-2 text-xs text-dusk">No matches.</p>
                                 )}
                                 {filteredLookup.map((item) => (
                                   <button
                                     key={item.id}
                                     onClick={() => setLinkedItem(item)}
-                                    className="w-full text-left px-3 py-2 text-sm hover:bg-gold-light/10 truncate"
+                                    className="w-full text-left px-3 py-2 text-sm hover:bg-mist truncate"
                                   >
                                     {item.name}
                                   </button>
@@ -500,20 +500,20 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
                         onChange={(e) => setPrefNotes(e.target.value)}
                         placeholder="Notes (optional)"
                         rows={2}
-                        className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+                        className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
                       />
                     </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setOpenPrefFor(null)}
-                        className="flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-xs"
+                        className="flex-1 py-2 rounded-full bg-linen border border-brass/30 text-denim text-xs"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={addPreference}
                         disabled={savingPref || !subject.trim()}
-                        className="flex-1 py-2 rounded-full bg-charcoal text-cream font-medium text-xs disabled:opacity-40"
+                        className="flex-1 py-2 rounded-full bg-denim text-white font-medium text-xs disabled:opacity-40"
                       >
                         {savingPref ? 'Saving…' : 'Add preference'}
                       </button>
@@ -522,7 +522,7 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
                 ) : (
                   <button
                     onClick={() => openPreferenceForm(person.id)}
-                    className="mt-2 text-xs font-medium text-gold-dark hover:text-charcoal"
+                    className="mt-2 text-xs font-medium text-brass hover:text-denim"
                   >
                     + Add preference
                   </button>
