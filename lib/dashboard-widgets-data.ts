@@ -71,7 +71,18 @@ export async function getTodaysMealPlan(propertyId: string): Promise<TodaysMealE
     // widget's hardcoded course-order arrays match against real slugs
     // ('protein', 'vege', ...), not the translated display text.
     courseSlug: e.course ?? '',
-    name: e.custom_name || e.recipes?.name || 'Untitled',
+    // Real bug found and fixed, not assumed: this used to prefer custom_name
+    // over the linked recipe's name. Every other place in the codebase that
+    // renders a meal-plan entry (MealPlanView's own displayName(), line
+    // ~2021, MealPlanViewer) already prefers the linked recipe -- this was
+    // the one exception. Confirmed live via direct DB comparison: 38 rows
+    // property-wide have a recipe_id pointing to a DIFFERENT dish than their
+    // stale custom_name (legacy data drift, likely from before the editor's
+    // save path enforced recipe_id/custom_name as mutually exclusive --
+    // every current write path already does). Preferring the recipe here
+    // matches that established precedence and makes the stale custom_name
+    // text permanently inert for any row that has a real recipe linked.
+    name: e.recipes?.name || e.custom_name || 'Untitled',
     // A custom-named entry (no recipe_id) or a linked recipe that's since
     // been deleted (recipe_id set but the embed comes back null) both mean
     // there's nowhere real to link -- only a genuine live recipe gets a link.
