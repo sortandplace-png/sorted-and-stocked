@@ -92,6 +92,17 @@ export default function ShoppingListViewEnhanced({
   // the same as the image actually loading.
   const [brokenPhotoIds, setBrokenPhotoIds] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
+  // "Convenient to grab" tier -- items between min_qty and a slightly
+  // higher comfortable level (1.5x min_qty, rounded up), distinct from
+  // the real shopping_list_items rows above: those only ever get added
+  // once an item is genuinely below min_qty (handle_low_stock trigger),
+  // so this tier was never going to show up on the real list on its own.
+  // Read-only advisory, not written anywhere -- default off so the list
+  // stays tight unless someone opts into the wider view.
+  const [showNiceToHave, setShowNiceToHave] = useState(false);
+  const [niceToHaveItems, setNiceToHaveItems] = useState<
+    { id: string; name: string; name_es: string | null; category: string | null; current_qty: number; min_qty: number; unit: string; photo_url: string | null }[]
+  >([]);
   // Guards against overlapping toggle requests when a checkbox is tapped
   // again before the previous request for the same item(s) has resolved.
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
@@ -123,6 +134,24 @@ export default function ShoppingListViewEnhanced({
   useEffect(() => {
     loadItems();
   }, [shoppingListId]);
+
+  // Fetched lazily -- only once the toggle is actually turned on, so
+  // opting into the wider view doesn't cost every visit a query for a
+  // section most people leave off. min_qty > 0 excludes items with no
+  // real par level set (a comfortable ceiling of 0 is meaningless there).
+  useEffect(() => {
+    if (!showNiceToHave) return;
+    supabase
+      .from('inventory_items')
+      .select('id, name, name_es, category, current_qty, min_qty, unit, photo_url')
+      .eq('property_id', propertyId)
+      .gt('min_qty', 0)
+      .then(({ data }) => {
+        const comfortable = (row: { current_qty: number; min_qty: number }) =>
+          row.current_qty >= row.min_qty && row.current_qty < Math.ceil(row.min_qty * 1.5);
+        setNiceToHaveItems((data ?? []).filter(comfortable).sort((a, b) => a.name.localeCompare(b.name)));
+      });
+  }, [showNiceToHave, propertyId, supabase]);
 
   // Seeds "everything collapsed" once when the list first has data, and
   // again whenever the grouping mode changes (a fresh set of group titles
@@ -691,6 +720,15 @@ export default function ShoppingListViewEnhanced({
                 className="h-4 w-4 accent-gold-dark rounded"
               />
             </label>
+            <label className="flex items-center justify-between text-sm text-charcoal">
+              <span>Show "convenient to grab" items</span>
+              <input
+                type="checkbox"
+                checked={showNiceToHave}
+                onChange={(e) => setShowNiceToHave(e.target.checked)}
+                className="h-4 w-4 accent-gold-dark rounded"
+              />
+            </label>
             <button
               onClick={() => {
                 clearChecked();
@@ -807,6 +845,45 @@ export default function ShoppingListViewEnhanced({
           );
         })}
       </div>
+
+      {/* Convenient to grab -- read-only advisory, not real shopping_list_items
+          rows (nothing here is checkable/purchasable/deletable the way the
+          groups above are). Sits between the real list and Completed:
+          secondary to what's actually needed, but still worth seeing before
+          the fully-done section at the very bottom. */}
+      {showNiceToHave && (
+        <div className="print:hidden bg-white rounded-2xl border border-gold-light/40 shadow-sm shadow-charcoal/5 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-display text-lg text-charcoal/70">Convenient to grab</span>
+            <span className="text-xs text-charcoal/40">({niceToHaveItems.length})</span>
+          </div>
+          <p className="text-xs text-charcoal/40 mb-3">
+            Not low yet, but close -- worth grabbing if you're already buying nearby stuff.
+          </p>
+          {niceToHaveItems.length === 0 ? (
+            <p className="text-sm text-charcoal/40">Nothing sitting in that range right now.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {niceToHaveItems.map((item) => (
+                <li key={item.id} className="flex items-center gap-3">
+                  {item.photo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.photo_url} alt="" className="h-10 w-10 rounded object-cover flex-shrink-0 bg-gold-light/10" />
+                  ) : (
+                    <div className="h-10 w-10 rounded bg-gold-light/10 flex-shrink-0" />
+                  )}
+                  <span className="flex-1 min-w-0 truncate text-sm text-charcoal/70">
+                    {locale === 'es' && item.name_es ? item.name_es : item.name}
+                  </span>
+                  <span className="shrink-0 text-xs text-charcoal/40">
+                    {item.current_qty} / {item.min_qty} {item.unit}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {/* Completed -- every checked-off item, regardless of group, in one
           collapsed section at the bottom. Cards already render checked
