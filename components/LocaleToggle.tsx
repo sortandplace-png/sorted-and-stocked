@@ -45,7 +45,7 @@ export default function LocaleToggle({ variant = 'dark' }: { variant?: 'dark' | 
         onClick={() => setLocale('en')}
         aria-pressed={locale === 'en'}
         className={`rounded-full px-2.5 py-1 transition-colors ${
-          locale === 'en' ? 'bg-brass text-white' : 'text-white/60'
+          locale === 'en' ? 'bg-denim text-white' : 'text-white/60'
         }`}
       >
         EN
@@ -54,7 +54,7 @@ export default function LocaleToggle({ variant = 'dark' }: { variant?: 'dark' | 
         onClick={() => setLocale('es')}
         aria-pressed={locale === 'es'}
         className={`rounded-full px-2.5 py-1 transition-colors ${
-          locale === 'es' ? 'bg-brass text-white' : 'text-white/60'
+          locale === 'es' ? 'bg-denim text-white' : 'text-white/60'
         }`}
       >
         ES
