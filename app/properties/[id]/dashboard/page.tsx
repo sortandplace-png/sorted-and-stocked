@@ -9,6 +9,7 @@ import LocationZmanim from '@/components/LocationZmanim'
 import DashboardWidgets from '@/components/DashboardWidgets'
 import Pin from '@/components/PinAccent'
 import CollapsibleCard from '@/components/CollapsibleCard'
+import TodayCandleLightingRow from '@/components/TodayCandleLightingRow'
 import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
 import { getWidgetPrefs, getTodaysMealPlan, getLowStockAlerts } from '@/lib/dashboard-widgets-data'
 import { getPreferredSource } from '@/lib/reorder-sources'
@@ -31,8 +32,33 @@ async function getHebcal() {
   // once a week and the Hebrew date only once a day — 1h revalidation was
   // needlessly frequent for values this stable, confirmed nothing else on
   // this page depends on sub-day freshness.
+  //
+  // Real bug found and fixed, not assumed: a dateless /shabbat query
+  // returns Hebcal's OWN implicit notion of "today," which doesn't
+  // reliably match real wall-clock time -- confirmed live on a Saturday
+  // night after Havdalah had already passed, Hebcal's dateless response
+  // was still returning the just-finished Shabbos (candle-lighting for
+  // the Friday just past) instead of the upcoming one, while the exact
+  // same query with an explicit gy/gm/gd for that same moment correctly
+  // returned next week's Shabbos. Anchoring to the real Eastern-time date
+  // (same Intl.DateTimeFormat technique used everywhere else on this
+  // page, not the runtime's own local timezone -- Vercel defaults to UTC)
+  // removes the ambiguity Hebcal's own default was introducing. This also
+  // means the fetch URL itself now changes once a day, so a stale
+  // previous-day response can't linger past its own day's cache entry
+  // even before the 24h revalidate window would have expired it.
+  const eastern = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  }).formatToParts(new Date())
+  const eastMap = Object.fromEntries(eastern.map((p) => [p.type, p.value]))
   try {
-    const res = await fetch('https://www.hebcal.com/shabbat?cfg=json&geonameid=5100280&M=on&lg=he', { next: { revalidate: 86400 } })
+    const res = await fetch(
+      `https://www.hebcal.com/shabbat?cfg=json&geonameid=5100280&M=on&lg=he&gy=${eastMap.year}&gm=${eastMap.month}&gd=${eastMap.day}`,
+      { next: { revalidate: 86400 } }
+    )
     const data = await res.json()
     const candle = data.items?.find((i: any) => i.category === 'candles')
     const havdalah = data.items?.find((i: any) => i.category === 'havdalah')
@@ -618,142 +644,112 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             lighter, shadowless border only, so lists don't read as cards
             nested inside cards. */}
 
-        {/* items-start: without it, CSS Grid's default align-items:stretch
-            keeps a collapsed card (Today, Candle Lighting, Pantry, Meal
-            Plan all live in this one grid, sharing rows in pairs) stretched
-            to match its still-expanded row-sibling's height -- the same
-            "container doesn't shrink" bug CollapsibleCard's own flex-1 fix
-            addresses internally, just at the grid-row level instead. Trade-
-            off: Today and Candle Lighting no longer auto-match each other's
-            height when both are expanded (they used to, via this same
-            stretch behavior, per Candle Lighting's own code comment) --
-            each now sizes to its own content instead. Both cards were just
-            compacted to similar heights already, so this should read as a
-            minor difference at most, not a visible mismatch. */}
         <div className="grid grid-cols-12 gap-[14px] mb-[14px] items-start">
-          {/* TODAY -- Type A (denim header bar + free content below), per
-              CONCEPT-B-DESIGN-RULES.md section 2. Content/functionality
-              unchanged (Hebrew date, English date, parsha, Tehillim, omer,
-              Shabbos Mode indicator). Parsha pill is now solid denim/white
-              (identity-defining); Tehillim pill stays light mist (routine). */}
-          <CollapsibleCard
-            cardId="today"
-            className="relative col-span-12 md:col-span-7 rounded-xl3 border border-cardBorder shadow-card overflow-hidden flex flex-col transition-shadow hover:shadow-cardHover"
-            header={
+          {/* TODAY + CANDLE LIGHTING -- height-match refactor: state lifted
+              out of both cards into TodayCandleLightingRow, which stretches
+              them to match each other only when BOTH are expanded, and
+              lets each size independently the moment either collapses (the
+              behavior the collapse-container-shrink fix needed). Scoped to
+              its own nested grid so the outer items-start here still
+              governs Pantry/Meal Plan below unaffected. */}
+          <TodayCandleLightingRow
+            todayHeader={
               <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
                 {t('todayHeader')}
               </div>
             }
-          >
-            <div className={`flex-1 flex flex-col items-center justify-center text-center py-[16px] px-[20px] gap-[8px] ${isShabbos ? 'bg-amber-100' : 'bg-card'}`}>
-              {propertyName && (
-                <p className="text-[10px] tracking-[0.18em] uppercase font-normal text-brass border-b border-brass inline-block pb-1.5">
-                  {propertyName}
+            todayContent={
+              <div className={`flex-1 flex flex-col items-center justify-center text-center py-[16px] px-[20px] gap-[8px] ${isShabbos ? 'bg-amber-100' : 'bg-card'}`}>
+                {propertyName && (
+                  <p className="text-[10px] tracking-[0.18em] uppercase font-normal text-brass border-b border-brass inline-block pb-1.5">
+                    {propertyName}
+                  </p>
+                )}
+                {/* Compact pass (2026-07-17): the card was reading as a hero
+                    banner rather than compact/informational -- 44px brought
+                    down to 32px, still font-display/Cormorant, and every
+                    child's individual margin classes replaced by a single
+                    gap-[8px] on this flex container so spacing between
+                    elements stays uniform (and correctly skips elements that
+                    don't render, like a manual-margin chain can't). */}
+                <p lang="he" dir="rtl" className="font-display font-normal text-[32px] text-denim leading-[1.05] tracking-[0.02em]">
+                  {hebrewInfo.hebrewText}
                 </p>
-              )}
-              {/* Compact pass (2026-07-17): the card was reading as a hero
-                  banner rather than compact/informational -- 44px brought
-                  down to 32px, still font-display/Cormorant, and every
-                  child's individual margin classes replaced by a single
-                  gap-[8px] on this flex container so spacing between
-                  elements stays uniform (and correctly skips elements that
-                  don't render, like a manual-margin chain can't). */}
-              <p lang="he" dir="rtl" className="font-display font-normal text-[32px] text-denim leading-[1.05] tracking-[0.02em]">
-                {hebrewInfo.hebrewText}
-              </p>
-              <p className="font-interDisplay text-[11px] uppercase tracking-[0.1em] text-dusk">
-                {format(now, 'EEEE, MMMM d')}
-              </p>
-              <div className="flex items-center justify-center gap-2 flex-wrap">
-                {hebcal.parsha && (
-                  <span lang="he" dir="rtl" className="bg-denim text-white text-xs font-medium px-4 py-1.5 rounded-full">
-                    {hebcal.parsha}
-                  </span>
+                <p className="font-interDisplay text-[11px] uppercase tracking-[0.1em] text-dusk">
+                  {format(now, 'EEEE, MMMM d')}
+                </p>
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  {hebcal.parsha && (
+                    <span lang="he" dir="rtl" className="bg-denim text-white text-xs font-medium px-4 py-1.5 rounded-full">
+                      {hebcal.parsha}
+                    </span>
+                  )}
+                  {tehillim && (
+                    <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">
+                      Tehillim {tehillim.perek_start}
+                      {tehillim.perek_end !== tehillim.perek_start ? `–${tehillim.perek_end}` : ''}
+                    </span>
+                  )}
+                  {isShabbos && (
+                    <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">{t('shabbosModeActive')}</span>
+                  )}
+                </div>
+                {omerTitle && <p className="text-xs text-dusk">{omerTitle}</p>}
+                {roshChodeshStatus && (
+                  <p className="text-xs text-brass font-medium">
+                    {roshChodeshStatus.isToday
+                      ? t('roshChodesh.today', { month: roshChodeshStatus.monthName })
+                      : t('roshChodesh.upcoming', { month: roshChodeshStatus.monthName, days: roshChodeshStatus.daysUntil })}
+                  </p>
                 )}
-                {tehillim && (
-                  <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">
-                    Tehillim {tehillim.perek_start}
-                    {tehillim.perek_end !== tehillim.perek_start ? `–${tehillim.perek_end}` : ''}
-                  </span>
-                )}
-                {isShabbos && (
-                  <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">{t('shabbosModeActive')}</span>
+                {/* Deliberately one small aside, never both a Rosh Chodesh
+                    callout AND a full second content block competing for
+                    attention -- title + 1-2 lines max, same dusk/brass
+                    palette as everything else in this card so it reads as
+                    part of Today, not a separate feature bolted on. */}
+                {dailyContent && (
+                  <div className="pt-2 border-t border-cardBorder/60 max-w-[320px]">
+                    <p className="text-[10px] tracking-[0.14em] uppercase font-semibold text-brass mb-1">{dailyContent.title}</p>
+                    <p className="text-xs text-dusk leading-relaxed">{dailyContent.body}</p>
+                  </div>
                 )}
               </div>
-              {omerTitle && <p className="text-xs text-dusk">{omerTitle}</p>}
-              {roshChodeshStatus && (
-                <p className="text-xs text-brass font-medium">
-                  {roshChodeshStatus.isToday
-                    ? t('roshChodesh.today', { month: roshChodeshStatus.monthName })
-                    : t('roshChodesh.upcoming', { month: roshChodeshStatus.monthName, days: roshChodeshStatus.daysUntil })}
-                </p>
-              )}
-              {/* Deliberately one small aside, never both a Rosh Chodesh
-                  callout AND a full second content block competing for
-                  attention -- title + 1-2 lines max, same dusk/brass
-                  palette as everything else in this card so it reads as
-                  part of Today, not a separate feature bolted on. */}
-              {dailyContent && (
-                <div className="pt-2 border-t border-cardBorder/60 max-w-[320px]">
-                  <p className="text-[10px] tracking-[0.14em] uppercase font-semibold text-brass mb-1">{dailyContent.title}</p>
-                  <p className="text-xs text-dusk leading-relaxed">{dailyContent.body}</p>
-                </div>
-              )}
-            </div>
-          </CollapsibleCard>
-
-          {/* CANDLE LIGHTING -- Type B (header bar + fixed-height photo +
-              footer bar), the only card using this three-part structure.
-              Replaces the full-bleed-photo-plus-overlay-text approach
-              entirely: no text ever renders on the photo itself now, which
-              is the root-cause fix for the legibility bug (not another
-              scrim patch). No longer height-matched to Today via grid
-              stretch (that was turned off fixing the collapse-container-
-              shrink bug) -- sized independently now via its own photo
-              height + footer padding instead. LocationZmanim's real
-              geolocation toggle is unchanged, just relocated into the
-              footer bar -- variant="dark" already reads correctly on a
-              solid dark background. */}
-          <CollapsibleCard
-            cardId="candle-lighting"
-            className="col-span-12 md:col-span-5 rounded-xl3 border border-cardBorder shadow-card overflow-hidden relative flex flex-col transition-shadow hover:shadow-cardHover"
-            header={
+            }
+            candleHeader={
               <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5 flex items-center gap-2">
                 <Flame size={13} className="text-white/80" aria-hidden="true" />
                 {t('candle.label')}
               </div>
             }
-          >
-            <div
-              // backgroundSize: 'cover' is the CSS-background equivalent of
-              // object-fit: cover -- this already crops rather than
-              // stretches. backgroundRepeat added defensively.
-              //
-              // 140px -> 70px (first compact pass) -> 110px (this pass):
-              // once Today/Candle Lighting's grid auto-match was turned off
-              // (fixing the collapse-container-shrink bug), Candle Lighting
-              // started sizing to its own content and read as too short
-              // next to Today. Not going back to full height-matching
-              // (that's the behavior that was intentionally removed) --
-              // just enough taller to not feel undersized as an
-              // independently-sized card.
-              className="h-[110px] w-full bg-denim shrink-0"
-              style={{
-                backgroundImage: `url('https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/dashboard-photos/candle.jpeg')`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-              }}
-            />
-            <div className="bg-denim px-5 py-[20px] flex-1 flex items-center justify-center">
-              <LocationZmanim
-                variant="dark"
-                propertyName={propertyName}
-                defaultTime={hebcal.candleTime}
-                defaultDateLabel={candleDateLabel}
-              />
-            </div>
-          </CollapsibleCard>
+            candleContent={
+              <>
+                <div
+                  // backgroundSize: 'cover' is the CSS-background equivalent
+                  // of object-fit: cover -- this already crops rather than
+                  // stretches. backgroundRepeat added defensively. 110px is
+                  // a fixed floor, independent of the height-match above --
+                  // when both cards are expanded the match now comes from
+                  // TodayCandleLightingRow's stretch, not from this photo's
+                  // own height chasing Today's.
+                  className="h-[110px] w-full bg-denim shrink-0"
+                  style={{
+                    backgroundImage: `url('https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/dashboard-photos/candle.jpeg')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                  }}
+                />
+                <div className="bg-denim px-5 py-[20px] flex-1 flex items-center justify-center">
+                  <LocationZmanim
+                    variant="dark"
+                    propertyName={propertyName}
+                    defaultTime={hebcal.candleTime}
+                    defaultDateLabel={candleDateLabel}
+                  />
+                </div>
+              </>
+            }
+          />
 
           {/* QUICK CAPTURE -- Type A (header bar + free content), replaces
               the old Readiness card in the same slot/position. NOT gated to

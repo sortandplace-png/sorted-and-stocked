@@ -10,29 +10,38 @@
 // card is a Link to begin with) and this renders a Link instead of a div.
 // PinAccent's own stopPropagation keeps a tap on the dot from also
 // triggering that Link's navigation.
+//
+// Split into a presentational Shell (collapsed/toggle as props) plus this
+// self-contained default export (owns its own useCardCollapse call) so
+// TodayCandleLightingRow.tsx can reuse the exact same shell with
+// externally-coordinated state -- Today and Candle Lighting need to know
+// about EACH OTHER's collapse state to decide whether to height-match,
+// which a card managing its own isolated state can't do. Pantry/Meal Plan
+// (and anything else using the default export below) are unaffected --
+// same self-contained behavior as before.
 'use client'
 
 import Link from 'next/link'
 import Pin from '@/components/PinAccent'
 import { useCardCollapse } from '@/lib/useCardCollapse'
 
-export default function CollapsibleCard({
-  cardId,
+export function CollapsibleCardShell({
+  collapsed,
+  toggle,
   href,
   pinSize = 'lg',
   className,
   header,
   children,
 }: {
-  cardId: string
+  collapsed: boolean
+  toggle: () => void
   href?: string
   pinSize?: 'lg' | 'sm'
   className: string
   header: React.ReactNode
   children: React.ReactNode
 }) {
-  const { collapsed, toggle } = useCardCollapse(cardId)
-
   // flex-1 on the animating wrapper is what makes it fill the remaining
   // height of this card's flex-col shell when expanded (matching what a
   // plain content div used to do before collapse existed) -- but applied
@@ -63,4 +72,19 @@ export default function CollapsibleCard({
     )
   }
   return <div className={className}>{inner}</div>
+}
+
+export default function CollapsibleCard({
+  cardId,
+  ...rest
+}: {
+  cardId: string
+  href?: string
+  pinSize?: 'lg' | 'sm'
+  className: string
+  header: React.ReactNode
+  children: React.ReactNode
+}) {
+  const { collapsed, toggle } = useCardCollapse(cardId)
+  return <CollapsibleCardShell collapsed={collapsed} toggle={toggle} {...rest} />
 }
