@@ -1149,7 +1149,7 @@ export default function RecipesGridView({
                                   className={
                                     tag === 'NEW'
                                       ? 'text-[10px] font-medium text-white bg-denim px-2 py-0.5 rounded-full'
-                                      : 'text-[10px] font-medium text-brass bg-brass/10 px-2 py-0.5 rounded-full'
+                                      : 'text-[10px] font-medium text-brass bg-mist px-2 py-0.5 rounded-full'
                                   }
                                 >
                                   {tag}

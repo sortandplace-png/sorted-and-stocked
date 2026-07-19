@@ -1198,7 +1198,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                     <p className="text-sm text-dusk mb-3">{t('shoppingListCard.emptyMessage')}</p>
                     <Link
                       href={`/properties/${propertyId}/shopping-list`}
-                      className="inline-block bg-brass text-white px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition"
+                      className="inline-block bg-denim text-white px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition"
                     >
                       {t('shoppingListCard.goToShoppingList')}
                     </Link>
