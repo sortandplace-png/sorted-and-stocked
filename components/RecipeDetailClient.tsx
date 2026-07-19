@@ -780,6 +780,7 @@ export default function RecipeDetailClient({
         {canManage(role) &&
           (() => {
             const category = classifyProvenance(recipe.notes);
+            if (!category) return null;
             const info = PROVENANCE_INFO[category];
             return (
               <span className={`text-xs px-2.5 py-1 rounded-full ${info.badgeClass}`}>{t(info.labelKey)}</span>

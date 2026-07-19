@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
-import Pin from '@/components/PinAccent';
 import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
 import {
   Timer,
@@ -953,11 +952,10 @@ export default function RecipesGridView({
                   <Link
                     key={r.id}
                     href={`/properties/${propertyId}/recipes/${r.id}`}
-                    className={`relative shrink-0 lg:shrink lg:flex lg:items-center lg:gap-2 w-32 lg:w-full rounded-xl border shadow-card overflow-hidden hover:shadow-cardHover transition-shadow ${
+                    className={`shrink-0 lg:shrink lg:flex lg:items-center lg:gap-2 w-32 lg:w-full rounded-xl border shadow-card overflow-hidden hover:shadow-cardHover transition-shadow ${
                       r.is_pesach ? 'bg-brass/[0.08] border-brass/40' : 'bg-card border-cardBorder'
                     }`}
                   >
-                    <Pin size="sm" />
                     <div className="w-full lg:w-12 h-20 lg:h-12 bg-linen flex items-center justify-center shrink-0">
                       {r.photo_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -1028,13 +1026,11 @@ export default function RecipesGridView({
                         }`}
                       >
                         <div className="relative w-full aspect-[4/3] bg-linen">
-                          {/* Decorative only (no onToggle -- recipe cards
-                              don't collapse), matching the same corner every
-                              other card in the app anchors its pin to. The
-                              favorite-heart button below lives in the
-                              opposite (bottom-right) corner specifically to
-                              stay clear of this. */}
-                          <Pin size="sm" />
+                          {/* Rule 3 narrowed: pin dot is a group-level
+                              collapse control (the letter headers above),
+                              not per-card decoration -- removed from here on
+                              Racquel's explicit call after seeing it live on
+                              every card in the grid. */}
                           {recipe.photo_url && isDirectImageUrl(recipe.photo_url) ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
