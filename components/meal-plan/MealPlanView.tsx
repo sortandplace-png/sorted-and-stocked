@@ -123,8 +123,29 @@ function isDirectImageUrl(url: string) {
   return /\.(jpe?g|png|gif|webp)(\?|$)/i.test(url) && !url.includes('drive.google.com');
 }
 
+// Real bug found and fixed, not assumed: this used toISOString(), which is
+// ALWAYS UTC regardless of the caller's own timezone -- and every Date this
+// gets called on (weekDates entries, `anchor`, `new Date()`) is built by
+// copying `anchor` (useState(new Date()), the real current moment, whatever
+// time-of-day the page happened to load at) and only ever adjusting the day
+// via setDate(). The time-of-day is never normalized to midnight, so on any
+// evening at or after 8pm Eastern (EDT, UTC-4), that moment has already
+// crossed into the next UTC calendar day -- toISOString() then returns
+// TOMORROW's date for what's still today locally. Confirmed live: this is
+// exactly why the weekly view's Thursday card was showing Friday's candle-
+// lighting and Friday's card was showing Saturday's Havdalah -- every
+// dateStr used to look up hebcal[dateStr]/days[dateStr] was silently
+// shifted one day ahead of the correctly-local-computed day label sitting
+// right next to it (DAY_LABELS[i] and toLocaleDateString(), both already
+// local-timezone-correct). Fixed by reading the Date object's own local
+// year/month/day getters instead -- the same local timezone weekRange()/
+// monthRange() already used to BUILD these dates in the first place, so
+// this now matches its own inputs instead of silently converting through UTC.
 function fmt(d: Date) {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function weekRange(anchor: Date) {
