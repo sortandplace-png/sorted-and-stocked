@@ -60,16 +60,16 @@ export default function HalachicCalendarClient() {
 
   return (
     <div className="max-w-md mx-auto p-4 space-y-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Halachic Calendar</h1>
+      <h1 className="text-2xl font-display text-denim mb-1">Halachic Calendar</h1>
 
       {upcoming && upcoming.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
-          <h2 className="font-display text-lg text-charcoal mb-2">Upcoming</h2>
+        <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-4">
+          <h2 className="font-display text-lg text-denim mb-2">Upcoming</h2>
           <ul className="space-y-1.5">
             {upcoming.map((occ) => (
               <li key={occ.name + occ.date} className="flex items-center justify-between text-sm">
-                <span className="font-medium text-charcoal">{occ.name}</span>
-                <span className="text-charcoal/60">
+                <span className="font-medium text-denim">{occ.name}</span>
+                <span className="text-dusk">
                   {format(parseISO(occ.date), 'MMM d')} · {occ.daysUntil === 0 ? 'today' : `${occ.daysUntil} day${occ.daysUntil === 1 ? '' : 's'}`}
                 </span>
               </li>
@@ -78,19 +78,19 @@ export default function HalachicCalendarClient() {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
-        <h2 className="font-display text-lg text-charcoal mb-1">Sefiras HaOmer</h2>
+      <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-4">
+        <h2 className="font-display text-lg text-denim mb-1">Sefiras HaOmer</h2>
         {omerTitle ? (
-          <p className="text-sm text-charcoal">Tonight/today: {omerTitle}</p>
+          <p className="text-sm text-denim">Tonight/today: {omerTitle}</p>
         ) : (
-          <p className="text-sm text-charcoal/50">Not currently within the Omer count.</p>
+          <p className="text-sm text-dusk">Not currently within the Omer count.</p>
         )}
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
-        <h2 className="font-display text-lg text-charcoal mb-1">Erev Pesach Countdown</h2>
+      <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-4">
+        <h2 className="font-display text-lg text-denim mb-1">Erev Pesach Countdown</h2>
         {erevPesach && daysUntilPesach !== null ? (
-          <p className="text-sm text-charcoal">
+          <p className="text-sm text-denim">
             {daysUntilPesach === 0
               ? 'Erev Pesach is today.'
               : `${daysUntilPesach} day${daysUntilPesach === 1 ? '' : 's'} until Erev Pesach (${new Date(
@@ -98,20 +98,20 @@ export default function HalachicCalendarClient() {
                 ).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}).`}
           </p>
         ) : (
-          <p className="text-sm text-charcoal/50">Couldn't load the date right now.</p>
+          <p className="text-sm text-dusk">Couldn't load the date right now.</p>
         )}
-        <p className="text-xs text-charcoal/40 mt-1">
+        <p className="text-xs text-dusk mt-1">
           Date only, not halachic times — Hebcal doesn't expose sof zman achilas/biur chametz through this API.
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
-        <h2 className="font-display text-lg text-charcoal mb-2">Bedikas Tolaim Reference</h2>
+      <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-4">
+        <h2 className="font-display text-lg text-denim mb-2">Bedikas Tolaim Reference</h2>
         <ul className="space-y-2">
           {BEDIKAS_TOLAIM_ITEMS.map((entry) => (
             <li key={entry.item}>
-              <p className="text-sm font-medium text-charcoal">{entry.item}</p>
-              <p className="text-xs text-charcoal/60">{entry.note}</p>
+              <p className="text-sm font-medium text-denim">{entry.item}</p>
+              <p className="text-xs text-dusk">{entry.note}</p>
             </li>
           ))}
         </ul>

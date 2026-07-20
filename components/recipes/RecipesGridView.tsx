@@ -947,16 +947,21 @@ export default function RecipesGridView({
               <h2 className="font-display text-lg text-denim flex items-center gap-1.5 mb-2">
                 <Clock className="w-4 h-4 text-brass" strokeWidth={1.75} /> Recently Added
               </h2>
-              <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-visible pb-1">
+              {/* One row of 3 equal tiles on desktop (2026-07-20, RULE 2) --
+                  was lg:flex-col, three full-width horizontal mini-rows
+                  stacked on top of each other. Mobile keeps its own
+                  horizontal-scroll strip of small cards, already a
+                  side-by-side tile shape, untouched. */}
+              <div className="flex lg:grid lg:grid-cols-3 gap-3 overflow-x-auto lg:overflow-visible pb-1">
                 {recentlyAdded.map((r) => (
                   <Link
                     key={r.id}
                     href={`/properties/${propertyId}/recipes/${r.id}`}
-                    className={`shrink-0 lg:shrink lg:flex lg:items-center lg:gap-2 w-32 lg:w-full rounded-xl border shadow-card overflow-hidden hover:shadow-cardHover transition-shadow ${
+                    className={`shrink-0 lg:shrink w-32 lg:w-full rounded-xl border shadow-card overflow-hidden hover:shadow-cardHover transition-shadow ${
                       r.is_pesach ? 'bg-brass/[0.08] border-brass/40' : 'bg-card border-cardBorder'
                     }`}
                   >
-                    <div className="w-full lg:w-12 h-20 lg:h-12 bg-linen flex items-center justify-center shrink-0">
+                    <div className="w-full h-20 lg:h-28 bg-linen flex items-center justify-center shrink-0">
                       {r.photo_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={r.photo_url} alt="" className="w-full h-full object-cover" />
@@ -964,8 +969,8 @@ export default function RecipesGridView({
                         <span className="text-xl text-dusk">🍽️</span>
                       )}
                     </div>
-                    <div className="p-2 lg:py-1.5 lg:pl-0 min-w-0">
-                      <p className="text-xs font-medium text-denim leading-snug line-clamp-2 lg:truncate">{r.name}</p>
+                    <div className="p-2 min-w-0">
+                      <p className="text-xs font-medium text-denim leading-snug line-clamp-2">{r.name}</p>
                       <p className="text-[10px] text-dusk mt-0.5">
                         {new Date(r.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       </p>

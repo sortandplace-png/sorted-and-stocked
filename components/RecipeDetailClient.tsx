@@ -1068,10 +1068,11 @@ export default function RecipeDetailClient({
             back button. The Tools Hub page's own versions of these same
             tools (app/properties/[id]/tools/page.tsx) are untouched and
             still navigate normally, since a standalone-page launch has
-            nothing to "get back to." Fixed 2-col grid rather than 3-at-sm:
-            with exactly 4 items, 3-per-row leaves an awkward 3+1 split;
-            2x2 stays clean at every width. */}
-        <div className="grid grid-cols-2 gap-2">
+            nothing to "get back to." One row of 4 (2026-07-20, RULE 2):
+            was a 2x2 grid of stretched bars -- Racquel's app-wide tile
+            standard is one equal-width horizontal row, not a stacked
+            grid. */}
+        <div className="grid grid-cols-4 gap-2">
           {KITCHEN_OPS_LINKS.map((tool) => {
             const Icon = tool.icon;
             return (
