@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import { SITE_URL } from '@/lib/site-url';
+import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
 
 type Item = {
   id: string;
@@ -22,7 +23,18 @@ type Item = {
   print_label: boolean;
   location_id: string | null;
   category: string | null;
+  current_qty: number;
+  min_qty: number;
 };
+
+// Same definition InventoryClient.tsx's isLowStock() uses -- <=, not the
+// RPC's stricter < -- per Racquel's own July 19 call: current_qty <=
+// min_qty is correct even though most items default to 0/0 and haven't
+// been physically counted yet. That's real, accepted signal ("go verify
+// this"), not a bug to filter around here either.
+function isLowStock(item: Pick<Item, 'current_qty' | 'min_qty'>): boolean {
+  return item.current_qty <= item.min_qty;
+}
 
 type Location = { id: string; name: string };
 
@@ -92,9 +104,18 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-  const [locationFilter, setLocationFilter] = useState<string | null>(null);
-  const [photosOnly, setPhotosOnly] = useState(false);
+  // SS-016: survives a phone lock / backgrounded-tab reload the same way
+  // Inventory and Recipes' filters already do -- previously plain useState,
+  // so switching properties or a background reload silently dropped
+  // whatever search/location/photo filter was active mid-print-run.
+  const [search, setSearch] = useSessionPersistedState('print-labels-filter-search', '');
+  const [locationFilter, setLocationFilter] = useSessionPersistedState<string | null>('print-labels-filter-location', null);
+  const [photosOnly, setPhotosOnly] = useSessionPersistedState('print-labels-filter-photosOnly', false);
+  // SS-015. Reuses the same current_qty <= min_qty definition as everywhere
+  // else in the app (Dashboard's Low Stock tile, Inventory's own stat) --
+  // see isLowStock() above for why that's correct even with most items
+  // still at their 0/0 defaults.
+  const [lowStockOnly, setLowStockOnly] = useSessionPersistedState('print-labels-filter-lowStockOnly', false);
   const [showSelectionPanel, setShowSelectionPanel] = useState(false);
   const showToast = useToast();
 
@@ -105,7 +126,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
     Promise.all([
       supabase
         .from('inventory_items')
-        .select('id, name, qr_code, photo_url, print_label, location_id, category')
+        .select('id, name, qr_code, photo_url, print_label, location_id, category, current_qty, min_qty')
         .eq('property_id', propertyId)
         .order('name'),
       supabase.from('locations').select('id, name').eq('property_id', propertyId).order('name'),
@@ -169,9 +190,10 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
       if (q && !i.name.toLowerCase().includes(q)) return false;
       if (locationFilter && i.location_id !== locationFilter) return false;
       if (photosOnly && !(i.photo_url && isDirectImageUrl(i.photo_url))) return false;
+      if (lowStockOnly && !isLowStock(i)) return false;
       return true;
     });
-  }, [items, search, locationFilter, photosOnly]);
+  }, [items, search, locationFilter, photosOnly, lowStockOnly]);
 
   // Same-named items (real per-location duplicates — intentional, not data
   // dirt) collapse into one pickable row here for a cleaner list, but each
@@ -324,7 +346,22 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
       <div className="lg:grid lg:grid-cols-3 lg:gap-4 lg:items-start">
         {/* Filters panel */}
         <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-4 lg:mb-0 space-y-3">
-          <h2 className="text-xs font-medium uppercase tracking-wider text-gold-dark">Filters</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-medium uppercase tracking-wider text-gold-dark">Filters</h2>
+            {(search || locationFilter || photosOnly || lowStockOnly) && (
+              <button
+                onClick={() => {
+                  setSearch('');
+                  setLocationFilter(null);
+                  setPhotosOnly(false);
+                  setLowStockOnly(false);
+                }}
+                className="text-xs text-gold-dark underline"
+              >
+                Clear
+              </button>
+            )}
+          </div>
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -349,6 +386,15 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
               type="checkbox"
               checked={photosOnly}
               onChange={(e) => setPhotosOnly(e.target.checked)}
+              className="h-4 w-4 accent-gold-dark rounded"
+            />
+          </label>
+          <label className="flex items-center justify-between text-sm text-charcoal">
+            <span>Low stock only</span>
+            <input
+              type="checkbox"
+              checked={lowStockOnly}
+              onChange={(e) => setLowStockOnly(e.target.checked)}
               className="h-4 w-4 accent-gold-dark rounded"
             />
           </label>
