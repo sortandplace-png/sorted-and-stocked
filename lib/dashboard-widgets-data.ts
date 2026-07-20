@@ -119,46 +119,40 @@ export type LowStockItem = {
 
 export async function getLowStockAlerts(propertyId: string): Promise<LowStockItem[]> {
   const supabase = await createClient();
-  // current_qty < min_qty is a column-to-column comparison, which
-  // PostgREST's query builder can't express -- fetching every row and
-  // filtering client-side would silently truncate on a property with more
-  // rows than the project's max-rows cap (the exact bug found earlier
-  // tonight on the inventory count stat). get_low_stock_items() does the
-  // comparison server-side instead (migration 091, photo_url added in 109).
-  const { data } = await supabase.rpc('get_low_stock_items', { p_property_id: propertyId });
+  // Was get_low_stock_items() (migration 091) plus a second embed query for
+  // name_es/reorder_link/reorder_sources, since that older function's
+  // RETURNS TABLE didn't carry them. get_low_stock_for_property() (2026-07-
+  // 20, confirmed live) already returns name_es and a property-aware
+  // reorder_link directly -- same server-side current_qty <= min_qty
+  // comparison PostgREST's query builder can't express client-side (the
+  // same class of silent-truncation bug found earlier on the inventory
+  // count stat), just from a richer function. Only reorder_sources (the
+  // multi-retailer picker) still needs its own embed, since that function
+  // returns a flat reorder_link, not the sources array.
+  const { data } = await supabase.rpc('get_low_stock_for_property', { p_property_id: propertyId });
   const rows = data ?? [];
 
-  // get_low_stock_items' RETURNS TABLE doesn't carry reorder_sources or
-  // name_es (adding a column means DROP + CREATE on a live function,
-  // deliberately not done this close to launch -- same caution as leaving
-  // next.config.js alone). A second, plain PostgREST embed keyed on the
-  // same ids the RPC already returned gets both the SS-150 Order button
-  // and SS-146's Spanish display name without touching that function.
-  const ids = rows.map((r: any) => r.id);
-  const extraById = new Map<string, { reorderSources: ReorderSource[]; nameEs: string | null; reorderLink: string | null }>();
+  const ids = rows.map((r: any) => r.item_id);
+  const sourcesById = new Map<string, ReorderSource[]>();
   if (ids.length > 0) {
     const { data: extra } = await supabase
       .from('inventory_items')
-      .select('id, name_es, reorder_link, reorder_sources(id, retailer_name, url, is_preferred)')
+      .select('id, reorder_sources(id, retailer_name, url, is_preferred)')
       .in('id', ids);
     for (const row of extra ?? []) {
-      extraById.set(row.id, {
-        reorderSources: (row as any).reorder_sources ?? [],
-        nameEs: (row as any).name_es ?? null,
-        reorderLink: (row as any).reorder_link ?? null,
-      });
+      sourcesById.set(row.id, (row as any).reorder_sources ?? []);
     }
   }
 
   return rows.map((item: any) => ({
-    id: item.id,
+    id: item.item_id,
     name: item.name,
-    nameEs: extraById.get(item.id)?.nameEs ?? null,
+    nameEs: item.name_es,
     currentQty: item.current_qty,
     minQty: item.min_qty,
     category: item.category,
     photoUrl: item.photo_url,
-    reorderSources: extraById.get(item.id)?.reorderSources ?? null,
-    reorderLink: extraById.get(item.id)?.reorderLink ?? null,
+    reorderSources: sourcesById.get(item.item_id) ?? null,
+    reorderLink: item.reorder_link,
   }));
 }
