@@ -53,11 +53,15 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // My Day first -- audit finding: this is meant to be "the staff
       // member's home" but had zero entry points anywhere in the app
       // (confirmed: no reference in this file or MobileBottomNav.tsx
-      // before this). Not managerOnly, same reasoning as Task Center below.
+      // before this).
       { segment: 'my-day', labelKey: 'myDay' },
-      // Staff Task Center stays reachable by every role -- no page-level
-      // gate, staff need real access to their own task board.
-      { segment: 'tools/tasks', labelKey: 'staffTasks' },
+      // Staff Task Center is manager-only now (2026-07-20, Racquel):
+      // task_assignments RLS locks task visibility to own-assignments-only
+      // per staff member, so a shared team task board no longer makes
+      // sense as a staff-facing surface -- staff get their own tasks
+      // through My Day instead. Was open to every role before that RLS
+      // change made a full board something only a manager can actually see.
+      { segment: 'tools/tasks', labelKey: 'staffTasks', managerOnly: true },
       // Handover is owner/manager-only here on purpose: staff get it
       // embedded directly in My Day, not as a second separate tap target.
       // Was visible to every role before, which duplicated the My Day
