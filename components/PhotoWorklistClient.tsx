@@ -22,6 +22,7 @@ import { compressImageToBlob } from '@/lib/compress-image';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import { Camera } from 'lucide-react';
+import CameraCapture from '@/components/CameraCapture';
 
 type WorklistItem = {
   id: string;
@@ -35,7 +36,7 @@ export default function PhotoWorklistClient({ propertyId }: { propertyId: string
   const [loading, setLoading] = useState(true);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [savedCount, setSavedCount] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showCamera, setShowCamera] = useState(false);
   const pendingItemId = useRef<string | null>(null);
   const supabase = createClient();
   const showToast = useToast();
@@ -65,12 +66,12 @@ export default function PhotoWorklistClient({ propertyId }: { propertyId: string
 
   function startCapture(itemId: string) {
     pendingItemId.current = itemId;
-    fileInputRef.current?.click();
+    setShowCamera(true);
   }
 
-  async function handlePhotoSelected(fileList: FileList | null) {
-    const file = fileList?.[0];
+  async function handlePhotoSelected(file: File) {
     const itemId = pendingItemId.current;
+    setShowCamera(false);
     if (!file || !itemId) return;
     setUploadingId(itemId);
     try {
@@ -107,15 +108,12 @@ export default function PhotoWorklistClient({ propertyId }: { propertyId: string
         <p className="text-xs text-sage font-medium mb-3">{t('sessionCount', { count: savedCount })}</p>
       )}
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => {
-          handlePhotoSelected(e.target.files);
-          e.target.value = '';
+      <CameraCapture
+        open={showCamera}
+        onCapture={handlePhotoSelected}
+        onClose={() => {
+          setShowCamera(false);
+          pendingItemId.current = null;
         }}
       />
 

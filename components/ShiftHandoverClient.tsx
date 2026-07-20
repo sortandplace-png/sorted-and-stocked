@@ -8,6 +8,7 @@ import { resilientInsert } from '@/lib/resilient-write';
 import { compressImageToDataUrl } from '@/lib/compress-image';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
+import CameraCapture from '@/components/CameraCapture';
 
 type Handover = {
   id: string;
@@ -54,6 +55,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
   const [photoDataUrls, setPhotoDataUrls] = useState<string[]>([]);
   const [audioDataUrl, setAudioDataUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
 
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
@@ -61,7 +63,6 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const supabase = createClient();
@@ -120,7 +121,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
     if (!noteText.trim()) setNoteText(template);
   }
 
-  async function handlePhotoFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleGalleryFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
     try {
@@ -129,7 +130,21 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
     } catch {
       showToast('Could not read that photo.', { variant: 'error' });
     } finally {
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (galleryInputRef.current) galleryInputRef.current.value = '';
+    }
+  }
+
+  // One capture per open -- CameraCapture hands back a single File per
+  // shot (it's a live getUserMedia feed, not a multi-select picker), so
+  // repeated taps of "Photo" reopen it and append one at a time, same end
+  // result as the old multi-select camera input.
+  async function handleCameraFile(file: File) {
+    setShowCamera(false);
+    try {
+      const dataUrl = await resizeImageFile(file);
+      setPhotoDataUrls((prev) => [...prev, dataUrl]);
+    } catch {
+      showToast('Could not read that photo.', { variant: 'error' });
     }
   }
 
@@ -180,7 +195,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
     setTemplateTag(null);
     setPhotoDataUrls([]);
     setAudioDataUrl(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (galleryInputRef.current) galleryInputRef.current.value = '';
   }
 
   async function submitHandover() {
@@ -260,6 +275,8 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
         Leave a quick note for whoever's coming on next — no long write-up needed.
       </p>
 
+      <CameraCapture open={showCamera} onCapture={handleCameraFile} onClose={() => setShowCamera(false)} />
+
       <div className="bg-card rounded-xl2 shadow-card p-4 mb-6 space-y-3">
         <div className="flex flex-wrap gap-1.5">
           {QUICK_TEMPLATES.map((template) => (
@@ -305,28 +322,25 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
         )}
 
         <div className="flex gap-2">
-          {/* Two real inputs, not one relying on `capture` as a hint --
-              confirmed live that some mobile browsers open the gallery
-              picker regardless of capture="environment" being set. */}
-          <label className="flex-1 text-center py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium cursor-pointer">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              multiple
-              onChange={handlePhotoFile}
-              className="hidden"
-            />
+          {/* Real camera access (CameraCapture, getUserMedia), not a
+              file-input hint -- confirmed live that even an isolated input
+              with capture="environment" still opened the gallery picker
+              instead of the camera on a real device. Library stays a plain
+              multi-select file input -- that path always worked correctly. */}
+          <button
+            type="button"
+            onClick={() => setShowCamera(true)}
+            className="flex-1 text-center py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium"
+          >
             📷 {photoDataUrls.length > 0 ? `+ (${photoDataUrls.length})` : 'Photo'}
-          </label>
+          </button>
           <label className="flex-1 text-center py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium cursor-pointer">
             <input
               ref={galleryInputRef}
               type="file"
               accept="image/*"
               multiple
-              onChange={handlePhotoFile}
+              onChange={handleGalleryFiles}
               className="hidden"
             />
             🖼️ Library

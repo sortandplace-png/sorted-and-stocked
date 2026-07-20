@@ -9,6 +9,7 @@ import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import FieldLabel from '@/components/FieldLabel';
+import CameraCapture from '@/components/CameraCapture';
 
 type MemoryType = 'photo' | 'milestone' | 'event';
 
@@ -31,11 +32,12 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
   const role = usePropertyRole();
   const supabase = createClient();
   const showToast = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<MemoryType | 'all'>('all');
+  const [showCamera, setShowCamera] = useState(false);
 
   const [type, setType] = useState<MemoryType>('event');
   const [title, setTitle] = useState('');
@@ -67,7 +69,7 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
     setEventDate(new Date().toISOString().slice(0, 10));
     setPhotoFile(null);
     setPhotoPreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (galleryInputRef.current) galleryInputRef.current.value = '';
   }
 
   function handlePhotoSelected(file: File | null) {
@@ -201,12 +203,19 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
           {(type === 'photo' || type === 'milestone') && (
             <div>
               <input
-                ref={fileInputRef}
+                ref={galleryInputRef}
                 type="file"
                 accept="image/*"
-                capture="environment"
                 className="hidden"
                 onChange={(e) => handlePhotoSelected(e.target.files?.[0] ?? null)}
+              />
+              <CameraCapture
+                open={showCamera}
+                onCapture={(f) => {
+                  setShowCamera(false);
+                  handlePhotoSelected(f);
+                }}
+                onClose={() => setShowCamera(false)}
               />
               {photoPreview ? (
                 <div className="relative">
@@ -221,12 +230,20 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full py-4 rounded-xl border-2 border-dashed border-gold-light text-charcoal/60 text-sm hover:bg-gold-light/10 transition-colors"
-                >
-                  📸 {type === 'photo' ? 'Add a photo' : 'Add a photo (optional)'}
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setShowCamera(true)}
+                    className="py-4 rounded-xl border-2 border-dashed border-gold-light text-charcoal/60 text-sm hover:bg-gold-light/10 transition-colors"
+                  >
+                    📸 {type === 'photo' ? 'Take a photo' : 'Take a photo (optional)'}
+                  </button>
+                  <button
+                    onClick={() => galleryInputRef.current?.click()}
+                    className="py-4 rounded-xl border-2 border-dashed border-gold-light text-charcoal/60 text-sm hover:bg-gold-light/10 transition-colors"
+                  >
+                    🖼️ Library
+                  </button>
+                </div>
               )}
             </div>
           )}

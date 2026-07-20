@@ -11,6 +11,7 @@ import { useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { compressImageToBlob, compressImageToDataUrl } from '@/lib/compress-image';
 import { useToast } from '@/components/Toast';
+import CameraCapture from '@/components/CameraCapture';
 
 type Step = 'idle' | 'identifying' | 'confirming' | 'saving' | 'done';
 
@@ -26,14 +27,13 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
   const [name, setName] = useState('');
   const [uncertain, setUncertain] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
   const fileRef = useRef<File | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
   const showToast = useToast();
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  async function handleFile(file: File) {
+    setShowCamera(false);
     fileRef.current = file;
     if (preview) URL.revokeObjectURL(preview);
     setPreview(URL.createObjectURL(file));
@@ -106,7 +106,6 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
     setUncertain(false);
     setError(null);
     setStep('idle');
-    if (inputRef.current) inputRef.current.value = '';
   }
 
   return (
@@ -119,16 +118,9 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
 
       {step === 'idle' && (
         <>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={handleFile}
-          />
+          <CameraCapture open={showCamera} onCapture={handleFile} onClose={() => setShowCamera(false)} />
           <button
-            onClick={() => inputRef.current?.click()}
+            onClick={() => setShowCamera(true)}
             className="w-full py-10 rounded-2xl border-2 border-dashed border-gold-light text-charcoal/70 hover:bg-gold-light/10 transition-colors"
           >
             🆕 Tap to photograph the item

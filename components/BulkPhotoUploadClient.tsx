@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { compressImageToBlob } from '@/lib/compress-image';
 import { useToast } from '@/components/Toast';
+import CameraCapture from '@/components/CameraCapture';
 
 type Item = {
   id: string;
@@ -27,7 +28,8 @@ export default function BulkPhotoUploadClient({ propertyId }: { propertyId: stri
   const [queue, setQueue] = useState<QueuedPhoto[]>([]);
   const [cursor, setCursor] = useState(0);
   const [search, setSearch] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const supabase = createClient();
   const showToast = useToast();
@@ -45,9 +47,8 @@ export default function BulkPhotoUploadClient({ propertyId }: { propertyId: stri
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId]);
 
-  async function handleFilesSelected(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0) return;
-    const files = Array.from(fileList);
+  async function queuePhotos(files: File[]) {
+    if (files.length === 0) return;
 
     const newEntries: QueuedPhoto[] = files.map((file) => ({
       key: crypto.randomUUID(),
@@ -79,6 +80,19 @@ export default function BulkPhotoUploadClient({ propertyId }: { propertyId: stri
         })
       );
     }
+  }
+
+  function handleGalleryFiles(fileList: FileList | null) {
+    if (!fileList) return;
+    queuePhotos(Array.from(fileList));
+  }
+
+  // Camera stays open across shots (CameraCapture isn't closed here) --
+  // "Take one photo per item" means many photos in a row, and re-opening
+  // getUserMedia after every single frame would be slower and clunkier
+  // than just leaving the live feed running until the X is tapped.
+  function handleCameraFile(file: File) {
+    queuePhotos([file]);
   }
 
   async function assignTo(itemId: string) {
@@ -134,22 +148,33 @@ export default function BulkPhotoUploadClient({ propertyId }: { propertyId: stri
       </p>
 
       <input
-        ref={fileInputRef}
+        ref={galleryInputRef}
         type="file"
         accept="image/*"
         multiple
-        capture="environment"
         className="hidden"
-        onChange={(e) => handleFilesSelected(e.target.files)}
+        onChange={(e) => {
+          handleGalleryFiles(e.target.files);
+          e.target.value = '';
+        }}
       />
+      <CameraCapture open={showCamera} onCapture={handleCameraFile} onClose={() => setShowCamera(false)} />
 
       {queue.length === 0 ? (
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="w-full py-8 rounded-2xl border-2 border-dashed border-gold-light text-charcoal/70 hover:bg-gold-light/10 transition-colors"
-        >
-          📸 Tap to choose or take photos
-        </button>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => setShowCamera(true)}
+            className="py-8 rounded-2xl border-2 border-dashed border-gold-light text-charcoal/70 hover:bg-gold-light/10 transition-colors"
+          >
+            📸 Take photos
+          </button>
+          <button
+            onClick={() => galleryInputRef.current?.click()}
+            className="py-8 rounded-2xl border-2 border-dashed border-gold-light text-charcoal/70 hover:bg-gold-light/10 transition-colors"
+          >
+            🖼️ Choose from library
+          </button>
+        </div>
       ) : (
         <>
           <div className="flex items-center justify-between mb-3 text-xs text-charcoal/50">
@@ -157,9 +182,14 @@ export default function BulkPhotoUploadClient({ propertyId }: { propertyId: stri
               {assignedCount} matched · {skippedCount} skipped
               {uploadingCount > 0 ? ` · ${uploadingCount} uploading…` : ''}
             </span>
-            <button onClick={() => fileInputRef.current?.click()} className="text-charcoal underline">
-              + Add more photos
-            </button>
+            <span className="flex items-center gap-2">
+              <button onClick={() => setShowCamera(true)} className="text-charcoal underline">
+                + Take more
+              </button>
+              <button onClick={() => galleryInputRef.current?.click()} className="text-charcoal/50 underline">
+                Library
+              </button>
+            </span>
           </div>
 
           {current ? (
@@ -216,12 +246,20 @@ export default function BulkPhotoUploadClient({ propertyId }: { propertyId: stri
               <p className="text-sm text-charcoal/50">
                 {assignedCount} photo{assignedCount === 1 ? '' : 's'} matched to items.
               </p>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="mt-4 text-sm font-medium bg-charcoal text-cream px-5 py-2.5 rounded-full"
-              >
-                Add more photos
-              </button>
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <button
+                  onClick={() => setShowCamera(true)}
+                  className="text-sm font-medium bg-charcoal text-cream px-5 py-2.5 rounded-full"
+                >
+                  Take more photos
+                </button>
+                <button
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="text-sm font-medium text-charcoal/60 underline px-2"
+                >
+                  Library
+                </button>
+              </div>
             </div>
           )}
         </>

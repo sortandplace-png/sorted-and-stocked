@@ -19,20 +19,21 @@ import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { compressImageToBlob } from '@/lib/compress-image';
 import { useToast } from '@/components/Toast';
-import { Camera, Image as ImageIcon } from 'lucide-react';
+import { Camera as CameraIcon, Image as ImageIcon } from 'lucide-react';
 import Pin from '@/components/PinAccent';
+import CameraCapture from '@/components/CameraCapture';
 
 type NameSuggestion = { id: string; name: string };
 
 export default function QuickPhotoCaptureClient({ propertyId }: { propertyId: string }) {
   const [capturedFile, setCapturedFile] = useState<File | null>(null);
   const [capturedPreviewUrl, setCapturedPreviewUrl] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [suggestions, setSuggestions] = useState<NameSuggestion[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const nameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const supabase = createClient();
@@ -44,6 +45,12 @@ export default function QuickPhotoCaptureClient({ propertyId }: { propertyId: st
     if (!file) return;
     setCapturedFile(file);
     setCapturedPreviewUrl(URL.createObjectURL(file));
+  }
+
+  function handlePhotoFile(file: File) {
+    setCapturedFile(file);
+    setCapturedPreviewUrl(URL.createObjectURL(file));
+    setShowCamera(false);
   }
 
   function retake() {
@@ -138,24 +145,11 @@ export default function QuickPhotoCaptureClient({ propertyId }: { propertyId: st
         <p className="text-xs text-sage font-medium mb-3">{t('sessionCount', { count: savedCount })}</p>
       )}
 
-      {/* Two separate inputs, not one relying on `capture` as a hint on its
-          own -- confirmed live that some mobile browsers open the gallery
-          picker regardless of `capture="environment"` being set, so a
-          single input can't reliably guarantee the camera path. Splitting
-          them into two real buttons/inputs guarantees both: this one has
-          no capture attribute at all, so it always opens the standard
-          file/photo picker. */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => {
-          handleCameraCapture(e.target.files);
-          e.target.value = '';
-        }}
-      />
+      {/* Real camera access (CameraCapture, getUserMedia), not a file-input
+          hint -- confirmed live that even an isolated input with
+          capture="environment" still opened the gallery picker instead of
+          the camera on a real device. "Choose from Library" stays a plain
+          file input -- that path always worked correctly. */}
       <input
         ref={galleryInputRef}
         type="file"
@@ -166,16 +160,17 @@ export default function QuickPhotoCaptureClient({ propertyId }: { propertyId: st
           e.target.value = '';
         }}
       />
+      <CameraCapture open={showCamera} onCapture={handlePhotoFile} onClose={() => setShowCamera(false)} />
 
       {!capturedFile ? (
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => setShowCamera(true)}
             className="relative flex flex-col items-center justify-center gap-2 rounded-xl2 bg-mist border border-brass/30 py-12 px-4 text-center hover:shadow-card transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
           >
             <Pin size="sm" />
-            <Camera size={32} className="text-denim" aria-hidden="true" />
+            <CameraIcon size={32} className="text-denim" aria-hidden="true" />
             <span className="text-sm font-medium text-denim">{t('takePhotoButton')}</span>
           </button>
           <button

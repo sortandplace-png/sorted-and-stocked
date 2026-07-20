@@ -11,6 +11,7 @@
 import { useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { compressImageToBlob } from '@/lib/compress-image';
+import CameraCapture from '@/components/CameraCapture';
 
 type QueuedPhoto = {
   key: string;
@@ -20,12 +21,12 @@ type QueuedPhoto = {
 
 export default function CapturePhotoClient({ propertyId }: { propertyId: string }) {
   const [queue, setQueue] = useState<QueuedPhoto[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
-  async function handleFilesSelected(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0) return;
-    const files = Array.from(fileList);
+  async function queuePhotos(files: File[]) {
+    if (files.length === 0) return;
 
     const newEntries: QueuedPhoto[] = files.map((file) => ({
       key: crypto.randomUUID(),
@@ -66,6 +67,18 @@ export default function CapturePhotoClient({ propertyId }: { propertyId: string 
     }
   }
 
+  function handleGalleryFiles(fileList: FileList | null) {
+    if (!fileList) return;
+    queuePhotos(Array.from(fileList));
+  }
+
+  // Camera stays open across shots -- "snap as many as you need" is the
+  // whole point of this tool, and closing/reopening getUserMedia between
+  // every single photo would work against that.
+  function handleCameraFile(file: File) {
+    queuePhotos([file]);
+  }
+
   const savedCount = queue.filter((q) => q.status === 'saved').length;
 
   return (
@@ -76,23 +89,31 @@ export default function CapturePhotoClient({ propertyId }: { propertyId: string 
       </p>
 
       <input
-        ref={fileInputRef}
+        ref={galleryInputRef}
         type="file"
         accept="image/*"
         multiple
-        capture="environment"
         className="hidden"
         onChange={(e) => {
-          handleFilesSelected(e.target.files);
+          handleGalleryFiles(e.target.files);
           e.target.value = '';
         }}
       />
-      <button
-        onClick={() => fileInputRef.current?.click()}
-        className="w-full py-10 rounded-2xl border-2 border-dashed border-gold-light text-charcoal/70 hover:bg-gold-light/10 transition-colors mb-5"
-      >
-        📸 Tap to take a photo
-      </button>
+      <CameraCapture open={showCamera} onCapture={handleCameraFile} onClose={() => setShowCamera(false)} />
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <button
+          onClick={() => setShowCamera(true)}
+          className="py-10 rounded-2xl border-2 border-dashed border-gold-light text-charcoal/70 hover:bg-gold-light/10 transition-colors"
+        >
+          📸 Take a photo
+        </button>
+        <button
+          onClick={() => galleryInputRef.current?.click()}
+          className="py-10 rounded-2xl border-2 border-dashed border-gold-light text-charcoal/70 hover:bg-gold-light/10 transition-colors"
+        >
+          🖼️ Library
+        </button>
+      </div>
 
       {queue.length > 0 && (
         <>

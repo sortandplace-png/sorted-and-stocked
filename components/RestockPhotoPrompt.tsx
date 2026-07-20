@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 import { compressImageToBlob } from '@/lib/compress-image';
 import { resilientUpdate } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
+import CameraCapture from '@/components/CameraCapture';
 
 export default function RestockPhotoPrompt({
   itemId,
@@ -23,11 +24,12 @@ export default function RestockPhotoPrompt({
 }) {
   const supabase = createClient();
   const showToast = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
 
   function handleFileSelected(selected: File | null) {
     setFile(selected);
@@ -69,24 +71,39 @@ export default function RestockPhotoPrompt({
         </p>
 
         <input
-          ref={fileInputRef}
+          ref={galleryInputRef}
           type="file"
           accept="image/*"
-          capture="environment"
           className="hidden"
           onChange={(e) => handleFileSelected(e.target.files?.[0] ?? null)}
+        />
+        <CameraCapture
+          open={showCamera}
+          onCapture={(f) => {
+            setShowCamera(false);
+            handleFileSelected(f);
+          }}
+          onClose={() => setShowCamera(false)}
         />
 
         {preview ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={preview} alt="" className="w-full h-48 object-cover rounded-xl mb-3" />
         ) : (
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full py-8 rounded-2xl border-2 border-dashed border-gold-light text-charcoal/60 text-sm hover:bg-gold-light/10 transition-colors mb-3"
-          >
-            📸 Tap to take a photo
-          </button>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <button
+              onClick={() => setShowCamera(true)}
+              className="py-8 rounded-2xl border-2 border-dashed border-gold-light text-charcoal/60 text-sm hover:bg-gold-light/10 transition-colors"
+            >
+              📸 Take a photo
+            </button>
+            <button
+              onClick={() => galleryInputRef.current?.click()}
+              className="py-8 rounded-2xl border-2 border-dashed border-gold-light text-charcoal/60 text-sm hover:bg-gold-light/10 transition-colors"
+            >
+              🖼️ Library
+            </button>
+          </div>
         )}
 
         <div className="flex gap-2">

@@ -4,6 +4,7 @@
 import { useRef, useState } from 'react';
 import { compressImageToDataUrl } from '@/lib/compress-image';
 import { useToast } from '@/components/Toast';
+import CameraCapture from '@/components/CameraCapture';
 
 type PhotoToolClientProps = {
   propertyId: string;
@@ -36,7 +37,7 @@ export default function PhotoToolClient({
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showCamera, setShowCamera] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const showToast = useToast();
 
@@ -64,9 +65,7 @@ export default function PhotoToolClient({
     }
   }
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  async function processFile(file: File) {
     if (preview) URL.revokeObjectURL(preview);
     setPreview(URL.createObjectURL(file));
     // Previously unguarded -- a decode failure here (corrupt file, an
@@ -85,6 +84,17 @@ export default function PhotoToolClient({
     }
   }
 
+  function handleGalleryFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    processFile(file);
+  }
+
+  function handleCameraFile(file: File) {
+    setShowCamera(false);
+    processFile(file);
+  }
+
   function handleTextSubmit() {
     if (!textInput.trim()) return;
     runAnalysis({ textInput: textInput.trim() });
@@ -96,7 +106,7 @@ export default function PhotoToolClient({
     setTextInput('');
     setResult(null);
     setError(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (galleryInputRef.current) galleryInputRef.current.value = '';
   }
 
   const hasInput = !!preview || !!result;
@@ -132,14 +142,14 @@ export default function PhotoToolClient({
           </div>
 
           {mode === 'photo' ? (
-            // Two real inputs, not one relying on `capture` as a hint --
-            // confirmed live that some mobile browsers open the gallery
-            // picker regardless of capture="environment" being set, so a
-            // single input can't reliably guarantee the camera path.
+            // Real camera access (CameraCapture, getUserMedia), not a
+            // file-input hint -- confirmed live that even an isolated
+            // input with capture="environment" still opened the gallery
+            // picker instead of the camera on a real device.
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => setShowCamera(true)}
                 className="border-2 border-dashed border-gold-light rounded-2xl py-10 text-center bg-white/50"
               >
                 <span className="text-4xl block mb-2">📷</span>
@@ -154,20 +164,13 @@ export default function PhotoToolClient({
                 <span className="text-sm text-charcoal font-medium">Choose from library</span>
               </button>
               <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleFile}
-                className="hidden"
-              />
-              <input
                 ref={galleryInputRef}
                 type="file"
                 accept="image/*"
-                onChange={handleFile}
+                onChange={handleGalleryFile}
                 className="hidden"
               />
+              <CameraCapture open={showCamera} onCapture={handleCameraFile} onClose={() => setShowCamera(false)} />
             </div>
           ) : (
             <div>

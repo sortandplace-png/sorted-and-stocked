@@ -24,6 +24,7 @@ import { FilterPill, FilterPillRow } from '@/components/recipes/FilterPill';
 import { isFoodCategory } from '@/lib/foodCategories';
 import { compressImageToBlob } from '@/lib/compress-image';
 import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
+import CameraCapture from '@/components/CameraCapture';
 import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle } from 'lucide-react';
 
 type StorageLocation = {
@@ -1900,14 +1901,24 @@ function ItemFormSheet({
   const lastPurchased = lastPurchasedDate(history);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoRemoved, setPhotoRemoved] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
-  function handlePhotoSelected(fileList: FileList | null) {
-    const file = fileList?.[0];
-    if (!file) return;
+  function applyPhoto(file: File) {
     setPhotoPreview(URL.createObjectURL(file));
     setPhotoRemoved(false);
     onPhotoChange(file, false);
+  }
+
+  function handleGalleryFile(fileList: FileList | null) {
+    const file = fileList?.[0];
+    if (!file) return;
+    applyPhoto(file);
+  }
+
+  function handleCameraFile(file: File) {
+    setShowCamera(false);
+    applyPhoto(file);
   }
 
   function removePhoto() {
@@ -2057,13 +2068,13 @@ function ItemFormSheet({
           <div>
             <FieldLabel>Photo</FieldLabel>
             <input
-              ref={fileInputRef}
+              ref={galleryInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               className="hidden"
-              onChange={(e) => handlePhotoSelected(e.target.files)}
+              onChange={(e) => handleGalleryFile(e.target.files)}
             />
+            <CameraCapture open={showCamera} onCapture={handleCameraFile} onClose={() => setShowCamera(false)} />
             {displayedPhoto ? (
               <div>
                 <img
@@ -2074,28 +2085,44 @@ function ItemFormSheet({
                 <div className="flex gap-2 mt-2">
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => setShowCamera(true)}
                     className="flex-1 py-2 rounded-full bg-linen border border-brass/30 text-denim text-xs font-medium"
                   >
-                    Replace photo
+                    Retake
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    className="flex-1 py-2 rounded-full bg-linen border border-brass/30 text-denim text-xs font-medium"
+                  >
+                    Library
                   </button>
                   <button
                     type="button"
                     onClick={removePhoto}
                     className="flex-1 py-2 rounded-full bg-linen border border-rust/40 text-rust text-xs font-medium"
                   >
-                    Remove photo
+                    Remove
                   </button>
                 </div>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full h-24 rounded-2xl border-2 border-dashed border-cardBorder text-dusk text-sm font-medium hover:bg-mist transition"
-              >
-                + Add a photo
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCamera(true)}
+                  className="h-24 rounded-2xl border-2 border-dashed border-cardBorder text-dusk text-sm font-medium hover:bg-mist transition"
+                >
+                  📷 Take a photo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="h-24 rounded-2xl border-2 border-dashed border-cardBorder text-dusk text-sm font-medium hover:bg-mist transition"
+                >
+                  🖼️ Choose photo
+                </button>
+              </div>
             )}
           </div>
 
