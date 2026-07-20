@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo, useRef, useId } from 'react';
+import Link from 'next/link';
 import { useLocale } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientUpdate, resilientUpdateWithVersionCheck, resilientDelete } from '@/lib/resilient-write';
@@ -25,7 +26,9 @@ import { isFoodCategory } from '@/lib/foodCategories';
 import { compressImageToBlob } from '@/lib/compress-image';
 import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
 import CameraCapture from '@/components/CameraCapture';
-import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle, Package, StickyNote } from 'lucide-react';
+import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle, Package, StickyNote, ArrowLeft, Pencil, QrCode as QrCodeIcon } from 'lucide-react';
+import QRCode from 'qrcode';
+import { SITE_URL } from '@/lib/site-url';
 
 type StorageLocation = {
   id: string;
@@ -246,6 +249,14 @@ export default function InventoryClient({
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<ItemFormState | null>(null); // null = form closed
   const [saving, setSaving] = useState(false);
+  // Item Detail View (2026-07-20): tapping an item, or arriving via search/
+  // Low Stock, used to drop straight into the Edit form -- every field
+  // Racquel actually wanted (photo, QR, reorder link, every location this
+  // item is stocked in) was already real data, just buried below six edit
+  // fields nobody asked for. This is a read-first view; Edit is now an
+  // explicit button, not the landing page.
+  const [viewingItem, setViewingItem] = useState<InventoryItem | null>(null);
+  const [viewingQrDataUrl, setViewingQrDataUrl] = useState<string | null>(null);
   // Held here rather than in ItemFormSheet's own state because the
   // duplicate-item warning flow (handleAddAnyway) can re-invoke performSave
   // after the sheet's initial onSave call, and needs the same pending file.
@@ -649,10 +660,13 @@ export default function InventoryClient({
   // Arrived here via a search result or a Low Stock Alert click for one
   // specific item -- the room-level QR-scan filter above gets someone into
   // the right room, but still leaves them hunting a shelf's worth of items
-  // for the one they actually came for. This opens that exact item's real
-  // detail view (the same edit-form modal a manual tap on its card opens)
-  // and sets the room filter to match, so closing the modal lands on a
-  // sensibly-scoped list rather than the full unfiltered inventory.
+  // for the one they actually came for. Opens the real detail view (2026-
+  // 07-20: used to open the edit form directly -- Racquel's exact complaint,
+  // "then i pick 1 and now it's on that 1 thing (where are the links? codes?
+  // pics?)" -- everything she wanted was real data, just buried below edit
+  // fields nobody asked for) and sets the room filter to match, so closing
+  // the modal lands on a sensibly-scoped list rather than the full
+  // unfiltered inventory.
   const openedItemFromQueryRef = useRef(false);
   useEffect(() => {
     if (initialItemId && !loading && !openedItemFromQueryRef.current) {
@@ -660,11 +674,32 @@ export default function InventoryClient({
       if (target) {
         openedItemFromQueryRef.current = true;
         setLocationFilter(target.location_id ?? null);
-        openEditForm(target);
+        openDetailView(target);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialItemId, loading, items]);
+
+  function openDetailView(item: InventoryItem) {
+    setViewingItem(item);
+  }
+
+  // Generates once per item viewed, not on every render -- toDataURL is
+  // async and this component has no other reason to re-run it. Same
+  // qrUrl shape PrintLabelsClient.tsx already encodes (a real /scan/[code]
+  // URL, not the bare code, so any camera app can resolve it, not just this
+  // app's own scanner) -- kept in sync deliberately, not reinvented here.
+  useEffect(() => {
+    if (!viewingItem?.qr_code) {
+      setViewingQrDataUrl(null);
+      return;
+    }
+    let cancelled = false;
+    QRCode.toDataURL(`${SITE_URL}/scan/${encodeURIComponent(viewingItem.qr_code)}`, { margin: 0 })
+      .then((url) => { if (!cancelled) setViewingQrDataUrl(url); })
+      .catch(() => { if (!cancelled) setViewingQrDataUrl(null); });
+    return () => { cancelled = true; };
+  }, [viewingItem?.qr_code]);
 
   function openEditForm(item: InventoryItem) {
     setPendingPhotoFile(null);
@@ -1180,7 +1215,7 @@ export default function InventoryClient({
       <div
         key={item.id}
         className="flex items-center gap-3 bg-card rounded-2xl shadow-card px-4 py-3.5 cursor-pointer hover:shadow-cardHover transition-shadow"
-        onClick={() => openEditForm(item)}
+        onClick={() => openDetailView(item)}
       >
         {hasThumb ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -1762,6 +1797,144 @@ export default function InventoryClient({
           ))}
         </div>
       </div>
+
+      {viewingItem && (() => {
+        const sameName = items
+          .filter((i) => i.name.trim().toLowerCase() === viewingItem.name.trim().toLowerCase())
+          .sort((a, b) => locationName(a.location_id).localeCompare(locationName(b.location_id)));
+        const hasThumb = !!viewingItem.photo_url && isDirectImageUrl(viewingItem.photo_url) && !brokenPhotoIds.has(viewingItem.id);
+        return (
+          <div
+            className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4"
+            onClick={() => setViewingItem(null)}
+          >
+            <div
+              className="bg-card w-full rounded-t-[2rem] sm:rounded-3xl max-w-sm mx-auto max-h-[92vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-5 pt-4">
+                <button
+                  onClick={() => setViewingItem(null)}
+                  className="flex items-center gap-1 text-sm text-dusk hover:text-denim -ml-1 p-1"
+                  aria-label="Back to results"
+                >
+                  <ArrowLeft size={16} strokeWidth={1.75} /> Back
+                </button>
+                {canManage(role) && (
+                  <button
+                    onClick={() => {
+                      const item = viewingItem;
+                      setViewingItem(null);
+                      openEditForm(item);
+                    }}
+                    className="flex items-center gap-1.5 text-sm font-medium text-white bg-denim px-3.5 py-1.5 rounded-full"
+                  >
+                    <Pencil size={13} strokeWidth={1.75} /> Edit
+                  </button>
+                )}
+              </div>
+
+              <div className="px-5 pt-3 pb-5">
+                {hasThumb ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={viewingItem.photo_url!}
+                    alt=""
+                    className="w-full h-48 rounded-2xl object-cover bg-mist mb-4"
+                    onError={() => setBrokenPhotoIds((prev) => new Set(prev).add(viewingItem.id))}
+                  />
+                ) : (
+                  <div className="w-full h-48 rounded-2xl bg-mist flex items-center justify-center mb-4">
+                    {(() => {
+                      const Icon = getItemIcon(viewingItem.name, viewingItem.category, categoryIconNames[viewingItem.category ?? '']);
+                      return <Icon className="w-12 h-12 text-brass" strokeWidth={1.5} />;
+                    })()}
+                  </div>
+                )}
+
+                <h2 className="font-display text-xl text-denim">{viewingItem.name}</h2>
+                {viewingItem.name_es && <p className="text-sm text-dusk mt-0.5">{viewingItem.name_es}</p>}
+
+                {viewingItem.notes && (
+                  <p className="flex items-start gap-1.5 text-sm text-brass mt-2 bg-mist rounded-xl px-3 py-2">
+                    <StickyNote className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={1.75} aria-hidden="true" />
+                    {viewingItem.notes}
+                  </p>
+                )}
+
+                <div className="mt-3">
+                  <OrderLink itemName={viewingItem.name} sources={viewingItem.reorder_sources} fallbackLink={viewingItem.reorder_link} />
+                </div>
+
+                {/* "Where it is" -- every row in this property that shares
+                    this item's name, each a real separate inventory_items
+                    row with its own qty/location. Racquel's own example:
+                    Trash Bags is in 8 bathrooms, and that was previously
+                    the single most useful fact about it with nowhere to
+                    see it. Reuses items already loaded for the page --
+                    no second query. */}
+                <div className="mt-5">
+                  <h3 className="text-xs font-medium uppercase tracking-wider text-brass mb-2">
+                    {sameName.length > 1 ? `Where it is (${sameName.length})` : 'Where it is'}
+                  </h3>
+                  <ul className="space-y-1.5">
+                    {sameName.map((i) => {
+                      const low = isLowStock(i);
+                      const notYetCounted = i.last_counted_at === null;
+                      const colorClass = low ? 'text-rust bg-rust/10' : notYetCounted ? 'text-brass bg-mist' : 'text-dusk bg-mist';
+                      const label = notYetCounted ? 'Not yet counted' : `${i.current_qty} / ${i.min_qty} ${i.unit}${low ? ' — low' : ''}`;
+                      return (
+                        <li key={i.id} className="flex items-center justify-between gap-2 bg-linen/40 rounded-xl px-3 py-2">
+                          <span className="text-sm text-denim truncate">{locationName(i.location_id)}</span>
+                          <div className={`flex items-center gap-0.5 rounded-full pl-1 pr-1 py-1 shrink-0 ${colorClass}`}>
+                            <button
+                              onClick={() => adjustQuantity(i, -1)}
+                              className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-sm font-bold hover:bg-black/10"
+                              aria-label={`Decrease quantity in ${locationName(i.location_id)}`}
+                            >
+                              −
+                            </button>
+                            <span className="text-xs font-medium px-1 whitespace-nowrap">{label}</span>
+                            <button
+                              onClick={() => adjustQuantity(i, 1)}
+                              className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-sm font-bold hover:bg-black/10"
+                              aria-label={`Increase quantity in ${locationName(i.location_id)}`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+
+                {viewingItem.qr_code && (
+                  <div className="mt-5 flex items-center gap-3 bg-linen/40 rounded-xl px-3 py-2.5">
+                    {viewingQrDataUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={viewingQrDataUrl} alt="" className="w-14 h-14 shrink-0 bg-card rounded-lg p-1" />
+                    ) : (
+                      <div className="w-14 h-14 shrink-0 bg-card rounded-lg flex items-center justify-center">
+                        <QrCodeIcon className="w-6 h-6 text-dusk" strokeWidth={1.5} />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-mono text-xs text-denim truncate">{viewingItem.qr_code}</p>
+                      <Link
+                        href={`/properties/${propertyId}/print-labels`}
+                        className="text-xs font-semibold text-brass hover:underline"
+                      >
+                        Print label
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {form && (
         <ItemFormSheet
