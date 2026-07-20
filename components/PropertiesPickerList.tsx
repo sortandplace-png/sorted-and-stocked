@@ -7,30 +7,31 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Home } from 'lucide-react';
 
 export type PropertyEntry = { id: string; name: string; role: string };
 export type HouseholdGroup = { key: string; householdName: string | null; properties: PropertyEntry[] };
 
-// Rule 3 narrowed: pin dot is a group-level collapse control, not per-row
-// decoration -- removed from here (and the group-expand button below) on
-// Racquel's explicit call. This whole component is due a real /sitemap-
-// style tile redesign next (icon/shape/spacing), which stays pin-free even
-// though /sitemap's own tiles keep theirs -- called out as a deliberate
-// exception, not an oversight.
-function PropertyLink({ property, compact }: { property: PropertyEntry; compact?: boolean }) {
+// Real /sitemap tile language (bg-mist, border-brass/30, rounded-xl2,
+// shadow-card, eyebrow label, icon, centered name) -- was a plain rounded
+// rectangle with left-aligned text, not a tile at all. Pin dot deliberately
+// left off (unlike /sitemap's own tiles): Rule 3 narrowed to group-level
+// collapse controls only, and these are per-item data rows, not a fixed
+// nav-tile set.
+function PropertyTile({ property, compact }: { property: PropertyEntry; compact?: boolean }) {
   // Staff land on their dedicated My Day page instead of Dashboard --
   // owner/manager's landing page is unchanged.
   const destination = property.role === 'staff' ? 'my-day' : 'dashboard';
   return (
     <Link
       href={`/properties/${property.id}/${destination}`}
-      className={`flex items-center justify-between bg-card rounded-xl2 shadow-card hover:shadow-cardHover transition-shadow ${
-        compact ? 'px-4 py-2.5' : 'px-4 py-3'
+      className={`flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 shadow-card hover:shadow-cardHover transition-shadow text-center ${
+        compact ? 'min-h-[64px] py-2 px-2' : 'min-h-[80px] py-[10px] px-[14px]'
       }`}
     >
-      <span className={`text-denim ${compact ? 'text-sm' : ''}`}>{property.name}</span>
-      <span className="text-xs text-dusk capitalize">{property.role}</span>
+      <span className="text-[8px] tracking-[0.2em] uppercase font-semibold text-brass">{property.role}</span>
+      <Home size={20} className="text-denim" aria-hidden="true" />
+      <span className={`font-display font-normal text-denim ${compact ? 'text-[12px]' : 'text-[14px]'}`}>{property.name}</span>
     </Link>
   );
 }
@@ -39,42 +40,41 @@ export default function PropertiesPickerList({ groups }: { groups: HouseholdGrou
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
   return (
-    <ul className="space-y-2 mb-6">
-      {groups.map((group) => {
-        if (group.properties.length === 1) {
+    <div className="mb-6">
+      <div className="grid grid-cols-2 gap-2.5">
+        {groups.map((group) => {
+          if (group.properties.length === 1) {
+            return <PropertyTile key={group.key} property={group.properties[0]} />;
+          }
+          const isExpanded = expandedKey === group.key;
           return (
-            <li key={group.key}>
-              <PropertyLink property={group.properties[0]} />
-            </li>
-          );
-        }
-
-        const isExpanded = expandedKey === group.key;
-        return (
-          <li key={group.key}>
             <button
+              key={group.key}
               onClick={() => setExpandedKey(isExpanded ? null : group.key)}
               aria-expanded={isExpanded}
-              className="w-full flex items-center justify-between bg-card rounded-xl2 shadow-card hover:shadow-cardHover transition-shadow px-4 py-3"
+              className="flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 shadow-card hover:shadow-cardHover transition-shadow text-center min-h-[80px] py-[10px] px-[14px]"
             >
-              <span className="text-denim">{group.householdName ?? 'Properties'}</span>
-              <span className="flex items-center gap-1.5 text-xs text-dusk">
+              <span className="text-[8px] tracking-[0.2em] uppercase font-semibold text-brass">
                 {group.properties.length} properties
-                <ChevronDown size={14} strokeWidth={2} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} aria-hidden="true" />
+              </span>
+              <Home size={20} className="text-denim" aria-hidden="true" />
+              <span className="font-display font-normal text-[14px] text-denim flex items-center gap-1">
+                {group.householdName ?? 'Properties'}
+                <ChevronDown size={12} strokeWidth={2.5} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} aria-hidden="true" />
               </span>
             </button>
-            {isExpanded && (
-              <ul className="mt-1.5 ml-3 space-y-1.5 border-l-2 border-brass/30 pl-3">
-                {group.properties.map((property) => (
-                  <li key={property.id}>
-                    <PropertyLink property={property} compact />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+          );
+        })}
+      </div>
+      {groups
+        .filter((g) => g.properties.length > 1 && expandedKey === g.key)
+        .map((group) => (
+          <div key={group.key} className="grid grid-cols-3 gap-2 mt-2.5 ml-3 border-l-2 border-brass/30 pl-3">
+            {group.properties.map((property) => (
+              <PropertyTile key={property.id} property={property} compact />
+            ))}
+          </div>
+        ))}
+    </div>
   );
 }

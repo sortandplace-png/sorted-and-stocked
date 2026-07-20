@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { Plus } from 'lucide-react';
 import LogoutButton from '@/components/LogoutButton';
 import { LogoMark } from '@/components/Logo';
 import Footer from '@/components/Footer';
@@ -91,11 +92,16 @@ export default async function PropertiesPage() {
           </Link>
         )}
 
+        {/* Same /sitemap tile language the property tiles above use
+            (bg-mist, border-brass/30, rounded-xl2, shadow-card) instead of
+            a plain outlined pill -- was the one element on this page still
+            reading as text-on-a-rectangle rather than a real tile. */}
         <Link
           href="/properties/new"
-          className="block text-center py-2.5 rounded-full border border-brass/30 text-denim text-sm font-medium"
+          className="flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 shadow-card hover:shadow-cardHover transition-shadow text-center min-h-[80px] py-[10px] px-[14px] mb-2"
         >
-          + Add a property
+          <Plus size={20} className="text-denim" aria-hidden="true" />
+          <span className="font-display font-normal text-[14px] text-denim">Add a property</span>
         </Link>
 
         <Footer />
