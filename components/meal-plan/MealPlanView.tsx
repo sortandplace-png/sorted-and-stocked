@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
-import { Printer, Flame, AlertTriangle } from 'lucide-react';
+import { Printer, Flame, AlertTriangle, MessageCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientDelete } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
@@ -493,6 +493,48 @@ export default function MealPlanView({
   function displayName(entry: Entry | null) {
     if (!entry) return null;
     return entry.recipes ? recipeTitle(entry.recipes) : entry.custom_name;
+  }
+
+  // SS-148: same wa.me text-share pattern ShoppingListViewEnhanced.tsx
+  // already uses for the shopping list, applied to a day/week of meals --
+  // Racquel needs to send a plan to staff, not just what to buy. No
+  // meal_slot headers: this page's own week/month rendering doesn't split
+  // by meal_slot either (course order alone), so the share text matches
+  // what's actually on screen rather than inventing a distinction the UI
+  // doesn't show.
+  function dayShareLines(dateStr: string): string[] {
+    const lines: string[] = [];
+    for (const course of COURSES) {
+      for (const entry of entriesFor(dateStr, course.key)) {
+        const name = displayName(entry);
+        if (name) lines.push(`${course.label}: ${name}`);
+      }
+    }
+    return lines;
+  }
+
+  function shareDayWhatsApp(dateStr: string) {
+    const label = new Date(dateStr + 'T12:00:00').toLocaleDateString(undefined, {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+    });
+    const lines = dayShareLines(dateStr);
+    const text =
+      `*Meal Plan — ${label}*\n` + (lines.length > 0 ? lines.join('\n') : 'Nothing planned.');
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  }
+
+  function shareWeekWhatsApp() {
+    const weekOf = weekDates[0].toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+    let text = `*Meal Plan — Week of ${weekOf}*\n`;
+    weekDates.forEach((d, i) => {
+      const dateStr = fmt(d);
+      const lines = dayShareLines(dateStr);
+      if (lines.length === 0) return;
+      text += `\n*${DAY_LABELS[i]}, ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}*\n${lines.join('\n')}\n`;
+    });
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   }
 
   function openPicker(dateStr: string, course: Course, isSwap = false, targetEntry?: Entry) {
@@ -1120,6 +1162,15 @@ export default function MealPlanView({
             <Printer className="h-3.5 w-3.5" />
             {viewMode === 'week' ? t('printWeek') : t('printMonth')}
           </button>
+          {viewMode === 'week' && (
+            <button
+              onClick={shareWeekWhatsApp}
+              className="inline-flex items-center gap-1.5 rounded-full border border-brass px-3 py-1.5 text-xs font-medium text-brass"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              Share week
+            </button>
+          )}
           {canEdit && viewMode === 'week' && (
             <button
               onClick={repeatWeekForward}
@@ -1483,6 +1534,12 @@ export default function MealPlanView({
                   className="text-xs font-medium text-brass"
                 >
                   Print Day
+                </button>
+                <button
+                  onClick={() => shareDayWhatsApp(dayDrawerOpen)}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-brass"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" /> Share Day
                 </button>
               </div>
             )}

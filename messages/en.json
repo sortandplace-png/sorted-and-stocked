@@ -307,6 +307,7 @@
     "missingPhoto": "No photo yet",
     "retake": "Retake",
     "takePhotoButton": "Tap to take a photo",
+    "choosePhotoButton": "Choose from library",
     "submitButton": "Save to inventory",
     "uploading": "Saving…",
     "addedToast": "Added {item}.",

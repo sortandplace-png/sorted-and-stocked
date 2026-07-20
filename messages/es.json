@@ -307,6 +307,7 @@
     "missingPhoto": "Aún sin foto",
     "retake": "Repetir",
     "takePhotoButton": "Toca para tomar una foto",
+    "choosePhotoButton": "Elegir de la galería",
     "submitButton": "Guardar en inventario",
     "uploading": "Guardando…",
     "addedToast": "Se agregó {item}.",
