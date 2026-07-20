@@ -47,7 +47,9 @@ type TeamActivityRow = {
   person: string;
   email: string;
   role: string;
+  property: string;
   last_signed_in: string | null;
+  account_created: string | null;
   tasks_assigned: number;
   completed_last_7_days: number;
   last_handover: string | null;
@@ -223,10 +225,22 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     setActivity((data as ActivityEntry[]) ?? []);
   }, [propertyId, supabase]);
 
+  // get_team_activity is SECURITY DEFINER and checks the caller's own
+  // owner/manager membership internally (raises if not) -- the canManage
+  // guard here is just to skip the call entirely for a role that would be
+  // rejected anyway, not the real access control.
+  const loadTeamActivity = useCallback(async () => {
+    if (!canManage(viewerRole)) return;
+    const { data, error: rpcError } = await supabase.rpc('get_team_activity', { p_property_id: propertyId });
+    if (rpcError) return;
+    setTeamActivity((data as TeamActivityRow[]) ?? []);
+  }, [propertyId, viewerRole, supabase]);
+
   useEffect(() => {
     loadPendingInvites();
     loadActivity();
-  }, [loadPendingInvites, loadActivity]);
+    loadTeamActivity();
+  }, [loadPendingInvites, loadActivity, loadTeamActivity]);
 
   async function resendInvite(userId: string, email: string) {
     setResendingUserId(userId);
@@ -616,6 +630,32 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
                 >
                   {resendingUserId === inv.userId ? 'Sending…' : 'Resend'}
                 </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {teamActivity && teamActivity.length > 0 && (
+        <div className="mt-6">
+          <h2 className="font-display text-lg text-charcoal mb-2">Team Activity</h2>
+          <ul className="space-y-2">
+            {teamActivity.map((row) => (
+              <li key={`${row.email}-${row.property}`} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="flex-1 truncate text-charcoal font-medium text-sm">{row.person}</span>
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-charcoal/5 text-charcoal/60 shrink-0 capitalize">
+                    {row.role}
+                  </span>
+                </div>
+                <p className="text-[11px] text-charcoal/40 mb-2">
+                  {row.property} · Last signed in: {formatLastActive(row.last_signed_in)}
+                </p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-charcoal/60">
+                  <span>{row.tasks_assigned} tasks assigned</span>
+                  <span>{row.completed_last_7_days} completed (7d)</span>
+                  {row.last_handover && <span>Last handover: {new Date(row.last_handover).toLocaleDateString()}</span>}
+                </div>
               </li>
             ))}
           </ul>
