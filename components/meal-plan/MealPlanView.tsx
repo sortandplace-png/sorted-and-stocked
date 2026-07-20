@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
-import { Printer, Flame, AlertTriangle, MessageCircle } from 'lucide-react';
+import { Printer, Flame, AlertTriangle } from 'lucide-react';
+import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientDelete } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
@@ -1167,7 +1168,7 @@ export default function MealPlanView({
               onClick={shareWeekWhatsApp}
               className="inline-flex items-center gap-1.5 rounded-full border border-brass px-3 py-1.5 text-xs font-medium text-brass"
             >
-              <MessageCircle className="h-3.5 w-3.5" />
+              <WhatsAppIcon size={14} />
               Share week
             </button>
           )}
@@ -1539,7 +1540,7 @@ export default function MealPlanView({
                   onClick={() => shareDayWhatsApp(dayDrawerOpen)}
                   className="inline-flex items-center gap-1 text-xs font-medium text-brass"
                 >
-                  <MessageCircle className="h-3.5 w-3.5" /> Share Day
+                  <WhatsAppIcon size={14} /> Share Day
                 </button>
               </div>
             )}

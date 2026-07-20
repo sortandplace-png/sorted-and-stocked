@@ -12,7 +12,8 @@ import {
   removeShoppingItem,
   type ShoppingItemSource,
 } from '@/lib/api/shoppingList';
-import { Trash2, CheckCircle2, Circle, MessageCircle, Printer, Sparkles, MoreVertical, ShoppingCart, AlertTriangle } from 'lucide-react';
+import { Trash2, CheckCircle2, Circle, Printer, Sparkles, MoreVertical, ShoppingCart, AlertTriangle } from 'lucide-react';
+import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { useToast } from '@/components/Toast';
 import { createClient } from '@/lib/supabase/client';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
@@ -751,7 +752,7 @@ export default function ShoppingListViewEnhanced({
                 }}
                 className="flex items-center gap-1.5 text-sm text-dusk hover:text-denim"
               >
-                <MessageCircle className="h-4 w-4" /> Share
+                <WhatsAppIcon size={16} /> Share
               </button>
               <button
                 onClick={() => {

@@ -1,9 +1,16 @@
 // components/recipes/FilterPill.tsx
-// Single pill button used by every filter row (Course/Dietary/Occasion/Prep)
-// on both the desktop and mobile-accordion filter UI in RecipesGridView --
-// those were 8 near-identical inline blocks before this extraction (4
-// categories x desktop/mobile), differing only in their data + click
+// Single filter tile used by every filter row (Course/Dietary/Occasion/Prep)
+// on both the desktop and mobile-accordion filter UI in RecipesGridView, and
+// by Inventory's category filter -- those were 8+ near-identical inline
+// blocks before this extraction, differing only in their data + click
 // handler, not their markup or styling.
+//
+// Tile, not pill (2026-07-19): a rounded-full capsule read as a generic web
+// chip, not this app's own visual language -- confirmed live, twice, that a
+// recolored/rebordered pill still wasn't the fix. Real shape change instead:
+// same rounded-xl2/bg-mist/border-brass/shadow-card tile language as
+// /sitemap's nav tiles, just sized down for a filter row (icon on top,
+// label + count stacked below) instead of /sitemap's larger 3-line format.
 'use client';
 
 import type { LucideIcon } from 'lucide-react';
@@ -35,32 +42,32 @@ export function FilterPill({
   const Icon = typeof icon === 'string' ? null : icon;
   const iconEmoji = typeof icon === 'string' ? icon : null;
   return (
-    <button onClick={onClick} title={title} className="min-h-11 flex items-center justify-center">
-      <span
-        className={`flex ${hebrew !== undefined ? 'flex-col items-center gap-0.5' : 'items-center gap-1.5 leading-tight'} text-sm font-medium px-3 py-1.5 rounded-full transition-colors ${
-          active ? 'bg-denim text-white' : 'bg-mist border border-brass/30 text-dusk hover:bg-card'
-        }`}
-      >
-        <span className="flex items-center gap-1.5 leading-tight">
-          {Icon ? (
-            <Icon className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-brass'}`} strokeWidth={1.75} aria-hidden="true" />
-          ) : (
-            <span className="text-xs leading-none" aria-hidden="true">{iconEmoji}</span>
-          )}
-          {label}
-          {hebrew === undefined && (
-            <span className={active ? 'text-white/70' : 'text-dusk'}>({count})</span>
-          )}
+    <button
+      onClick={onClick}
+      title={title}
+      className={`w-[72px] min-h-[68px] shrink-0 flex flex-col items-center justify-center gap-1 rounded-xl2 border px-1.5 py-2 shadow-card transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim ${
+        active ? 'bg-denim border-denim' : 'bg-mist border-brass/30 hover:bg-card'
+      }`}
+    >
+      {Icon ? (
+        <Icon className={`w-5 h-5 ${active ? 'text-white' : 'text-brass'}`} strokeWidth={1.75} aria-hidden="true" />
+      ) : (
+        <span className="text-lg leading-none" aria-hidden="true">
+          {iconEmoji}
         </span>
-        {hebrew !== undefined && (
-          <span className={`flex items-center gap-1 text-[10px] leading-tight ${active ? 'text-white/70' : 'text-dusk'}`}>
-            <span>({count})</span>
-            {hebrew && (
-              <span lang="he" dir="rtl">
-                {hebrew}
-              </span>
-            )}
-          </span>
+      )}
+      <span className={`text-[11px] font-medium leading-tight text-center ${active ? 'text-white' : 'text-denim'}`}>
+        {label}
+      </span>
+      <span className={`text-[9px] leading-tight text-center ${active ? 'text-white/70' : 'text-dusk'}`}>
+        ({count})
+        {hebrew && (
+          <>
+            {' '}
+            <span lang="he" dir="rtl">
+              {hebrew}
+            </span>
+          </>
         )}
       </span>
     </button>
@@ -76,8 +83,8 @@ export function FilterPillRow({
 }) {
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wider text-dusk mb-3">{label}</p>
-      <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">{children}</div>
+      <p className="text-xs font-medium uppercase tracking-wider text-dusk mb-2">{label}</p>
+      <div className="flex flex-wrap gap-2">{children}</div>
     </div>
   );
 }

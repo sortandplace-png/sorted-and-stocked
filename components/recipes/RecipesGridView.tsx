@@ -701,7 +701,7 @@ export default function RecipesGridView({
               onClick={() => setPrepFilter(prepFilter === p.key ? null : p.key)}
             />
           ))}
-          <span className="w-px h-6 bg-cardBorder shrink-0" aria-hidden="true" />
+          <span className="w-px min-h-[68px] bg-cardBorder shrink-0" aria-hidden="true" />
           <FilterPill
             active={!courseFilter}
             icon={LayoutGrid}
@@ -1151,12 +1151,12 @@ export default function RecipesGridView({
                           </div>
                           <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
                             {recipe.kosher_type && (
-                              <span className={`inline-block text-xs font-medium border px-2.5 py-1 rounded-full ${kosherPillClass(recipe.kosher_type)}`}>
+                              <span className={`inline-block text-xs font-medium border px-2.5 py-1 rounded-lg ${kosherPillClass(recipe.kosher_type)}`}>
                                 {kosherIcon(recipe.kosher_type)} {kosherTypeLabel(recipe.kosher_type)}
                               </span>
                             )}
                             {recipe.approx_total_minutes && (
-                              <span className="text-xs font-medium text-dusk bg-linen border border-cardBorder px-2.5 py-1 rounded-full">
+                              <span className="text-xs font-medium text-dusk bg-linen border border-cardBorder px-2.5 py-1 rounded-lg">
                                 ⏱ {formatMinutes(recipe.approx_total_minutes, locale as 'en' | 'es')}
                               </span>
                             )}
@@ -1168,8 +1168,8 @@ export default function RecipesGridView({
                                   key={tag}
                                   className={
                                     tag === 'NEW'
-                                      ? 'text-[10px] font-medium text-white bg-denim px-2 py-0.5 rounded-full'
-                                      : 'text-[10px] font-medium text-brass bg-mist px-2 py-0.5 rounded-full'
+                                      ? 'text-[10px] font-medium text-white bg-denim px-2 py-0.5 rounded-lg'
+                                      : 'text-[10px] font-medium text-brass bg-mist px-2 py-0.5 rounded-lg'
                                   }
                                 >
                                   {tagLabel(tag)}
