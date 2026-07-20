@@ -580,7 +580,7 @@ export default function ShoppingListViewEnhanced({
                 )}
               </h4>
               <span className="print:hidden shrink-0">
-                <OrderLink itemName={item.name} sources={item.reorder_sources} />
+                <OrderLink itemName={item.name} sources={item.reorder_sources} fallbackLink={item.reorder_link} />
               </span>
               <button
                 onClick={() => deleteDisplayItem(item)}

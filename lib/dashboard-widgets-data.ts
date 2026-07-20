@@ -114,6 +114,7 @@ export type LowStockItem = {
   category: string | null;
   photoUrl: string | null;
   reorderSources: ReorderSource[] | null;
+  reorderLink: string | null;
 };
 
 export async function getLowStockAlerts(propertyId: string): Promise<LowStockItem[]> {
@@ -134,14 +135,18 @@ export async function getLowStockAlerts(propertyId: string): Promise<LowStockIte
   // same ids the RPC already returned gets both the SS-150 Order button
   // and SS-146's Spanish display name without touching that function.
   const ids = rows.map((r: any) => r.id);
-  const extraById = new Map<string, { reorderSources: ReorderSource[]; nameEs: string | null }>();
+  const extraById = new Map<string, { reorderSources: ReorderSource[]; nameEs: string | null; reorderLink: string | null }>();
   if (ids.length > 0) {
     const { data: extra } = await supabase
       .from('inventory_items')
-      .select('id, name_es, reorder_sources(id, retailer_name, url, is_preferred)')
+      .select('id, name_es, reorder_link, reorder_sources(id, retailer_name, url, is_preferred)')
       .in('id', ids);
     for (const row of extra ?? []) {
-      extraById.set(row.id, { reorderSources: (row as any).reorder_sources ?? [], nameEs: (row as any).name_es ?? null });
+      extraById.set(row.id, {
+        reorderSources: (row as any).reorder_sources ?? [],
+        nameEs: (row as any).name_es ?? null,
+        reorderLink: (row as any).reorder_link ?? null,
+      });
     }
   }
 
@@ -154,5 +159,6 @@ export async function getLowStockAlerts(propertyId: string): Promise<LowStockIte
     category: item.category,
     photoUrl: item.photo_url,
     reorderSources: extraById.get(item.id)?.reorderSources ?? null,
+    reorderLink: extraById.get(item.id)?.reorderLink ?? null,
   }));
 }

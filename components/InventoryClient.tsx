@@ -1295,7 +1295,7 @@ export default function InventoryClient({
           {isFav ? '⭐' : '☆'}
         </button>
         <span onClick={(e) => e.stopPropagation()} className="shrink-0 self-start">
-          <OrderLink itemName={item.name} sources={item.reorder_sources} />
+          <OrderLink itemName={item.name} sources={item.reorder_sources} fallbackLink={item.reorder_link} />
         </span>
       </div>
     );

@@ -5,12 +5,17 @@
 // established on recipe ingredient rows (IngredientShoppingLink.tsx) --
 // consistent, not a second meaning for the same icon.
 //
-// Falls back to a generic Amazon search when there's no configured
-// reorder_sources row at all, rather than rendering nothing -- confirmed
-// live only ~70% of pending shopping list rows have an explicit source.
-// "Nothing renders blank" was the explicit ask; same fallback-search
-// pattern IngredientShoppingLink.tsx already uses for its alternate-store
-// list, not a new idea introduced here.
+// Three-tier fallback (2026-07-20, Racquel's required order):
+// reorder_sources (this item's configured retailer rows) -> the item's own
+// inventory_items.reorder_link (a second, separately-maintained link field
+// -- the Edit Item modal / ReorderSourcePicker read reorder_sources, but
+// this plain column has always been a real, independently-editable field)
+// -> generic Amazon search, rather than rendering nothing. Confirmed live
+// only ~70% of pending shopping list rows have an explicit reorder_sources
+// row; some of the remainder still have a real reorder_link that was being
+// skipped entirely before this. "Nothing renders blank" was the explicit
+// ask; same fallback-search pattern IngredientShoppingLink.tsx already uses
+// for its alternate-store list, not a new idea introduced here.
 'use client';
 
 import { ShoppingCart } from 'lucide-react';
@@ -20,11 +25,13 @@ import ReorderSourcePills from '@/components/ReorderSourcePills';
 export default function OrderLink({
   itemName,
   sources,
+  fallbackLink,
   variant = 'conceptB',
   className = '',
 }: {
   itemName: string;
   sources: ReorderSource[] | null | undefined;
+  fallbackLink?: string | null;
   variant?: 'default' | 'conceptB';
   className?: string;
 }) {
@@ -33,8 +40,12 @@ export default function OrderLink({
   }
 
   const preferred = getPreferredSource(sources);
-  const url = preferred?.url ?? `https://www.amazon.com/s?k=${encodeURIComponent(itemName)}`;
-  const label = preferred ? `Order ${itemName} — ${preferred.retailer_name}` : `Search for ${itemName} on Amazon`;
+  const url = preferred?.url || fallbackLink || `https://www.amazon.com/s?k=${encodeURIComponent(itemName)}`;
+  const label = preferred
+    ? `Order ${itemName} — ${preferred.retailer_name}`
+    : fallbackLink
+      ? `Order ${itemName}`
+      : `Search for ${itemName} on Amazon`;
 
   const iconClass =
     variant === 'conceptB'

@@ -51,7 +51,7 @@ export default function DashboardWidgets({
   todaysMeals: TodaysMealEntry[];
   lowStockItems: LowStockItem[];
   shoppingListCount: number;
-  shoppingListPreview: { id: string; name: string; nameEs: string | null; photoUrl: string | null; qtyNeeded: number | null; reorderSources: ReorderSource[] | null }[];
+  shoppingListPreview: { id: string; name: string; nameEs: string | null; photoUrl: string | null; qtyNeeded: number | null; reorderSources: ReorderSource[] | null; reorderLink: string | null }[];
   prepAheadReminders: PrepAheadReminder[];
   prepAheadEnabled: boolean;
   canManagePrepAhead: boolean;
@@ -471,7 +471,7 @@ function LowStockAlertsCard({ title, propertyId, items }: { title: string; prope
                     {item.currentQty}/{item.minQty}
                   </span>
                 </Link>
-                <OrderLink itemName={item.name} sources={item.reorderSources} />
+                <OrderLink itemName={item.name} sources={item.reorderSources} fallbackLink={item.reorderLink} />
               </li>
             );
           })}
@@ -641,7 +641,7 @@ function ShoppingListSummaryCard({
 }: {
   propertyId: string;
   count: number;
-  preview: { id: string; name: string; nameEs: string | null; photoUrl: string | null; qtyNeeded: number | null; reorderSources: ReorderSource[] | null }[];
+  preview: { id: string; name: string; nameEs: string | null; photoUrl: string | null; qtyNeeded: number | null; reorderSources: ReorderSource[] | null; reorderLink: string | null }[];
 }) {
   const t = useTranslations('dashboard.widgets');
   const tShop = useTranslations('dashboard.shoppingListCard');
@@ -700,7 +700,7 @@ function ShoppingListSummaryCard({
                   <span className="block truncate text-sm text-denim">{displayName(item)}</span>
                   {item.qtyNeeded != null && <span className="block text-xs text-dusk">{item.qtyNeeded}</span>}
                 </span>
-                <OrderLink itemName={item.name} sources={item.reorderSources} />
+                <OrderLink itemName={item.name} sources={item.reorderSources} fallbackLink={item.reorderLink} />
               </li>
             );
           })}

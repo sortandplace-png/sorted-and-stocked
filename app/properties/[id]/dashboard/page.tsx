@@ -594,6 +594,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     photoUrl: s.inventory_items?.photo_url ?? null,
     qtyNeeded: s.qty_needed ?? null,
     reorderSources: s.inventory_items?.reorder_sources ?? null,
+    reorderLink: s.inventory_items?.reorder_link ?? null,
   }))
 
   const now = new Date()
