@@ -31,6 +31,27 @@ function formatLastActive(iso: string | null): string {
 }
 
 type PendingInvite = { userId: string; email: string; role: string; invitedAt: string };
+type HouseholdProperty = { id: string; name: string };
+type ProvisionResult = {
+  status: string;
+  userId: string;
+  createdNew: boolean;
+  added: string[];
+  alreadyMember: string[];
+  emailSent?: boolean;
+  emailReason?: string | null;
+  issuedLogin?: { login: string; password: string };
+};
+
+type TeamActivityRow = {
+  person: string;
+  email: string;
+  role: string;
+  last_signed_in: string | null;
+  tasks_assigned: number;
+  completed_last_7_days: number;
+  last_handover: string | null;
+};
 
 type ActivityEntry = {
   id: string;
@@ -72,22 +93,30 @@ function describeActivity(a: ActivityEntry): string {
   return `${who} removed${by}`;
 }
 
-export default function StaffClient({ propertyId, propertyName }: { propertyId: string; propertyName: string }) {
+export default function StaffClient({ propertyId }: { propertyId: string }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [fullName, setFullName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<PropertyRole>('staff');
+  const [authMode, setAuthMode] = useState<'email' | 'issued'>('email');
+  const [issuedPassword, setIssuedPassword] = useState('');
   const [inviting, setInviting] = useState(false);
   const [inviteMessage, setInviteMessage] = useState<string | null>(null);
-  // Set when get_user_id_by_email comes back empty — offers the
-  // email-a-signup-link fallback instead of a dead end.
-  const [noAccountFor, setNoAccountFor] = useState<string | null>(null);
-  const [sendingInviteEmail, setSendingInviteEmail] = useState(false);
+  const [provisionResult, setProvisionResult] = useState<ProvisionResult | null>(null);
   const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
   const [resendingUserId, setResendingUserId] = useState<string | null>(null);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
+  const [teamActivity, setTeamActivity] = useState<TeamActivityRow[] | null>(null);
+  // Every property the viewer manages -- the Add Person property checklist,
+  // and (for a staff hire) the "both houses" default. Deliberately not just
+  // [propertyId]: a housekeeper who works both Main and Country needs both
+  // checked on the same submission, not a second separate invite.
+  const [householdProperties, setHouseholdProperties] = useState<HouseholdProperty[]>([]);
+  const [selectedPropertyIds, setSelectedPropertyIds] = useState<string[]>([propertyId]);
+  const [offboardingUserId, setOffboardingUserId] = useState<string | null>(null);
 
   const supabase = createClient();
   const showToast = useToast();
@@ -126,6 +155,39 @@ export default function StaffClient({ propertyId, propertyName }: { propertyId: 
   useEffect(() => {
     loadMembers();
   }, [loadMembers]);
+
+  const loadHouseholdProperties = useCallback(async () => {
+    if (!canManage(viewerRole)) return;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from('property_members')
+      .select('property_id, role, properties(id, name)')
+      .eq('user_id', user.id)
+      .in('role', ['owner', 'manager']);
+    const props = (data ?? [])
+      .map((m) => m.properties as unknown as HouseholdProperty | null)
+      .filter((p): p is HouseholdProperty => p !== null);
+    setHouseholdProperties(props);
+    // Staff default to every property the viewer manages (housekeepers work
+    // both houses); owner/manager creation defaults to just this property.
+    setSelectedPropertyIds(inviteRole === 'staff' ? props.map((p) => p.id) : [propertyId]);
+  }, [viewerRole, propertyId, supabase]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    loadHouseholdProperties();
+  }, [loadHouseholdProperties]);
+
+  function handleRoleChange(role: PropertyRole) {
+    setInviteRole(role);
+    setSelectedPropertyIds(role === 'staff' ? householdProperties.map((p) => p.id) : [propertyId]);
+  }
+
+  function togglePropertyId(id: string) {
+    setSelectedPropertyIds((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
+  }
 
   const loadPendingInvites = useCallback(async () => {
     if (!canManage(viewerRole)) return;
@@ -182,91 +244,88 @@ export default function StaffClient({ propertyId, propertyName }: { propertyId: 
     showToast(`Invite resent to ${email}.`, { variant: 'success' });
   }
 
-  async function handleInvite(e: React.FormEvent) {
+  async function handleAddPerson(e: React.FormEvent) {
     e.preventDefault();
     const email = inviteEmail.trim();
-    if (!email) return;
+    if (!email || !fullName.trim() || selectedPropertyIds.length === 0) return;
 
     setInviting(true);
     setInviteMessage(null);
-    setNoAccountFor(null);
+    setProvisionResult(null);
     setError(null);
 
-    // Step 1: resolve email → user_id via the narrow lookup function
-    // (004_invite_by_email.sql, re-scoped in 078_audit_hardening.sql to
-    // require the caller actually be owner/manager of THIS property --
-    // p_property_id is required now, not optional).
-    const { data: userId, error: lookupError } = await supabase.rpc('get_user_id_by_email', {
-      p_email: email,
-      p_property_id: propertyId,
-    });
-
-    if (lookupError) {
-      setError(lookupError.message);
-      setInviting(false);
-      return;
-    }
-
-    if (!userId) {
-      // No existing account — offer the email-invite fallback instead of
-      // a dead end.
-      setNoAccountFor(email);
-      setInviting(false);
-      return;
-    }
-
-    // Step 2: add membership. RLS (property_members_insert_owner_manager)
-    // enforces that only an owner/manager of this property can do this —
-    // this client-side check is just for UX, not security.
-    const { error: insertError } = await supabase
-      .from('property_members')
-      .insert({ property_id: propertyId, user_id: userId, role: inviteRole });
-
-    setInviting(false);
-
-    if (insertError) {
-      // Postgres unique_violation on (property_id, user_id)
-      if (insertError.code === '23505') {
-        setInviteMessage(`${email} is already on this property.`);
-      } else {
-        setError(insertError.message);
-      }
-      return;
-    }
-
-    setInviteEmail('');
-    setNoAccountFor(null);
-    setInviteMessage(`Added ${email} as ${inviteRole}.`);
-    showToast(`${email} added as ${inviteRole}.`, { variant: 'success' });
-    loadMembers();
-    loadActivity();
-  }
-
-  async function sendInviteEmail() {
-    if (!noAccountFor) return;
-    setSendingInviteEmail(true);
-    setError(null);
-
-    const res = await fetch('/api/invite', {
+    const res = await fetch('/api/staff/provision', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ propertyId, email: noAccountFor, role: inviteRole }),
+      body: JSON.stringify({
+        propertyIds: selectedPropertyIds,
+        fullName: fullName.trim(),
+        role: inviteRole,
+        authMode,
+        email,
+        password: authMode === 'issued' ? issuedPassword : undefined,
+      }),
     });
     const body = await res.json();
 
-    setSendingInviteEmail(false);
+    setInviting(false);
 
     if (!res.ok) {
-      setError(body.error ?? 'Failed to send invite.');
+      setError(body.error ?? 'Failed to add person.');
       return;
     }
 
-    setInviteMessage(`Invite sent to ${noAccountFor}. They'll appear here once they accept.`);
-    showToast(`Invite sent to ${noAccountFor}.`, { variant: 'success' });
-    setNoAccountFor(null);
+    const result = body as ProvisionResult;
+    const propertyNames = result.added.map((id) => householdProperties.find((p) => p.id === id)?.name ?? id).join(', ');
+
+    if (result.issuedLogin) {
+      // The only time the password is ever visible again -- shown inline,
+      // not just a toast, until the manager dismisses it themselves.
+      setProvisionResult(result);
+    } else if (result.createdNew) {
+      setInviteMessage(
+        result.emailSent
+          ? `Invited ${fullName} (${email}) to ${propertyNames}. They'll get an email to set up their account.`
+          : `Added ${fullName} (${email}) to ${propertyNames}, but the invite email failed to send${
+              result.emailReason ? ` (${result.emailReason})` : ''
+            } -- share the sign-in link with them directly.`
+      );
+    } else {
+      setInviteMessage(`${fullName} (${email}) already had an account -- added to ${propertyNames || 'no new properties (already a member everywhere selected)'}.`);
+    }
+
+    showToast(`${fullName} added.`, { variant: 'success' });
+    setFullName('');
     setInviteEmail('');
+    setIssuedPassword('');
     loadMembers();
     loadPendingInvites();
+    loadActivity();
+  }
+
+  async function offboardMember(userId: string, name: string | null) {
+    if (
+      !confirm(
+        `Remove ${name ?? 'this person'} from every property and disable their account? This can't be undone by re-adding them -- they'd need a brand-new invite to come back.`
+      )
+    )
+      return;
+    setOffboardingUserId(userId);
+    const res = await fetch('/api/staff/offboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+    const body = await res.json();
+    setOffboardingUserId(null);
+
+    if (!res.ok) {
+      showToast(body.error ?? 'Failed to offboard.', { variant: 'error', durationMs: 6000 });
+      return;
+    }
+
+    showToast(`${name ?? 'Person'} offboarded.`);
+    loadMembers();
     loadActivity();
   }
 
@@ -372,6 +431,19 @@ export default function StaffClient({ propertyId, propertyName }: { propertyId: 
                 </button>
               )}
             </div>
+            {/* Distinct from Remove above, which only drops this one
+                property's membership row -- Offboard clears every property
+                this person belongs to and disables their account, for when
+                they're leaving the household entirely, not just this house. */}
+            {member.role !== 'owner' && canManage(viewerRole) && (
+              <button
+                onClick={() => offboardMember(member.user_id, member.full_name ?? member.email)}
+                disabled={offboardingUserId === member.user_id}
+                className="text-[11px] text-charcoal/40 underline mt-1.5 disabled:opacity-40"
+              >
+                {offboardingUserId === member.user_id ? 'Offboarding…' : 'Offboard (remove from all properties)'}
+              </button>
+            )}
             <p className="text-[11px] text-charcoal/40 mt-2">Last active: {formatLastActive(member.lastActive)}</p>
           </div>
         ))}
@@ -379,69 +451,146 @@ export default function StaffClient({ propertyId, propertyName }: { propertyId: 
 
       {canManage(viewerRole) && (
         <>
-      <h2 className="font-display text-lg text-charcoal mb-2">Invite someone</h2>
-      <form onSubmit={handleInvite} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 space-y-3">
-        {/* Real risk this closes: with two properties on one account, the
-            property being invited into was previously only shown via the
-            header switcher, not on this form -- easy to send an invite to
-            the wrong house without noticing. */}
-        {propertyName && (
-          <p className="text-xs font-medium text-gold-dark bg-gold-light/20 rounded-full px-3 py-1.5 inline-block">
-            Inviting to: {propertyName}
-          </p>
-        )}
+      <h2 className="font-display text-lg text-charcoal mb-2">Add Person</h2>
+      <form onSubmit={handleAddPerson} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 space-y-3">
         <div>
-          <FieldLabel>Email address</FieldLabel>
+          <FieldLabel>Full name</FieldLabel>
           <input
-            type="email"
-            placeholder="Email address"
+            type="text"
+            placeholder="Full name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-cream/40"
+            required
+          />
+        </div>
+
+        <div>
+          <FieldLabel>Role</FieldLabel>
+          <select
+            value={inviteRole}
+            onChange={(e) => handleRoleChange(e.target.value as PropertyRole)}
+            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-cream/40"
+          >
+            <option value="staff">Staff</option>
+            <option value="manager">Manager</option>
+          </select>
+          <p className="text-xs text-charcoal/40 mt-1">
+            {inviteRole === 'manager'
+              ? ROLE_PERMISSIONS.manager[0] + '; ' + ROLE_PERMISSIONS.manager[1].toLowerCase()
+              : ROLE_PERMISSIONS.staff[0] + '; ' + ROLE_PERMISSIONS.staff[1].toLowerCase()}
+          </p>
+        </div>
+
+        {householdProperties.length > 1 && (
+          <div>
+            <FieldLabel>Properties</FieldLabel>
+            <div className="flex flex-wrap gap-2">
+              {householdProperties.map((p) => (
+                <label
+                  key={p.id}
+                  className={`flex items-center gap-1.5 text-sm rounded-full px-3 py-1.5 border cursor-pointer ${
+                    selectedPropertyIds.includes(p.id)
+                      ? 'bg-gold-dark text-white border-gold-dark'
+                      : 'bg-cream/40 text-charcoal border-gold-light/60'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedPropertyIds.includes(p.id)}
+                    onChange={() => togglePropertyId(p.id)}
+                    className="sr-only"
+                  />
+                  {p.name}
+                </label>
+              ))}
+            </div>
+            {inviteRole === 'staff' && (
+              <p className="text-xs text-charcoal/40 mt-1">Defaults to every property you manage -- housekeepers typically work both houses.</p>
+            )}
+          </div>
+        )}
+
+        <div>
+          <FieldLabel>How they'll sign in</FieldLabel>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setAuthMode('email')}
+              className={`flex-1 py-2 rounded-full text-sm font-medium border ${
+                authMode === 'email' ? 'bg-gold-dark text-white border-gold-dark' : 'bg-cream/40 text-charcoal border-gold-light/60'
+              }`}
+            >
+              Email invite
+            </button>
+            <button
+              type="button"
+              onClick={() => setAuthMode('issued')}
+              className={`flex-1 py-2 rounded-full text-sm font-medium border ${
+                authMode === 'issued' ? 'bg-gold-dark text-white border-gold-dark' : 'bg-cream/40 text-charcoal border-gold-light/60'
+              }`}
+            >
+              Issued login
+            </button>
+          </div>
+          <p className="text-xs text-charcoal/40 mt-1">
+            {authMode === 'email'
+              ? 'They get an email with a link to set up their own account.'
+              : "You set a login and password directly and hand it to them -- no email required. This only applies to a brand-new person; it's ignored if they already have an account."}
+          </p>
+        </div>
+
+        <div>
+          <FieldLabel>{authMode === 'email' ? 'Email address' : 'Login (can be any email-shaped ID, e.g. housekeeper1@sortandplace.app)'}</FieldLabel>
+          <input
+            type={authMode === 'email' ? 'email' : 'text'}
+            placeholder={authMode === 'email' ? 'Email address' : 'housekeeper1@sortandplace.app'}
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
             className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-cream/40"
             required
           />
         </div>
-        <select
-          value={inviteRole}
-          onChange={(e) => setInviteRole(e.target.value as PropertyRole)}
-          className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-cream/40"
-        >
-          <option value="staff">Staff</option>
-          <option value="manager">Manager</option>
-        </select>
-        <p className="text-xs text-charcoal/40 -mt-1">
-          {inviteRole === 'manager'
-            ? ROLE_PERMISSIONS.manager[0] + '; ' + ROLE_PERMISSIONS.manager[1].toLowerCase()
-            : ROLE_PERMISSIONS.staff[0] + '; ' + ROLE_PERMISSIONS.staff[1].toLowerCase()}
-        </p>
+
+        {authMode === 'issued' && (
+          <div>
+            <FieldLabel>Password (at least 6 characters)</FieldLabel>
+            <input
+              type="text"
+              placeholder="Password to hand them"
+              value={issuedPassword}
+              onChange={(e) => setIssuedPassword(e.target.value)}
+              className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-cream/40"
+              minLength={6}
+              required
+            />
+          </div>
+        )}
+
         {inviteMessage && <p className="text-sm text-charcoal/60">{inviteMessage}</p>}
 
-        {noAccountFor && (
-          <div className="bg-gold-light/30 rounded-2xl p-3 text-sm">
-            <p className="text-charcoal mb-2">
-              No account found for {noAccountFor}. Send them a signup invite email?
+        {provisionResult?.issuedLogin && (
+          <div className="bg-gold-light/30 rounded-2xl p-3 text-sm space-y-1">
+            <p className="text-charcoal font-medium">Share these with {fullName || 'them'} directly -- shown only once:</p>
+            <p className="text-charcoal">
+              Login: <span className="font-mono">{provisionResult.issuedLogin.login}</span>
             </p>
-            <button
-              type="button"
-              onClick={sendInviteEmail}
-              disabled={sendingInviteEmail}
-              className="w-full py-2 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
-            >
-              {sendingInviteEmail ? 'Sending…' : `Send invite to ${noAccountFor}`}
+            <p className="text-charcoal">
+              Password: <span className="font-mono">{provisionResult.issuedLogin.password}</span>
+            </p>
+            <button type="button" onClick={() => setProvisionResult(null)} className="text-xs text-gold-dark underline">
+              Dismiss
             </button>
           </div>
         )}
 
         <button
           type="submit"
-          disabled={inviting || !inviteEmail.trim()}
+          disabled={inviting || !fullName.trim() || !inviteEmail.trim() || selectedPropertyIds.length === 0 || (authMode === 'issued' && issuedPassword.length < 6)}
           className="w-full py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
         >
-          {inviting ? 'Adding…' : 'Add to property'}
+          {inviting ? 'Adding…' : 'Add Person'}
         </button>
-        <p className="text-xs text-charcoal/40">
-          If they don't have an account yet, you'll be offered the option to email them a signup invite.
-        </p>
       </form>
 
       <p className="text-xs text-charcoal/40 mt-4">

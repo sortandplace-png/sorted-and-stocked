@@ -31,7 +31,5 @@ export default async function StaffPage({
     redirect(`/properties/${id}/inventory`);
   }
 
-  const { data: property } = await supabase.from('properties').select('name').eq('id', id).maybeSingle();
-
-  return <StaffClient propertyId={id} propertyName={property?.name ?? ''} />;
+  return <StaffClient propertyId={id} />;
 }
