@@ -1212,6 +1212,7 @@ export default function RecipeDetailClient({
               <Link
                 key={s.id}
                 href={`/properties/${propertyId}/recipes/${s.id}`}
+                prefetch={false}
                 className="shrink-0 w-32 bg-card rounded-xl border border-cardBorder shadow-card overflow-hidden hover:border-brass/40 transition-colors"
               >
                 <div className="w-full h-20 bg-mist flex items-center justify-center">
