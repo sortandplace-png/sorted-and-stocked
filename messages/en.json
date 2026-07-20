@@ -317,6 +317,18 @@
     "failedToast": "Failed to save photo.",
     "sessionCount": "{count, plural, one {# item added this session} other {# items added this session}}"
   },
+  "translationWorklist": {
+    "title": "Translation Worklist",
+    "subtitle": "These recipes, ingredients, and items are still missing a Spanish name.",
+    "managersOnly": "This worklist is for managers.",
+    "allDone": "Nothing left on this list.",
+    "placeholder": "Spanish name",
+    "saveButton": "Save",
+    "saving": "Saving…",
+    "savedToast": "Saved {item}.",
+    "failedToast": "Failed to save.",
+    "sessionCount": "{count, plural, one {# name added this session} other {# names added this session}}"
+  },
   "photoWorklist": {
     "title": "Photo Worklist",
     "subtitle": "These items need a real photo of what's actually on the shelf — a web search couldn't confirm the right one.",

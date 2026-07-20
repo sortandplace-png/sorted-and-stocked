@@ -317,6 +317,18 @@
     "failedToast": "No se pudo guardar.",
     "sessionCount": "{count, plural, one {# artículo agregado en esta sesión} other {# artículos agregados en esta sesión}}"
   },
+  "translationWorklist": {
+    "title": "Lista de Traducciones Pendientes",
+    "subtitle": "Estas recetas, ingredientes y artículos todavía no tienen un nombre en español.",
+    "managersOnly": "Esta lista es solo para gerentes.",
+    "allDone": "No queda nada en esta lista.",
+    "placeholder": "Nombre en español",
+    "saveButton": "Guardar",
+    "saving": "Guardando…",
+    "savedToast": "Se guardó {item}.",
+    "failedToast": "No se pudo guardar.",
+    "sessionCount": "{count, plural, one {# nombre agregado en esta sesión} other {# nombres agregados en esta sesión}}"
+  },
   "photoWorklist": {
     "title": "Lista de Fotos Pendientes",
     "subtitle": "Estos artículos necesitan una foto real de lo que hay en el estante — una búsqueda web no pudo confirmar cuál es el correcto.",

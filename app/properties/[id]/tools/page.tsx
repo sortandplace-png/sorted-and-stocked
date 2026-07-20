@@ -159,6 +159,12 @@ const TOOLS = [
     title: 'Kosher Type Tagging',
     description: 'Bulk-tag Meat/Dairy/Parve by category for items missing one.',
   },
+  {
+    slug: 'translation-worklist',
+    icon: '🌐',
+    title: 'Translation Worklist',
+    description: 'Recipes, ingredients, and items still missing a Spanish name.',
+  },
 ];
 
 const TASTE_MEMORY_TOOL = {
@@ -204,7 +210,7 @@ const GROUPS: {
       {
         key: 'admin-cleanup',
         label: 'Admin Cleanup',
-        slugs: ['duplicate-ingredients', 'needs-linking', 'link-captured-photos', 'hechsher-verification', 'kosher-type-tagging'],
+        slugs: ['duplicate-ingredients', 'needs-linking', 'link-captured-photos', 'hechsher-verification', 'kosher-type-tagging', 'translation-worklist'],
         lockIcon: true,
       },
     ],
