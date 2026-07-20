@@ -220,7 +220,7 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
 
       {borrowedOutCount !== null && borrowedOutCount > 0 && (
         <Link
-          href={`/properties/${propertyId}/tools`}
+          href={`/properties/${propertyId}/tools/borrowed-items`}
           className="block bg-gold-light/15 border border-gold-light rounded-2xl p-3 mb-4 text-sm text-charcoal hover:bg-gold-light/25 transition-colors"
         >
           🔄 {borrowedOutCount} borrowed/lent item{borrowedOutCount === 1 ? '' : 's'} still out — see Borrowed & Lent

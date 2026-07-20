@@ -58,6 +58,17 @@ export default function SettingsClient({
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [sendingBroadcast, setSendingBroadcast] = useState(false);
 
+  // guest_taste_memory defaults to disabled at the DB/route level
+  // (app/properties/[id]/tools/taste-memory/page.tsx redirects away when
+  // it's falsy) with no way to turn it on anywhere in the app -- confirmed
+  // this session as the actual reason that page reads as "unused." Same
+  // read-then-merge feature_flags write ShoppingRulesClient.tsx already
+  // uses for auto_restock (a single jsonb column shared by every flag on
+  // the property, never blind-overwritten).
+  const [tasteMemoryEnabled, setTasteMemoryEnabled] = useState(false);
+  const [loadingFlags, setLoadingFlags] = useState(true);
+  const [savingTasteMemory, setSavingTasteMemory] = useState(false);
+
   const loadCodes = useCallback(async () => {
     if (!canManage(role)) return;
     setLoadingCodes(true);
@@ -72,6 +83,37 @@ export default function SettingsClient({
   useEffect(() => {
     loadCodes();
   }, [loadCodes]);
+
+  const loadFeatureFlags = useCallback(async () => {
+    if (!canManage(role)) return;
+    setLoadingFlags(true);
+    const { data } = await supabase.from('properties').select('feature_flags').eq('id', propertyId).single();
+    const flags = (data?.feature_flags ?? {}) as Record<string, boolean>;
+    setTasteMemoryEnabled(!!flags.guest_taste_memory);
+    setLoadingFlags(false);
+  }, [propertyId, role, supabase]);
+
+  useEffect(() => {
+    loadFeatureFlags();
+  }, [loadFeatureFlags]);
+
+  async function toggleTasteMemory() {
+    setSavingTasteMemory(true);
+    const next = !tasteMemoryEnabled;
+    const { data: current } = await supabase.from('properties').select('feature_flags').eq('id', propertyId).single();
+    const flags = (current?.feature_flags ?? {}) as Record<string, boolean>;
+    const { error: flagError } = await supabase
+      .from('properties')
+      .update({ feature_flags: { ...flags, guest_taste_memory: next } })
+      .eq('id', propertyId);
+    setSavingTasteMemory(false);
+    if (flagError) {
+      showToast('Failed to update setting.', { variant: 'error' });
+      return;
+    }
+    setTasteMemoryEnabled(next);
+    showToast(next ? 'Taste Memory enabled.' : 'Taste Memory disabled.', { variant: 'success' });
+  }
 
   async function saveNotificationSettings() {
     setSavingPhone(true);
@@ -202,6 +244,34 @@ export default function SettingsClient({
           </button>
         </div>
       </section>
+
+      {canManage(role) && !loadingFlags && (
+        <section className="space-y-3">
+          <h2 className="font-display text-lg text-charcoal">Household Features</h2>
+          <div className="flex items-center justify-between gap-3 bg-white rounded-2xl border border-gold-light/40 px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-charcoal">Guest &amp; Family Taste Memory</p>
+              <p className="text-xs text-charcoal/50">Track who likes and dislikes which dishes, for meal planning.</p>
+            </div>
+            <button
+              onClick={toggleTasteMemory}
+              disabled={savingTasteMemory}
+              role="switch"
+              aria-checked={tasteMemoryEnabled}
+              aria-label="Toggle Guest and Family Taste Memory"
+              className={`relative shrink-0 w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${
+                tasteMemoryEnabled ? 'bg-gold-dark' : 'bg-gold-light/50'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
+                  tasteMemoryEnabled ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        </section>
+      )}
 
       {canManage(role) && (
         <section className="space-y-3">
