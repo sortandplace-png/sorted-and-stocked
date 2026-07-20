@@ -173,7 +173,7 @@ export default function NewRecipeModal({
     // rows to preserve fields from.
     let existingByName = new Map<
       string,
-      { category: string | null; photo_url: string | null; reorder_link: string | null; primary_store: string | null; alternative_stores: string[] | null; is_strictly_kosher: boolean | null; section_label: string | null }
+      { category: string | null; photo_url: string | null; reorder_link: string | null; primary_store: string | null; alternative_stores: string[] | null; is_strictly_kosher: boolean | null; section_label: string | null; is_food: boolean | null }
     >();
 
     const sharedFields = {
@@ -218,7 +218,7 @@ export default function NewRecipeModal({
       // isn't actually new.
       const { data: existingIngredients } = await supabase
         .from('recipe_ingredients')
-        .select('name, category, photo_url, reorder_link, primary_store, alternative_stores, is_strictly_kosher, section_label')
+        .select('name, category, photo_url, reorder_link, primary_store, alternative_stores, is_strictly_kosher, section_label, is_food')
         .eq('recipe_id', recipeId);
       existingByName = new Map(
         (existingIngredients ?? []).map((row) => [row.name.trim().toLowerCase(), row])
@@ -331,6 +331,7 @@ export default function NewRecipeModal({
             alternative_stores: existing?.alternative_stores ?? null,
             is_strictly_kosher: existing?.is_strictly_kosher ?? null,
             section_label: existing?.section_label ?? null,
+            is_food: existing?.is_food ?? true,
           };
         })
       );

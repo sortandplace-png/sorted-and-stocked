@@ -81,6 +81,10 @@ interface Ingredient {
   is_strictly_kosher?: boolean | null;
   photo_url?: string | null;
   section_label?: string | null;
+  // False for equipment, sub-recipe cross-references, or stray note lines
+  // that ended up parsed into the ingredient list -- not a real food item,
+  // so no photo tile (blank or otherwise) or Add to Shopping List affordance.
+  is_food?: boolean | null;
 }
 
 interface Recipe {
@@ -487,6 +491,7 @@ export default function RecipeDetailClient({
           unit: i.unit,
           category: i.category,
           section_label: i.section_label ?? null,
+          is_food: i.is_food ?? true,
         }))
       );
     }
@@ -1053,7 +1058,7 @@ export default function RecipeDetailClient({
                             aria-label={`Check off ${displayIngredientName(i)}`}
                           />
                         </label>
-                        {i.photo_url && !brokenIngredientPhotoIds.has(i.id) ? (
+                        {i.is_food === false ? null : i.photo_url && !brokenIngredientPhotoIds.has(i.id) ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={i.photo_url}
@@ -1070,7 +1075,7 @@ export default function RecipeDetailClient({
                             ingredient={i}
                             displayName={displayIngredientName(i)}
                             recipeNames={[recipe.name]}
-                            onAddToList={canManage(role) ? () => addToShoppingList(i) : undefined}
+                            onAddToList={canManage(role) && i.is_food !== false ? () => addToShoppingList(i) : undefined}
                             addingToList={!!addingToListIds[i.id]}
                           />
                         </div>

@@ -32,7 +32,7 @@ export async function fetchRecipeWithIngredients(recipeId: string, propertyId?: 
   // for the question "does this column exist."
   const { data: ingredients, error: ingredientError } = await supabase
     .from('recipe_ingredients')
-    .select('id, name, name_es, quantity, unit, category, reorder_link, primary_store, alternative_stores, is_strictly_kosher, photo_url, section_label, inventory_item_id')
+    .select('id, name, name_es, quantity, unit, category, reorder_link, primary_store, alternative_stores, is_strictly_kosher, photo_url, section_label, inventory_item_id, is_food')
     .eq('recipe_id', recipeId)
     .order('section_label', { nullsFirst: true })
     .order('category');

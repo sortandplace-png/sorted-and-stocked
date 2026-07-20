@@ -362,7 +362,7 @@ export default function RecipesGridView({
       supabase.from('recipes').select('*').eq('id', recipeId).single(),
       supabase
         .from('recipe_ingredients')
-        .select('name, quantity, unit, category, section_label')
+        .select('name, quantity, unit, category, section_label, is_food')
         .eq('recipe_id', recipeId),
     ]);
 
