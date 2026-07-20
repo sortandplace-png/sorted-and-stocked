@@ -25,7 +25,7 @@ import { isFoodCategory } from '@/lib/foodCategories';
 import { compressImageToBlob } from '@/lib/compress-image';
 import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
 import CameraCapture from '@/components/CameraCapture';
-import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle, Package } from 'lucide-react';
+import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle, Package, StickyNote } from 'lucide-react';
 
 type StorageLocation = {
   id: string;
@@ -75,6 +75,7 @@ type InventoryItem = {
   pesach_status: 'kosher_for_pesach' | 'not_kosher_for_pesach' | 'needs_review' | 'not_applicable';
   last_counted_at: string | null;
   updated_at: string;
+  notes: string | null;
 };
 
 type HistoryEntry = {
@@ -112,6 +113,7 @@ type ItemFormState = {
   opened_date: string;
   qr_code: string | null; // read-only, DB-generated — display only, never submitted
   print_label: boolean;
+  notes: string;
   // Loaded value at edit-open time, for the optimistic-lock check on save —
   // never rendered as an editable field.
   updated_at: string | null;
@@ -135,6 +137,7 @@ const EMPTY_FORM: ItemFormState = {
   opened_date: '',
   qr_code: null,
   print_label: true,
+  notes: '',
   updated_at: null,
 };
 
@@ -387,7 +390,7 @@ export default function InventoryClient({
         const { data, error } = await supabase
           .from('inventory_items')
           .select(
-            'id, name, name_es, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
+            'id, name, name_es, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at, notes'
           )
           .eq('property_id', propertyId)
           .order('name')
@@ -686,6 +689,7 @@ export default function InventoryClient({
       opened_date: item.opened_date ?? '',
       qr_code: item.qr_code,
       print_label: item.print_label,
+      notes: item.notes ?? '',
       updated_at: item.updated_at,
     });
     setHistory([]);
@@ -749,7 +753,7 @@ export default function InventoryClient({
     const { data: existing } = await supabase
       .from('inventory_items')
       .select(
-        'id, name, name_es, category, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at'
+        'id, name, name_es, category, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at, notes'
       )
       .eq('id', matchId)
       .single();
@@ -809,6 +813,7 @@ export default function InventoryClient({
       expiration_date: form.expiration_date || null,
       opened_date: form.opened_date || null,
       print_label: form.print_label,
+      notes: form.notes.trim() || null,
     };
 
     if (form.id) {
@@ -1203,6 +1208,17 @@ export default function InventoryClient({
               .filter(Boolean)
               .join(' · ')}
           </p>
+          {/* Was fetched, typed, saved -- and rendered nowhere (2026-07-20,
+              same fix as the edit form's own new Notes field). Visible on
+              the card itself, not just behind Edit, since some of these are
+              kashrus-critical sourcing warnings staff need while shopping,
+              not just while editing. */}
+          {item.notes && (
+            <p className="text-xs text-brass truncate mt-0.5 flex items-center gap-1">
+              <StickyNote className="w-3 h-3 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+              {item.notes}
+            </p>
+          )}
           <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
             {(() => {
               const colorClass = low ? 'text-rust bg-rust/10' : notYetCounted ? 'text-brass bg-mist' : 'text-dusk bg-mist';
@@ -2188,6 +2204,21 @@ function ItemFormSheet({
               className="h-5 w-5 accent-brass rounded"
             />
           </label>
+
+          {/* Was fetched, typed, saved -- and rendered nowhere (2026-07-20).
+              1,036 items carry a note; 56 are kashrus-critical (e.g. which
+              items must route to a specific kosher store, never a general
+              retailer). Real safety gap, not cosmetic. */}
+          <div>
+            <label className="text-xs font-medium text-dusk mb-1 block">Notes</label>
+            <textarea
+              value={form.notes}
+              onChange={(e) => onChange({ ...form, notes: e.target.value })}
+              placeholder="e.g. sourcing requirements, substitution warnings, anything staff need to know"
+              rows={3}
+              className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl px-3 py-2 text-sm bg-card"
+            />
+          </div>
         </div>
 
         <div className="flex gap-2 mt-4">
