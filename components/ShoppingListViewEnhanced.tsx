@@ -12,7 +12,7 @@ import {
   removeShoppingItem,
   type ShoppingItemSource,
 } from '@/lib/api/shoppingList';
-import { Trash2, CheckCircle2, Circle, Printer, Sparkles, MoreVertical, ShoppingCart, AlertTriangle } from 'lucide-react';
+import { Trash2, CheckCircle2, Circle, Printer, Sparkles, MoreVertical, ShoppingCart, AlertTriangle, Repeat, Store, BookOpen } from 'lucide-react';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { useToast } from '@/components/Toast';
 import { createClient } from '@/lib/supabase/client';
@@ -768,25 +768,32 @@ export default function ShoppingListViewEnhanced({
         )}
       </div>
 
-      {/* View Options */}
-      <div className="print:hidden flex gap-2 flex-wrap">
-        {(['staples-first', 'category', 'by-recipe'] as const).map(option => (
+      {/* View Options -- tile, not pill (2026-07-20, RULE 2): was a row of
+          rounded-full capsules, the exact generic-chip shape FilterPill.tsx
+          already replaced elsewhere in the app. Same rounded-xl2/bg-mist/
+          border-brass tile language, sized for 3 view-mode buttons rather
+          than FilterPill itself -- these aren't a filter with a count,
+          just a 3-way display-mode switch, so no "(N)" line under the
+          label the way a real filter tile has one. */}
+      <div className="print:hidden flex gap-2">
+        {([
+          ['staples-first', Repeat, 'Staples'] as const,
+          ['category', Store, 'By Aisle'] as const,
+          ['by-recipe', BookOpen, 'By Recipe'] as const,
+        ]).map(([option, Icon, label]) => (
           <button
             key={option}
             onClick={() => setGroupBy(option)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              groupBy === option
-                ? 'bg-denim text-white'
-                : 'bg-card border border-cardBorder text-dusk hover:bg-mist'
+            className={`flex-1 flex flex-col items-center justify-center gap-1 rounded-xl2 border px-2 py-2.5 shadow-card transition-colors ${
+              groupBy === option ? 'bg-denim border-denim' : 'bg-mist border-brass/30 hover:bg-card'
             }`}
           >
+            <Icon className={`w-4 h-4 ${groupBy === option ? 'text-white' : 'text-brass'}`} strokeWidth={1.75} aria-hidden="true" />
             {/* Renamed per request -- confirmed this toggle and the
                 resulting "Staples (N)" group card below are the exact same
                 mechanism (is_staple_origin), not a collision with a
-                separate concept. Already visually distinct from that card
-                (small pill button here vs. font-display text-lg card
-                header there), so no further separation needed. */}
-            {option === 'staples-first' ? 'Staples' : option === 'category' ? 'By Aisle' : 'By Recipe'}
+                separate concept. */}
+            <span className={`text-[11px] font-medium ${groupBy === option ? 'text-white' : 'text-denim'}`}>{label}</span>
           </button>
         ))}
       </div>

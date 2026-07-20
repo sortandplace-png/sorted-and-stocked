@@ -25,7 +25,7 @@ import { isFoodCategory } from '@/lib/foodCategories';
 import { compressImageToBlob } from '@/lib/compress-image';
 import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
 import CameraCapture from '@/components/CameraCapture';
-import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle } from 'lucide-react';
+import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle, Package } from 'lucide-react';
 
 type StorageLocation = {
   id: string;
@@ -1341,8 +1341,15 @@ export default function InventoryClient({
         <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2 mb-3">{error}</p>
       )}
 
+      {/* Dashboard-style stat tiles (2026-07-20, RULE 2): was the same
+          shape but bare number-over-label, no icon -- the one piece of
+          the app's tile formula (eyebrow-optional, icon, value, label)
+          these three were still missing. Left as a 3-col row rather than
+          forcing the full dashboard tile height; these are compact
+          stat/filter toggles, not content cards. */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         <div className="rounded-2xl p-3 bg-card border border-cardBorder text-center">
+          <Package className="w-4 h-4 text-brass mx-auto mb-1" strokeWidth={1.75} aria-hidden="true" />
           <div className="text-xl font-display text-denim">{totalItemsCount}</div>
           <div className="text-[11px] text-dusk">Total Items</div>
         </div>
@@ -1354,6 +1361,7 @@ export default function InventoryClient({
             belowParOnly ? 'border-rust' : 'border-cardBorder'
           }`}
         >
+          <AlertTriangle className={`w-4 h-4 mx-auto mb-1 ${lowStockCount > 0 ? 'text-rust' : 'text-brass'}`} strokeWidth={1.75} aria-hidden="true" />
           <div className={`text-xl font-display ${lowStockCount > 0 ? 'text-rust' : 'text-denim'}`}>
             {lowStockCount}
           </div>
@@ -1367,6 +1375,7 @@ export default function InventoryClient({
             expiringSoon30Only ? 'border-brass' : 'border-cardBorder'
           }`}
         >
+          <Clock className="w-4 h-4 mx-auto mb-1 text-brass" strokeWidth={1.75} aria-hidden="true" />
           <div className={`text-xl font-display ${expiringSoon30Count > 0 ? 'text-brass' : 'text-denim'}`}>
             {expiringSoon30Count}
           </div>
