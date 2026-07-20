@@ -83,8 +83,8 @@ export default function CapturePhotoClient({ propertyId }: { propertyId: string 
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Capture Photo</h1>
-      <p className="text-sm text-charcoal/50 mb-5">
+      <h1 className="text-2xl font-display text-denim mb-1">Capture Photo</h1>
+      <p className="text-sm text-dusk mb-5">
         Snap as many photos as you need — each one saves right away. No need to say what it is yet.
       </p>
 
@@ -103,13 +103,13 @@ export default function CapturePhotoClient({ propertyId }: { propertyId: string 
       <div className="grid grid-cols-2 gap-3 mb-5">
         <button
           onClick={() => setShowCamera(true)}
-          className="py-10 rounded-2xl border-2 border-dashed border-gold-light text-charcoal/70 hover:bg-gold-light/10 transition-colors"
+          className="py-10 rounded-2xl border-2 border-dashed border-brass/40 text-dusk hover:bg-mist transition-colors"
         >
           📸 Take a photo
         </button>
         <button
           onClick={() => galleryInputRef.current?.click()}
-          className="py-10 rounded-2xl border-2 border-dashed border-gold-light text-charcoal/70 hover:bg-gold-light/10 transition-colors"
+          className="py-10 rounded-2xl border-2 border-dashed border-brass/40 text-dusk hover:bg-mist transition-colors"
         >
           🖼️ Library
         </button>
@@ -117,10 +117,10 @@ export default function CapturePhotoClient({ propertyId }: { propertyId: string 
 
       {queue.length > 0 && (
         <>
-          <p className="text-xs text-charcoal/50 mb-3">{savedCount} of {queue.length} saved</p>
+          <p className="text-xs text-dusk mb-3">{savedCount} of {queue.length} saved</p>
           <div className="grid grid-cols-3 gap-2">
             {queue.map((item) => (
-              <div key={item.key} className="relative rounded-xl overflow-hidden bg-cream/40 aspect-square">
+              <div key={item.key} className="relative rounded-xl overflow-hidden bg-linen aspect-square">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={item.previewUrl} alt="" className="w-full h-full object-cover" />
                 {item.status === 'uploading' && (
@@ -136,7 +136,7 @@ export default function CapturePhotoClient({ propertyId }: { propertyId: string 
       )}
 
       {savedCount > 0 && queue.every((q) => q.status !== 'uploading') && (
-        <p className="text-sm text-center text-charcoal/50 mt-5">
+        <p className="text-sm text-center text-dusk mt-5">
           Done for now? Whoever's on cleanup duty will match these up later.
         </p>
       )}

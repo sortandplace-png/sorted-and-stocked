@@ -206,22 +206,22 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
   );
 
   if (!canManage(role)) {
-    return <p className="max-w-md mx-auto p-4 text-sm text-charcoal/50">Only an owner or manager can review captures.</p>;
+    return <p className="max-w-md mx-auto p-4 text-sm text-dusk">Only an owner or manager can review captures.</p>;
   }
 
   if (loading) return <SkeletonList />;
 
   return (
     <div className="max-w-md lg:max-w-3xl mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Capture Inbox</h1>
-      <p className="text-sm text-charcoal/50 mb-4">
+      <h1 className="text-2xl font-display text-denim mb-1">Capture Inbox</h1>
+      <p className="text-sm text-dusk mb-4">
         Submitted recipe, inventory, and meal plan captures, reviewed here before they go live.
       </p>
 
       {borrowedOutCount !== null && borrowedOutCount > 0 && (
         <Link
           href={`/properties/${propertyId}/tools/borrowed-items`}
-          className="block bg-gold-light/15 border border-gold-light rounded-2xl p-3 mb-4 text-sm text-charcoal hover:bg-gold-light/25 transition-colors"
+          className="block bg-mist border border-brass/30 rounded-2xl p-3 mb-4 text-sm text-denim hover:bg-linen transition-colors"
         >
           🔄 {borrowedOutCount} borrowed/lent item{borrowedOutCount === 1 ? '' : 's'} still out — see Borrowed & Lent
         </Link>
@@ -231,7 +231,7 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
         <button
           onClick={() => setActiveType('all')}
           className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-            activeType === 'all' ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70'
+            activeType === 'all' ? 'bg-denim text-white' : 'bg-card border border-cardBorder text-dusk'
           }`}
         >
           All ({captures.length})
@@ -241,7 +241,7 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
             key={t}
             onClick={() => setActiveType(t)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              activeType === t ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70'
+              activeType === t ? 'bg-denim text-white' : 'bg-card border border-cardBorder text-dusk'
             }`}
           >
             {TYPE_LABEL[t]} ({countsByType[t]})
@@ -251,17 +251,17 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
 
       {showCapture ? (
         <div>
-          <button onClick={() => setShowCapture(false)} className="text-sm text-charcoal/50 underline mb-3">
+          <button onClick={() => setShowCapture(false)} className="text-sm text-dusk underline mb-3">
             ← Back to Inbox
           </button>
           <CapturePhotoClient propertyId={propertyId} />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-2xl shadow-sm shadow-charcoal/5">
-          <p className="text-sm text-charcoal/50 mb-3">Nothing waiting for review right now.</p>
+        <div className="text-center py-12 bg-card rounded-2xl border border-cardBorder shadow-card">
+          <p className="text-sm text-dusk mb-3">Nothing waiting for review right now.</p>
           <button
             onClick={() => setShowCapture(true)}
-            className="text-sm font-medium text-white bg-gold-dark px-4 py-2 rounded-full"
+            className="text-sm font-medium text-white bg-denim px-4 py-2 rounded-full"
           >
             Snap a photo to start
           </button>
@@ -272,12 +272,12 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
             const fields = fieldsFor(capture);
             const busy = processingIds.has(capture.id);
             return (
-              <div key={capture.id} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+              <div key={capture.id} className="bg-card rounded-2xl border border-cardBorder shadow-card p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-gold-dark">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-brass">
                     {TYPE_LABEL[capture.capture_type]}
                   </span>
-                  <span className="text-xs text-charcoal/40">
+                  <span className="text-xs text-dusk">
                     {capture.submitted_by_name ?? 'Someone'} ·{' '}
                     {new Date(capture.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </span>
@@ -297,27 +297,27 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
                       value={fields.name ?? ''}
                       onChange={(e) => setField(capture.id, capture.raw_payload, 'name', e.target.value)}
                       placeholder="Item name"
-                      className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+                      className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
                     />
                     <div className="grid grid-cols-2 gap-2">
                       <input
                         value={fields.category ?? ''}
                         onChange={(e) => setField(capture.id, capture.raw_payload, 'category', e.target.value)}
                         placeholder="Category"
-                        className="border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+                        className="border border-cardBorder rounded-xl px-3 py-2 text-sm"
                       />
                       <input
                         value={fields.location_name ?? ''}
                         onChange={(e) => setField(capture.id, capture.raw_payload, 'location_name', e.target.value)}
                         placeholder="Location (matched by name)"
-                        className="border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+                        className="border border-cardBorder rounded-xl px-3 py-2 text-sm"
                       />
                     </div>
                     <input
                       value={fields.notes ?? ''}
                       onChange={(e) => setField(capture.id, capture.raw_payload, 'notes', e.target.value)}
                       placeholder="Notes (optional)"
-                      className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+                      className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
                     />
                   </div>
                 )}
@@ -328,16 +328,16 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
                       value={fields.name ?? ''}
                       onChange={(e) => setField(capture.id, capture.raw_payload, 'name', e.target.value)}
                       placeholder="Recipe name"
-                      className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+                      className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
                     />
                     <textarea
                       value={fields.notes ?? ''}
                       onChange={(e) => setField(capture.id, capture.raw_payload, 'notes', e.target.value)}
                       placeholder="Raw ingredients / instructions text — added as-is, needs manual completion after"
                       rows={3}
-                      className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+                      className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
                     />
-                    <p className="text-[11px] text-charcoal/40">
+                    <p className="text-[11px] text-dusk">
                       Approving creates a real recipe with this name and text — it won't have structured ingredients
                       yet, that still needs finishing on the recipe's own edit page.
                     </p>
@@ -351,12 +351,12 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
                         type="date"
                         value={fields.plan_date ?? ''}
                         onChange={(e) => setField(capture.id, capture.raw_payload, 'plan_date', e.target.value)}
-                        className="border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+                        className="border border-cardBorder rounded-xl px-3 py-2 text-sm"
                       />
                       <select
                         value={fields.course ?? ''}
                         onChange={(e) => setField(capture.id, capture.raw_payload, 'course', e.target.value)}
-                        className="border border-gold-light/60 rounded-xl px-3 py-2 text-sm bg-white"
+                        className="border border-cardBorder rounded-xl px-3 py-2 text-sm bg-card"
                       >
                         <option value="">Course…</option>
                         {COURSES.map((c) => (
@@ -370,7 +370,7 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
                       value={fields.recipe_name ?? fields.custom_name ?? ''}
                       onChange={(e) => setField(capture.id, capture.raw_payload, 'recipe_name', e.target.value)}
                       placeholder="Recipe name (matched if it exists, otherwise added as a custom entry)"
-                      className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+                      className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
                     />
                   </div>
                 )}
@@ -379,14 +379,14 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
                   <button
                     onClick={() => reviewCapture(capture, 'rejected')}
                     disabled={busy}
-                    className="flex-1 py-2 rounded-full border border-gold-light/60 text-charcoal text-sm disabled:opacity-40"
+                    className="flex-1 py-2 rounded-full border border-cardBorder text-denim text-sm disabled:opacity-40"
                   >
                     Reject
                   </button>
                   <button
                     onClick={() => reviewCapture(capture, 'approved')}
                     disabled={busy}
-                    className="flex-1 py-2 rounded-full bg-charcoal text-cream text-sm font-medium disabled:opacity-40"
+                    className="flex-1 py-2 rounded-full bg-denim text-white text-sm font-medium disabled:opacity-40"
                   >
                     {busy ? 'Saving…' : 'Approve'}
                   </button>
