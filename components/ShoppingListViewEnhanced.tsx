@@ -561,24 +561,30 @@ export default function ShoppingListViewEnhanced({
           )}
 
           <div className="flex-1 min-w-0">
-            {/* Name + qty + cart on one real row -- was name alone, with
-                qty dropping to its own pill row below it. Cart replaces the
-                old "Reorder" text link that used to sit much further down,
-                past supplier/stock/location -- same OrderLink component
-                used site-wide now (dashboard tiles, Inventory), always
-                clickable (falls back to an Amazon search when there's no
-                configured source, never blank). Delete moves up here too
-                rather than staying on its own bottom row. */}
+            {/* Name + qty + cart on one real row, matching Low Stock
+                Alerts' own pattern exactly (DashboardWidgets.tsx's
+                LowStockAlertsCard): name truncates in its own flex-1
+                min-w-0 element, qty is a separate shrink-0 sibling so it
+                can never get squeezed out or pushed to a second line by a
+                long name -- previously qty lived inside the same truncating
+                h4 as the name, competing for the same single-line text run.
+                Cart replaces the old "Reorder" text link that used to sit
+                much further down, past supplier/stock/location -- same
+                OrderLink component used site-wide now (dashboard tiles,
+                Inventory), always clickable (falls back to an Amazon
+                search when there's no configured source, never blank).
+                Delete moves up here too rather than staying on its own
+                bottom row. */}
             <div className="flex items-center gap-2">
               <h4 className={`min-w-0 flex-1 truncate font-medium text-sm ${isChecked ? 'line-through text-dusk' : 'text-denim'}`}>
                 {displayName(item)}
                 {mergedCount > 1 && <span className="text-dusk font-normal"> ×{mergedCount}</span>}
-                {qty && (
-                  <span className="ml-1.5 text-xs font-normal text-dusk">
-                    {Math.round(qty.qty * 100) / 100} {qty.unit}
-                  </span>
-                )}
               </h4>
+              {qty && (
+                <span className={`shrink-0 text-xs font-normal ${isChecked ? 'line-through text-dusk' : 'text-dusk'}`}>
+                  {Math.round(qty.qty * 100) / 100} {qty.unit}
+                </span>
+              )}
               <span className="print:hidden shrink-0">
                 <OrderLink itemName={item.name} sources={item.reorder_sources} fallbackLink={item.reorder_link} />
               </span>
