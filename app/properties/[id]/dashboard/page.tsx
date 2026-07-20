@@ -900,6 +900,25 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                 </Link>
               </div>
 
+              {/* Staff-only My Day link (2026-07-20): confirmed real gap, not
+                  a stale report -- My Day has real entry points in
+                  DesktopNav.tsx and /sitemap, but DesktopNav is `hidden
+                  md:flex` (invisible on mobile) and MobileBottomNav.tsx is
+                  deliberately a fixed 5 items with no room for it. On a
+                  phone, a staff-role viewer had zero visible path to their
+                  own home page -- the owner/manager readiness strip below
+                  doesn't render for them at all. */}
+              {!isOwnerOrManager && (
+                <div className="mt-3 pt-3 border-t border-cardBorder">
+                  <Link
+                    href={`/properties/${propertyId}/my-day`}
+                    className="text-xs font-semibold text-brass hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+                  >
+                    {t('quickCapture.myDayLink')}
+                  </Link>
+                </div>
+              )}
+
               {isOwnerOrManager && (
                 <div className="mt-3 pt-3 border-t border-cardBorder flex flex-col gap-1">
                   <p className="text-xs text-denim">

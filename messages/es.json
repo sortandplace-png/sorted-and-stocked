@@ -433,7 +433,8 @@
       "headerLabel": "Agregar Rápido",
       "takePhoto": "Tomar una Foto",
       "scanQr": "Escanear un QR",
-      "addProduct": "Agregar Producto"
+      "addProduct": "Agregar Producto",
+      "myDayLink": "Ir a Mi Día — tus tareas, deberes y notas de entrega"
     },
     "roshChodesh": {
       "today": "Hoy es Rosh Chodesh {month}.",
