@@ -7,7 +7,6 @@ import { Calendar, Camera, Clock, Package, Plus, Scan, ShoppingCart, Square, Cir
 import FloatingScanButton from '@/components/FloatingScanButton'
 import LocationZmanim from '@/components/LocationZmanim'
 import DashboardWidgets from '@/components/DashboardWidgets'
-import Pin from '@/components/PinAccent'
 import CollapsibleCard from '@/components/CollapsibleCard'
 import TodayCandleLightingRow from '@/components/TodayCandleLightingRow'
 import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
@@ -943,7 +942,9 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               denim header bar. New this round: a small-caps brass eyebrow
               label above the icon, same text as the title beneath it, per
               explicit instruction. 5 real destinations (Inventory added a
-              few rounds back). */}
+              few rounds back). No pin dot (2026-07-20): these are pure nav
+              links with nothing to collapse -- a decorative pin here read
+              as a broken toggle affordance per Racquel's RULE 1. */}
           <div className="col-span-12 grid grid-cols-2 sm:grid-cols-5 gap-[14px]">
             {([
               [`/properties/${propertyId}/meal-plan`, Calendar, t('quickActions.planMeal'), t('quickActions.planMealSubtitle'), undefined] as const,
@@ -956,9 +957,8 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                 key={label}
                 href={href}
                 aria-label={ariaLabel}
-                className="relative min-h-[128px] flex flex-col items-center justify-center gap-[11px] rounded-xl2 bg-mist border border-brass/30 py-[14px] px-[18px] shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+                className="min-h-[128px] flex flex-col items-center justify-center gap-[11px] rounded-xl2 bg-mist border border-brass/30 py-[14px] px-[18px] shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
               >
-                <Pin size="sm" />
                 <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{label}</span>
                 <Icon size={36} className="text-denim" aria-hidden="true" />
                 <span className="font-display font-normal text-[18px] text-denim text-center">{label}</span>

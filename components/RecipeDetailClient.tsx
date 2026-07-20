@@ -7,7 +7,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { LOCALE_COOKIE } from '@/i18n/locale-constants';
 import { Printer, Share2, History as HistoryIcon, Heart, MoreVertical, Pencil, Copy, Trash2, Timer, Scale, RotateCcw, ListChecks } from 'lucide-react';
-import Pin from '@/components/PinAccent';
 import NewRecipeModal from '@/components/NewRecipeModal';
 import { createClient } from '@/lib/supabase/client';
 import { kosherIcon } from '@/lib/icon-maps';
@@ -1057,13 +1056,12 @@ export default function RecipeDetailClient({
       <div className="mt-8 print:hidden">
         <h2 className="text-xs font-medium uppercase tracking-wider text-dusk mb-2">{t('kitchenOps')}</h2>
         {/* /sitemap's own tile language (bg-mist, border-brass/30, Lucide
-            icon, pin dot) -- was bg-card with a circular emoji badge, a
-            different icon system than the rest of the app's real icon-tile
-            pattern. Pin stays here (unlike the recipe-card grid above,
-            which had its per-card pins removed): these 4 are a small, fixed
-            set of tool shortcuts, functionally the same as a /sitemap nav
-            tile, not a dynamic per-recipe data list -- same reasoning
-            /sitemap's own tiles keep theirs.
+            icon) -- was bg-card with a circular emoji badge, a different
+            icon system than the rest of the app's real icon-tile pattern.
+            No pin dot (2026-07-20): these 4 are a fixed set of tool
+            shortcuts with nothing to collapse -- a decorative pin here
+            read as a broken toggle affordance per Racquel's RULE 1
+            (pin dot must really act, or be removed where it can't).
             Opens as a modal over this recipe rather than navigating away --
             confirmed live that all 4 previously used a plain <Link> to a
             full page route with no way back except the browser's native
@@ -1080,9 +1078,8 @@ export default function RecipeDetailClient({
               <button
                 key={tool.slug}
                 onClick={() => setOpenKitchenOpsTool(tool.slug as KitchenOpsSlug)}
-                className="relative flex flex-col items-center text-center gap-1.5 bg-mist border border-brass/30 rounded-xl2 shadow-card px-3 py-4 hover:shadow-cardHover transition-shadow"
+                className="flex flex-col items-center text-center gap-1.5 bg-mist border border-brass/30 rounded-xl2 shadow-card px-3 py-4 hover:shadow-cardHover transition-shadow"
               >
-                <Pin size="sm" />
                 <Icon size={20} className="text-denim" aria-hidden="true" />
                 <span className="text-xs font-bold text-denim">{t(tool.titleKey)}</span>
               </button>
