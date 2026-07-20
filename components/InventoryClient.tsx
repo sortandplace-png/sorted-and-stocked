@@ -89,6 +89,7 @@ type HistoryEntry = {
 type ItemFormState = {
   id: string | null; // null = creating new
   name: string;
+  name_es: string;
   category: string;
   location_id: string;
   current_qty: string;
@@ -118,6 +119,7 @@ type ItemFormState = {
 const EMPTY_FORM: ItemFormState = {
   id: null,
   name: '',
+  name_es: '',
   category: '',
   location_id: '',
   current_qty: '0',
@@ -660,6 +662,7 @@ export default function InventoryClient({
     setForm({
       id: item.id,
       name: item.name,
+      name_es: item.name_es ?? '',
       category: item.category ?? '',
       location_id: item.location_id ?? '',
       current_qty: String(item.current_qty),
@@ -684,6 +687,10 @@ export default function InventoryClient({
 
   async function saveForm() {
     if (!form || !form.name.trim()) return;
+    if (!form.name_es.trim()) {
+      showToast('Spanish name is required.', { variant: 'error' });
+      return;
+    }
 
     // Duplicate check only applies to genuinely new items — editing an
     // existing row can't create a duplicate of itself.
@@ -782,6 +789,7 @@ export default function InventoryClient({
     const payload = {
       property_id: propertyId,
       name: form.name.trim(),
+      name_es: form.name_es.trim(),
       category: form.category.trim() || null,
       location_id: form.location_id || null,
       current_qty: Number(form.current_qty) || 0,
@@ -887,7 +895,6 @@ export default function InventoryClient({
           {
             ...payload,
             id,
-            name_es: null,
             qr_code: null,
             pesach_status: 'needs_review',
             last_counted_at: null,
@@ -1939,6 +1946,15 @@ function ItemFormSheet({
               value={form.name}
               onChange={(e) => onChange({ ...form, name: e.target.value })}
               autoFocus
+            />
+          </div>
+          <div>
+            <FieldLabel>Spanish Name *</FieldLabel>
+            <input
+              className={fieldClass}
+              placeholder="Nombre en español"
+              value={form.name_es}
+              onChange={(e) => onChange({ ...form, name_es: e.target.value })}
             />
           </div>
           <div>

@@ -1,10 +1,19 @@
 // components/TranslationWorklistClient.tsx
-// Same job as PhotoWorklistClient does for photos -- needs_translation is
-// the real, already-maintained flag (set true whenever name_es is null;
-// confirmed live it's not just derived on the fly), this is just the first
-// place a manager can actually see and clear it, across all 3 tables that
-// carry it (recipes, recipe_ingredients, inventory_items). Manager-only:
-// this is a content-correctness worklist, not a staff task.
+// Same job as PhotoWorklistClient does for photos, for needs_translation
+// instead -- this is just the first place a manager can actually see and
+// clear it, across all 3 tables that carry it (recipes, recipe_ingredients,
+// inventory_items). Manager-only: this is a content-correctness worklist,
+// not a staff task.
+//
+// Filters on name_es being null/empty directly, not needs_translation
+// itself: checked live, that column matches name_es-is-null exactly for
+// every current row, but nothing in the schema keeps it that way going
+// forward (no trigger recomputes it -- confirmed via
+// information_schema.triggers, it was a one-time backfill). The add/edit
+// forms now require a Spanish name, so new rows through them are never
+// missing one; this still needs to catch anything that reaches these
+// tables another way (bulk import, a future API path) without silently
+// going stale the way the flag alone would.
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -43,7 +52,7 @@ export default function TranslationWorklistClient({ propertyId }: { propertyId: 
       // triple-nested PostgREST filter.
       const { data: recipeRows } = await supabase
         .from('recipes')
-        .select('id, name, needs_translation, recipe_property_links!inner(property_id)')
+        .select('id, name, name_es, recipe_property_links!inner(property_id)')
         .eq('recipe_property_links.property_id', propertyId);
       const recipeIds = (recipeRows ?? []).map((r) => r.id);
       const recipeNameById = new Map((recipeRows ?? []).map((r) => [r.id, r.name]));
@@ -54,18 +63,18 @@ export default function TranslationWorklistClient({ propertyId }: { propertyId: 
               .from('recipe_ingredients')
               .select('id, name, recipe_id')
               .in('recipe_id', recipeIds)
-              .eq('needs_translation', true)
+              .or('name_es.is.null,name_es.eq.')
           : Promise.resolve({ data: [] as { id: string; name: string; recipe_id: string }[] }),
         supabase
           .from('inventory_items')
           .select('id, name, category')
           .eq('property_id', propertyId)
-          .eq('needs_translation', true),
+          .or('name_es.is.null,name_es.eq.'),
       ]);
 
       const worklist: WorklistRow[] = [
         ...(recipeRows ?? [])
-          .filter((r) => r.needs_translation)
+          .filter((r) => !r.name_es)
           .map((r) => ({ id: r.id, table: 'recipes' as const, name: r.name, context: null })),
         ...(ingredientRows ?? []).map((i) => ({
           id: i.id,

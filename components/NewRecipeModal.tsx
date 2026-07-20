@@ -10,7 +10,7 @@ import { compressImageToBlob } from '@/lib/compress-image';
 import { friendlyKosherConflictMessage } from '@/lib/kosher-conflict-error';
 import FieldLabel from '@/components/FieldLabel';
 
-type IngredientRow = { name: string; quantity: string; unit: string; category: string };
+type IngredientRow = { name: string; nameEs: string; quantity: string; unit: string; category: string };
 
 type RecipeDraft = {
   name: string;
@@ -76,7 +76,7 @@ export default function NewRecipeModal({
   const [ingredientRows, setIngredientRows] = useState<IngredientRow[]>(
     initialIngredients && initialIngredients.length > 0
       ? initialIngredients
-      : [{ name: '', quantity: '', unit: '', category: '' }]
+      : [{ name: '', nameEs: '', quantity: '', unit: '', category: '' }]
   );
   const [nameEs, setNameEs] = useState(initialNameEs ?? '');
   const [kosherType, setKosherType] = useState(initialKosherType ?? '');
@@ -126,7 +126,7 @@ export default function NewRecipeModal({
   }
 
   function addIngredientRow() {
-    setIngredientRows((prev) => [...prev, { name: '', quantity: '', unit: '', category: '' }]);
+    setIngredientRows((prev) => [...prev, { name: '', nameEs: '', quantity: '', unit: '', category: '' }]);
   }
 
   function updateIngredientRow(index: number, field: keyof IngredientRow, value: string) {
@@ -156,6 +156,15 @@ export default function NewRecipeModal({
 
   async function saveNewRecipe() {
     if (!name.trim()) return;
+    if (!nameEs.trim()) {
+      showToast('Spanish name is required.', { variant: 'error' });
+      return;
+    }
+    const namedRowsMissingEs = ingredientRows.filter((r) => r.name.trim() && !r.nameEs.trim());
+    if (namedRowsMissingEs.length > 0) {
+      showToast(`Spanish name is required for: ${namedRowsMissingEs.map((r) => r.name.trim()).join(', ')}.`, { variant: 'error' });
+      return;
+    }
     setSaving(true);
 
     let recipeId: string;
@@ -277,6 +286,7 @@ export default function NewRecipeModal({
           return {
             recipe_id: recipeId,
             name: r.name.trim(),
+            name_es: r.nameEs.trim() || null,
             quantity: Number.isFinite(parsed) ? parsed : null,
             unit: r.unit.trim() || null,
             category: r.category.trim() || null,
@@ -407,11 +417,11 @@ export default function NewRecipeModal({
             />
           </div>
           <div>
-            <FieldLabel>Spanish name</FieldLabel>
+            <FieldLabel>Spanish name *</FieldLabel>
             <input
               value={nameEs}
               onChange={(e) => setNameEs(e.target.value)}
-              placeholder="Optional"
+              placeholder="Nombre en español"
               className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
             />
           </div>
@@ -523,43 +533,52 @@ export default function NewRecipeModal({
         </div>
 
         <p className="text-sm font-medium text-charcoal mb-2">Ingredients</p>
-        <div className="flex gap-2 mb-1 px-1">
-          <span className="w-2/5 text-xs font-medium text-charcoal/60">Ingredient</span>
-          <span className="w-1/5 text-xs font-medium text-charcoal/60">Qty</span>
-          <span className="w-1/5 text-xs font-medium text-charcoal/60">Unit</span>
-          <span className="w-1/5 text-xs font-medium text-charcoal/60">Aisle</span>
-        </div>
+        {/* Two lines per row, not a 5th narrow column squeezed into the
+            original 5-across layout -- Spanish name is now required
+            alongside English (Racquel: every add/edit form gets one), and a
+            name field that narrow isn't usable on mobile. */}
         <div className="space-y-2 mb-2">
           {ingredientRows.map((row, i) => (
-            <div key={i} className="flex gap-2">
-              <input
-                value={row.name}
-                onChange={(e) => updateIngredientRow(i, 'name', e.target.value)}
-                placeholder="Ingredient"
-                aria-label="Ingredient"
-                className="w-2/5 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
-              />
-              <input
-                value={row.quantity}
-                onChange={(e) => updateIngredientRow(i, 'quantity', e.target.value)}
-                placeholder="Qty"
-                aria-label="Quantity"
-                className="w-1/5 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
-              />
-              <input
-                value={row.unit}
-                onChange={(e) => updateIngredientRow(i, 'unit', e.target.value)}
-                placeholder="Unit"
-                aria-label="Unit"
-                className="w-1/5 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
-              />
-              <input
-                value={row.category}
-                onChange={(e) => updateIngredientRow(i, 'category', e.target.value)}
-                placeholder="Aisle"
-                aria-label="Aisle"
-                className="w-1/5 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
-              />
+            <div key={i} className="flex flex-col gap-1.5 border border-gold-light/40 rounded-xl p-2">
+              <div className="flex gap-2">
+                <input
+                  value={row.name}
+                  onChange={(e) => updateIngredientRow(i, 'name', e.target.value)}
+                  placeholder="Ingredient"
+                  aria-label="Ingredient"
+                  className="flex-1 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
+                />
+                <input
+                  value={row.nameEs}
+                  onChange={(e) => updateIngredientRow(i, 'nameEs', e.target.value)}
+                  placeholder="Nombre en español"
+                  aria-label="Spanish ingredient name"
+                  className="flex-1 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
+                />
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={row.quantity}
+                  onChange={(e) => updateIngredientRow(i, 'quantity', e.target.value)}
+                  placeholder="Qty"
+                  aria-label="Quantity"
+                  className="w-1/3 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
+                />
+                <input
+                  value={row.unit}
+                  onChange={(e) => updateIngredientRow(i, 'unit', e.target.value)}
+                  placeholder="Unit"
+                  aria-label="Unit"
+                  className="w-1/3 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
+                />
+                <input
+                  value={row.category}
+                  onChange={(e) => updateIngredientRow(i, 'category', e.target.value)}
+                  placeholder="Aisle"
+                  aria-label="Aisle"
+                  className="w-1/3 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
+                />
+              </div>
             </div>
           ))}
         </div>

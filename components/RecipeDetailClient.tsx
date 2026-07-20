@@ -731,6 +731,7 @@ export default function RecipeDetailClient({
           initialCourse={(recipe.course as Course) ?? undefined}
           initialIngredients={ingredients.map((i) => ({
             name: i.name,
+            nameEs: i.name_es ?? '',
             quantity: i.quantity != null ? String(i.quantity) : '',
             unit: i.unit ?? '',
             category: i.category ?? '',
