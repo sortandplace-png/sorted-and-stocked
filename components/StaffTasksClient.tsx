@@ -96,11 +96,27 @@ function computeStatus(task: MasterTask, freq: Frequency | null, last: Completio
   return nextDue.getTime() <= new Date(todayStr).getTime() ? 'due' : 'not_due';
 }
 
-export default function StaffTasksClient({ propertyId }: { propertyId: string }) {
+export default function StaffTasksClient({
+  propertyId,
+  scope = 'all',
+}: {
+  propertyId: string;
+  // 'mine' embeds this as My Day's task widget: assigned-to-me and
+  // currently actionable (due or never set up) only, no page chrome, no
+  // manager admin affordances -- everything else about the data layer and
+  // mark-done flow is identical, so this is the same component rather than
+  // a parallel implementation that could drift out of sync with it.
+  scope?: 'mine' | 'all';
+}) {
   const role = usePropertyRole();
   const locale = useLocale();
   const supabase = createClient();
   const showToast = useToast();
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
+  }, [supabase]);
 
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<MasterTask[]>([]);
@@ -121,6 +137,7 @@ export default function StaffTasksClient({ propertyId }: { propertyId: string })
   const roomById = useMemo(() => new Map(rooms.map((r) => [r.id, r])), [rooms]);
   const freqById = useMemo(() => new Map(frequencies.map((f) => [f.id, f])), [frequencies]);
   const memberById = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
+  const myMemberId = useMemo(() => members.find((m) => m.user_id === currentUserId)?.id ?? null, [members, currentUserId]);
   const assignmentsByTask = useMemo(() => {
     const map = new Map<string, Assignment[]>();
     for (const a of assignments) {
@@ -294,7 +311,7 @@ export default function StaffTasksClient({ propertyId }: { propertyId: string })
     load();
   }
 
-  if (loading) return <SkeletonList />;
+  if (loading) return <SkeletonList rows={scope === 'mine' ? 2 : 5} />;
 
   const todayStr = todayISO();
   const rows = tasks.map((t) => ({
@@ -306,21 +323,27 @@ export default function StaffTasksClient({ propertyId }: { propertyId: string })
   const order: Status[] = ['due', 'never_done', 'optional', 'not_due', 'done'];
   rows.sort((a, b) => order.indexOf(a.status) - order.indexOf(b.status) || taskName(a.task).localeCompare(taskName(b.task)));
 
+  // My Day's widget: only what's assigned to the viewer and actually
+  // actionable today -- not the full property task board, and not future
+  // recurring items that aren't due yet.
+  const visibleRows =
+    scope === 'mine'
+      ? rows.filter(
+          (r) =>
+            (r.status === 'due' || r.status === 'never_done') &&
+            (assignmentsByTask.get(r.task.id) ?? []).some((a) => a.member_id === myMemberId)
+        )
+      : rows;
+
   const sopsByZone = sopLibrary.reduce((acc, s) => {
     const key = s.zone_type || 'General';
     (acc[key] ??= []).push(s);
     return acc;
   }, {} as Record<string, SopRow[]>);
 
-  return (
-    <div className="max-w-md lg:max-w-3xl mx-auto p-4">
-      <h1 className="text-2xl font-display text-denim mb-1 flex items-center gap-2">
-        <ListChecks size={22} className="text-brass" strokeWidth={1.75} aria-hidden="true" />
-        Staff Task Center
-      </h1>
-      <p className="text-sm text-dusk mb-4">What needs doing, from the real task library.</p>
-
-      {canManage(role) && (
+  const content = (
+    <>
+      {canManage(role) && scope !== 'mine' && (
         <div className="mb-6 rounded-2xl border border-cardBorder bg-card shadow-card overflow-hidden">
           <button
             onClick={() => setShowLibrary((v) => !v)}
@@ -393,13 +416,17 @@ export default function StaffTasksClient({ propertyId }: { propertyId: string })
         </div>
       )}
 
-      {rows.length === 0 ? (
-        <p className="text-sm text-dusk text-center py-8 bg-card rounded-2xl shadow-card">
-          {canManage(role) ? 'Nothing deployed yet -- open the library above to add your first tasks.' : 'No tasks set up yet -- ask a manager to deploy some from the task library.'}
+      {visibleRows.length === 0 ? (
+        <p className="text-sm text-dusk text-center py-4 bg-card rounded-2xl shadow-card">
+          {scope === 'mine'
+            ? 'Nothing due right now.'
+            : canManage(role)
+            ? 'Nothing deployed yet -- open the library above to add your first tasks.'
+            : 'No tasks set up yet -- ask a manager to deploy some from the task library.'}
         </p>
       ) : (
         <ul className="space-y-2">
-          {rows.map(({ task, freq, last, status }) => {
+          {visibleRows.map(({ task, freq, last, status }) => {
             const room = task.room_id ? roomById.get(task.room_id) : null;
             const assigned = (assignmentsByTask.get(task.id) ?? [])
               .map((a) => (a.member_id ? memberById.get(a.member_id)?.full_name : null))
@@ -452,7 +479,7 @@ export default function StaffTasksClient({ propertyId }: { propertyId: string })
                       <p className="text-xs text-dusk italic mt-1">Last note: "{last.note}"</p>
                     )}
 
-                    {canManage(role) && (
+                    {canManage(role) && scope !== 'mine' && (
                       <div className="mt-2">
                         <select
                           value={(assignmentsByTask.get(task.id) ?? [])[0]?.member_id ?? ''}
@@ -507,6 +534,19 @@ export default function StaffTasksClient({ propertyId }: { propertyId: string })
           })}
         </ul>
       )}
+    </>
+  );
+
+  if (scope === 'mine') return content;
+
+  return (
+    <div className="max-w-md lg:max-w-3xl mx-auto p-4">
+      <h1 className="text-2xl font-display text-denim mb-1 flex items-center gap-2">
+        <ListChecks size={22} className="text-brass" strokeWidth={1.75} aria-hidden="true" />
+        Staff Task Center
+      </h1>
+      <p className="text-sm text-dusk mb-4">What needs doing, from the real task library.</p>
+      {content}
     </div>
   );
 }

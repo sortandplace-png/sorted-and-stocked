@@ -8,44 +8,17 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { createClient } from '@/lib/supabase/client';
-import { resilientUpdate } from '@/lib/resilient-write';
-import { useToast } from '@/components/Toast';
-import { SkeletonList } from '@/components/Skeleton';
 import ShiftHandoverClient from '@/components/ShiftHandoverClient';
 import StaffDutyChecklist from '@/components/StaffDutyChecklist';
+import StaffTasksClient from '@/components/StaffTasksClient';
 import ToolModal from '@/components/ToolModal';
 import KitchenOpsToolModal from '@/components/KitchenOpsToolModal';
 import { Camera, ShoppingCart, Timer, Info } from 'lucide-react';
 
-type Status = 'open' | 'in_progress' | 'done';
-type Priority = 'low' | 'medium' | 'high';
-
-type Task = {
-  id: string;
-  title: string;
-  due_date: string | null;
-  status: Status;
-  priority: Priority | null;
-  category: string | null;
-};
-
 type DutyTask = { id: string; taskEn: string; taskEs: string; completed: boolean };
 type DutyArea = { areaEn: string; areaEs: string; tasks: DutyTask[] };
-
-const STATUS_OPTIONS: { key: Status; label: string }[] = [
-  { key: 'open', label: 'Open' },
-  { key: 'in_progress', label: 'In Progress' },
-  { key: 'done', label: 'Done' },
-];
-
-const PRIORITY_STYLE: Record<Priority, string> = {
-  high: 'bg-rust/10 text-rust',
-  medium: 'bg-brass/15 text-brass',
-  low: 'bg-sage/10 text-sage',
-};
 
 export default function MyDayClient({
   propertyId,
@@ -63,72 +36,8 @@ export default function MyDayClient({
   todayStr: string;
 }) {
   const t = useTranslations('myDay');
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showCapture, setShowCapture] = useState(false);
   const [showKitchenTimer, setShowKitchenTimer] = useState(false);
-  const supabase = createClient();
-  const showToast = useToast();
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    // staff_tasks.assigned_to is a FK to property_members(id), not
-    // auth.uid() directly (same real gotcha as the RLS/trigger work) —
-    // resolve this user's own membership row first.
-    const { data: membership } = await supabase
-      .from('property_members')
-      .select('id')
-      .eq('property_id', propertyId)
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (!membership) {
-      setLoading(false);
-      return;
-    }
-
-    const today = new Date().toISOString().slice(0, 10);
-    const { data } = await supabase
-      .from('staff_tasks')
-      .select('id, title, due_date, status, priority, category')
-      .eq('property_id', propertyId)
-      .eq('assigned_to', membership.id)
-      .neq('status', 'done')
-      .lte('due_date', today)
-      .order('due_date', { ascending: true });
-
-    setTasks((data as Task[]) ?? []);
-    setLoading(false);
-  }, [propertyId, supabase]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  async function setStatus(task: Task, status: Status) {
-    const result = await resilientUpdate(supabase, 'staff_tasks', { id: task.id }, { status });
-    if (!result.ok) {
-      showToast('Failed to update.', { variant: 'error' });
-      return;
-    }
-    // RLS/trigger only lets a staff member touch their own assigned task's
-    // status, so a done task simply drops out of this list on next load.
-    if (status === 'done') {
-      setTasks((prev) => prev.filter((t) => t.id !== task.id));
-    } else {
-      setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status } : t)));
-    }
-  }
-
-  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="max-w-md mx-auto p-4">
@@ -205,53 +114,15 @@ export default function MyDayClient({
           see everything else here unchanged, just not this section. */}
       {isStaff && <StaffDutyChecklist areas={dutyAreas} hasRosterKey={hasRosterKey} todayStr={todayStr} />}
 
-      <h2 className="font-display text-lg text-denim mb-2">Today's Tasks</h2>
-      {loading ? (
-        <SkeletonList rows={2} />
-      ) : tasks.length === 0 ? (
-        <p className="text-sm text-dusk text-center py-4 mb-6 bg-card rounded-xl2 shadow-card">
-          Nothing due today.
-        </p>
-      ) : (
-        <ul className="space-y-2 mb-6">
-          {tasks.map((task) => {
-            const overdue = !!task.due_date && task.due_date < today;
-            return (
-              <li key={task.id} className="bg-card rounded-xl2 shadow-card p-4 space-y-2">
-                <p className="font-medium text-sm text-denim">{task.title}</p>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {task.priority && (
-                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize ${PRIORITY_STYLE[task.priority]}`}>
-                      {task.priority}
-                    </span>
-                  )}
-                  {task.category && (
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-mist text-dusk">
-                      {task.category}
-                    </span>
-                  )}
-                  {task.due_date && (
-                    <span className={`text-[10px] font-medium ${overdue ? 'text-rust' : 'text-dusk'}`}>
-                      {overdue ? 'Overdue' : 'Due today'}
-                    </span>
-                  )}
-                </div>
-                <select
-                  value={task.status}
-                  onChange={(e) => setStatus(task, e.target.value as Status)}
-                  className="w-full text-xs border border-brass/30 rounded-full px-3 py-2 min-h-[44px] bg-mist text-denim"
-                >
-                  {STATUS_OPTIONS.map((s) => (
-                    <option key={s.key} value={s.key}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      {/* Real task library (master_tasks/task_assignments/task_completions),
+          not the old freeform staff_tasks table -- scope="mine" filters to
+          what's assigned to the viewer and actually due, reusing the same
+          data layer and mark-done flow as the manager-facing Task Center
+          instead of a second, separately-maintained implementation. */}
+      <div className="mb-6">
+        <h2 className="font-display text-lg text-denim mb-2">Today's Tasks</h2>
+        <StaffTasksClient propertyId={propertyId} scope="mine" />
+      </div>
 
       <div className="-mx-4 border-t border-cardBorder pt-2">
         <ShiftHandoverClient propertyId={propertyId} />
