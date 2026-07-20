@@ -168,6 +168,13 @@ export default function NewRecipeModal({
     setSaving(true);
 
     let recipeId: string;
+    // Populated below only when editing an existing recipe -- stays empty
+    // for a brand-new one, which by definition has no prior ingredient
+    // rows to preserve fields from.
+    let existingByName = new Map<
+      string,
+      { category: string | null; photo_url: string | null; reorder_link: string | null; primary_store: string | null; alternative_stores: string[] | null; is_strictly_kosher: boolean | null; section_label: string | null }
+    >();
 
     const sharedFields = {
       name: name.trim(),
@@ -196,7 +203,27 @@ export default function NewRecipeModal({
       recipeId = editRecipeId!;
 
       // Simplest correct approach for edited ingredients: replace the full
-      // set rather than diffing row-by-row against what changed.
+      // set rather than diffing row-by-row against what changed. Real bug
+      // found and fixed here, not assumed: IngredientRow (this form's local
+      // state) only ever tracked name/nameEs/quantity/unit/category -- the
+      // re-insert below built its rows from that shape alone, so every
+      // save silently wiped photo_url/reorder_link/primary_store/
+      // alternative_stores/is_strictly_kosher/section_label on every
+      // ingredient in the recipe, whether or not that ingredient's row was
+      // actually touched in this edit. Confirmed live as the cause of two
+      // "unexplained" reverts (photo_url on 19 rows, category on 7) that
+      // looked like a caching/regression mystery -- it's this delete, not
+      // a cache. Captured here, before the delete, so the re-insert below
+      // can carry those fields forward by name for any ingredient that
+      // isn't actually new.
+      const { data: existingIngredients } = await supabase
+        .from('recipe_ingredients')
+        .select('name, category, photo_url, reorder_link, primary_store, alternative_stores, is_strictly_kosher, section_label')
+        .eq('recipe_id', recipeId);
+      existingByName = new Map(
+        (existingIngredients ?? []).map((row) => [row.name.trim().toLowerCase(), row])
+      );
+
       await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId);
     } else {
       const { data: recipe, error: recipeError } = await supabase
@@ -283,14 +310,27 @@ export default function NewRecipeModal({
           const matchId = matches[i]?.id ?? null;
           const conflict = matchId ? conflictsWithRecipe(kosherTypeById.get(matchId)) : false;
           if (conflict && matches[i]) conflicts.push(matches[i]!.name);
+          // Carry forward whatever this same-named ingredient already had
+          // for the fields this form doesn't edit at all -- an empty
+          // category from the form means "the form never had an opinion
+          // here," not "clear it," so that one prefers the form's value
+          // when the person typed something, and only falls back to the
+          // preserved value when they didn't.
+          const existing = existingByName.get(r.name.trim().toLowerCase());
           return {
             recipe_id: recipeId,
             name: r.name.trim(),
             name_es: r.nameEs.trim() || null,
             quantity: Number.isFinite(parsed) ? parsed : null,
             unit: r.unit.trim() || null,
-            category: r.category.trim() || null,
+            category: r.category.trim() || existing?.category || null,
             inventory_item_id: conflict ? null : matchId,
+            photo_url: existing?.photo_url ?? null,
+            reorder_link: existing?.reorder_link ?? null,
+            primary_store: existing?.primary_store ?? null,
+            alternative_stores: existing?.alternative_stores ?? null,
+            is_strictly_kosher: existing?.is_strictly_kosher ?? null,
+            section_label: existing?.section_label ?? null,
           };
         })
       );

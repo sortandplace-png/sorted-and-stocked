@@ -2,6 +2,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocale } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
@@ -13,6 +14,7 @@ type Template = {
   template_name: string;
   tasks: string[];
   sections: Section[] | null;
+  sections_es: Section[] | null;
 };
 
 type Member = { user_id: string; full_name: string | null };
@@ -27,6 +29,7 @@ type TaskState = { completed: boolean; assigneeId: string | null };
 export default function ResetChecklistClient({ propertyId }: { propertyId: string }) {
   const supabase = createClient();
   const showToast = useToast();
+  const locale = useLocale();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [state, setState] = useState<Record<string, TaskState>>({});
@@ -38,7 +41,7 @@ export default function ResetChecklistClient({ propertyId }: { propertyId: strin
     const [templatesRes, membersRes] = await Promise.all([
       supabase
         .from('task_templates')
-        .select('id, template_name, tasks, sections')
+        .select('id, template_name, tasks, sections, sections_es')
         .eq('property_id', propertyId)
         .order('template_name'),
       supabase
@@ -80,9 +83,16 @@ export default function ResetChecklistClient({ propertyId }: { propertyId: strin
     load();
   }, [load]);
 
+  // Only 1 of 5 templates has real sections_es content so far (Erev Shabbos
+  // Prep) -- the other 4 fall through to the English sections until those
+  // get translated too, same "render the translation when it exists,
+  // fall back to English rather than blank" rule used everywhere else.
   function sectionsFor(template: Template): Section[] {
-    return template.sections && template.sections.length > 0
-      ? template.sections
+    const localized = locale === 'es' && template.sections_es && template.sections_es.length > 0
+      ? template.sections_es
+      : template.sections;
+    return localized && localized.length > 0
+      ? localized
       : [{ name: template.template_name, tasks: template.tasks }];
   }
 
