@@ -31,6 +31,28 @@ function formatLastActive(iso: string | null): string {
 }
 
 type PendingInvite = { userId: string; email: string; role: string; invitedAt: string };
+type AccessConfirmation = { name: string; role: PropertyRole; propertyNames: string };
+
+// What each role can and can't see, worded as a real access confirmation
+// (not the general ROLE_PERMISSIONS blurb below, which serves the existing
+// member-card display) -- grounded in the same RLS this session verified
+// live: task_assignments/task_completions are the only own-only-for-staff
+// tables, get_team_activity is manager/owner-only, everything else
+// (recipes/inventory/meal plans/tools) is a flat is_property_member read.
+const ACCESS_CONFIRMATION_TEXT: Record<PropertyRole, { canSee: string; cannotSee: string }> = {
+  staff: {
+    canSee: 'Recipes, inventory, meal plans, shopping lists, and tools (Capture, Kitchen Timer, and the rest).',
+    cannotSee: "Other staff's individual task assignments or completions, and the Team / Team Activity pages.",
+  },
+  manager: {
+    canSee: 'Everything staff can see, plus every task assignment and completion across the team, and Team Activity.',
+    cannotSee: "Nothing -- manager sees the full property.",
+  },
+  owner: {
+    canSee: 'Everything, including role changes and removing members.',
+    cannotSee: "Nothing -- owner sees the full property.",
+  },
+};
 type HouseholdProperty = { id: string; name: string };
 type ProvisionResult = {
   status: string;
@@ -108,6 +130,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
   const [inviting, setInviting] = useState(false);
   const [inviteMessage, setInviteMessage] = useState<string | null>(null);
   const [provisionResult, setProvisionResult] = useState<ProvisionResult | null>(null);
+  const [accessConfirmation, setAccessConfirmation] = useState<AccessConfirmation | null>(null);
   const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
   const [resendingUserId, setResendingUserId] = useState<string | null>(null);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
@@ -266,6 +289,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     setInviting(true);
     setInviteMessage(null);
     setProvisionResult(null);
+    setAccessConfirmation(null);
     setError(null);
 
     const res = await fetch('/api/staff/provision', {
@@ -309,6 +333,14 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     }
 
     showToast(`${fullName} added.`, { variant: 'success' });
+    // Manager/owner-facing confirmation of what actually landed -- purely
+    // client-side, built from this same response, no second request and no
+    // write anywhere the invitee's own account or session could ever see.
+    // Nothing here is new to the invitee: the only thing that reaches them
+    // is the ordinary invite email (email mode) or the credentials the
+    // manager relays by hand (issued mode) -- both already existed before
+    // this confirmation was added.
+    setAccessConfirmation({ name: fullName, role: inviteRole, propertyNames });
     setFullName('');
     setInviteEmail('');
     setIssuedPassword('');
@@ -585,7 +617,12 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
 
         {provisionResult?.issuedLogin && (
           <div className="bg-gold-light/30 rounded-2xl p-3 text-sm space-y-1">
-            <p className="text-charcoal font-medium">Share these with {fullName || 'them'} directly -- shown only once:</p>
+            {/* accessConfirmation?.name, not fullName -- fullName is reset
+                to '' right after this same submission, before this ever
+                renders, so it would already read "them" here. */}
+            <p className="text-charcoal font-medium">
+              Share these with {accessConfirmation?.name || 'them'} directly -- shown only once:
+            </p>
             <p className="text-charcoal">
               Login: <span className="font-mono">{provisionResult.issuedLogin.login}</span>
             </p>
@@ -593,6 +630,23 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
               Password: <span className="font-mono">{provisionResult.issuedLogin.password}</span>
             </p>
             <button type="button" onClick={() => setProvisionResult(null)} className="text-xs text-gold-dark underline">
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {accessConfirmation && (
+          <div className="bg-sage/10 border border-sage/30 rounded-2xl p-3 text-sm space-y-1.5">
+            <p className="text-charcoal font-medium">
+              Access confirmed for {accessConfirmation.name} ({accessConfirmation.role}) on {accessConfirmation.propertyNames || 'the selected properties'}:
+            </p>
+            <p className="text-charcoal/70">
+              <span className="text-sage font-medium">Can see:</span> {ACCESS_CONFIRMATION_TEXT[accessConfirmation.role].canSee}
+            </p>
+            <p className="text-charcoal/70">
+              <span className="text-rust font-medium">Cannot see:</span> {ACCESS_CONFIRMATION_TEXT[accessConfirmation.role].cannotSee}
+            </p>
+            <button type="button" onClick={() => setAccessConfirmation(null)} className="text-xs text-gold-dark underline">
               Dismiss
             </button>
           </div>
