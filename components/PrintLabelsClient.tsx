@@ -18,14 +18,45 @@ import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
 type Item = {
   id: string;
   name: string;
+  name_es: string | null;
   qr_code: string;
   photo_url: string | null;
   print_label: boolean;
   location_id: string | null;
   category: string | null;
+  category_group: string | null;
   current_qty: number;
   min_qty: number;
+  updated_at: string;
+  label_printed_at: string | null;
 };
+
+type LabelStatus = 'unlabeled' | 'needs_update' | 'printed';
+
+function labelStatus(item: Pick<Item, 'updated_at' | 'label_printed_at'>): LabelStatus {
+  if (!item.label_printed_at) return 'unlabeled';
+  return new Date(item.updated_at) > new Date(item.label_printed_at) ? 'needs_update' : 'printed';
+}
+
+const LABEL_STATUS_TEXT: Record<LabelStatus, string> = {
+  unlabeled: 'Unlabeled / New',
+  needs_update: 'Needs Update',
+  printed: 'Printed',
+};
+
+// Macro/micro sort. category is reliably populated (every item has one);
+// category_group is sparse (~20% of items on Main) and, where set, is
+// sometimes a genuine sub-type (Produce -> Fruit/Vegetable) and sometimes
+// just a duplicate of category -- there's no clean, fully-populated second
+// tier to sort on yet. Micro mode surfaces the finer split for the items
+// that have one and falls back to the same category everyone else uses,
+// rather than pretending a distinction exists where the data doesn't have
+// it.
+function sortCategory(item: Pick<Item, 'category' | 'category_group'>, mode: 'macro' | 'micro'): string {
+  const fallback = item.category ?? 'Uncategorized';
+  if (mode === 'macro') return fallback;
+  return item.category_group ?? fallback;
+}
 
 // Same definition InventoryClient.tsx's isLowStock() uses -- <=, not the
 // RPC's stricter < -- per Racquel's own July 19 call: current_qty <=
@@ -97,6 +128,15 @@ function truncateForLabel(name: string): string {
   return name.length > MAX_LABEL_NAME_LENGTH ? name.slice(0, MAX_LABEL_NAME_LENGTH - 1) + '…' : name;
 }
 
+// The printed name only -- grouping/selection stays keyed on item.name
+// (the canonical field) regardless of this toggle, so switching language
+// mid-selection can't shuffle which rows are grouped together or silently
+// change what's selected. Falls back to English for the small number of
+// items missing a Spanish name rather than printing a blank label.
+function labelName(item: Pick<Item, 'name' | 'name_es'>, lang: 'en' | 'es'): string {
+  return lang === 'es' && item.name_es ? item.name_es : item.name;
+}
+
 export default function PrintLabelsClient({ propertyId }: { propertyId: string }) {
   const [items, setItems] = useState<Item[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -116,17 +156,23 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
   // see isLowStock() above for why that's correct even with most items
   // still at their 0/0 defaults.
   const [lowStockOnly, setLowStockOnly] = useSessionPersistedState('print-labels-filter-lowStockOnly', false);
+  const [labelLanguage, setLabelLanguage] = useSessionPersistedState<'en' | 'es'>('print-labels-language', 'en');
+  const [sortMode, setSortMode] = useSessionPersistedState<'macro' | 'micro'>('print-labels-sortMode', 'macro');
+  const [categoryFilter, setCategoryFilter] = useSessionPersistedState<string | null>('print-labels-filter-category', null);
+  const [labelStatusFilter, setLabelStatusFilter] = useSessionPersistedState<LabelStatus | null>('print-labels-filter-labelStatus', null);
   const [showSelectionPanel, setShowSelectionPanel] = useState(false);
   const showToast = useToast();
+  const supabase = createClient();
 
   useEffect(() => {
     let cancelled = false;
-    const supabase = createClient();
 
     Promise.all([
       supabase
         .from('inventory_items')
-        .select('id, name, qr_code, photo_url, print_label, location_id, category, current_qty, min_qty')
+        .select(
+          'id, name, name_es, qr_code, photo_url, print_label, location_id, category, category_group, current_qty, min_qty, updated_at, label_printed_at'
+        )
         .eq('property_id', propertyId)
         .order('name'),
       supabase.from('locations').select('id, name').eq('property_id', propertyId).order('name'),
@@ -184,6 +230,19 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
     setSelected(value ? new Set(items.filter((i) => i.category !== 'Produce').map((i) => i.id)) : new Set());
   }
 
+  // Options change shape with the mode (macro: broad categories only;
+  // micro: finer split where it exists) -- recomputed whenever sortMode
+  // flips so the dropdown never offers a value the current mode can't
+  // actually match.
+  const categoryOptions = useMemo(() => {
+    return [...new Set(items.map((i) => sortCategory(i, sortMode)))].sort((a, b) => a.localeCompare(b));
+  }, [items, sortMode]);
+
+  function handleSortModeChange(mode: 'macro' | 'micro') {
+    setSortMode(mode);
+    setCategoryFilter(null);
+  }
+
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter((i) => {
@@ -191,9 +250,11 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
       if (locationFilter && i.location_id !== locationFilter) return false;
       if (photosOnly && !(i.photo_url && isDirectImageUrl(i.photo_url))) return false;
       if (lowStockOnly && !isLowStock(i)) return false;
+      if (categoryFilter && sortCategory(i, sortMode) !== categoryFilter) return false;
+      if (labelStatusFilter && labelStatus(i) !== labelStatusFilter) return false;
       return true;
     });
-  }, [items, search, locationFilter, photosOnly, lowStockOnly]);
+  }, [items, search, locationFilter, photosOnly, lowStockOnly, categoryFilter, sortMode, labelStatusFilter]);
 
   // Same-named items (real per-location duplicates — intentional, not data
   // dirt) collapse into one pickable row here for a cleaner list, but each
@@ -296,7 +357,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
         // jsPDF's maxWidth wraps rather than clips — a long name would wrap
         // onto extra lines and bleed past the label's physical edge instead
         // of staying on one line, so truncate explicitly first.
-        doc.text(truncateForLabel(item.name), nameX, nameY, { maxWidth: t.labelWidth - qrSize - 0.3 });
+        doc.text(truncateForLabel(labelName(item, labelLanguage)), nameX, nameY, { maxWidth: t.labelWidth - qrSize - 0.3 });
 
         // Human-readable code below name — a fallback for when a QR won't scan
         doc.setFontSize(4.5);
@@ -314,6 +375,35 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
           : `Generated ${toPrint.length} label${toPrint.length === 1 ? '' : 's'}.`,
         { variant: 'success' }
       );
+
+      // Label Status tracking: only a real batch counts as "printed" -- a
+      // test sheet is explicitly for checking alignment before committing
+      // label stock, not a record that the item's real label went out.
+      // mark_labels_printed sets label_printed_at server-side with now(),
+      // not a client timestamp passed to .update() -- trg_inventory_items_
+      // updated_at also stamps updated_at = now() on the same row in the
+      // same statement, and now() is transaction-stable in Postgres (one
+      // value for the whole transaction), so both columns land on the
+      // identical instant instead of updated_at racing a few ms ahead of a
+      // client-supplied value and showing "Needs Update" the moment a label
+      // is printed. Best-effort: the PDF is already saved locally at this
+      // point either way, so a failed status update shouldn't read as a
+      // failed print.
+      if (!testOnly && toPrint.length > 0) {
+        const printedIds = toPrint.map((i) => i.id);
+        const { error: stampError } = await supabase.rpc('mark_labels_printed', { p_ids: printedIds });
+        if (!stampError) {
+          // Optimistic local echo: set both fields to the same client-side
+          // instant so labelStatus() reads 'printed' immediately without a
+          // refetch -- the authoritative DB values (both server-side now())
+          // are already correct regardless of this local approximation.
+          const now = new Date().toISOString();
+          const printedIdSet = new Set(printedIds);
+          setItems((prev) =>
+            prev.map((i) => (printedIdSet.has(i.id) ? { ...i, label_printed_at: now, updated_at: now } : i))
+          );
+        }
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to generate PDF.';
       setError(message);
@@ -348,13 +438,15 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
         <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-4 lg:mb-0 space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-medium uppercase tracking-wider text-gold-dark">Filters</h2>
-            {(search || locationFilter || photosOnly || lowStockOnly) && (
+            {(search || locationFilter || photosOnly || lowStockOnly || categoryFilter || labelStatusFilter) && (
               <button
                 onClick={() => {
                   setSearch('');
                   setLocationFilter(null);
                   setPhotosOnly(false);
                   setLowStockOnly(false);
+                  setCategoryFilter(null);
+                  setLabelStatusFilter(null);
                 }}
                 className="text-xs text-gold-dark underline"
               >
@@ -380,6 +472,34 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
               </option>
             ))}
           </select>
+
+          <div className="flex rounded-full border border-gold-light/60 overflow-hidden text-[10px] font-semibold uppercase tracking-[0.15em]">
+            <button
+              onClick={() => handleSortModeChange('macro')}
+              className={`flex-1 py-1.5 ${sortMode === 'macro' ? 'bg-gold-dark text-white' : 'bg-cream/40 text-charcoal/60'}`}
+            >
+              Broad
+            </button>
+            <button
+              onClick={() => handleSortModeChange('micro')}
+              className={`flex-1 py-1.5 ${sortMode === 'micro' ? 'bg-gold-dark text-white' : 'bg-cream/40 text-charcoal/60'}`}
+            >
+              Detailed
+            </button>
+          </div>
+          <select
+            value={categoryFilter ?? ''}
+            onChange={(e) => setCategoryFilter(e.target.value || null)}
+            className="w-full border border-gold-light/60 rounded-full px-3 py-2 text-sm"
+          >
+            <option value="">All categories</option>
+            {categoryOptions.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+
           <label className="flex items-center justify-between text-sm text-charcoal">
             <span>Only items with photos</span>
             <input
@@ -398,6 +518,51 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
               className="h-4 w-4 accent-gold-dark rounded"
             />
           </label>
+
+          <div>
+            <p className="text-sm text-charcoal mb-1.5">Label status</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
+              <button
+                onClick={() => setLabelStatusFilter(null)}
+                className={`flex items-center gap-1 ${labelStatusFilter === null ? 'text-gold-dark font-medium' : 'text-charcoal/50'}`}
+              >
+                {labelStatusFilter === null && <span className="w-1.5 h-1.5 rounded-full bg-gold-dark" aria-hidden="true" />}
+                All
+              </button>
+              {(Object.keys(LABEL_STATUS_TEXT) as LabelStatus[]).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setLabelStatusFilter(s)}
+                  className={`flex items-center gap-1 ${labelStatusFilter === s ? 'text-gold-dark font-medium' : 'text-charcoal/50'}`}
+                >
+                  {labelStatusFilter === s && <span className="w-1.5 h-1.5 rounded-full bg-gold-dark" aria-hidden="true" />}
+                  {LABEL_STATUS_TEXT[s]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm text-charcoal mb-1.5">Label language</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setLabelLanguage('en')}
+                className={`flex-1 py-1.5 rounded-full text-xs font-medium border ${
+                  labelLanguage === 'en' ? 'bg-gold-dark text-white border-gold-dark' : 'bg-cream/40 text-charcoal border-gold-light/60'
+                }`}
+              >
+                English
+              </button>
+              <button
+                onClick={() => setLabelLanguage('es')}
+                className={`flex-1 py-1.5 rounded-full text-xs font-medium border ${
+                  labelLanguage === 'es' ? 'bg-gold-dark text-white border-gold-dark' : 'bg-cream/40 text-charcoal border-gold-light/60'
+                }`}
+              >
+                Español
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Items panel — deduplicated by name */}
@@ -480,7 +645,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
                     <>
                       <span className="text-[10px] leading-none">{hasPhoto ? '📷' : '🏷️'}</span>
                       <span className="text-[6px] leading-tight text-center text-charcoal/70 line-clamp-2 mt-0.5">
-                        {truncateForLabel(item.name)}
+                        {truncateForLabel(labelName(item, labelLanguage))}
                       </span>
                     </>
                   ) : (
