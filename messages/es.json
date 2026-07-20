@@ -376,6 +376,12 @@
   },
   "myDay": {
     "staffNoteHeading": "Nota de hoy para el personal",
+    "captureTile": "Capturar",
+    "captureSubtitle": "Tomar una foto",
+    "shoppingTile": "Lista de Compras",
+    "shoppingSubtitle": "Ver la lista",
+    "timerTile": "Temporizador",
+    "timerSubtitle": "Poner un temporizador",
     "duties": {
       "heading": "Tareas de Hoy",
       "noRoster": "Aún no se ha asignado una lista de tareas — pídale a su gerente que configure una.",

@@ -156,25 +156,39 @@ export default function MyDayClient({
       {/* Today's Tasks, Capture, Shopping List, Kitchen Timer -- the whole
           staff home view. Capture and Kitchen Timer open as modals right
           here (same ToolModal every other simple tool uses) rather than
-          navigating away, since both are quick, in-and-out actions. */}
-      <div className="flex gap-2 mb-6">
+          navigating away, since both are quick, in-and-out actions.
+          SS-179 tile formula (2026-07-20): was a plain flex row of compact
+          icon+label buttons -- brought in line with the dashboard's own
+          tile row (brass eyebrow, centered icon, display title, one-line
+          subtitle, mist fill) rather than a one-off smaller pattern just
+          for this page. */}
+      <div className="grid grid-cols-3 gap-[14px] mb-6">
         <button
           onClick={() => setShowCapture(true)}
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl2 bg-mist border border-brass/30 text-denim px-4 py-2.5 text-sm font-medium shadow-card hover:shadow-cardHover transition-shadow"
+          className="flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 py-[14px] px-2 shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
         >
-          <Camera size={16} aria-hidden="true" /> Capture
+          <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{t('captureTile')}</span>
+          <Camera size={28} className="text-denim" aria-hidden="true" />
+          <span className="font-display font-normal text-sm text-denim text-center">{t('captureTile')}</span>
+          <span className="text-[10px] text-dusk text-center">{t('captureSubtitle')}</span>
         </button>
         <Link
           href={`/properties/${propertyId}/shopping-list`}
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl2 bg-mist border border-brass/30 text-denim px-4 py-2.5 text-sm font-medium shadow-card hover:shadow-cardHover transition-shadow"
+          className="flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 py-[14px] px-2 shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
         >
-          <ShoppingCart size={16} aria-hidden="true" /> Shopping List
+          <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{t('shoppingTile')}</span>
+          <ShoppingCart size={28} className="text-denim" aria-hidden="true" />
+          <span className="font-display font-normal text-sm text-denim text-center">{t('shoppingTile')}</span>
+          <span className="text-[10px] text-dusk text-center">{t('shoppingSubtitle')}</span>
         </Link>
         <button
           onClick={() => setShowKitchenTimer(true)}
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl2 bg-mist border border-brass/30 text-denim px-4 py-2.5 text-sm font-medium shadow-card hover:shadow-cardHover transition-shadow"
+          className="flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 py-[14px] px-2 shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
         >
-          <Timer size={16} aria-hidden="true" /> Kitchen Timer
+          <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{t('timerTile')}</span>
+          <Timer size={28} className="text-denim" aria-hidden="true" />
+          <span className="font-display font-normal text-sm text-denim text-center">{t('timerTile')}</span>
+          <span className="text-[10px] text-dusk text-center">{t('timerSubtitle')}</span>
         </button>
       </div>
 

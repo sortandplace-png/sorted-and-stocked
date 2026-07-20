@@ -376,6 +376,12 @@
   },
   "myDay": {
     "staffNoteHeading": "Today's note for staff",
+    "captureTile": "Capture",
+    "captureSubtitle": "Snap a photo",
+    "shoppingTile": "Shopping List",
+    "shoppingSubtitle": "View the list",
+    "timerTile": "Kitchen Timer",
+    "timerSubtitle": "Set a timer",
     "duties": {
       "heading": "Today's Duties",
       "noRoster": "No task roster assigned yet — ask your manager to set one up.",
