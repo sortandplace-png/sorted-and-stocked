@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ExternalLink, ShoppingCart, ChevronDown, Copy } from 'lucide-react';
+import { ShoppingCart, ChevronDown, Copy, ClipboardCopy } from 'lucide-react';
 
 interface IngredientShoppingLinkProps {
   ingredient: {
@@ -73,6 +73,9 @@ export default function IngredientShoppingLink({
 
   return (
     <div className="flex items-center gap-1 mt-1 print:hidden">
+      {/* Cart = buy (link out to the store), copy/box = add to shopping
+          list -- was reversed (cart meant add-to-list, buy had a plain
+          external-link icon). Racquel's explicit call after seeing it live. */}
       {ingredient.reorder_link && (
         <a
           href={ingredient.reorder_link}
@@ -81,7 +84,7 @@ export default function IngredientShoppingLink({
           className="w-7 h-7 flex items-center justify-center rounded-full border border-brass/30 text-brass hover:bg-mist transition"
           title={primaryStoreInfo ? `Buy at ${primaryStoreInfo.name}` : 'Reorder link'}
         >
-          <ExternalLink size={14} strokeWidth={1.75} />
+          <ShoppingCart size={14} strokeWidth={1.75} />
         </a>
       )}
 
@@ -92,16 +95,16 @@ export default function IngredientShoppingLink({
           className="w-7 h-7 flex items-center justify-center rounded-full border border-brass/30 text-brass hover:bg-mist transition disabled:opacity-40"
           title="Add to shopping list"
         >
-          <ShoppingCart size={14} strokeWidth={1.75} />
+          <Copy size={14} strokeWidth={1.75} />
         </button>
       )}
 
       <button
         onClick={copyToClipboard}
         className="w-7 h-7 flex items-center justify-center rounded-full border border-brass/30 text-brass hover:bg-mist transition"
-        title="Copy ingredient"
+        title="Copy ingredient text"
       >
-        <Copy size={14} strokeWidth={1.75} />
+        <ClipboardCopy size={14} strokeWidth={1.75} />
       </button>
 
       {alternativeStores.length > 0 && (
