@@ -282,12 +282,26 @@ export default function NewRecipeModal({
       // for a low-confidence match), not something that blows up the save.
       const matchedIds = [...new Set(matches.map((m) => m?.id).filter((id): id is string => !!id))];
       const kosherTypeById = new Map<string, string | null>();
-      if (matchedIds.length > 0 && kosherType) {
+      // Real gap found and fixed, not assumed: a brand-new ingredient row
+      // (no existingByName entry to carry photo_url/reorder_link forward
+      // from) that auto-links to an inventory item here never inherited
+      // that item's photo -- only the id got copied. The one-time backfill
+      // that patched 2,239 pre-existing rows this same way isn't a standing
+      // rule anywhere else; trg_auto_link_ingredient's own coalesce
+      // (migration for auto_link_ingredient()) never fires for this either,
+      // since it only runs when inventory_item_id arrives NULL, and this
+      // form always resolves + sends a real id itself. Confirmed live: 64
+      // rows currently linked with no photo of their own.
+      const invFieldsById = new Map<string, { photo_url: string | null; reorder_link: string | null }>();
+      if (matchedIds.length > 0) {
         const { data: matchedItems } = await supabase
           .from('inventory_items')
-          .select('id, kosher_type')
+          .select('id, kosher_type, photo_url, reorder_link')
           .in('id', matchedIds);
-        for (const mi of matchedItems ?? []) kosherTypeById.set(mi.id, mi.kosher_type);
+        for (const mi of matchedItems ?? []) {
+          kosherTypeById.set(mi.id, mi.kosher_type);
+          invFieldsById.set(mi.id, { photo_url: mi.photo_url, reorder_link: mi.reorder_link });
+        }
       }
       const conflicts: string[] = [];
       function conflictsWithRecipe(itemKosherType: string | null | undefined): boolean {
@@ -317,6 +331,11 @@ export default function NewRecipeModal({
           // when the person typed something, and only falls back to the
           // preserved value when they didn't.
           const existing = existingByName.get(r.name.trim().toLowerCase());
+          // Only for a genuinely new row (existing is only set for an
+          // ingredient this recipe already had) -- an edited row's own
+          // prior value always wins over the linked item's current one,
+          // same precedence as every other carried-forward field here.
+          const invFields = !conflict && matchId ? invFieldsById.get(matchId) : undefined;
           return {
             recipe_id: recipeId,
             name: r.name.trim(),
@@ -325,8 +344,8 @@ export default function NewRecipeModal({
             unit: r.unit.trim() || null,
             category: r.category.trim() || existing?.category || null,
             inventory_item_id: conflict ? null : matchId,
-            photo_url: existing?.photo_url ?? null,
-            reorder_link: existing?.reorder_link ?? null,
+            photo_url: existing?.photo_url ?? invFields?.photo_url ?? null,
+            reorder_link: existing?.reorder_link ?? invFields?.reorder_link ?? null,
             primary_store: existing?.primary_store ?? null,
             alternative_stores: existing?.alternative_stores ?? null,
             is_strictly_kosher: existing?.is_strictly_kosher ?? null,
