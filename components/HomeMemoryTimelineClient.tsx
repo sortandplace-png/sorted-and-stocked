@@ -142,21 +142,21 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Home Memory Timeline</h1>
-      <p className="text-sm text-charcoal/50 mb-4">
+      <h1 className="text-2xl font-display text-denim mb-1">Home Memory Timeline</h1>
+      <p className="text-sm text-dusk mb-4">
         A running record of what's happened here — photos, milestones, and everyday moments.
       </p>
 
       {canManage(role) && (
-        <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-2">
-          <h2 className="font-display text-lg text-charcoal mb-1">Add to the timeline</h2>
-          <div className="flex bg-cream rounded-full border border-gold-light/60 p-0.5 text-sm">
+        <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-4 mb-6 space-y-2">
+          <h2 className="font-display text-lg text-denim mb-1">Add to the timeline</h2>
+          <div className="flex bg-linen rounded-full border border-cardBorder p-0.5 text-sm">
             {(['event', 'photo', 'milestone'] as MemoryType[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setType(t)}
                 className={`flex-1 py-1.5 rounded-full transition-colors ${
-                  type === t ? 'bg-gold-dark text-white' : 'text-charcoal/60'
+                  type === t ? 'bg-denim text-white' : 'text-dusk'
                 }`}
               >
                 {TYPE_LABELS[t]}
@@ -171,7 +171,7 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. First Shabbos in the new house"
-                className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+                className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
               />
             </div>
           )}
@@ -183,7 +183,7 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="e.g. Grandma visited for lunch"
-                className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+                className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
               />
             </div>
           )}
@@ -195,7 +195,7 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Caption (optional)"
-                className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+                className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
               />
             </div>
           )}
@@ -223,7 +223,7 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
                   <img src={photoPreview} alt="" className="w-full h-40 object-cover rounded-xl" />
                   <button
                     onClick={() => handlePhotoSelected(null)}
-                    className="absolute top-2 right-2 bg-charcoal/70 text-cream text-xs rounded-full h-6 w-6"
+                    className="absolute top-2 right-2 bg-denim/70 text-white text-xs rounded-full h-6 w-6"
                     aria-label="Remove photo"
                   >
                     ✕
@@ -233,13 +233,13 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setShowCamera(true)}
-                    className="py-4 rounded-xl border-2 border-dashed border-gold-light text-charcoal/60 text-sm hover:bg-gold-light/10 transition-colors"
+                    className="py-4 rounded-xl border-2 border-dashed border-brass/40 text-dusk text-sm hover:bg-mist transition-colors"
                   >
                     📸 {type === 'photo' ? 'Take a photo' : 'Take a photo (optional)'}
                   </button>
                   <button
                     onClick={() => galleryInputRef.current?.click()}
-                    className="py-4 rounded-xl border-2 border-dashed border-gold-light text-charcoal/60 text-sm hover:bg-gold-light/10 transition-colors"
+                    className="py-4 rounded-xl border-2 border-dashed border-brass/40 text-dusk text-sm hover:bg-mist transition-colors"
                   >
                     🖼️ Library
                   </button>
@@ -249,19 +249,19 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
           )}
 
           <div>
-            <label className="text-xs text-charcoal/50 block mb-1">Date</label>
+            <label className="text-xs text-dusk block mb-1">Date</label>
             <input
               type="date"
               value={eventDate}
               onChange={(e) => setEventDate(e.target.value)}
-              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+              className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
             />
           </div>
 
           <button
             onClick={addMemory}
             disabled={saving || !canSave}
-            className="w-full py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
+            className="w-full py-2.5 rounded-full bg-denim text-white font-medium disabled:opacity-40"
           >
             {saving ? 'Saving…' : 'Add'}
           </button>
@@ -275,8 +275,8 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
             onClick={() => setFilter(f)}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
               filter === f
-                ? 'bg-gold-dark text-white border-gold'
-                : 'bg-white text-charcoal/60 border-gold-light/60'
+                ? 'bg-denim text-white border-denim'
+                : 'bg-card text-dusk border-cardBorder'
             }`}
           >
             {f === 'all' ? 'All' : TYPE_LABELS[f]}
@@ -285,7 +285,7 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
       </div>
 
       {visible.length === 0 && (
-        <p className="text-sm text-charcoal/40 text-center py-8">
+        <p className="text-sm text-dusk text-center py-8">
           {memories.length > 0
             ? 'No matches for this filter.'
             : canManage(role)
@@ -298,20 +298,20 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
         {visible.map((memory) => (
           <li
             key={memory.id}
-            className={`bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-3 ${
-              memory.type === 'milestone' ? 'border border-gold' : ''
+            className={`bg-card rounded-2xl border shadow-card p-3 ${
+              memory.type === 'milestone' ? 'border-brass' : 'border-cardBorder'
             }`}
           >
             {memory.type === 'event' ? (
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-sm text-charcoal">{memory.body}</p>
-                  <p className="text-xs text-charcoal/40 mt-0.5">{memory.event_date}</p>
+                  <p className="text-sm text-denim">{memory.body}</p>
+                  <p className="text-xs text-dusk mt-0.5">{memory.event_date}</p>
                 </div>
                 {canManage(role) && (
                   <button
                     onClick={() => removeMemory(memory.id)}
-                    className="text-xs text-charcoal/30 hover:text-rust shrink-0"
+                    className="text-xs text-dusk hover:text-rust shrink-0"
                     aria-label="Delete"
                   >
                     ✕
@@ -322,15 +322,15 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
               <div>
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex items-center gap-1.5">
-                    {memory.type === 'milestone' && <span className="text-gold-dark">★</span>}
-                    <p className="font-display text-charcoal">
+                    {memory.type === 'milestone' && <span className="text-brass">★</span>}
+                    <p className="font-display text-denim">
                       {memory.type === 'milestone' ? memory.title : 'Photo'}
                     </p>
                   </div>
                   {canManage(role) && (
                     <button
                       onClick={() => removeMemory(memory.id)}
-                      className="text-xs text-charcoal/30 hover:text-rust shrink-0"
+                      className="text-xs text-dusk hover:text-rust shrink-0"
                       aria-label="Delete"
                     >
                       ✕
@@ -346,9 +346,9 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
                   />
                 )}
                 {memory.body && memory.type === 'photo' && (
-                  <p className="text-sm text-charcoal/70 mb-1">{memory.body}</p>
+                  <p className="text-sm text-dusk mb-1">{memory.body}</p>
                 )}
-                <p className="text-xs text-charcoal/40">{memory.event_date}</p>
+                <p className="text-xs text-dusk">{memory.event_date}</p>
               </div>
             )}
           </li>

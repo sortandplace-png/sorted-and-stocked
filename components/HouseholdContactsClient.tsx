@@ -242,28 +242,28 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Contacts &amp; Vendors</h1>
-      <p className="text-sm text-charcoal/50 mb-4">Everyone the household calls on — repairs, deliveries, help.</p>
+      <h1 className="text-2xl font-display text-denim mb-1">Contacts &amp; Vendors</h1>
+      <p className="text-sm text-dusk mb-4">Everyone the household calls on — repairs, deliveries, help.</p>
 
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search name, role, phone, email, or tag…"
-        className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2.5 bg-white mb-4 text-sm"
+        className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-full px-4 py-2.5 bg-card mb-4 text-sm"
       />
 
       {canManage(role) && (
-        <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-4">
-          <h2 className="font-display text-lg text-charcoal mb-1">Import from CSV</h2>
-          <p className="text-xs text-charcoal/50 mb-2">
+        <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-4 mb-4">
+          <h2 className="font-display text-lg text-denim mb-1">Import from CSV</h2>
+          <p className="text-xs text-dusk mb-2">
             Columns: name (required), role, phone, email, tags (semicolon-separated).
           </p>
           {importRows ? (
             <div className="space-y-2">
-              <p className="text-sm text-charcoal">
+              <p className="text-sm text-denim">
                 {importFileName} — {importRows.length} contact{importRows.length === 1 ? '' : 's'} ready to import.
               </p>
-              <ul className="max-h-32 overflow-y-auto text-xs text-charcoal/60 space-y-0.5">
+              <ul className="max-h-32 overflow-y-auto text-xs text-dusk space-y-0.5">
                 {importRows.slice(0, 8).map((r, i) => (
                   <li key={i}>{r.name}{r.role ? ` — ${r.role}` : ''}</li>
                 ))}
@@ -274,13 +274,13 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
                 <button
                   onClick={confirmImport}
                   disabled={importing}
-                  className="flex-1 py-2 rounded-full bg-charcoal text-cream font-medium text-sm disabled:opacity-40"
+                  className="flex-1 py-2 rounded-full bg-denim text-white font-medium text-sm disabled:opacity-40"
                 >
                   {importing ? 'Importing…' : `Import ${importRows.length} contact${importRows.length === 1 ? '' : 's'}`}
                 </button>
                 <button
                   onClick={cancelImport}
-                  className="px-4 py-2 rounded-full border border-charcoal/30 text-charcoal text-sm"
+                  className="px-4 py-2 rounded-full border border-brass/30 text-denim text-sm"
                 >
                   Cancel
                 </button>
@@ -289,7 +289,7 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
           ) : (
             <>
               {importError && <p className="text-sm text-rust mb-2">{importError}</p>}
-              <label className="block text-center py-2.5 rounded-full border border-charcoal/30 text-charcoal text-sm font-medium cursor-pointer">
+              <label className="block text-center py-2.5 rounded-full border border-brass/30 text-denim text-sm font-medium cursor-pointer">
                 Choose CSV file
                 <input
                   type="file"
@@ -304,15 +304,15 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
       )}
 
       {canManage(role) && (
-        <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-2">
-          <h2 className="font-display text-lg text-charcoal mb-1">{editingId ? 'Edit contact' : 'Add a contact'}</h2>
+        <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-4 mb-6 space-y-2">
+          <h2 className="font-display text-lg text-denim mb-1">{editingId ? 'Edit contact' : 'Add a contact'}</h2>
           <div>
             <FieldLabel>Name</FieldLabel>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Name"
-              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+              className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
             />
           </div>
           <div>
@@ -321,7 +321,7 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
               value={contactRole}
               onChange={(e) => setContactRole(e.target.value)}
               placeholder="e.g. Plumber, Cleaning, Handyman"
-              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+              className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
             />
           </div>
           <div className="flex gap-2">
@@ -331,7 +331,7 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="Phone"
-                className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+                className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
               />
             </div>
             <div className="flex-1">
@@ -340,7 +340,7 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email"
-                className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+                className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
               />
             </div>
           </div>
@@ -350,21 +350,21 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
               placeholder="Comma separated (e.g. plumbing, urgent)"
-              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+              className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
             />
           </div>
           <div className="flex gap-2">
             <button
               onClick={saveContact}
               disabled={saving || !name.trim()}
-              className="flex-1 py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
+              className="flex-1 py-2.5 rounded-full bg-denim text-white font-medium disabled:opacity-40"
             >
               {saving ? 'Saving…' : editingId ? 'Save changes' : 'Add contact'}
             </button>
             {editingId && (
               <button
                 onClick={resetForm}
-                className="px-4 py-2.5 rounded-full border border-charcoal/30 text-charcoal font-medium"
+                className="px-4 py-2.5 rounded-full border border-brass/30 text-denim font-medium"
               >
                 Cancel
               </button>
@@ -374,7 +374,7 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
       )}
 
       {filtered.length === 0 && (
-        <p className="text-sm text-charcoal/40 text-center py-8">
+        <p className="text-sm text-dusk text-center py-8">
           {contacts.length === 0
             ? canManage(role)
               ? 'No contacts yet — use the form above to add your plumber, cleaner, or handyman.'
@@ -385,24 +385,24 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
 
       <ul className="space-y-2">
         {filtered.map((c) => (
-          <li key={c.id} className="bg-white rounded-xl shadow-sm shadow-charcoal/5 p-3">
+          <li key={c.id} className="bg-card rounded-xl border border-cardBorder shadow-card p-3">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <p className="font-medium text-sm text-charcoal">{c.name}</p>
-                {c.role && <p className="text-xs text-gold-dark">{c.role}</p>}
+                <p className="font-medium text-sm text-denim">{c.name}</p>
+                {c.role && <p className="text-xs text-brass">{c.role}</p>}
               </div>
               {canManage(role) && (
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => startEdit(c)}
-                    className="text-xs text-charcoal/40 hover:text-charcoal"
+                    className="text-xs text-dusk hover:text-denim"
                     aria-label="Edit contact"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => removeContact(c.id)}
-                    className="text-xs text-charcoal/30 hover:text-rust"
+                    className="text-xs text-dusk hover:text-rust"
                     aria-label="Delete contact"
                   >
                     ✕
@@ -412,12 +412,12 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
             </div>
             <div className="flex flex-wrap gap-3 mt-1.5 text-sm">
               {c.phone && (
-                <a href={`tel:${c.phone}`} className="text-charcoal/70 hover:text-charcoal">
+                <a href={`tel:${c.phone}`} className="text-dusk hover:text-denim">
                   📞 {c.phone}
                 </a>
               )}
               {c.email && (
-                <a href={`mailto:${c.email}`} className="text-charcoal/70 hover:text-charcoal">
+                <a href={`mailto:${c.email}`} className="text-dusk hover:text-denim">
                   ✉️ {c.email}
                 </a>
               )}
@@ -425,7 +425,7 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
             {c.tags && c.tags.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {c.tags.map((t) => (
-                  <span key={t} className="text-[11px] bg-gold-light/30 text-charcoal/70 px-2 py-0.5 rounded-full">
+                  <span key={t} className="text-[11px] bg-mist text-dusk px-2 py-0.5 rounded-full">
                     {t}
                   </span>
                 ))}
