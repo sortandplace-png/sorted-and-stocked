@@ -208,6 +208,7 @@ export default function RecipeDetailClient({
     }
   }
   const [checkedIds, setCheckedIds] = useState<Record<string, boolean>>({});
+  const [brokenIngredientPhotoIds, setBrokenIngredientPhotoIds] = useState<Set<string>>(new Set());
   const [addingToListIds, setAddingToListIds] = useState<Record<string, boolean>>({});
   const [showHistory, setShowHistory] = useState(false);
   const [openKitchenOpsTool, setOpenKitchenOpsTool] = useState<KitchenOpsSlug | null>(null);
@@ -225,7 +226,7 @@ export default function RecipeDetailClient({
   useEffect(() => {
     (async () => {
       try {
-        const { recipe: recipeData, ingredients: ingredientData } = await fetchRecipeWithIngredients(recipeId);
+        const { recipe: recipeData, ingredients: ingredientData } = await fetchRecipeWithIngredients(recipeId, propertyId);
         setRecipe(recipeData);
         setIngredients(ingredientData);
         setTargetServings(recipeData?.servings ?? 4);
@@ -316,17 +317,20 @@ export default function RecipeDetailClient({
         return;
       }
 
-      // One random pick per required course; falls back to any occasion
-      // within that SAME course (never a different course) only if no
-      // same-occasion match exists for it, so a slot is far more likely to
-      // be filled than left empty while still never becoming a same-course
-      // duplicate or an off-rule suggestion.
+      // One random pick per required course, occasion-matched -- HARD rule,
+      // no fallback. Previously fell back to any occasion within the same
+      // course when no same-occasion match existed, which is exactly what
+      // produced the reported bug (a Pesach recipe suggesting a non-Pesach
+      // pairing): "far more likely to be filled" was silently filling a
+      // slot with a wrong-occasion suggestion. Per audit item [7]: "A
+      // Pesach recipe pairs only with Pesach recipes. Same for
+      // is_shabbos_only and is_yom_tov" -- no exceptions. A course with no
+      // same-occasion candidate now simply has no pick, rather than a wrong one.
       function pickForCourse(course: Course, excludeIds: Set<string>) {
         const inCourse = candidates.filter((c) => c.course === course && !excludeIds.has(c.id));
         const sameOccasion = inCourse.filter((c) => sharesOccasion(occasionSet(c), currentOccasions));
-        const pool = sameOccasion.length > 0 ? sameOccasion : inCourse;
-        if (pool.length === 0) return null;
-        return pool[Math.floor(Math.random() * pool.length)];
+        if (sameOccasion.length === 0) return null;
+        return sameOccasion[Math.floor(Math.random() * sameOccasion.length)];
       }
 
       const usedIds = new Set<string>([recipeId]);
@@ -754,7 +758,7 @@ export default function RecipeDetailClient({
             // Re-fetch so the on-page ingredient list/details reflect edits
             // immediately instead of waiting on the next full navigation.
             (async () => {
-              const { recipe: recipeData, ingredients: ingredientData } = await fetchRecipeWithIngredients(recipeId);
+              const { recipe: recipeData, ingredients: ingredientData } = await fetchRecipeWithIngredients(recipeId, propertyId);
               setRecipe(recipeData);
               setIngredients(ingredientData);
             })();
@@ -945,6 +949,17 @@ export default function RecipeDetailClient({
                             aria-label={`Check off ${displayIngredientName(i)}`}
                           />
                         </label>
+                        {i.photo_url && !brokenIngredientPhotoIds.has(i.id) ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={i.photo_url}
+                            alt=""
+                            className="w-9 h-9 rounded-lg object-cover shrink-0 bg-mist mt-0.5"
+                            onError={() => setBrokenIngredientPhotoIds((prev) => new Set(prev).add(i.id))}
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-lg bg-mist shrink-0 mt-0.5" aria-hidden="true" />
+                        )}
                         <div className={`flex-1 ${checkedIds[i.id] ? 'opacity-40 line-through' : ''}`}>
                           <div className={view === 'staff' ? 'text-xl' : ''}>{formatQty(i)}</div>
                           <IngredientShoppingLink

@@ -2,7 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-export async function fetchRecipeWithIngredients(recipeId: string) {
+export async function fetchRecipeWithIngredients(recipeId: string, propertyId?: string) {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -34,6 +34,34 @@ export async function fetchRecipeWithIngredients(recipeId: string) {
   if (ingredientError) {
     console.error('Ingredient fetch error:', ingredientError);
     return { recipe, ingredients: [] };
+  }
+
+  // recipe_ingredients has no stored inventory_item_id (only shopping_list_items
+  // and staples do) -- same name-matched fallback migration 073 already
+  // established for the shopping list's own photo gap, applied here so an
+  // ingredient with no photo of its own can still show the linked pantry
+  // item's real photo instead of nothing. Only queries when there's
+  // actually a gap to fill, and only for names within this recipe.
+  const missingPhotoNames = (ingredients ?? [])
+    .filter((i) => !i.photo_url)
+    .map((i) => i.name.trim().toLowerCase());
+
+  if (propertyId && missingPhotoNames.length > 0) {
+    const { data: matches } = await supabase
+      .from('inventory_items')
+      .select('name, photo_url')
+      .eq('property_id', propertyId)
+      .not('photo_url', 'is', null);
+
+    const photoByName = new Map(
+      (matches ?? []).map((m) => [m.name.trim().toLowerCase(), m.photo_url])
+    );
+
+    for (const ingredient of ingredients ?? []) {
+      if (!ingredient.photo_url) {
+        ingredient.photo_url = photoByName.get(ingredient.name.trim().toLowerCase()) ?? null;
+      }
+    }
   }
 
   return { recipe, ingredients: ingredients || [] };
