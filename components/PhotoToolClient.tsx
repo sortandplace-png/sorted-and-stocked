@@ -37,6 +37,7 @@ export default function PhotoToolClient({
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const showToast = useToast();
 
   async function runAnalysis(payload: Record<string, unknown>) {
@@ -131,7 +132,27 @@ export default function PhotoToolClient({
           </div>
 
           {mode === 'photo' ? (
-            <label className="block border-2 border-dashed border-gold-light rounded-2xl py-10 text-center cursor-pointer bg-white/50">
+            // Two real inputs, not one relying on `capture` as a hint --
+            // confirmed live that some mobile browsers open the gallery
+            // picker regardless of capture="environment" being set, so a
+            // single input can't reliably guarantee the camera path.
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-gold-light rounded-2xl py-10 text-center bg-white/50"
+              >
+                <span className="text-4xl block mb-2">📷</span>
+                <span className="text-sm text-charcoal font-medium">{actionLabel}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => galleryInputRef.current?.click()}
+                className="border-2 border-dashed border-gold-light rounded-2xl py-10 text-center bg-white/50"
+              >
+                <span className="text-4xl block mb-2">🖼️</span>
+                <span className="text-sm text-charcoal font-medium">Choose from library</span>
+              </button>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -140,9 +161,14 @@ export default function PhotoToolClient({
                 onChange={handleFile}
                 className="hidden"
               />
-              <span className="text-4xl block mb-2">📷</span>
-              <span className="text-sm text-charcoal font-medium">{actionLabel}</span>
-            </label>
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFile}
+                className="hidden"
+              />
+            </div>
           ) : (
             <div>
               <textarea

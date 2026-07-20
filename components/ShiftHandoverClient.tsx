@@ -62,6 +62,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const supabase = createClient();
   const showToast = useToast();
@@ -304,6 +305,9 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
         )}
 
         <div className="flex gap-2">
+          {/* Two real inputs, not one relying on `capture` as a hint --
+              confirmed live that some mobile browsers open the gallery
+              picker regardless of capture="environment" being set. */}
           <label className="flex-1 text-center py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium cursor-pointer">
             <input
               ref={fileInputRef}
@@ -314,7 +318,18 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
               onChange={handlePhotoFile}
               className="hidden"
             />
-            📷 {photoDataUrls.length > 0 ? `Add another (${photoDataUrls.length})` : 'Photo'}
+            📷 {photoDataUrls.length > 0 ? `+ (${photoDataUrls.length})` : 'Photo'}
+          </label>
+          <label className="flex-1 text-center py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium cursor-pointer">
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handlePhotoFile}
+              className="hidden"
+            />
+            🖼️ Library
           </label>
 
           {!recording ? (
