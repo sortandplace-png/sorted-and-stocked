@@ -6,7 +6,7 @@
 // needed for one endpoint.
 import { createAdminClient } from '@/lib/supabase/admin';
 
-export type SmsTrigger = 'task_assigned' | 'shift_handover' | 'broadcast';
+export type SmsTrigger = 'task_assigned' | 'shift_handover' | 'broadcast' | 'payment_reminder';
 
 type SendStaffTextResult = { sent: true } | { sent: false; reason: string };
 

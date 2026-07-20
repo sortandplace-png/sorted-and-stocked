@@ -69,6 +69,17 @@ export default function SettingsClient({
   const [loadingFlags, setLoadingFlags] = useState(true);
   const [savingTasteMemory, setSavingTasteMemory] = useState(false);
 
+  // Square doesn't have API access wired into this app -- an owner/manager
+  // creates the payment link themselves in their own Square Dashboard and
+  // pastes it here. This never generates or guesses a link.
+  const [squarePaymentLink, setSquarePaymentLink] = useState('');
+  const [lastSentAt, setLastSentAt] = useState<string | null>(null);
+  const [lastSentVia, setLastSentVia] = useState<string | null>(null);
+  const [loadingBilling, setLoadingBilling] = useState(canManage(role));
+  const [savingSquareLink, setSavingSquareLink] = useState(false);
+  const [sendChannel, setSendChannel] = useState<'email' | 'sms'>('email');
+  const [sendingPaymentLink, setSendingPaymentLink] = useState(false);
+
   const loadCodes = useCallback(async () => {
     if (!canManage(role)) return;
     setLoadingCodes(true);
@@ -96,6 +107,67 @@ export default function SettingsClient({
   useEffect(() => {
     loadFeatureFlags();
   }, [loadFeatureFlags]);
+
+  const loadBilling = useCallback(async () => {
+    if (!canManage(role)) return;
+    setLoadingBilling(true);
+    const { data } = await supabase
+      .from('properties')
+      .select('square_payment_link, square_payment_link_sent_at, square_payment_link_sent_via')
+      .eq('id', propertyId)
+      .single();
+    setSquarePaymentLink(data?.square_payment_link ?? '');
+    setLastSentAt(data?.square_payment_link_sent_at ?? null);
+    setLastSentVia(data?.square_payment_link_sent_via ?? null);
+    setLoadingBilling(false);
+  }, [propertyId, role, supabase]);
+
+  useEffect(() => {
+    loadBilling();
+  }, [loadBilling]);
+
+  async function saveSquareLink() {
+    setSavingSquareLink(true);
+    const trimmed = squarePaymentLink.trim();
+    const { error } = await supabase
+      .from('properties')
+      .update({ square_payment_link: trimmed || null })
+      .eq('id', propertyId);
+    setSavingSquareLink(false);
+    if (error) {
+      showToast('Failed to save.', { variant: 'error' });
+      return;
+    }
+    showToast('Saved.', { variant: 'success' });
+  }
+
+  async function sendPaymentLink() {
+    setSendingPaymentLink(true);
+    try {
+      const res = await fetch('/api/billing/send-payment-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ propertyId, channel: sendChannel }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        showToast(body.error ?? 'Failed to send.', { variant: 'error' });
+        return;
+      }
+      if (body.sent === 0) {
+        showToast(body.reason ?? 'Not sent.', { variant: 'error' });
+        return;
+      }
+      showToast(`Sent to ${body.sent} of ${body.total} owner${body.total === 1 ? '' : 's'} via ${sendChannel}.`, {
+        variant: 'success',
+      });
+      loadBilling();
+    } catch {
+      showToast('Network error — try again.', { variant: 'error' });
+    } finally {
+      setSendingPaymentLink(false);
+    }
+  }
 
   async function toggleTasteMemory() {
     setSavingTasteMemory(true);
@@ -269,6 +341,69 @@ export default function SettingsClient({
                 }`}
               />
             </button>
+          </div>
+        </section>
+      )}
+
+      {canManage(role) && !loadingBilling && (
+        <section className="space-y-3">
+          <h2 className="font-display text-lg text-charcoal">Billing</h2>
+          <div className="bg-white rounded-2xl border border-gold-light/40 p-4 space-y-3">
+            <div>
+              <label className="text-xs font-medium text-charcoal/60 mb-1 block">Square payment link</label>
+              <input
+                type="url"
+                value={squarePaymentLink}
+                onChange={(e) => setSquarePaymentLink(e.target.value)}
+                placeholder="https://square.link/…"
+                className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-white text-sm"
+              />
+              <p className="text-xs text-charcoal/50 mt-1">
+                Create this in your own Square Dashboard, then paste it here — nothing is generated automatically.
+              </p>
+            </div>
+            <button
+              onClick={saveSquareLink}
+              disabled={savingSquareLink}
+              className="w-full py-2 rounded-full bg-charcoal text-cream text-sm font-medium disabled:opacity-40"
+            >
+              {savingSquareLink ? 'Saving…' : 'Save link'}
+            </button>
+
+            {squarePaymentLink.trim() && (
+              <div className="pt-3 border-t border-gold-light/30 space-y-2">
+                {lastSentAt && (
+                  <p className="text-xs text-charcoal/50">
+                    Last sent via {lastSentVia} on {new Date(lastSentAt).toLocaleDateString()}.
+                  </p>
+                )}
+                <div className="flex rounded-full bg-gold-light/20 p-1">
+                  <button
+                    onClick={() => setSendChannel('email')}
+                    className={`flex-1 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                      sendChannel === 'email' ? 'bg-white text-charcoal shadow-sm' : 'text-charcoal/50'
+                    }`}
+                  >
+                    Email
+                  </button>
+                  <button
+                    onClick={() => setSendChannel('sms')}
+                    className={`flex-1 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                      sendChannel === 'sms' ? 'bg-white text-charcoal shadow-sm' : 'text-charcoal/50'
+                    }`}
+                  >
+                    Text
+                  </button>
+                </div>
+                <button
+                  onClick={sendPaymentLink}
+                  disabled={sendingPaymentLink}
+                  className="w-full py-2 rounded-full bg-gold-dark text-white text-sm font-medium disabled:opacity-40"
+                >
+                  {sendingPaymentLink ? 'Sending…' : `Send payment link via ${sendChannel === 'email' ? 'email' : 'text'}`}
+                </button>
+              </div>
+            )}
           </div>
         </section>
       )}
