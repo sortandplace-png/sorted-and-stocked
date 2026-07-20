@@ -230,13 +230,71 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
     setSelected(value ? new Set(items.filter((i) => i.category !== 'Produce').map((i) => i.id)) : new Set());
   }
 
-  // Options change shape with the mode (macro: broad categories only;
+  // Cross-narrowing: every filter's own option list only offers choices
+  // that actually exist given every OTHER active filter -- e.g. once a
+  // location is picked, the category dropdown drops any category with zero
+  // items in that location. "Leave-one-out": each filter's own current
+  // value is deliberately excluded from its own narrowing pass (matched
+  // against every filter EXCEPT itself), not from all of them -- otherwise
+  // a dropdown would trivially only ever show its own already-selected
+  // value and nothing else to switch to. This is the reference
+  // implementation for the standing rule (every filter, everywhere in the
+  // app, narrows the others) -- same five-line pattern, copy per page
+  // rather than a premature shared abstraction before a second real
+  // consumer exists.
+  const q = search.trim().toLowerCase();
+  function matchesExcept(item: Item, exclude: 'location' | 'category' | 'photos' | 'lowStock' | 'labelStatus' | null): boolean {
+    if (q && !item.name.toLowerCase().includes(q)) return false;
+    if (exclude !== 'location' && locationFilter && item.location_id !== locationFilter) return false;
+    if (exclude !== 'photos' && photosOnly && !(item.photo_url && isDirectImageUrl(item.photo_url))) return false;
+    if (exclude !== 'lowStock' && lowStockOnly && !isLowStock(item)) return false;
+    if (exclude !== 'category' && categoryFilter && sortCategory(item, sortMode) !== categoryFilter) return false;
+    if (exclude !== 'labelStatus' && labelStatusFilter && labelStatus(item) !== labelStatusFilter) return false;
+    return true;
+  }
+
+  const locationOptions = useMemo(() => {
+    const ids = new Set<string>();
+    for (const i of items) if (i.location_id && matchesExcept(i, 'location')) ids.add(i.location_id);
+    return ids;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, q, photosOnly, lowStockOnly, categoryFilter, sortMode, labelStatusFilter]);
+
+  // Options change shape with the mode too (macro: broad categories only;
   // micro: finer split where it exists) -- recomputed whenever sortMode
   // flips so the dropdown never offers a value the current mode can't
-  // actually match.
+  // actually match, on top of the narrowing from every other filter.
   const categoryOptions = useMemo(() => {
-    return [...new Set(items.map((i) => sortCategory(i, sortMode)))].sort((a, b) => a.localeCompare(b));
-  }, [items, sortMode]);
+    const cats = new Set<string>();
+    for (const i of items) if (matchesExcept(i, 'category')) cats.add(sortCategory(i, sortMode));
+    return [...cats].sort((a, b) => a.localeCompare(b));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, q, locationFilter, photosOnly, lowStockOnly, sortMode, labelStatusFilter]);
+
+  // Checkboxes/pills aren't a dropdown with a discrete option list to trim,
+  // but the same rule applies: never leave a choice on-screen that's
+  // guaranteed to produce zero results given everything else selected.
+  // Counted (not just true/false) so a manager can see 0 before tapping it,
+  // not after.
+  const photosOnlyCount = useMemo(() => {
+    return items.filter((i) => matchesExcept(i, 'photos') && i.photo_url && isDirectImageUrl(i.photo_url)).length;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, q, locationFilter, lowStockOnly, categoryFilter, sortMode, labelStatusFilter]);
+
+  const lowStockOnlyCount = useMemo(() => {
+    return items.filter((i) => matchesExcept(i, 'lowStock') && isLowStock(i)).length;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, q, locationFilter, photosOnly, categoryFilter, sortMode, labelStatusFilter]);
+
+  const labelStatusCounts = useMemo(() => {
+    const counts: Record<LabelStatus, number> = { unlabeled: 0, needs_update: 0, printed: 0 };
+    for (const i of items) {
+      if (!matchesExcept(i, 'labelStatus')) continue;
+      counts[labelStatus(i)]++;
+    }
+    return counts;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, q, locationFilter, photosOnly, lowStockOnly, categoryFilter, sortMode]);
 
   function handleSortModeChange(mode: 'macro' | 'micro') {
     setSortMode(mode);
@@ -244,17 +302,9 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
   }
 
   const filteredItems = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return items.filter((i) => {
-      if (q && !i.name.toLowerCase().includes(q)) return false;
-      if (locationFilter && i.location_id !== locationFilter) return false;
-      if (photosOnly && !(i.photo_url && isDirectImageUrl(i.photo_url))) return false;
-      if (lowStockOnly && !isLowStock(i)) return false;
-      if (categoryFilter && sortCategory(i, sortMode) !== categoryFilter) return false;
-      if (labelStatusFilter && labelStatus(i) !== labelStatusFilter) return false;
-      return true;
-    });
-  }, [items, search, locationFilter, photosOnly, lowStockOnly, categoryFilter, sortMode, labelStatusFilter]);
+    return items.filter((i) => matchesExcept(i, null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, q, locationFilter, photosOnly, lowStockOnly, categoryFilter, sortMode, labelStatusFilter]);
 
   // Same-named items (real per-location duplicates — intentional, not data
   // dirt) collapse into one pickable row here for a cleaner list, but each
@@ -466,11 +516,13 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
             className="w-full border border-gold-light/60 rounded-full px-3 py-2 text-sm"
           >
             <option value="">All locations</option>
-            {locations.map((loc) => (
-              <option key={loc.id} value={loc.id}>
-                {loc.name}
-              </option>
-            ))}
+            {locations
+              .filter((loc) => locationOptions.has(loc.id))
+              .map((loc) => (
+                <option key={loc.id} value={loc.id}>
+                  {loc.name}
+                </option>
+              ))}
           </select>
 
           <div className="flex rounded-full border border-gold-light/60 overflow-hidden text-[10px] font-semibold uppercase tracking-[0.15em]">
@@ -500,27 +552,34 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
             ))}
           </select>
 
-          <label className="flex items-center justify-between text-sm text-charcoal">
-            <span>Only items with photos</span>
+          <label className={`flex items-center justify-between text-sm text-charcoal ${!photosOnly && photosOnlyCount === 0 ? 'opacity-40' : ''}`}>
+            <span>Only items with photos {!photosOnly && <span className="text-charcoal/40">({photosOnlyCount})</span>}</span>
             <input
               type="checkbox"
               checked={photosOnly}
+              disabled={!photosOnly && photosOnlyCount === 0}
               onChange={(e) => setPhotosOnly(e.target.checked)}
-              className="h-4 w-4 accent-gold-dark rounded"
+              className="h-4 w-4 accent-gold-dark rounded disabled:cursor-not-allowed"
             />
           </label>
-          <label className="flex items-center justify-between text-sm text-charcoal">
-            <span>Low stock only</span>
+          <label className={`flex items-center justify-between text-sm text-charcoal ${!lowStockOnly && lowStockOnlyCount === 0 ? 'opacity-40' : ''}`}>
+            <span>Low stock only {!lowStockOnly && <span className="text-charcoal/40">({lowStockOnlyCount})</span>}</span>
             <input
               type="checkbox"
               checked={lowStockOnly}
+              disabled={!lowStockOnly && lowStockOnlyCount === 0}
               onChange={(e) => setLowStockOnly(e.target.checked)}
-              className="h-4 w-4 accent-gold-dark rounded"
+              className="h-4 w-4 accent-gold-dark rounded disabled:cursor-not-allowed"
             />
           </label>
 
           <div>
             <p className="text-sm text-charcoal mb-1.5">Label status</p>
+            {/* Cross-narrowing applies here too: All is always live (it's
+                the union), and whichever status is currently active stays
+                clickable so you can back out of it, but a status with zero
+                matches given everything else selected is disabled rather
+                than sitting there as a dead end. */}
             <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
               <button
                 onClick={() => setLabelStatusFilter(null)}
@@ -529,16 +588,23 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
                 {labelStatusFilter === null && <span className="w-1.5 h-1.5 rounded-full bg-gold-dark" aria-hidden="true" />}
                 All
               </button>
-              {(Object.keys(LABEL_STATUS_TEXT) as LabelStatus[]).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setLabelStatusFilter(s)}
-                  className={`flex items-center gap-1 ${labelStatusFilter === s ? 'text-gold-dark font-medium' : 'text-charcoal/50'}`}
-                >
-                  {labelStatusFilter === s && <span className="w-1.5 h-1.5 rounded-full bg-gold-dark" aria-hidden="true" />}
-                  {LABEL_STATUS_TEXT[s]}
-                </button>
-              ))}
+              {(Object.keys(LABEL_STATUS_TEXT) as LabelStatus[]).map((s) => {
+                const count = labelStatusCounts[s];
+                const disabled = labelStatusFilter !== s && count === 0;
+                return (
+                  <button
+                    key={s}
+                    onClick={() => setLabelStatusFilter(s)}
+                    disabled={disabled}
+                    className={`flex items-center gap-1 disabled:cursor-not-allowed disabled:opacity-40 ${
+                      labelStatusFilter === s ? 'text-gold-dark font-medium' : 'text-charcoal/50'
+                    }`}
+                  >
+                    {labelStatusFilter === s && <span className="w-1.5 h-1.5 rounded-full bg-gold-dark" aria-hidden="true" />}
+                    {LABEL_STATUS_TEXT[s]} ({count})
+                  </button>
+                );
+              })}
             </div>
           </div>
 
