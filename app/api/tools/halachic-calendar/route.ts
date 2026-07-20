@@ -5,21 +5,22 @@
 // part of the client-refactor into ToolModal).
 import { NextResponse } from 'next/server';
 import { format } from 'date-fns';
+import { getOmerStatus, getRoshChodeshStatus } from '@/lib/calendar-trigger-type';
 
-async function getOmerStatus() {
-  try {
-    const now = new Date();
-    const res = await fetch(
-      `https://www.hebcal.com/hebcal?cfg=json&v=1&year=${now.getFullYear()}&month=${now.getMonth() + 1}&o=on`,
-      { next: { revalidate: 3600 } }
-    );
-    const data = await res.json();
-    const today = format(now, 'yyyy-MM-dd');
-    const omerItem = data.items?.find((i: any) => i.category === 'omer' && i.date?.startsWith(today));
-    return omerItem?.title ?? null;
-  } catch {
-    return null;
-  }
+// Same Eastern-anchoring pattern the Dashboard page uses (app/properties/
+// [id]/dashboard/page.tsx's own local easternDateStr) -- kept local here
+// rather than exported from calendar-trigger-type.ts, matching that file's
+// existing private easternDateParts() and the Dashboard's own precedent of
+// a small local copy per caller rather than a shared cross-file utility.
+function easternDateStr(d: Date): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(d);
+  const map = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+  return `${map.year}-${map.month}-${map.day}`;
 }
 
 async function getNextErevPesach() {
@@ -45,11 +46,16 @@ async function getNextErevPesach() {
 }
 
 export async function GET() {
-  const [omerTitle, erevPesach] = await Promise.all([getOmerStatus(), getNextErevPesach()]);
+  const todayStr = easternDateStr(new Date());
+  const [omerTitle, erevPesach, roshChodeshStatus] = await Promise.all([
+    getOmerStatus(),
+    getNextErevPesach(),
+    getRoshChodeshStatus(todayStr),
+  ]);
 
   const daysUntilPesach = erevPesach
     ? Math.round((new Date(erevPesach.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
 
-  return NextResponse.json({ omerTitle, erevPesach, daysUntilPesach });
+  return NextResponse.json({ omerTitle, erevPesach, daysUntilPesach, roshChodeshStatus });
 }

@@ -22,10 +22,13 @@ const BEDIKAS_TOLAIM_ITEMS = [
   { item: 'Corn on the cob', note: 'Check silk and tip carefully before cooking.' },
 ];
 
+type RoshChodeshStatus = { isToday: boolean; monthName: string; daysUntil: number } | null;
+
 type CalendarData = {
   omerTitle: string | null;
   erevPesach: { title: string; date: string } | null;
   daysUntilPesach: number | null;
+  roshChodeshStatus: RoshChodeshStatus;
 };
 
 export default function HalachicCalendarClient() {
@@ -56,7 +59,12 @@ export default function HalachicCalendarClient() {
 
   if (loading) return <SkeletonList rows={3} />;
 
-  const { omerTitle, erevPesach, daysUntilPesach } = data ?? { omerTitle: null, erevPesach: null, daysUntilPesach: null };
+  const { omerTitle, erevPesach, daysUntilPesach, roshChodeshStatus } = data ?? {
+    omerTitle: null,
+    erevPesach: null,
+    daysUntilPesach: null,
+    roshChodeshStatus: null,
+  };
 
   return (
     <div className="max-w-md mx-auto p-4 space-y-4">
@@ -84,6 +92,21 @@ export default function HalachicCalendarClient() {
           <p className="text-sm text-denim">Tonight/today: {omerTitle}</p>
         ) : (
           <p className="text-sm text-dusk">Not currently within the Omer count.</p>
+        )}
+      </div>
+
+      <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-4">
+        <h2 className="font-display text-lg text-denim mb-1">Rosh Chodesh</h2>
+        {roshChodeshStatus ? (
+          <p className="text-sm text-denim">
+            {roshChodeshStatus.isToday
+              ? `Rosh Chodesh ${roshChodeshStatus.monthName} is today.`
+              : `Rosh Chodesh ${roshChodeshStatus.monthName} in ${roshChodeshStatus.daysUntil} day${
+                  roshChodeshStatus.daysUntil === 1 ? '' : 's'
+                }.`}
+          </p>
+        ) : (
+          <p className="text-sm text-dusk">No Rosh Chodesh in the next 5 days.</p>
         )}
       </div>
 
