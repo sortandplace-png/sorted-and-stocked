@@ -30,6 +30,7 @@ export default function QuickPhotoCaptureClient({ propertyId }: { propertyId: st
   const [capturedPreviewUrl, setCapturedPreviewUrl] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [name, setName] = useState('');
+  const [nameEs, setNameEs] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [suggestions, setSuggestions] = useState<NameSuggestion[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -58,6 +59,7 @@ export default function QuickPhotoCaptureClient({ propertyId }: { propertyId: st
     setCapturedFile(null);
     setCapturedPreviewUrl(null);
     setName('');
+    setNameEs('');
     setQuantity('1');
     setSuggestions([]);
   }
@@ -87,6 +89,10 @@ export default function QuickPhotoCaptureClient({ propertyId }: { propertyId: st
     if (!capturedFile || !name.trim() || submitting) return;
     const qty = Number(quantity);
     if (Number.isNaN(qty) || qty < 0) return;
+    if (!nameEs.trim()) {
+      showToast(t('nameEsRequired'), { variant: 'error' });
+      return;
+    }
     setSubmitting(true);
     try {
       const compressed = await compressImageToBlob(capturedFile);
@@ -106,6 +112,7 @@ export default function QuickPhotoCaptureClient({ propertyId }: { propertyId: st
       const { data, error } = await supabase.rpc('add_scanned_pantry_item', {
         p_property_id: propertyId,
         p_name: name.trim(),
+        p_name_es: nameEs.trim(),
         p_quantity: qty,
         p_photo_url: photoData.publicUrl,
       });
@@ -228,6 +235,18 @@ export default function QuickPhotoCaptureClient({ propertyId }: { propertyId: st
             )}
           </div>
 
+          <div className="mb-3">
+            <label className="block text-xs font-medium text-dusk mb-1">{t('nameEsLabel')}</label>
+            <input
+              type="text"
+              value={nameEs}
+              onChange={(e) => setNameEs(e.target.value)}
+              placeholder={t('nameEsPlaceholder')}
+              disabled={submitting}
+              className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-2xl px-4 py-2.5 bg-card disabled:opacity-50"
+            />
+          </div>
+
           <div className="mb-4">
             <label className="block text-xs font-medium text-dusk mb-1">{t('quantityLabel')}</label>
             <input
@@ -245,7 +264,7 @@ export default function QuickPhotoCaptureClient({ propertyId }: { propertyId: st
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={submitting || !name.trim()}
+            disabled={submitting || !name.trim() || !nameEs.trim()}
             className="w-full py-3 rounded-full bg-denim text-white text-sm font-medium disabled:opacity-40"
           >
             {submitting ? t('uploading') : t('submitButton')}
