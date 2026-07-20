@@ -696,10 +696,13 @@ function ShoppingListSummaryCard({
                 ) : (
                   <span className="w-8 h-8 rounded-lg bg-mist shrink-0" />
                 )}
-                <span className="flex-1 min-w-0">
-                  <span className="block truncate text-sm text-denim">{displayName(item)}</span>
-                  {item.qtyNeeded != null && <span className="block text-xs text-dusk">{item.qtyNeeded}</span>}
-                </span>
+                {/* flex-1 min-w-0 truncate + a shrink-0 qty sibling, matching
+                    LowStockAlertsCard's row exactly (line ~469 above) --
+                    previously qty was a block-level child stacked under the
+                    name instead of a same-line sibling, which is what
+                    actually forced it to a second line. */}
+                <span className="flex-1 min-w-0 truncate text-sm text-denim">{displayName(item)}</span>
+                {item.qtyNeeded != null && <span className="text-xs text-dusk shrink-0">{item.qtyNeeded}</span>}
                 <OrderLink itemName={item.name} sources={item.reorderSources} fallbackLink={item.reorderLink} />
               </li>
             );

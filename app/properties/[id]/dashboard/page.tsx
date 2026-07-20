@@ -189,7 +189,10 @@ async function getDaysUntilPesach(): Promise<number | null> {
       .sort((a, b) => a.date.localeCompare(b.date))
     const erevPesach = candidates[0]
     if (!erevPesach) return null
-    return Math.round((new Date(erevPesach.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    // Both sides are 'yyyy-MM-dd' calendar dates -- parse as UTC-midnight
+    // and diff, rather than against now.getTime(), which pulls in the
+    // current time-of-day and rounds inconsistently through the day.
+    return Math.round((Date.parse(erevPesach.date) - Date.parse(todayStr)) / (1000 * 60 * 60 * 24))
   } catch {
     return null
   }

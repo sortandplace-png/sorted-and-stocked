@@ -4,7 +4,6 @@
 // unchanged from the old halachic-calendar/page.tsx server component as
 // part of the client-refactor into ToolModal).
 import { NextResponse } from 'next/server';
-import { format } from 'date-fns';
 import { getOmerStatus, getRoshChodeshStatus } from '@/lib/calendar-trigger-type';
 
 // Same Eastern-anchoring pattern the Dashboard page uses (app/properties/
@@ -23,19 +22,21 @@ function easternDateStr(d: Date): string {
   return `${map.year}-${map.month}-${map.day}`;
 }
 
-async function getNextErevPesach() {
+// todayStr must already be Eastern-anchored (easternDateStr), not raw
+// server/UTC time -- both the year range and the >= todayStr filter need
+// "today" to mean the same calendar day a person in Eastern time sees.
+async function getNextErevPesach(todayStr: string) {
   try {
-    const now = new Date();
-    const years = [now.getFullYear(), now.getFullYear() + 1];
+    const year = Number(todayStr.slice(0, 4));
+    const years = [year, year + 1];
     const events: { title: string; date: string }[] = [];
-    for (const year of years) {
-      const res = await fetch(`https://www.hebcal.com/hebcal?cfg=json&v=1&year=${year}&maj=on`, {
+    for (const y of years) {
+      const res = await fetch(`https://www.hebcal.com/hebcal?cfg=json&v=1&year=${y}&maj=on`, {
         next: { revalidate: 3600 * 24 },
       });
       const data = await res.json();
       events.push(...(data.items ?? []));
     }
-    const todayStr = format(now, 'yyyy-MM-dd');
     const candidates = events
       .filter((e) => e.title?.includes('Erev Pesach') && e.date >= todayStr)
       .sort((a, b) => a.date.localeCompare(b.date));
@@ -49,12 +50,17 @@ export async function GET() {
   const todayStr = easternDateStr(new Date());
   const [omerTitle, erevPesach, roshChodeshStatus] = await Promise.all([
     getOmerStatus(),
-    getNextErevPesach(),
+    getNextErevPesach(todayStr),
     getRoshChodeshStatus(todayStr),
   ]);
 
+  // Both sides are 'yyyy-MM-dd' calendar dates (todayStr already
+  // Eastern-anchored, erevPesach.date from Hebcal), so parsing each as a
+  // UTC-midnight instant and diffing gives an exact day count -- unlike
+  // diffing against Date.now(), which pulls in the current time-of-day and
+  // rounds inconsistently depending on when in the day it runs.
   const daysUntilPesach = erevPesach
-    ? Math.round((new Date(erevPesach.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    ? Math.round((Date.parse(erevPesach.date) - Date.parse(todayStr)) / (1000 * 60 * 60 * 24))
     : null;
 
   return NextResponse.json({ omerTitle, erevPesach, daysUntilPesach, roshChodeshStatus });
