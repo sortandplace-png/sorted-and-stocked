@@ -11,7 +11,6 @@ import NewRecipeModal from '@/components/NewRecipeModal';
 import { createClient } from '@/lib/supabase/client';
 import { kosherIcon } from '@/lib/icon-maps';
 import { getRecipeIcon } from '@/lib/recipe-icons';
-import SubstitutionCallout from '@/components/SubstitutionCallout';
 import SubstitutionEditor from '@/components/SubstitutionEditor';
 import RecipeHistoryModal from '@/components/RecipeHistoryModal';
 import RecipeFamilyNotes from '@/components/RecipeFamilyNotes';
@@ -986,11 +985,6 @@ export default function RecipeDetailClient({
           </button>
         </div>
       </div>
-
-      <SubstitutionCallout
-        recipeName={recipeName || recipe.name}
-        substitutionNotes={substitutionNotes}
-      />
 
       <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
       <div className="bg-card rounded-xl2 shadow-card p-5 mb-4 print:shadow-none print:border print:border-cardBorder">
