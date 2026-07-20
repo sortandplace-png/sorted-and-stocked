@@ -12,12 +12,12 @@ import {
   removeShoppingItem,
   type ShoppingItemSource,
 } from '@/lib/api/shoppingList';
-import { ExternalLink, Trash2, CheckCircle2, Circle, MessageCircle, Printer, Sparkles, MoreVertical, ShoppingCart, AlertTriangle } from 'lucide-react';
+import { Trash2, CheckCircle2, Circle, MessageCircle, Printer, Sparkles, MoreVertical, ShoppingCart, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import { createClient } from '@/lib/supabase/client';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
-import { getPreferredSource, type ReorderSource } from '@/lib/reorder-sources';
-import ReorderSourcePills from '@/components/ReorderSourcePills';
+import type { ReorderSource } from '@/lib/reorder-sources';
+import OrderLink from '@/components/OrderLink';
 
 type ShoppingListItem = {
   item_id: string;
@@ -560,30 +560,48 @@ export default function ShoppingListViewEnhanced({
           )}
 
           <div className="flex-1 min-w-0">
-            {/* Name, bilingual EN/ES stacked */}
-            <h4 className={`font-medium text-sm ${isChecked ? 'line-through text-dusk' : 'text-denim'}`}>
-              {displayName(item)}
-              {mergedCount > 1 && <span className="text-dusk font-normal"> ×{mergedCount}</span>}
-            </h4>
+            {/* Name + qty + cart on one real row -- was name alone, with
+                qty dropping to its own pill row below it. Cart replaces the
+                old "Reorder" text link that used to sit much further down,
+                past supplier/stock/location -- same OrderLink component
+                used site-wide now (dashboard tiles, Inventory), always
+                clickable (falls back to an Amazon search when there's no
+                configured source, never blank). Delete moves up here too
+                rather than staying on its own bottom row. */}
+            <div className="flex items-center gap-2">
+              <h4 className={`min-w-0 flex-1 truncate font-medium text-sm ${isChecked ? 'line-through text-dusk' : 'text-denim'}`}>
+                {displayName(item)}
+                {mergedCount > 1 && <span className="text-dusk font-normal"> ×{mergedCount}</span>}
+                {qty && (
+                  <span className="ml-1.5 text-xs font-normal text-dusk">
+                    {Math.round(qty.qty * 100) / 100} {qty.unit}
+                  </span>
+                )}
+              </h4>
+              <span className="print:hidden shrink-0">
+                <OrderLink itemName={item.name} sources={item.reorder_sources} />
+              </span>
+              <button
+                onClick={() => deleteDisplayItem(item)}
+                className="print:hidden shrink-0 text-dusk hover:text-rust transition-colors"
+                aria-label={`Remove ${displayName(item)}`}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
             {secondary && (
               <p className={`text-xs italic ${isChecked ? 'line-through text-dusk' : 'text-dusk'}`}>
                 {secondary}
               </p>
             )}
 
-            {/* Quantity + kosher-type pills */}
-            {(qty || (item.kosher_type && kosherStyle)) && (
+            {/* Kosher-type pill on its own, now that qty moved up to the
+                name row. */}
+            {item.kosher_type && kosherStyle && (
               <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                {qty && (
-                  <span className="rounded-full bg-mist text-brass px-2 py-0.5 text-[10px] font-medium">
-                    {Math.round(qty.qty * 100) / 100} {qty.unit}
-                  </span>
-                )}
-                {item.kosher_type && kosherStyle && (
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${kosherStyle}`}>
-                    {item.kosher_type}
-                  </span>
-                )}
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${kosherStyle}`}>
+                  {item.kosher_type}
+                </span>
               </div>
             )}
 
@@ -629,54 +647,24 @@ export default function ShoppingListViewEnhanced({
             )}
 
             {item.is_rich_item ? (
-              <>
-                <div className="flex items-center gap-2 mt-2 text-xs text-dusk flex-wrap">
-                  {item.supplier && (
-                    <span className="bg-mist px-2 py-0.5 rounded-full">{item.supplier}</span>
-                  )}
-                  {item.current_stock !== null && (
-                    <span className="bg-mist px-2 py-0.5 rounded-full">
-                      In stock: {item.current_stock}
-                    </span>
-                  )}
-                  {item.location_name && (
-                    <span className="bg-mist px-2 py-0.5 rounded-full text-dusk">
-                      📍 {item.location_name}
-                    </span>
-                  )}
-                </div>
-                <div className="print:hidden flex items-center gap-2 mt-2 flex-wrap">
-                  {(item.reorder_sources?.length ?? 0) > 1 ? (
-                    <ReorderSourcePills sources={item.reorder_sources!} />
-                  ) : getPreferredSource(item.reorder_sources) ? (
-                    <a
-                      href={getPreferredSource(item.reorder_sources)!.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-brass hover:text-denim transition-colors font-medium"
-                    >
-                      Reorder <ExternalLink className="h-3 w-3" />
-                    </a>
-                  ) : (
-                    <span className="text-xs text-dusk">No reorder link</span>
-                  )}
-                  <button
-                    onClick={() => deleteDisplayItem(item)}
-                    className="ml-auto text-dusk hover:text-rust transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </>
+              <div className="flex items-center gap-2 mt-2 text-xs text-dusk flex-wrap">
+                {item.supplier && (
+                  <span className="bg-mist px-2 py-0.5 rounded-full">{item.supplier}</span>
+                )}
+                {item.current_stock !== null && (
+                  <span className="bg-mist px-2 py-0.5 rounded-full">
+                    In stock: {item.current_stock}
+                  </span>
+                )}
+                {item.location_name && (
+                  <span className="bg-mist px-2 py-0.5 rounded-full text-dusk">
+                    📍 {item.location_name}
+                  </span>
+                )}
+              </div>
             ) : (
-              <div className="print:hidden flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2 mt-2">
                 <span className="text-xs text-dusk">{item.category}</span>
-                <button
-                  onClick={() => deleteDisplayItem(item)}
-                  className="ml-auto text-dusk hover:text-rust transition-colors"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
               </div>
             )}
           </div>

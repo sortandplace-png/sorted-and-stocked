@@ -5,15 +5,16 @@
 // inventory_items). Manager-only: this is a content-correctness worklist,
 // not a staff task.
 //
-// Filters on name_es being null/empty directly, not needs_translation
-// itself: checked live, that column matches name_es-is-null exactly for
-// every current row, but nothing in the schema keeps it that way going
-// forward (no trigger recomputes it -- confirmed via
-// information_schema.triggers, it was a one-time backfill). The add/edit
-// forms now require a Spanish name, so new rows through them are never
-// missing one; this still needs to catch anything that reaches these
-// tables another way (bulk import, a future API path) without silently
-// going stale the way the flag alone would.
+// Filters on name_es being null/empty directly rather than trusting
+// needs_translation. Correction: the flag IS live-maintained --
+// trg_flag_missing_spanish fires BEFORE INSERT OR UPDATE on all 3 tables
+// (confirmed after an earlier claim here that no trigger existed turned
+// out to be a bad search: filtering trigger_name for "%translat%" doesn't
+// match a trigger named trg_flag_missing_spanish). needs_translation would
+// have been a perfectly sufficient filter on its own. Left as name_es
+// anyway -- redundant with a trustworthy trigger, not defending against a
+// real gap, but no reason to add a second query surface back in exchange
+// for zero behavior change.
 'use client';
 
 import { useEffect, useState } from 'react';

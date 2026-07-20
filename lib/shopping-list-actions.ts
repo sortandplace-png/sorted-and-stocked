@@ -172,3 +172,83 @@ export async function addIngredientsToShoppingList(
 
   return { ok: true, count: groups.size };
 }
+
+// SS-audit: Low Stock Alerts checkbox. Racquel: "you should be able to
+// tick something off from either [tile]" -- but confirmed live, low-stock
+// items and pending shopping-list rows are almost entirely disjoint (1 of
+// 193 low-stock items had a matching pending row), so "find the matching
+// row and mark it purchased" alone would silently do nothing for 99% of
+// clicks. Ties into the same real purchase-tracking table the Shopping
+// List tile's own checkbox uses (shopping_list_items.status) rather than
+// touching inventory_items.current_qty directly -- a physical recount
+// belongs on the Inventory page's own +/- stepper, not a single tap here.
+// Reuses the same find-or-create-active-list logic as
+// addIngredientsToShoppingList above, not a second implementation of it.
+export async function markLowStockItemPurchased(
+  supabase: SupabaseClient,
+  propertyId: string,
+  item: { id: string; name: string; category: string | null }
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  let { data: list } = await supabase
+    .from('shopping_lists')
+    .select('id')
+    .eq('property_id', propertyId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!list) {
+    const { data: created, error: createError } = await supabase
+      .from('shopping_lists')
+      .insert({ property_id: propertyId, name: 'Shopping List', status: 'active' })
+      .select('id')
+      .single();
+
+    if (createError?.code === '23505') {
+      const { data: existing } = await supabase
+        .from('shopping_lists')
+        .select('id')
+        .eq('property_id', propertyId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      if (!existing) return { ok: false, error: 'Failed to create shopping list.' };
+      list = existing;
+    } else if (createError || !created) {
+      return { ok: false, error: 'Failed to create shopping list.' };
+    } else {
+      list = created;
+    }
+  }
+
+  const { data: existingPending } = await supabase
+    .from('shopping_list_items')
+    .select('id')
+    .eq('shopping_list_id', list!.id)
+    .eq('inventory_item_id', item.id)
+    .eq('status', 'pending')
+    .limit(1)
+    .maybeSingle();
+
+  if (existingPending) {
+    const { error } = await supabase
+      .from('shopping_list_items')
+      .update({ status: 'purchased' })
+      .eq('id', existingPending.id);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  }
+
+  const { error: insertError } = await supabase.from('shopping_list_items').insert({
+    shopping_list_id: list!.id,
+    name: item.name,
+    category: item.category,
+    qty_needed: 1,
+    status: 'purchased',
+    inventory_item_id: item.id,
+  });
+  if (insertError) return { ok: false, error: insertError.message };
+  return { ok: true };
+}

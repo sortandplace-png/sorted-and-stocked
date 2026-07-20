@@ -12,8 +12,7 @@ import CollapsibleCard from '@/components/CollapsibleCard'
 import TodayCandleLightingRow from '@/components/TodayCandleLightingRow'
 import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
 import { getWidgetPrefs, getTodaysMealPlan, getLowStockAlerts } from '@/lib/dashboard-widgets-data'
-import { getPreferredSource } from '@/lib/reorder-sources'
-import ReorderSourcePills from '@/components/ReorderSourcePills'
+import OrderLink from '@/components/OrderLink'
 import {
   getOmerStatus,
   getIsErevYomTov,
@@ -1178,15 +1177,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                           </div>
                           <div className="text-xs text-dusk mt-1">{t('inventoryCard.qty')} {item.current_qty} {isLow && <span className="text-rust font-medium">{t('inventoryCard.low')}</span>}</div>
                         </div>
-                        {(item.reorder_sources?.length ?? 0) > 1 ? (
-                          <ReorderSourcePills sources={item.reorder_sources} variant="conceptB" />
-                        ) : (
-                          getPreferredSource(item.reorder_sources) && (
-                            <a href={getPreferredSource(item.reorder_sources)!.url} target="_blank" rel="noopener noreferrer" className="text-brass hover:text-denim text-xs font-medium px-2 py-1 bg-mist rounded whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim">
-                              {t('shoppingListCard.order')}
-                            </a>
-                          )
-                        )}
+                        <OrderLink itemName={item.name} sources={item.reorder_sources} />
                       </div>
                     </div>
                   )

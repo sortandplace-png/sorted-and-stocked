@@ -28,8 +28,9 @@ import Pin from '@/components/PinAccent';
 import { useCardCollapse } from '@/lib/useCardCollapse';
 import type { WidgetKey, WidgetPrefs, TodaysMealEntry, LowStockItem } from '@/lib/dashboard-widgets-data';
 import { updateShoppingItemStatus } from '@/lib/api/shoppingList';
-import { getPreferredSource, type ReorderSource } from '@/lib/reorder-sources';
-import ReorderSourcePills from '@/components/ReorderSourcePills';
+import { markLowStockItemPurchased } from '@/lib/shopping-list-actions';
+import type { ReorderSource } from '@/lib/reorder-sources';
+import OrderLink from '@/components/OrderLink';
 
 type PrepAheadReminder = { recipeId: string | null; recipeName: string; planDate: string; prepLeadDays: number | null };
 
@@ -400,29 +401,61 @@ function TodaysMealPlanCard({
 // detached PhotoMosaic block that had no connection to which item was
 // which. No image slot on WidgetCard means the plain (non-image) shell.
 //
-// SS-150: Order button added (genuinely missing before -- the old row had
-// no reorder action at all). No checkbox here, unlike the Shopping List
-// tile below: a low-stock row is a standing inventory record, not a
-// pending purchase, so there's no "purchased" state to toggle. A "check to
-// add to the shopping list" action would be new, undiscussed behavior --
-// this property may already auto-restock low items onto the list
-// (migration 068's toggle) -- so it's left out rather than guessed at.
+// SS-150/audit: checkbox added, matching the Shopping List tile --
+// Racquel: "you should be able to tick something off from either."
+// Confirmed live before wiring this: low-stock items and pending shopping-
+// list rows are almost entirely disjoint (1 of 193 had a matching pending
+// row), so this can't just be "find the row and mark it purchased" --
+// markLowStockItemPurchased() finds-or-creates one, tying into the same
+// real shopping_list_items.status the Shopping List tile's own checkbox
+// uses. Deliberately doesn't touch inventory_items.current_qty -- a real
+// recount belongs on the Inventory page's own +/- stepper, not a tap here.
 function LowStockAlertsCard({ title, propertyId, items }: { title: string; propertyId: string; items: LowStockItem[] }) {
   const t = useTranslations('dashboard.widgets');
-  const tShop = useTranslations('dashboard.shoppingListCard');
   const locale = useLocale();
   const displayName = (item: LowStockItem) => (locale === 'es' && item.nameEs ? item.nameEs : item.name);
-  const preview = items.slice(0, 5);
+  const showToast = useToast();
+  const supabase = createClient();
+  const [rows, setRows] = useState(items);
+  const [pending, setPending] = useState<Set<string>>(new Set());
+  const preview = rows.slice(0, 5);
+
+  async function markPurchased(item: LowStockItem) {
+    if (pending.has(item.id)) return;
+    setPending((p) => new Set(p).add(item.id));
+    const result = await markLowStockItemPurchased(supabase, propertyId, {
+      id: item.id,
+      name: item.name,
+      category: item.category,
+    });
+    setPending((p) => {
+      const next = new Set(p);
+      next.delete(item.id);
+      return next;
+    });
+    if (!result.ok) {
+      showToast(t('saveFailedToast'), { variant: 'error' });
+      return;
+    }
+    setRows((prev) => prev.filter((r) => r.id !== item.id));
+  }
+
   return (
     <WidgetCard cardId="low-stock-alerts" title={title}>
-      {items.length === 0 ? (
+      {rows.length === 0 ? (
         <p className="text-sm text-dusk">{t('allStocked')}</p>
       ) : (
         <ul className="space-y-1.5">
           {preview.map((item) => {
-            const preferred = getPreferredSource(item.reorderSources);
             return (
               <li key={item.id} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  className="rounded border-cardBorder text-brass shrink-0 disabled:opacity-40"
+                  disabled={pending.has(item.id)}
+                  onChange={() => markPurchased(item)}
+                  aria-label={`Mark ${displayName(item)} purchased`}
+                />
                 <Link
                   href={`/properties/${propertyId}/inventory?item=${item.id}`}
                   className="flex items-center gap-2 flex-1 min-w-0 hover:underline"
@@ -438,26 +471,13 @@ function LowStockAlertsCard({ title, propertyId, items }: { title: string; prope
                     {item.currentQty}/{item.minQty}
                   </span>
                 </Link>
-                {(item.reorderSources?.length ?? 0) > 1 ? (
-                  <ReorderSourcePills sources={item.reorderSources!} variant="conceptB" />
-                ) : (
-                  preferred && (
-                    <a
-                      href={preferred.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 text-brass hover:text-denim text-[11px] font-medium px-2 py-1 bg-mist rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
-                    >
-                      {tShop('order')}
-                    </a>
-                  )
-                )}
+                <OrderLink itemName={item.name} sources={item.reorderSources} />
               </li>
             );
           })}
         </ul>
       )}
-      {items.length > preview.length && <p className="text-xs text-dusk mt-1.5">{t('moreCount', { count: items.length - preview.length })}</p>}
+      {rows.length > preview.length && <p className="text-xs text-dusk mt-1.5">{t('moreCount', { count: rows.length - preview.length })}</p>}
       <Link href={`/properties/${propertyId}/inventory`} className="inline-block mt-2.5 text-[11px] font-bold text-brass underline underline-offset-2">
         {t('viewInventory')}
       </Link>
@@ -651,7 +671,6 @@ function ShoppingListSummaryCard({
       ) : (
         <ul className="space-y-1.5">
           {items.map((item) => {
-            const preferred = getPreferredSource(item.reorderSources);
             return (
               <li key={item.id} className="flex items-center gap-2">
                 <input
@@ -671,20 +690,7 @@ function ShoppingListSummaryCard({
                   <span className="block truncate text-sm text-denim">{displayName(item)}</span>
                   {item.qtyNeeded != null && <span className="block text-xs text-dusk">{item.qtyNeeded}</span>}
                 </span>
-                {(item.reorderSources?.length ?? 0) > 1 ? (
-                  <ReorderSourcePills sources={item.reorderSources!} variant="conceptB" />
-                ) : (
-                  preferred && (
-                    <a
-                      href={preferred.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 text-brass hover:text-denim text-[11px] font-medium px-2 py-1 bg-mist rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
-                    >
-                      {tShop('order')}
-                    </a>
-                  )
-                )}
+                <OrderLink itemName={item.name} sources={item.reorderSources} />
               </li>
             );
           })}

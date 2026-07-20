@@ -18,8 +18,8 @@ import LocationPhotoUpload from '@/components/LocationPhotoUpload';
 import DuplicateItemWarning from '@/components/DuplicateItemWarning';
 import InventoryBracha from '@/components/InventoryBracha';
 import ReorderSourcesEditor from '@/components/ReorderSourcesEditor';
-import ReorderSourcePills from '@/components/ReorderSourcePills';
-import { getPreferredSource, type ReorderSource } from '@/lib/reorder-sources';
+import OrderLink from '@/components/OrderLink';
+import type { ReorderSource } from '@/lib/reorder-sources';
 import { FilterPill, FilterPillRow } from '@/components/recipes/FilterPill';
 import { isFoodCategory } from '@/lib/foodCategories';
 import { compressImageToBlob } from '@/lib/compress-image';
@@ -1164,8 +1164,6 @@ export default function InventoryClient({
     const notYetCounted = item.last_counted_at === null;
     const hasThumb = !!item.photo_url && isDirectImageUrl(item.photo_url) && !brokenPhotoIds.has(item.id);
     const isFav = favoriteIds.has(item.id);
-    const preferredSource = getPreferredSource(item.reorder_sources);
-    const hasMultipleSources = (item.reorder_sources?.length ?? 0) > 1;
     return (
       <div
         key={item.id}
@@ -1280,7 +1278,6 @@ export default function InventoryClient({
                   </span>
                 );
               })()}
-            {hasMultipleSources && <ReorderSourcePills sources={item.reorder_sources!} />}
           </div>
         </div>
         <button
@@ -1290,18 +1287,9 @@ export default function InventoryClient({
         >
           {isFav ? '⭐' : '☆'}
         </button>
-        {preferredSource && !hasMultipleSources && (
-          <a
-            href={preferredSource.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="text-xl shrink-0 self-start"
-            aria-label="Open reorder link"
-          >
-            🛒
-          </a>
-        )}
+        <span onClick={(e) => e.stopPropagation()} className="shrink-0 self-start">
+          <OrderLink itemName={item.name} sources={item.reorder_sources} />
+        </span>
       </div>
     );
   }
