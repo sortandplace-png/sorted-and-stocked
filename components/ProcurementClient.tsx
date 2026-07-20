@@ -11,6 +11,15 @@ import { LogoMark } from '@/components/Logo';
 
 type Property = { id: string; name: string };
 
+type LowStockSummaryRow = {
+  property: string;
+  location: string;
+  store: string | null;
+  items_low: number;
+  never_counted: number;
+  total_items: number;
+};
+
 type RawItem = {
   id: string;
   name: string;
@@ -104,9 +113,23 @@ export default function ProcurementClient({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(errorMessage ?? null);
   const [hidePurchased, setHidePurchased] = useState(false);
+  const [lowStockSummary, setLowStockSummary] = useState<LowStockSummaryRow[] | null>(null);
 
   const supabase = createClient();
   const showToast = useToast();
+
+  // "Low in both houses" is not "buy for both" -- the family is in one
+  // property at a time and each house's links point at its own store
+  // (Main -> Kosher West, Country -> Gourmet Glatt). This is a side-by-side
+  // per-property comparison, not a merged list -- v_low_stock_summary is
+  // already grouped by property, one row each, nothing stitched together.
+  useEffect(() => {
+    supabase
+      .from('v_low_stock_summary')
+      .select('*')
+      .then(({ data }) => setLowStockSummary((data as LowStockSummaryRow[]) ?? []));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -207,6 +230,22 @@ export default function ProcurementClient({
             {new Date().toLocaleDateString()}
           </p>
         </div>
+
+        {lowStockSummary && lowStockSummary.length > 0 && (
+          <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-4 mb-4 print:hidden">
+            <h2 className="text-xs font-medium uppercase tracking-wider text-brass mb-3">Low Stock by Property</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {lowStockSummary.map((row) => (
+                <div key={row.property} className="bg-mist rounded-xl2 px-3 py-2.5">
+                  <p className="font-display text-lg text-denim">{row.property}</p>
+                  <p className="text-[11px] text-dusk mb-1.5">{row.location} · {row.store ?? 'No store set'}</p>
+                  <p className="text-2xl font-display text-rust leading-none">{row.items_low}</p>
+                  <p className="text-[11px] text-dusk">of {row.total_items} items low</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-4 print:hidden">
           <h2 className="text-sm font-medium text-charcoal mb-2">Include properties</h2>
