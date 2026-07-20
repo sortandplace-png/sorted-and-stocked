@@ -531,7 +531,8 @@
       "allStocked": "Everything's stocked up.",
       "nothingOnList": "Nothing on the list right now.",
       "moreCount": "+{count} more",
-      "viewInventory": "View inventory →"
+      "viewInventory": "View inventory →",
+      "addItem": "+ Add item"
     },
     "prepAhead": {
       "off": "Prep Ahead Assistant is off.",

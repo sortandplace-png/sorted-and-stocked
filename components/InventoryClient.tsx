@@ -184,15 +184,21 @@ function isExpiringSoon(expirationDate: string | null): boolean {
 // deliberately excludes already-past dates (those are expired, a different
 // concern, not "coming up soon"). Verified against real live data: exactly
 // 73 Main House items match this window as of today.
-// "Not yet counted" (last_counted_at null) is distinct from a real
-// confirmed 0 -- current_qty defaults to 0 at creation and no physical
-// count has happened for most of this property's history, so treating
-// every uncounted item as "critically low" would flag ~all of them as a
-// false positive. Only a real prior count (last_counted_at set, via
-// useShelfAuditor or any other quantity edit -- see the DB trigger that
-// sets it) makes a low reading meaningful.
-function isLowStock(item: Pick<InventoryItem, 'current_qty' | 'min_qty' | 'last_counted_at'>): boolean {
-  return item.last_counted_at !== null && item.current_qty < item.min_qty;
+// Gating on last_counted_at (excluding uncounted items) was a deliberate
+// earlier call to avoid flagging ~everything as false-positive low --
+// reversed per Racquel, July 19: verified against the database that by its
+// own definition (current_qty <= min_qty) 1,128 of 1,129 Main items are
+// genuinely low, virtually none ever physically counted, and this stat
+// should say so rather than hide it -- "Low Stock will effectively list
+// the entire house" until real counts happen is the accepted, known
+// consequence, not a bug to work around. get_low_stock_items() (the RPC
+// behind the Dashboard's own Low Stock tile) never had this gate to begin
+// with -- current_qty < min_qty only -- so this brings the Inventory
+// page's own stat back in line with what the Dashboard already showed,
+// not a new, untested definition. Matches Racquel's stated comparison
+// exactly: current_qty <= min_qty, not the RPC's strict <.
+function isLowStock(item: Pick<InventoryItem, 'current_qty' | 'min_qty'>): boolean {
+  return item.current_qty <= item.min_qty;
 }
 
 function isExpiringWithin30Days(expirationDate: string | null): boolean {

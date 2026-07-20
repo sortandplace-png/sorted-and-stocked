@@ -531,7 +531,8 @@
       "allStocked": "Todo está bien abastecido.",
       "nothingOnList": "Nada en la lista por ahora.",
       "moreCount": "+{count} más",
-      "viewInventory": "Ver inventario →"
+      "viewInventory": "Ver inventario →",
+      "addItem": "+ Agregar artículo"
     },
     "prepAhead": {
       "off": "El Asistente de Preparación Anticipada está desactivado.",

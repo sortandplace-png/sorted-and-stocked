@@ -12,7 +12,6 @@ import CollapsibleCard from '@/components/CollapsibleCard'
 import TodayCandleLightingRow from '@/components/TodayCandleLightingRow'
 import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
 import { getWidgetPrefs, getTodaysMealPlan, getLowStockAlerts } from '@/lib/dashboard-widgets-data'
-import OrderLink from '@/components/OrderLink'
 import {
   getOmerStatus,
   getIsErevYomTov,
@@ -554,7 +553,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const { id: propertyId } = await params
   const t = await getTranslations('dashboard')
   const locale = await getLocale()
-  const [{ meals, inventory, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount, widgetPrefs, todaysMeals, lowStockItems] = await Promise.all([
+  const [{ meals, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount, widgetPrefs, todaysMeals, lowStockItems] = await Promise.all([
     getData(propertyId),
     getHebcal(),
     getHebrewInfo(),
@@ -699,21 +698,6 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   // was used as "X meals planned." A real meal is a distinct
   // plan_date+meal_slot pair -- 7 that week, not 38.
   const distinctMealCount = new Set(meals.map((m: any) => `${m.plan_date}|${m.meal_slot}`)).size
-
-
-  // Dashboard preview only — dedupe by name and drop zero-stock rows (most
-  // inventory rows are still zero pending a physical count pass; showing
-  // them here would make an "at a glance" tile mostly noise) rather than
-  // reflecting every per-location row like the real Inventory page does.
-  const seenNames = new Set<string>()
-  const inventoryPreview = inventory
-    .filter((item: any) => item.current_qty > 0)
-    .filter((item: any) => {
-      if (seenNames.has(item.name)) return false
-      seenNames.add(item.name)
-      return true
-    })
-    .slice(0, 5)
 
   return (
     <div
@@ -1153,48 +1137,12 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             the "At a Glance" Shopping List tile above (DashboardWidgets.tsx)
             now carries that exact same functionality per-item, so this was
             a genuine duplicate once the tile did the job, not just a
-            visual echo. Inventory preview keeps its original narrow card
-            width instead of stretching full-bleed now that it's the only
-            card left in this column. */}
-        <div className="max-w-md space-y-4">
-            <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-6">
-              <h3 className="font-display text-lg font-semibold mb-3 flex items-center gap-2 text-denim">
-                <Package size={19} strokeWidth={1.5} className="text-brass" aria-hidden="true" /> {t('inventoryCard.heading')}
-              </h3>
-              <div className="space-y-2">
-                {inventoryPreview.map((item: any, i) => {
-                  const stockPct = item.current_qty > 0 ? Math.min(100, (item.current_qty / (item.min_qty + 2)) * 100) : 0
-                  const isLow = item.current_qty < item.min_qty
-                  return (
-                    <div key={i} className={`p-3 rounded-lg border ${isLow ? 'bg-rust/10 border-rust/30' : 'bg-linen border-cardBorder'}`}>
-                      <div className="flex items-start gap-3">
-                        {item.photo_url && <img src={item.photo_url} alt="" className="w-10 h-10 object-cover rounded" />}
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-denim truncate">{item.name}</div>
-                          <div className="text-xs text-dusk">{item.category}</div>
-                          <div className="w-full bg-mist h-1 rounded-full mt-1.5 overflow-hidden">
-                            <div className={`${isLow ? 'bg-rust' : 'bg-sage'} h-1 transition-all`} style={{ width: `${stockPct}%` }}></div>
-                          </div>
-                          <div className="text-xs text-dusk mt-1">{t('inventoryCard.qty')} {item.current_qty} {isLow && <span className="text-rust font-medium">{t('inventoryCard.low')}</span>}</div>
-                        </div>
-                        <OrderLink itemName={item.name} sources={item.reorder_sources} />
-                      </div>
-                    </div>
-                  )
-                })}
-                {inventoryPreview.length === 0 && (
-                  <p className="text-sm text-dusk text-center py-4">{t('inventoryCard.empty')}</p>
-                )}
-              </div>
-
-              <Link
-                href={`/properties/${propertyId}/inventory`}
-                className="block w-full mt-4 text-center bg-card border border-cardBorder text-denim py-3 rounded-xl font-medium hover:bg-mist/50 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
-              >
-                {t('inventoryCard.addItem')}
-              </Link>
-            </div>
-          </div>
+            visual echo. The standalone "Inventory Items" card that used to
+            sit here (its own photo/qty-bar/Order rows, separate from the
+            Low Stock Alerts tile above showing the same items the same
+            way) was removed for the same reason, per Racquel July 19 --
+            its one non-duplicate piece, the "+ Add Item" link, moved into
+            the Low Stock Alerts tile itself (DashboardWidgets.tsx). */}
         {/* Mobile bottom nav only shows Home/Recipes/Scan/Shopping/Inventory
             — Tools/Staff/Settings are reachable from here instead of being
             crammed into the bottom bar. Labels now lives inside Inventory and

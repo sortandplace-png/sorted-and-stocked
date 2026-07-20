@@ -478,9 +478,19 @@ function LowStockAlertsCard({ title, propertyId, items }: { title: string; prope
         </ul>
       )}
       {rows.length > preview.length && <p className="text-xs text-dusk mt-1.5">{t('moreCount', { count: rows.length - preview.length })}</p>}
-      <Link href={`/properties/${propertyId}/inventory`} className="inline-block mt-2.5 text-[11px] font-bold text-brass underline underline-offset-2">
-        {t('viewInventory')}
-      </Link>
+      <div className="flex items-center gap-3 mt-2.5">
+        <Link href={`/properties/${propertyId}/inventory`} className="text-[11px] font-bold text-brass underline underline-offset-2">
+          {t('viewInventory')}
+        </Link>
+        {/* Preserved from the standalone "Inventory Items" card this tile
+            replaced (SS-150-style duplicate, removed per Racquel July 19) --
+            the one thing in that card this tile didn't already cover.
+            ?new=1 opens the add form directly, an upgrade over that card's
+            plain /inventory link. */}
+        <Link href={`/properties/${propertyId}/inventory?new=1`} className="text-[11px] font-bold text-brass underline underline-offset-2">
+          {t('addItem')}
+        </Link>
+      </div>
     </WidgetCard>
   );
 }
