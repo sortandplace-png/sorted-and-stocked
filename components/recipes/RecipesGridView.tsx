@@ -41,7 +41,7 @@ import { getRecipeIcon } from '@/lib/recipe-icons';
 import { COURSES, type Course } from '@/lib/course-constants';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { createClient } from '@/lib/supabase/client';
-import { checkRecipeDeletable } from '@/lib/recipe-delete-guard';
+import { checkRecipeDeletable, type RecipeDeleteCheck } from '@/lib/recipe-delete-guard';
 import NewRecipeModal from '@/components/NewRecipeModal';
 import FloatingKitchenTimerButton from '@/components/FloatingKitchenTimerButton';
 import { useToast } from '@/components/Toast';
@@ -274,7 +274,11 @@ export default function RecipesGridView({
   const [cardActionBusy, setCardActionBusy] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [checkingDeleteId, setCheckingDeleteId] = useState<string | null>(null);
-  const [deleteBlockMessage, setDeleteBlockMessage] = useState<string | null>(null);
+  const [deleteCheck, setDeleteCheck] = useState<{ recipeId: string; check: Extract<RecipeDeleteCheck, { deletable: false }> } | null>(null);
+  const [repointing, setRepointing] = useState(false);
+  const [repointBusy, setRepointBusy] = useState(false);
+  const [repointSearch, setRepointSearch] = useState('');
+  const [repointResults, setRepointResults] = useState<{ id: string; name: string; name_es: string | null }[]>([]);
 
   // Pesach Mode (properties.feature_flags.pesach_mode, same flag toggled on
   // the Inventory page) -- when on, default the Occasion filter to Pesach
@@ -403,6 +407,52 @@ export default function RecipesGridView({
     setCardActionBusy(null);
     showToast('Recipe duplicated.', { variant: 'success' });
     router.push(`/properties/${propertyId}/recipes/${newRecipe.id}`);
+  }
+
+  // Same "choose a replacement recipe to repoint them to" flow as the
+  // recipe detail page's own delete guard (RecipeDetailClient.tsx) --
+  // recipe-delete-guard.ts's message already promised this here too, and
+  // this card menu is a second, independent path to the exact same naive
+  // delete Racquel hit tonight, so it needs the same fix, not just the one
+  // she happened to notice on the detail page.
+  useEffect(() => {
+    if (!repointing || !deleteCheck) return;
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from('recipes')
+        .select('id, name, name_es')
+        .eq('property_id', propertyId)
+        .neq('id', deleteCheck.recipeId)
+        .ilike('name', `%${repointSearch.trim()}%`)
+        .order('name')
+        .limit(8);
+      setRepointResults(data ?? []);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [repointing, repointSearch, propertyId, deleteCheck, supabase]);
+
+  async function repointMealPlanEntries(replacementId: string) {
+    if (!deleteCheck) return;
+    setRepointBusy(true);
+    const { error } = await supabase
+      .from('meal_plan_entries')
+      .update({ recipe_id: replacementId })
+      .eq('recipe_id', deleteCheck.recipeId);
+    setRepointBusy(false);
+    if (error) {
+      showToast('Failed to repoint meal plan entries.', { variant: 'error' });
+      return;
+    }
+    showToast('Meal plan entries repointed.', { variant: 'success' });
+    setRepointing(false);
+    setRepointSearch('');
+    const recheck = await checkRecipeDeletable(supabase, deleteCheck.recipeId);
+    if (recheck.deletable) {
+      setConfirmDeleteId(deleteCheck.recipeId);
+      setDeleteCheck(null);
+    } else {
+      setDeleteCheck({ recipeId: deleteCheck.recipeId, check: recheck });
+    }
   }
 
   async function deleteRecipeFromCard(recipeId: string) {
@@ -1124,7 +1174,7 @@ export default function RecipesGridView({
                                         const check = await checkRecipeDeletable(supabase, recipe.id);
                                         setCheckingDeleteId(null);
                                         if (!check.deletable) {
-                                          setDeleteBlockMessage(check.message);
+                                          setDeleteCheck({ recipeId: recipe.id, check });
                                         } else {
                                           setConfirmDeleteId(recipe.id);
                                         }
@@ -1204,22 +1254,71 @@ export default function RecipesGridView({
         />
       )}
 
-      {deleteBlockMessage && (
+      {deleteCheck && (
         <div
           className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4"
-          onClick={() => setDeleteBlockMessage(null)}
+          onClick={() => {
+            setDeleteCheck(null);
+            setRepointing(false);
+            setRepointSearch('');
+          }}
         >
           <div
-            className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-sm mx-auto"
+            className="bg-card w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-sm mx-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="font-display text-xl text-denim mb-1">Can't delete this recipe</h2>
-            <p className="text-sm text-dusk mb-4">{deleteBlockMessage}</p>
+            <p className="text-sm text-dusk mb-4">{deleteCheck.check.message}</p>
+
+            {!repointing && deleteCheck.check.blockers.some((b) => b.table === 'meal_plan_entries') && (
+              <button
+                onClick={() => setRepointing(true)}
+                className="w-full py-2.5 mb-2 rounded-full bg-denim text-white"
+              >
+                Choose a replacement recipe
+              </button>
+            )}
+
+            {repointing && (
+              <div className="mb-3">
+                <input
+                  type="text"
+                  autoFocus
+                  value={repointSearch}
+                  onChange={(e) => setRepointSearch(e.target.value)}
+                  placeholder="Search recipes…"
+                  disabled={repointBusy}
+                  className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-2xl px-4 py-2.5 mb-2 bg-card disabled:opacity-50"
+                />
+                <ul className="max-h-48 overflow-y-auto space-y-1">
+                  {repointResults.map((r) => (
+                    <li key={r.id}>
+                      <button
+                        onClick={() => repointMealPlanEntries(r.id)}
+                        disabled={repointBusy}
+                        className="w-full text-left px-3 py-2 rounded-xl hover:bg-mist transition disabled:opacity-50"
+                      >
+                        <span className="text-sm text-denim">{r.name}</span>
+                        {r.name_es && <span className="text-xs text-dusk ml-1.5">· {r.name_es}</span>}
+                      </button>
+                    </li>
+                  ))}
+                  {repointResults.length === 0 && (
+                    <li className="text-xs text-dusk px-3 py-2">No matching recipes.</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
             <button
-              onClick={() => setDeleteBlockMessage(null)}
+              onClick={() => {
+                setDeleteCheck(null);
+                setRepointing(false);
+                setRepointSearch('');
+              }}
               className="w-full py-2.5 rounded-full bg-linen border border-brass/30 text-denim"
             >
-              Got it
+              {repointing ? 'Cancel' : 'Got it'}
             </button>
           </div>
         </div>
@@ -1231,7 +1330,7 @@ export default function RecipesGridView({
           onClick={() => setConfirmDeleteId(null)}
         >
           <div
-            className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-sm mx-auto"
+            className="bg-card w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-sm mx-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="font-display text-xl text-denim mb-1">Delete this recipe?</h2>

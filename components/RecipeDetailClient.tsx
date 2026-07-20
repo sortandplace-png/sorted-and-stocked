@@ -27,7 +27,7 @@ import { fetchRecipeWithIngredients } from '@/lib/recipe-actions';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { classifyProvenance, PROVENANCE_INFO } from '@/lib/recipe-provenance';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
-import { checkRecipeDeletable } from '@/lib/recipe-delete-guard';
+import { checkRecipeDeletable, type RecipeDeleteCheck } from '@/lib/recipe-delete-guard';
 import { bedikasTolaimIngredients, BEDIKAS_TOLAIM_NOTE } from '@/lib/bedikas-tolaim';
 
 // Confirmed each of these has a real page + component before linking to it
@@ -220,7 +220,11 @@ export default function RecipeDetailClient({
   const [duplicating, setDuplicating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [checkingDelete, setCheckingDelete] = useState(false);
-  const [deleteBlockMessage, setDeleteBlockMessage] = useState<string | null>(null);
+  const [deleteCheck, setDeleteCheck] = useState<RecipeDeleteCheck | null>(null);
+  const [repointing, setRepointing] = useState(false);
+  const [repointBusy, setRepointBusy] = useState(false);
+  const [repointSearch, setRepointSearch] = useState('');
+  const [repointResults, setRepointResults] = useState<{ id: string; name: string; name_es: string | null }[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -250,6 +254,56 @@ export default function RecipeDetailClient({
       router.replace(`/properties/${propertyId}/recipes/${recipeId}`, { scroll: false });
     }
   }, [searchParams, recipe, role, propertyId, recipeId, router]);
+
+  // Delete-block modal's "choose a replacement recipe to repoint them to"
+  // search -- that promise was already written into recipe-delete-guard.ts's
+  // own message text, but nothing in the UI actually delivered it (the old
+  // modal just showed the message with a dismiss button). Confirmed real
+  // this session: Racquel had to manually repoint 9 and 8 meal-plan slots
+  // by hand tonight because this didn't exist. Empty search browses the
+  // property's other recipes alphabetically rather than showing nothing.
+  useEffect(() => {
+    if (!repointing) return;
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from('recipes')
+        .select('id, name, name_es')
+        .eq('property_id', propertyId)
+        .neq('id', recipeId)
+        .ilike('name', `%${repointSearch.trim()}%`)
+        .order('name')
+        .limit(8);
+      setRepointResults(data ?? []);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [repointing, repointSearch, propertyId, recipeId, supabase]);
+
+  async function repointMealPlanEntries(replacementId: string) {
+    setRepointBusy(true);
+    const { error } = await supabase
+      .from('meal_plan_entries')
+      .update({ recipe_id: replacementId })
+      .eq('recipe_id', recipeId);
+    setRepointBusy(false);
+    if (error) {
+      showToast('Failed to repoint meal plan entries.', { variant: 'error' });
+      return;
+    }
+    showToast('Meal plan entries repointed.', { variant: 'success' });
+    setRepointing(false);
+    setRepointSearch('');
+    // Other blockers (favorites/substitutions/shopping-list links) don't
+    // have a repoint concept -- re-check rather than assume this cleared
+    // everything, so the modal can show whatever's still blocking, if
+    // anything, or fall straight through to the real delete confirm.
+    const recheck = await checkRecipeDeletable(supabase, recipeId);
+    if (recheck.deletable) {
+      setDeleteCheck(null);
+      setConfirmingDelete(true);
+    } else {
+      setDeleteCheck(recheck);
+    }
+  }
 
   // "Pairs well with": Racquel's real meal-completion rule, not a generic
   // "different course, same occasion" grab-bag (the old version could and
@@ -666,7 +720,7 @@ export default function RecipeDetailClient({
                         const check = await checkRecipeDeletable(supabase, recipeId);
                         setCheckingDelete(false);
                         if (!check.deletable) {
-                          setDeleteBlockMessage(check.message);
+                          setDeleteCheck(check);
                         } else {
                           setConfirmingDelete(true);
                         }
@@ -684,16 +738,73 @@ export default function RecipeDetailClient({
         </div>
       </div>
 
-      {deleteBlockMessage && (
-        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4" onClick={() => setDeleteBlockMessage(null)}>
+      {deleteCheck && !deleteCheck.deletable && (
+        <div
+          className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4"
+          onClick={() => {
+            setDeleteCheck(null);
+            setRepointing(false);
+            setRepointSearch('');
+          }}
+        >
           <div className="bg-card w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-sm mx-auto" onClick={(e) => e.stopPropagation()}>
             <h2 className="font-display text-xl text-denim mb-1">Can't delete this recipe</h2>
-            <p className="text-sm text-dusk mb-4">{deleteBlockMessage}</p>
+            <p className="text-sm text-dusk mb-4">{deleteCheck.message}</p>
+
+            {/* Repointing only makes sense for meal_plan_entries -- the
+                other blocker types (favorites/substitutions/shopping-list
+                links) have no "replacement" concept, per recipe-delete-
+                guard.ts's own reasoning; those genuinely need removing
+                elsewhere first. */}
+            {!repointing && deleteCheck.blockers.some((b) => b.table === 'meal_plan_entries') && (
+              <button
+                onClick={() => setRepointing(true)}
+                className="w-full py-2.5 mb-2 rounded-full bg-denim text-white"
+              >
+                Choose a replacement recipe
+              </button>
+            )}
+
+            {repointing && (
+              <div className="mb-3">
+                <input
+                  type="text"
+                  autoFocus
+                  value={repointSearch}
+                  onChange={(e) => setRepointSearch(e.target.value)}
+                  placeholder="Search recipes…"
+                  disabled={repointBusy}
+                  className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-2xl px-4 py-2.5 mb-2 bg-card disabled:opacity-50"
+                />
+                <ul className="max-h-48 overflow-y-auto space-y-1">
+                  {repointResults.map((r) => (
+                    <li key={r.id}>
+                      <button
+                        onClick={() => repointMealPlanEntries(r.id)}
+                        disabled={repointBusy}
+                        className="w-full text-left px-3 py-2 rounded-xl hover:bg-mist transition disabled:opacity-50"
+                      >
+                        <span className="text-sm text-denim">{r.name}</span>
+                        {r.name_es && <span className="text-xs text-dusk ml-1.5">· {r.name_es}</span>}
+                      </button>
+                    </li>
+                  ))}
+                  {repointResults.length === 0 && (
+                    <li className="text-xs text-dusk px-3 py-2">No matching recipes.</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
             <button
-              onClick={() => setDeleteBlockMessage(null)}
+              onClick={() => {
+                setDeleteCheck(null);
+                setRepointing(false);
+                setRepointSearch('');
+              }}
               className="w-full py-2.5 rounded-full bg-linen border border-brass/30 text-denim"
             >
-              Got it
+              {repointing ? 'Cancel' : 'Got it'}
             </button>
           </div>
         </div>
