@@ -47,7 +47,18 @@ export default function CameraCapture({
           return;
         }
         streamRef.current = stream;
-        if (videoRef.current) videoRef.current.srcObject = stream;
+        // videoRef.current is guaranteed non-null here now that <video> is
+        // always mounted (see render below) -- previously it only rendered
+        // once status flipped to 'ready', which happens on the *next*
+        // line, one render after this assignment. The `if (videoRef.current)`
+        // guard let that race fail silently: srcObject was never set on
+        // anything, the element mounted a moment later with no source, and
+        // the result was a black screen with no error anywhere -- reported
+        // live twice, invisible to typecheck both times.
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => {});
+        }
         setStatus('ready');
       })
       .catch((err) => {
@@ -96,10 +107,19 @@ export default function CameraCapture({
       </div>
 
       <div className="flex-1 flex items-center justify-center min-h-0">
-        {status === 'ready' && (
-          // eslint-disable-next-line jsx-a11y/media-has-caption
-          <video ref={videoRef} autoPlay playsInline muted className="max-h-full max-w-full" />
-        )}
+        {/* Always mounted, regardless of status -- the getUserMedia
+            callback needs a real element to attach srcObject to the
+            instant the stream resolves, not one that only appears after
+            status flips to 'ready' (see the effect above). Hidden rather
+            than unmounted while not ready, so the ref never goes stale. */}
+        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className={`max-h-full max-w-full ${status === 'ready' ? '' : 'hidden'}`}
+        />
         {status === 'starting' && <p className="text-white/70 text-sm">Starting camera…</p>}
         {status === 'denied' && (
           <div className="text-center px-6">

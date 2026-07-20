@@ -50,6 +50,11 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
     key: 'staff',
     labelKey: 'staff',
     items: [
+      // My Day first -- audit finding: this is meant to be "the staff
+      // member's home" but had zero entry points anywhere in the app
+      // (confirmed: no reference in this file or MobileBottomNav.tsx
+      // before this). Not managerOnly, same reasoning as Task Center below.
+      { segment: 'my-day', labelKey: 'myDay' },
       // Staff Task Center stays reachable by every role -- no page-level
       // gate, staff need real access to their own task board.
       { segment: 'tools/tasks', labelKey: 'staffTasks' },

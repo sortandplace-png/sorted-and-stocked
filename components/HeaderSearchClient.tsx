@@ -90,11 +90,13 @@ export default function HeaderSearchClient({ propertyId }: { propertyId: string 
           .eq('recipe_property_links.property_id', propertyId)
           .ilike('name', like)
           .limit(5),
+        // Synonym-aware (search_inventory_items(), reads item_name_synonyms)
+        // -- was a plain ilike('name', ...) here, so "garbage" found nothing
+        // against an item literally named "Trash Bags." Same RPC
+        // InventoryClient.tsx's own in-page filter already uses; this was
+        // the one search entry point in the app that never called it.
         supabase
-          .from('inventory_items')
-          .select('id, name, location_id')
-          .eq('property_id', propertyId)
-          .ilike('name', like)
+          .rpc('search_inventory_items', { p_property_id: propertyId, p_query: q.trim() })
           .limit(5),
         supabase.from('locations').select('id, name').eq('property_id', propertyId).ilike('name', like).limit(5),
         supabase
@@ -125,7 +127,7 @@ export default function HeaderSearchClient({ propertyId }: { propertyId: string 
           secondary: null,
           href: `/properties/${propertyId}/recipes/${r.id}`,
         })),
-        ...(inventory.data ?? []).map((i) => ({
+        ...(inventory.data ?? []).map((i: { id: string; name: string }) => ({
           kind: 'inventory' as const,
           id: i.id,
           primary: i.name,

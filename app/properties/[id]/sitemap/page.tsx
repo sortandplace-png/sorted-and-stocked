@@ -74,6 +74,8 @@ function buildSections(propertyId: string): Section[] {
     {
       label: 'Staff',
       entries: [
+        { href: p('/my-day'), label: 'My Day', subtitle: "Staff member's home", icon: LayoutDashboard },
+        { href: p('/tools/tasks'), label: 'Staff Task Center', subtitle: 'Assigned tasks', icon: ClipboardList },
         { href: p('/staff'), label: 'Staff', subtitle: 'Team & roles', icon: Users },
         { href: p('/shift-handover'), label: 'Shift Handover', subtitle: 'Pass the baton', icon: RotateCcw },
         { href: p('/tools/reset-checklist'), label: 'Reset for Next', subtitle: 'Post-use checklist', icon: RotateCcw },
@@ -111,7 +113,6 @@ function buildSections(propertyId: string): Section[] {
       label: 'Tools — Household',
       entries: [
         { href: p('/tools/knowledge-base'), label: 'Household Knowledge Base', subtitle: 'House know-how', icon: BookMarked },
-        { href: p('/tools/tasks'), label: 'Staff Task Center', subtitle: 'Assigned tasks', icon: ClipboardList },
         { href: p('/tools/contacts'), label: 'Contacts & Vendors', subtitle: 'Who to call', icon: Contact },
         { href: p('/tools/takeout-directory'), label: 'Local Takeout Directory', subtitle: 'Nearby options', icon: UtensilsCrossed },
         { href: p('/tools/memory-timeline'), label: 'Home Memory Timeline', subtitle: 'House history', icon: History },
