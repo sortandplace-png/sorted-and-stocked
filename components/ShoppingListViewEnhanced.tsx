@@ -829,9 +829,8 @@ export default function ShoppingListViewEnhanced({
           return (
             <div
               key={group.title}
-              className="relative bg-card rounded-2xl border border-cardBorder shadow-card p-4"
+              className="bg-card rounded-2xl border border-cardBorder shadow-card p-4"
             >
-              <Pin size="sm" />
               <button
                 onClick={() => toggleGroup(group.title)}
                 className="w-full flex items-center gap-2 mb-3 text-left"
@@ -906,8 +905,7 @@ export default function ShoppingListViewEnhanced({
           items at reduced opacity with strikethrough text (renderItemCard's
           isChecked styling), unchanged here. */}
       {completedItems.length > 0 && (
-        <div className="relative print:hidden bg-card rounded-2xl border border-cardBorder shadow-card p-4">
-          <Pin size="sm" />
+        <div className="print:hidden bg-card rounded-2xl border border-cardBorder shadow-card p-4">
           <button
             onClick={() => setCompletedExpanded((v) => !v)}
             className="w-full flex items-center gap-2 text-left"

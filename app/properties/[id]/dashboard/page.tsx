@@ -1077,20 +1077,17 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             Recipes order, not the original Total Inventory / Active
             Recipes / Meals Planned order). */}
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="relative rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
-            <Pin size="sm" />
+          <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
             <Package size={18} strokeWidth={1.5} className="text-brass mx-auto mb-1" aria-hidden="true" />
             <div className="text-2xl font-display text-denim">{inventoryCount.toLocaleString('en-US')}</div>
             <div className="text-xs text-dusk">{t('stats.totalInventory')}</div>
           </div>
-          <div className="relative rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
-            <Pin size="sm" />
+          <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
             <Calendar size={18} strokeWidth={1.5} className="text-brass mx-auto mb-1" aria-hidden="true" />
             <div className="text-2xl font-display text-denim">{distinctMealCount}</div>
             <div className="text-xs text-dusk">{t('stats.mealsPlanned')}</div>
           </div>
-          <div className="relative rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
-            <Pin size="sm" />
+          <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
             <BookOpen size={18} strokeWidth={1.5} className="text-brass mx-auto mb-1" aria-hidden="true" />
             <div className="text-2xl font-display text-denim">{recipeCount}</div>
             <div className="text-xs text-dusk">{t('stats.activeRecipes')}</div>
