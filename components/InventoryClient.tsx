@@ -1445,8 +1445,8 @@ export default function InventoryClient({
           forcing the full dashboard tile height; these are compact
           stat/filter toggles, not content cards. */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="rounded-2xl p-3 bg-card border border-cardBorder text-center">
-          <Package className="w-4 h-4 text-brass mx-auto mb-1" strokeWidth={1.75} aria-hidden="true" />
+        <div className="rounded-xl2 p-4 bg-card border border-cardBorder shadow-card">
+          <Package className="w-4 h-4 text-brass mb-1.5" strokeWidth={1.75} aria-hidden="true" />
           <div className="text-xl font-display text-denim">{totalItemsCount}</div>
           <div className="text-[11px] text-dusk">Total Items</div>
         </div>
@@ -1454,11 +1454,11 @@ export default function InventoryClient({
           type="button"
           onClick={() => setBelowParOnly((v) => !v)}
           aria-pressed={belowParOnly}
-          className={`rounded-2xl p-3 bg-card border text-center transition-colors ${
+          className={`text-left rounded-xl2 p-4 bg-card border shadow-card transition-colors ${
             belowParOnly ? 'border-rust' : 'border-cardBorder'
           }`}
         >
-          <AlertTriangle className={`w-4 h-4 mx-auto mb-1 ${lowStockCount > 0 ? 'text-rust' : 'text-brass'}`} strokeWidth={1.75} aria-hidden="true" />
+          <AlertTriangle className={`w-4 h-4 mb-1.5 ${lowStockCount > 0 ? 'text-rust' : 'text-brass'}`} strokeWidth={1.75} aria-hidden="true" />
           <div className={`text-xl font-display ${lowStockCount > 0 ? 'text-rust' : 'text-denim'}`}>
             {lowStockCount}
           </div>
@@ -1468,11 +1468,11 @@ export default function InventoryClient({
           type="button"
           onClick={() => setExpiringSoon30Only((v) => !v)}
           aria-pressed={expiringSoon30Only}
-          className={`rounded-2xl p-3 bg-card border text-center transition-colors ${
+          className={`text-left rounded-xl2 p-4 bg-card border shadow-card transition-colors ${
             expiringSoon30Only ? 'border-brass' : 'border-cardBorder'
           }`}
         >
-          <Clock className="w-4 h-4 mx-auto mb-1 text-brass" strokeWidth={1.75} aria-hidden="true" />
+          <Clock className="w-4 h-4 mb-1.5 text-brass" strokeWidth={1.75} aria-hidden="true" />
           <div className={`text-xl font-display ${expiringSoon30Count > 0 ? 'text-brass' : 'text-denim'}`}>
             {expiringSoon30Count}
           </div>
@@ -1522,39 +1522,74 @@ export default function InventoryClient({
         </button>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        <input
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search items…"
-          className="flex-1 min-w-[140px] border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-full px-4 py-2 bg-card text-sm"
-        />
-        {/* Browse by Room keeps its exact original filter UI (dropdown +
-            toggle button) untouched -- it's a genuinely different, spatial
-            view. Only All Items gets the new pill treatment below. */}
-        {viewMode === 'rooms' && (
-          <>
-            <select
-              value={categoryFilter ?? ''}
-              onChange={(e) => setCategoryFilter(e.target.value || null)}
-              className="border border-cardBorder rounded-full px-3 py-2 bg-card text-sm"
-            >
-              <option value="">All categories</option>
-              {categorySuggestions.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+      {/* Consolidated Concept B control bar (2026-07-21): search + category +
+          Below Par toggle (row 1) and floor tabs (row 2, moved up here from
+          where they used to render deep inside the room-grid view, same
+          conditions preserved) in one bento container instead of scattered,
+          differently-styled fragments. "Low stock first" stays where it was
+          -- it's a sort toggle, not a floor tab, and doesn't fit the row 2
+          segmented-strip treatment the spec describes for floor tabs
+          specifically. All Items mode's own FilterPillRow section below is
+          untouched -- not what this consolidation was about. */}
+      <div className="mb-4 bg-card border border-cardBorder rounded-xl2 shadow-card p-4 space-y-3">
+        <div className="flex flex-wrap gap-2">
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search items…"
+            className="flex-1 min-w-[140px] border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-full px-4 py-2 bg-mist text-sm text-denim"
+          />
+          {/* Browse by Room keeps its exact original filter UI (dropdown +
+              toggle button) untouched -- it's a genuinely different, spatial
+              view. Only All Items gets the new pill treatment below. */}
+          {viewMode === 'rooms' && (
+            <>
+              <select
+                value={categoryFilter ?? ''}
+                onChange={(e) => setCategoryFilter(e.target.value || null)}
+                className="border border-cardBorder rounded-full px-3 py-2 bg-mist text-sm text-denim"
+              >
+                <option value="">All categories</option>
+                {categorySuggestions.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => setBelowParOnly((v) => !v)}
+                className={`text-sm px-4 py-2 rounded-full border shrink-0 ${
+                  belowParOnly ? 'bg-rust text-white border-rust' : 'border-cardBorder text-denim bg-mist'
+                }`}
+              >
+                Below par only
+              </button>
+            </>
+          )}
+        </div>
+
+        {viewMode === 'rooms' && !locationFilter && !hasActiveFilter && roomSummaries.length > 0 && allFloorNames.length > 1 && (
+          <div className="flex items-center gap-1 bg-mist rounded-full p-1 flex-wrap">
             <button
-              onClick={() => setBelowParOnly((v) => !v)}
-              className={`text-sm px-4 py-2 rounded-full border shrink-0 ${
-                belowParOnly ? 'bg-rust text-white border-rust' : 'border-cardBorder text-denim'
+              onClick={() => setFloorFilter(null)}
+              className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+                !floorFilter ? 'bg-denim text-white' : 'text-dusk'
               }`}
             >
-              Below par only
+              All floors
             </button>
-          </>
+            {allFloorNames.map((floor) => (
+              <button
+                key={floor}
+                onClick={() => setFloorFilter(floor)}
+                className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+                  floorFilter === floor ? 'bg-denim text-white' : 'text-dusk'
+                }`}
+              >
+                {floor}
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
@@ -1661,30 +1696,6 @@ export default function InventoryClient({
               >
                 Low stock first
               </button>
-              {allFloorNames.length > 1 && (
-                <>
-                  <span className="w-px h-5 bg-cardBorder" aria-hidden="true" />
-                  <button
-                    onClick={() => setFloorFilter(null)}
-                    className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-                      !floorFilter ? 'bg-denim text-white' : 'bg-card border border-cardBorder text-dusk'
-                    }`}
-                  >
-                    All floors
-                  </button>
-                  {allFloorNames.map((floor) => (
-                    <button
-                      key={floor}
-                      onClick={() => setFloorFilter(floor)}
-                      className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-                        floorFilter === floor ? 'bg-denim text-white' : 'bg-card border border-cardBorder text-dusk'
-                      }`}
-                    >
-                      {floor}
-                    </button>
-                  ))}
-                </>
-              )}
             </div>
           )}
           {roomGroupEntries.map(([groupName, summaries]) => (
@@ -1700,47 +1711,34 @@ export default function InventoryClient({
                     <button
                       key={location}
                       onClick={() => setLocationFilter(loc ? loc.id : UNASSIGNED)}
-                      className="relative text-left bg-card rounded-2xl shadow-card overflow-hidden hover:bg-mist transition-colors"
+                      className="relative text-left bg-card border border-cardBorder rounded-xl2 shadow-card hover:shadow-cardHover overflow-hidden transition-shadow"
                     >
                       {loc?.photo_url && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={loc.photo_url} alt="" className="w-full h-20 object-cover" />
                       )}
-                      <div className="p-4">
+                      <div className="p-5">
                         <Icon className="w-5 h-5 text-brass mb-1.5" strokeWidth={1.75} />
-                        <p className="font-display text-lg text-denim truncate">{location}</p>
+                        <p className="font-display font-semibold text-lg text-denim truncate">{location}</p>
                         <p className="text-xs text-dusk mt-1">
                           {count} item{count === 1 ? '' : 's'}
                         </p>
                         {lowCount > 0 && (
-                          <span className="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-white bg-rust px-2.5 py-1 rounded-full">
+                          <span className="inline-flex items-center gap-1 mt-2 text-xs font-semibold bg-[#FDF2F2] border border-[#F8C4C4] text-[#9B2C2C] px-2.5 py-1 rounded-full">
                             <AlertTriangle className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
                             {lowCount} low
                           </span>
                         )}
                       </div>
-                      {loc && canManage(role) && !loc.photo_url && (
+                      {loc && canManage(role) && (
                         <span
                           onClick={(e) => {
                             e.stopPropagation();
                             setPhotoUploadLocation(loc);
                           }}
-                          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-card/90 shadow-sm flex items-center justify-center text-dusk hover:text-denim"
+                          className="absolute top-2 right-2 p-1.5 rounded-lg bg-card/90 text-dusk hover:bg-mist hover:text-denim transition-colors"
                           role="button"
-                          aria-label={`Add photo of ${location}`}
-                        >
-                          <Camera className="w-3.5 h-3.5" strokeWidth={1.75} />
-                        </span>
-                      )}
-                      {loc && canManage(role) && loc.photo_url && (
-                        <span
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPhotoUploadLocation(loc);
-                          }}
-                          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-card/70 flex items-center justify-center text-dusk hover:text-denim hover:bg-card/90 transition-colors"
-                          role="button"
-                          aria-label={`Replace photo of ${location}`}
+                          aria-label={loc.photo_url ? `Replace photo of ${location}` : `Add photo of ${location}`}
                         >
                           <Camera className="w-3.5 h-3.5" strokeWidth={1.75} />
                         </span>
