@@ -7,31 +7,15 @@
 // sign-in, confirmed by reading its actual content before wiring anything
 // to it, per the original ask.
 //
-// 2026-07-21: root used to hard-redirect to /properties (see middleware.ts's
-// PUBLIC_PATHS, which had to be updated in the same change for this page to
-// actually be reachable by a signed-out visitor -- see that file's comment
-// for why the root path specifically needs an exact-match, not startsWith,
-// check).
-//
-// Host-based branching (added same day, before this ever shipped): this
-// page must NOT render on app.sortandplace.com -- that hostname is the real
-// app, once the subdomain split is live, and needs the old redirect-to-
-// /properties behavior back. Checked via the Host header rather than
-// NEXT_PUBLIC_SITE_URL or similar, since the same deployment serves both
-// hostnames. Deliberately an ALLOW-list of exactly one hostname (app.*)
-// that redirects, with everything else (www, bare apex, localhost, Vercel
-// preview URLs) falling through to marketing -- not a check for the bare
-// apex specifically, which would never fire for a real visitor (apex 308s
-// to www at the DNS/hosting layer, outside this repo, before Next.js ever
-// sees the request).
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+// 2026-07-21: root used to hard-redirect to /properties (see the prior
+// version's own comment, and middleware.ts's PUBLIC_PATHS, which had to be
+// updated in the same change for this page to actually be reachable by a
+// signed-out visitor -- see that file's comment for why the root path
+// specifically needs an exact-match, not startsWith, check).
 import type { Metadata } from 'next';
 import Pin from '@/components/PinAccent';
 import ConsultationForm from '@/components/ConsultationForm';
 import { ClipboardList, Users, Package } from 'lucide-react';
-
-const APP_HOSTNAME = 'app.sortandplace.com';
 
 export const metadata: Metadata = {
   title: 'Sort & Place | Professional Home Organization & Household Management',
@@ -64,13 +48,7 @@ const SERVICES = [
   },
 ];
 
-export default async function RootMarketingPage() {
-  const headersList = await headers();
-  const hostname = (headersList.get('host') ?? '').split(':')[0].toLowerCase();
-  if (hostname === APP_HOSTNAME) {
-    redirect('/properties');
-  }
-
+export default function RootMarketingPage() {
   return (
     <div className="bg-mist min-h-screen font-interDisplay">
       {/* Contact bar */}
