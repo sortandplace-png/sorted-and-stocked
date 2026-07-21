@@ -9,6 +9,7 @@ import { compressImageToDataUrl } from '@/lib/compress-image';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import CameraCapture from '@/components/CameraCapture';
+import { Camera, Image as ImageIcon, Mic, Square, X } from 'lucide-react';
 
 type Handover = {
   id: string;
@@ -299,7 +300,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
           value={noteText}
           onChange={(e) => setNoteText(e.target.value)}
           placeholder="e.g. Dinner prep is staged in the fridge, just needs reheating…"
-          rows={3}
+          rows={5}
           className="w-full border border-brass/30 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-4 py-3 bg-mist text-sm text-denim"
         />
 
@@ -311,10 +312,10 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
                 <img src={url} alt="" className="w-full h-20 rounded-lg object-cover" />
                 <button
                   onClick={() => removePhoto(i)}
-                  className="absolute top-1 right-1 bg-denim/70 text-white text-xs rounded-full h-5 w-5"
+                  className="absolute top-1 right-1 bg-denim/70 text-white rounded-full h-5 w-5 flex items-center justify-center"
                   aria-label="Remove photo"
                 >
-                  ✕
+                  <X className="h-3 w-3" />
                 </button>
               </div>
             ))}
@@ -330,11 +331,12 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
           <button
             type="button"
             onClick={() => setShowCamera(true)}
-            className="flex-1 text-center py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium"
           >
-            📷 {photoDataUrls.length > 0 ? `+ (${photoDataUrls.length})` : 'Photo'}
+            <Camera className="h-4 w-4" />
+            {photoDataUrls.length > 0 ? `+ (${photoDataUrls.length})` : 'Photo'}
           </button>
-          <label className="flex-1 text-center py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium cursor-pointer">
+          <label className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium cursor-pointer">
             <input
               ref={galleryInputRef}
               type="file"
@@ -343,22 +345,25 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
               onChange={handleGalleryFiles}
               className="hidden"
             />
-            🖼️ Library
+            <ImageIcon className="h-4 w-4" />
+            Library
           </label>
 
           {!recording ? (
             <button
               onClick={startRecording}
-              className="flex-1 py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium"
             >
-              🎙️ {audioDataUrl ? 'Re-record' : 'Record'}
+              <Mic className="h-4 w-4" />
+              {audioDataUrl ? 'Re-record' : 'Record'}
             </button>
           ) : (
             <button
               onClick={stopRecording}
-              className="flex-1 py-2 rounded-full bg-rust text-white text-sm font-medium animate-pulse"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full bg-rust text-white text-sm font-medium animate-pulse"
             >
-              ⏹ Stop ({MAX_RECORDING_SECONDS - recordSeconds}s left)
+              <Square className="h-4 w-4" fill="currentColor" />
+              Stop ({MAX_RECORDING_SECONDS - recordSeconds}s left)
             </button>
           )}
         </div>

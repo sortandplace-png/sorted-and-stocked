@@ -691,8 +691,18 @@ export default function ShoppingListViewEnhanced({
     <div className="space-y-4">
       <style>{`@media print { .print\\:hidden { display: none !important; } }`}</style>
 
-      {/* More options */}
-      <div className="print:hidden relative flex items-center justify-end">
+      {/* Share promoted out to the toolbar itself (SS-148 follow-up) --
+          previously only reachable via More options, two taps deep. Kept
+          out of the dropdown below entirely now that it lives here, rather
+          than leaving two paths to the same action. */}
+      <div className="print:hidden relative flex items-center justify-end gap-1">
+        <button
+          onClick={shareWhatsApp}
+          className="flex items-center gap-1.5 text-sm font-medium text-denim hover:text-brass px-2 py-1 rounded-full transition-colors"
+        >
+          <WhatsAppIcon size={16} />
+          Share
+        </button>
         <button
           onClick={() => setShowMoreMenu((v) => !v)}
           aria-label="More options"
@@ -750,16 +760,7 @@ export default function ShoppingListViewEnhanced({
                 ))}
               </div>
             </div>
-            <div className="border-t border-cardBorder pt-3 flex items-center gap-4">
-              <button
-                onClick={() => {
-                  shareWhatsApp();
-                  setShowMoreMenu(false);
-                }}
-                className="flex items-center gap-1.5 text-sm text-dusk hover:text-denim"
-              >
-                <WhatsAppIcon size={16} /> Share
-              </button>
+            <div className="border-t border-cardBorder pt-3">
               <button
                 onClick={() => {
                   window.print();
