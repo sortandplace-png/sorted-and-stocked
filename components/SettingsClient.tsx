@@ -8,6 +8,7 @@ import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import { canManage, type PropertyRole } from '@/components/PropertyRoleContext';
 import { SITE_URL } from '@/lib/site-url';
+import SquarePaymentCard from '@/components/billing/SquarePaymentCard';
 
 type SignupCode = {
   id: string;
@@ -347,64 +348,18 @@ export default function SettingsClient({
 
       {canManage(role) && !loadingBilling && (
         <section className="space-y-3">
-          <h2 className="font-display text-lg text-charcoal">Billing</h2>
-          <div className="bg-white rounded-2xl border border-gold-light/40 p-4 space-y-3">
-            <div>
-              <label className="text-xs font-medium text-charcoal/60 mb-1 block">Square payment link</label>
-              <input
-                type="url"
-                value={squarePaymentLink}
-                onChange={(e) => setSquarePaymentLink(e.target.value)}
-                placeholder="https://square.link/…"
-                className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-white text-sm"
-              />
-              <p className="text-xs text-charcoal/50 mt-1">
-                Create this in your own Square Dashboard, then paste it here — nothing is generated automatically.
-              </p>
-            </div>
-            <button
-              onClick={saveSquareLink}
-              disabled={savingSquareLink}
-              className="w-full py-2 rounded-full bg-charcoal text-cream text-sm font-medium disabled:opacity-40"
-            >
-              {savingSquareLink ? 'Saving…' : 'Save link'}
-            </button>
-
-            {squarePaymentLink.trim() && (
-              <div className="pt-3 border-t border-gold-light/30 space-y-2">
-                {lastSentAt && (
-                  <p className="text-xs text-charcoal/50">
-                    Last sent via {lastSentVia} on {new Date(lastSentAt).toLocaleDateString()}.
-                  </p>
-                )}
-                <div className="flex rounded-full bg-gold-light/20 p-1">
-                  <button
-                    onClick={() => setSendChannel('email')}
-                    className={`flex-1 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                      sendChannel === 'email' ? 'bg-white text-charcoal shadow-sm' : 'text-charcoal/50'
-                    }`}
-                  >
-                    Email
-                  </button>
-                  <button
-                    onClick={() => setSendChannel('sms')}
-                    className={`flex-1 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                      sendChannel === 'sms' ? 'bg-white text-charcoal shadow-sm' : 'text-charcoal/50'
-                    }`}
-                  >
-                    Text
-                  </button>
-                </div>
-                <button
-                  onClick={sendPaymentLink}
-                  disabled={sendingPaymentLink}
-                  className="w-full py-2 rounded-full bg-gold-dark text-white text-sm font-medium disabled:opacity-40"
-                >
-                  {sendingPaymentLink ? 'Sending…' : `Send payment link via ${sendChannel === 'email' ? 'email' : 'text'}`}
-                </button>
-              </div>
-            )}
-          </div>
+          <SquarePaymentCard
+            squarePaymentLink={squarePaymentLink}
+            onLinkChange={setSquarePaymentLink}
+            savingLink={savingSquareLink}
+            onSaveLink={saveSquareLink}
+            lastSentAt={lastSentAt}
+            lastSentVia={lastSentVia}
+            sendChannel={sendChannel}
+            onSendChannelChange={setSendChannel}
+            sendingPaymentLink={sendingPaymentLink}
+            onSendPaymentLink={sendPaymentLink}
+          />
         </section>
       )}
 
