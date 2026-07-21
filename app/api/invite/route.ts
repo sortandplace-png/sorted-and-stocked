@@ -20,20 +20,26 @@ async function sendInviteEmail(opts: {
     return { sent: false, reason: 'RESEND_API_KEY not configured' as const };
   }
 
-  const roleLabel = opts.role === 'manager' ? 'manager / gerente' : 'staff / personal';
+  // Two separate label strings, not one combined "staff / personal" --
+  // that combined string was previously reused verbatim in BOTH the
+  // English and Spanish lines, so each line showed both languages at
+  // once instead of just its own.
+  const roleLabelEn = opts.role === 'manager' ? 'manager' : 'staff';
+  const roleLabelEs = opts.role === 'manager' ? 'gerente' : 'personal';
   const html = emailShell(
     'You’ve been invited / Has sido invitado',
     `
     <p style="color:#2B2B2B;font-size:15px;">
       ${escapeHtml(opts.inviterName)} invited you to join <strong>${escapeHtml(opts.propertyName)}</strong>
-      on Sorted &amp; Stocked as <strong>${roleLabel}</strong>.<br/>
+      on Sorted &amp; Stocked as <strong>${roleLabelEn}</strong>.<br/>
       <em>${escapeHtml(opts.inviterName)} te invitó a unirte a <strong>${escapeHtml(
       opts.propertyName
-    )}</strong> en Sorted &amp; Stocked como <strong>${roleLabel}</strong>.</em>
+    )}</strong> en Sorted &amp; Stocked como <strong>${roleLabelEs}</strong>.</em>
     </p>
     <p style="margin:24px 0;">
-      <a href="${opts.actionLink}" style="background:#8A6E42;color:#FAF7F2;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:600;">
-        Accept &amp; set up account / Aceptar y configurar cuenta
+      <a href="${opts.actionLink}" style="display:inline-block;background:#8A6E42;color:#FAF7F2;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:600;text-align:center;">
+        <span style="display:block;">Accept &amp; set up account</span>
+        <span style="display:block;font-size:13px;font-weight:500;opacity:.9;">Aceptar y configurar cuenta</span>
       </a>
     </p>
     <p style="color:#2B2B2B99;font-size:12px;">
