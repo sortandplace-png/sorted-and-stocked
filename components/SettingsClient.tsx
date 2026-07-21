@@ -9,6 +9,7 @@ import { SkeletonList } from '@/components/Skeleton';
 import { canManage, type PropertyRole } from '@/components/PropertyRoleContext';
 import { SITE_URL } from '@/lib/site-url';
 import SquarePaymentCard from '@/components/billing/SquarePaymentCard';
+import Pin from '@/components/PinAccent';
 
 type SignupCode = {
   id: string;
@@ -271,25 +272,26 @@ export default function SettingsClient({
 
   return (
     <div className="max-w-md mx-auto p-4 space-y-6">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Settings</h1>
+      <h1 className="text-2xl font-display text-denim mb-1">Settings</h1>
 
       <section className="space-y-3">
-        <h2 className="font-display text-lg text-charcoal">Notifications</h2>
-        <div className="bg-white rounded-2xl border border-gold-light/40 p-4 space-y-3">
+        <h2 className="font-display text-lg text-denim">Notifications</h2>
+        <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card p-4 space-y-3">
+          <Pin size="lg" />
           <div>
-            <label className="text-xs font-medium text-charcoal/60 mb-1 block">Phone number</label>
+            <label className="text-xs font-medium text-dusk mb-1 block">Phone number</label>
             <input
               type="tel"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               placeholder="(555) 123-4567"
-              className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-white text-sm"
+              className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-full px-4 py-2 bg-mist text-sm text-denim"
             />
           </div>
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-sm font-medium text-charcoal">Text me updates</p>
-              <p className="text-xs text-charcoal/50">Task assignments, shift handover notes, and broadcasts.</p>
+              <p className="text-sm font-medium text-denim">Text me updates</p>
+              <p className="text-xs text-dusk">Task assignments, shift handover notes, and broadcasts.</p>
             </div>
             <button
               onClick={() => setSmsOptIn((v) => !v)}
@@ -298,7 +300,7 @@ export default function SettingsClient({
               aria-checked={smsOptIn}
               aria-label="Toggle SMS notifications"
               className={`relative shrink-0 w-11 h-6 rounded-full transition-colors disabled:opacity-40 ${
-                smsOptIn ? 'bg-gold-dark' : 'bg-gold-light/50'
+                smsOptIn ? 'bg-denim' : 'bg-mist border border-cardBorder'
               }`}
             >
               <span
@@ -311,7 +313,7 @@ export default function SettingsClient({
           <button
             onClick={saveNotificationSettings}
             disabled={savingPhone}
-            className="w-full py-2 rounded-full bg-charcoal text-cream text-sm font-medium disabled:opacity-40"
+            className="w-full py-2 rounded-full bg-denim text-white text-sm font-medium disabled:opacity-40"
           >
             {savingPhone ? 'Saving…' : 'Save'}
           </button>
@@ -320,11 +322,12 @@ export default function SettingsClient({
 
       {canManage(role) && !loadingFlags && (
         <section className="space-y-3">
-          <h2 className="font-display text-lg text-charcoal">Household Features</h2>
-          <div className="flex items-center justify-between gap-3 bg-white rounded-2xl border border-gold-light/40 px-4 py-3">
+          <h2 className="font-display text-lg text-denim">Household Features</h2>
+          <div className="relative flex items-center justify-between gap-3 bg-card rounded-xl3 border border-cardBorder shadow-card px-4 py-3">
+            <Pin size="lg" />
             <div className="min-w-0">
-              <p className="text-sm font-medium text-charcoal">Guest &amp; Family Taste Memory</p>
-              <p className="text-xs text-charcoal/50">Track who likes and dislikes which dishes, for meal planning.</p>
+              <p className="text-sm font-medium text-denim">Guest &amp; Family Taste Memory</p>
+              <p className="text-xs text-dusk">Track who likes and dislikes which dishes, for meal planning.</p>
             </div>
             <button
               onClick={toggleTasteMemory}
@@ -333,7 +336,7 @@ export default function SettingsClient({
               aria-checked={tasteMemoryEnabled}
               aria-label="Toggle Guest and Family Taste Memory"
               className={`relative shrink-0 w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${
-                tasteMemoryEnabled ? 'bg-gold-dark' : 'bg-gold-light/50'
+                tasteMemoryEnabled ? 'bg-denim' : 'bg-mist border border-cardBorder'
               }`}
             >
               <span
@@ -365,35 +368,36 @@ export default function SettingsClient({
 
       {canManage(role) && (
         <section className="space-y-3">
-          <h2 className="font-display text-lg text-charcoal">Invite Codes</h2>
-          <div className="bg-white rounded-2xl border border-gold-light/40 p-4 space-y-3">
-            <p className="text-xs text-charcoal/50">
+          <h2 className="font-display text-lg text-denim">Invite Codes</h2>
+          <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card p-4 space-y-3">
+            <Pin size="lg" />
+            <p className="text-xs text-dusk">
               Generate a one-time code for a new client to create their own account.
             </p>
             <button
               onClick={generateCode}
               disabled={generating}
-              className="w-full py-2 rounded-full bg-gold-dark text-white text-sm font-medium disabled:opacity-40"
+              className="w-full py-2 rounded-full bg-denim text-white text-sm font-medium disabled:opacity-40"
             >
               {generating ? 'Generating…' : 'Generate invite code'}
             </button>
 
             {newCode && (
-              <div className="rounded-xl bg-gold-light/15 border border-gold-light/40 p-3 space-y-2">
+              <div className="rounded-xl bg-brass/10 border border-cardBorder p-3 space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-sm text-charcoal font-medium">{newCode}</span>
+                  <span className="font-mono text-sm text-denim font-medium">{newCode}</span>
                   <button
                     onClick={() => copyToClipboard(newCode, 'Code')}
-                    className="text-xs font-medium text-gold-dark px-2 py-1 rounded-full bg-white shrink-0"
+                    className="text-xs font-medium text-brass px-2 py-1 rounded-full bg-card shrink-0"
                   >
                     Copy code
                   </button>
                 </div>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs text-charcoal/60 truncate">{`${SITE_URL}/signup?code=${newCode}`}</span>
+                  <span className="text-xs text-dusk truncate">{`${SITE_URL}/signup?code=${newCode}`}</span>
                   <button
                     onClick={() => copyToClipboard(`${SITE_URL}/signup?code=${newCode}`, 'Signup link')}
-                    className="text-xs font-medium text-gold-dark px-2 py-1 rounded-full bg-white shrink-0"
+                    className="text-xs font-medium text-brass px-2 py-1 rounded-full bg-card shrink-0"
                   >
                     Copy link
                   </button>
@@ -405,17 +409,17 @@ export default function SettingsClient({
           {loadingCodes ? (
             <SkeletonList rows={2} />
           ) : codes.length === 0 ? (
-            <p className="text-sm text-charcoal/40 text-center py-4">No codes generated yet.</p>
+            <p className="text-sm text-dusk text-center py-4">No codes generated yet.</p>
           ) : (
             <ul className="space-y-2">
               {codes.map((c) => (
                 <li
                   key={c.id}
-                  className="bg-white rounded-xl shadow-sm shadow-charcoal/5 p-3 flex items-center justify-between gap-2"
+                  className="bg-card rounded-xl border border-cardBorder p-3 flex items-center justify-between gap-2"
                 >
                   <div className="min-w-0">
-                    <p className="font-mono text-sm text-charcoal truncate">{c.code}</p>
-                    <p className="text-xs text-charcoal/40">
+                    <p className="font-mono text-sm text-denim truncate">{c.code}</p>
+                    <p className="text-xs text-dusk">
                       {c.used_by ? `Used ${new Date(c.used_at!).toLocaleDateString()}` : `Created ${new Date(c.created_at).toLocaleDateString()}`}
                     </p>
                   </div>
@@ -423,7 +427,7 @@ export default function SettingsClient({
                     <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-sage/10 text-sage shrink-0">Used</span>
                   ) : (
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-gold-light/30 text-charcoal/60">
+                      <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-mist text-dusk">
                         Unused
                       </span>
                       <button onClick={() => revokeCode(c.id)} className="text-xs text-rust font-medium">
@@ -440,20 +444,21 @@ export default function SettingsClient({
 
       {canManage(role) && (
         <section className="space-y-3">
-          <h2 className="font-display text-lg text-charcoal">Send Broadcast</h2>
-          <div className="bg-white rounded-2xl border border-gold-light/40 p-4 space-y-3">
-            <p className="text-xs text-charcoal/50">Texts every opted-in staff member on this property.</p>
+          <h2 className="font-display text-lg text-denim">Send Broadcast</h2>
+          <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card p-4 space-y-3">
+            <Pin size="lg" />
+            <p className="text-xs text-dusk">Texts every opted-in staff member on this property.</p>
             <textarea
               value={broadcastMessage}
               onChange={(e) => setBroadcastMessage(e.target.value)}
               placeholder="e.g. Reminder: early close today at 3pm."
               rows={3}
-              className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-3 bg-white text-sm"
+              className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-2xl px-4 py-3 bg-mist text-sm text-denim"
             />
             <button
               onClick={sendBroadcast}
               disabled={!broadcastMessage.trim() || sendingBroadcast}
-              className="w-full py-2 rounded-full bg-charcoal text-cream text-sm font-medium disabled:opacity-40"
+              className="w-full py-2 rounded-full bg-denim text-white text-sm font-medium disabled:opacity-40"
             >
               {sendingBroadcast ? 'Sending…' : 'Send broadcast'}
             </button>

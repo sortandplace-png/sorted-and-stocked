@@ -9,6 +9,7 @@ import LocationZmanim from '@/components/LocationZmanim'
 import DashboardWidgets from '@/components/DashboardWidgets'
 import CollapsibleCard from '@/components/CollapsibleCard'
 import TodayCandleLightingRow from '@/components/TodayCandleLightingRow'
+import Pin from '@/components/PinAccent'
 import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
 import { getWidgetPrefs, getTodaysMealPlan, getLowStockAlerts } from '@/lib/dashboard-widgets-data'
 import {
@@ -706,7 +707,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
 
   return (
     <div
-      className={`min-h-screen p-4 md:p-6 font-interDisplay transition-all ${isShabbos ? 'bg-amber-50' : 'bg-linen'}`}
+      className={`min-h-screen p-4 md:p-6 font-interDisplay transition-all ${isShabbos ? 'bg-brass/10' : 'bg-linen'}`}
       style={{
         backgroundImage: `linear-gradient(118deg, rgba(255,250,240,0) 0%, rgba(255,244,222,0.45) 42%, rgba(255,250,240,0) 78%),
           radial-gradient(circle at 10% 6%, rgba(214,228,240,0.6) 0%, transparent 42%),
@@ -740,7 +741,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               </div>
             }
             todayContent={
-              <div className={`flex-1 flex flex-col items-center justify-center text-center py-[16px] px-[20px] gap-[8px] ${isShabbos ? 'bg-amber-100' : 'bg-card'}`}>
+              <div className={`flex-1 flex flex-col items-center justify-center text-center py-[16px] px-[20px] gap-[8px] ${isShabbos ? 'bg-brass/20' : 'bg-card'}`}>
                 {propertyName && (
                   <p className="text-[10px] tracking-[0.18em] uppercase font-normal text-brass border-b border-brass inline-block pb-1.5">
                     {propertyName}
@@ -888,7 +889,8 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               owner/manager-only strip rather than dropped. Flagged in the
               session report; say the word if it should just go away
               instead. */}
-          <div className="col-span-12 rounded-xl3 border border-cardBorder shadow-card overflow-hidden transition-shadow hover:shadow-cardHover">
+          <div className="relative col-span-12 rounded-xl3 border border-cardBorder shadow-card overflow-hidden transition-shadow hover:shadow-cardHover">
+            <Pin size="lg" />
             <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
               {t('quickCapture.headerLabel')}
             </div>
@@ -1075,17 +1077,20 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             Recipes order, not the original Total Inventory / Active
             Recipes / Meals Planned order). */}
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
+          <div className="relative rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
+            <Pin size="sm" />
             <Package size={18} strokeWidth={1.5} className="text-brass mx-auto mb-1" aria-hidden="true" />
             <div className="text-2xl font-display text-denim">{inventoryCount.toLocaleString('en-US')}</div>
             <div className="text-xs text-dusk">{t('stats.totalInventory')}</div>
           </div>
-          <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
+          <div className="relative rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
+            <Pin size="sm" />
             <Calendar size={18} strokeWidth={1.5} className="text-brass mx-auto mb-1" aria-hidden="true" />
             <div className="text-2xl font-display text-denim">{distinctMealCount}</div>
             <div className="text-xs text-dusk">{t('stats.mealsPlanned')}</div>
           </div>
-          <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
+          <div className="relative rounded-xl3 border border-cardBorder shadow-card bg-card p-4 text-center">
+            <Pin size="sm" />
             <BookOpen size={18} strokeWidth={1.5} className="text-brass mx-auto mb-1" aria-hidden="true" />
             <div className="text-2xl font-display text-denim">{recipeCount}</div>
             <div className="text-xs text-dusk">{t('stats.activeRecipes')}</div>
@@ -1106,7 +1111,8 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         />
 
         {prepReminders.length > 0 && (
-          <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4">
+          <div className="relative rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4">
+            <Pin size="lg" />
             <h2 className="text-sm font-display font-semibold text-denim mb-2 flex items-center gap-1.5">
               <Clock size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" /> {t('prepReminders.heading')}
             </h2>
@@ -1122,7 +1128,8 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         )}
 
         {eruvTavshilin && (
-          <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4">
+          <div className="relative rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4">
+            <Pin size="lg" />
             <h2 className="text-sm font-display font-semibold text-denim mb-2 flex items-center gap-1.5">
               <Flame size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" /> {t('eruvTavshilin.heading')}
             </h2>
@@ -1135,8 +1142,9 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         {chametzItems.length > 0 && (
           <Link
             href={`/properties/${propertyId}/inventory`}
-            className="block rounded-xl3 border border-cardBorder shadow-card hover:shadow-cardHover transition-shadow bg-card p-5 mb-4"
+            className="relative block rounded-xl3 border border-cardBorder shadow-card hover:shadow-cardHover transition-shadow bg-card p-5 mb-4"
           >
+            <Pin size="lg" />
             <h2 className="text-sm font-display font-semibold text-denim mb-1 flex items-center gap-1.5">
               <Package size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" />
               {daysUntilPesach} {daysUntilPesach === 1 ? t('chametz.day') : t('chametz.days')} {t('chametz.untilPesach')}
@@ -1150,7 +1158,8 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         )}
 
         {isMotzeiShabbos && (
-          <div className="rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4">
+          <div className="relative rounded-xl3 border border-cardBorder shadow-card bg-card p-5 mb-4">
+            <Pin size="lg" />
             <h2 className="text-sm font-display font-semibold text-denim mb-2 flex items-center gap-1.5">
               <UtensilsCrossed size={16} strokeWidth={1.75} className="text-brass" aria-hidden="true" /> {t('motzeiShabbos.heading')}
             </h2>
@@ -1216,7 +1225,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
         {isShabbos && (
           // bottom-24 on md+ so this doesn't sit on top of the floating
           // Scan button, which occupies bottom-6 right-6 on desktop only.
-          <div className="fixed bottom-4 right-4 md:bottom-24 bg-amber-900 text-amber-50 px-4 py-2 rounded-full text-sm shadow-lg">
+          <div className="fixed bottom-4 right-4 md:bottom-24 bg-denim text-white px-4 py-2 rounded-full text-sm shadow-lg">
             {t('shabbosModeBanner')}
           </div>
         )}

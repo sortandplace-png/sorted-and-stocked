@@ -10,6 +10,7 @@ import { resilientInsert, resilientDelete } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import { kosherIcon } from '@/lib/icon-maps';
+import Pin from '@/components/PinAccent';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { COURSES, type Course } from '@/lib/course-constants';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
@@ -1282,11 +1283,12 @@ export default function MealPlanView({
               <div
                 key={dateStr}
                 className={
-                  'rounded-2xl bg-card shadow-card overflow-hidden' +
+                  'relative rounded-2xl bg-card shadow-card overflow-hidden' +
                   (isToday ? ' ring-2 ring-brass' : '') +
                   (printOnlyDate && printOnlyDate !== dateStr ? ' print:hidden' : '')
                 }
               >
+                <Pin size="sm" />
                 <div
                   className={
                     'flex items-center gap-2 px-4 py-2 ' + (isShabbos ? 'bg-denim/10' : 'bg-mist')
