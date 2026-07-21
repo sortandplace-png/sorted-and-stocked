@@ -9,7 +9,8 @@ import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import Avatar from '@/components/Avatar';
 import FieldLabel from '@/components/FieldLabel';
-import ShiftHandoverClient from '@/components/ShiftHandoverClient';
+import ShiftHandoverClient, { CardHeader } from '@/components/ShiftHandoverClient';
+import CollapsibleCard from '@/components/CollapsibleCard';
 
 // Concept B role-badge tiering (SS-202): owner solid bg-denim per Racquel's
 // explicit instruction, manager/staff step down through the same denim/mist
@@ -438,80 +439,94 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
   if (loading) return <SkeletonList rows={3} />;
 
   return (
-    <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-4">Staff</h1>
+    <div className="bg-mist min-h-screen p-4 lg:p-6">
+      <div className="max-w-6xl mx-auto">
+      <h1 className="text-2xl font-display text-denim mb-4">Staff</h1>
 
       {error && (
         <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2 mb-3">{error}</p>
       )}
 
-      {/* SS-206 follow-up: embedded here so an owner/manager reviewing
-          their team sees the latest handover status as part of that same
-          flow, without a separate trip to /my-day -- the only place staff
-          themselves can reach this feature, since this whole page is
-          owner/manager-only (staff redirected server-side, see page.tsx).
-          Reuses ShiftHandoverClient as-is, already on current tokens
-          (bg-card, bg-denim selected pills), not rebuilt here. */}
-      <div className="-mx-4 px-4 pb-4 mb-6 border-b border-cardBorder">
-        <ShiftHandoverClient propertyId={propertyId} />
-      </div>
+      {/* SS-202 bento overhaul: left column is Operations & Handover (the
+          form and the recent-activity feed as two separate cards, via
+          ShiftHandoverClient's layout="split"), right column is the Team
+          Roster. Stacks to one column below lg -- there's no room for a
+          real 2-up grid on a phone screen, and the original single-column
+          flow (form, then roster) is still the right reading order there. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* LEFT: Operations & Handover */}
+        <div>
+          <ShiftHandoverClient propertyId={propertyId} layout="split" />
+        </div>
 
-      <div className="space-y-3 mb-6">
-        {members.map((member) => (
-          <div key={member.id} className="bg-card rounded-xl2 shadow-card p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <Avatar fullName={member.full_name} size="md" />
-              <span className="flex-1 truncate text-denim font-medium">
-                {member.full_name ?? member.email ?? 'Unnamed user'}
-              </span>
-              <span className={`text-[10px] font-medium px-2.5 py-1 rounded-full shrink-0 ${ROLE_BADGE_CLASSES[member.role]}`}>
-                {member.role}
-              </span>
-            </div>
-            <div className="grid grid-cols-1 gap-1 mb-3">
-              {ROLE_PERMISSIONS[member.role].map((perm) => (
-                <div key={perm} className="flex items-start gap-1.5 text-xs text-dusk">
-                  <Check size={13} className="shrink-0 mt-0.5 text-sage" />
-                  <span>{perm}</span>
+        {/* RIGHT: Team Roster */}
+        <div>
+          <CollapsibleCard
+            cardId="staff-team-members"
+            pinSize="sm"
+            className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden"
+            header={<CardHeader>Team Members</CardHeader>}
+          >
+            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {members.map((member) => (
+                <div key={member.id} className="bg-card rounded-xl2 border border-cardBorder p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Avatar fullName={member.full_name} size="md" />
+                    <span className="flex-1 truncate text-denim font-medium">
+                      {member.full_name ?? member.email ?? 'Unnamed user'}
+                    </span>
+                    <span className={`text-[10px] font-medium px-2.5 py-1 rounded-full shrink-0 ${ROLE_BADGE_CLASSES[member.role]}`}>
+                      {member.role}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-1 mb-3">
+                    {ROLE_PERMISSIONS[member.role].map((perm) => (
+                      <div key={perm} className="flex items-start gap-1.5 text-xs text-dusk">
+                        <Check size={13} className="shrink-0 mt-0.5 text-sage" />
+                        <span>{perm}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={member.role}
+                      onChange={(e) => changeRole(member.id, e.target.value as PropertyRole)}
+                      className="text-sm text-denim border border-cardBorder rounded-full px-3 py-1 bg-mist"
+                      disabled={!viewerIsOwner}
+                    >
+                      <option value="owner">Owner</option>
+                      <option value="manager">Manager</option>
+                      <option value="staff">Staff</option>
+                    </select>
+                    {member.role !== 'owner' && canManage(viewerRole) && (
+                      <button
+                        onClick={() => removeMember(member.id, member.full_name ?? member.email)}
+                        className="text-rust text-sm"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  {/* Distinct from Remove above, which only drops this one
+                      property's membership row -- Offboard clears every
+                      property this person belongs to and disables their
+                      account, for when they're leaving the household
+                      entirely, not just this house. */}
+                  {member.role !== 'owner' && canManage(viewerRole) && (
+                    <button
+                      onClick={() => offboardMember(member.user_id, member.full_name ?? member.email)}
+                      disabled={offboardingUserId === member.user_id}
+                      className="text-[11px] text-dusk underline mt-1.5 disabled:opacity-40"
+                    >
+                      {offboardingUserId === member.user_id ? 'Offboarding…' : 'Offboard (remove from all properties)'}
+                    </button>
+                  )}
+                  <p className="text-[11px] text-dusk mt-2">Last active: {formatLastActive(member.lastActive)}</p>
                 </div>
               ))}
             </div>
-            <div className="flex items-center gap-2">
-              <select
-                value={member.role}
-                onChange={(e) => changeRole(member.id, e.target.value as PropertyRole)}
-                className="text-sm text-denim border border-cardBorder rounded-full px-3 py-1 bg-mist"
-                disabled={!viewerIsOwner}
-              >
-                <option value="owner">Owner</option>
-                <option value="manager">Manager</option>
-                <option value="staff">Staff</option>
-              </select>
-              {member.role !== 'owner' && canManage(viewerRole) && (
-                <button
-                  onClick={() => removeMember(member.id, member.full_name ?? member.email)}
-                  className="text-rust text-sm"
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-            {/* Distinct from Remove above, which only drops this one
-                property's membership row -- Offboard clears every property
-                this person belongs to and disables their account, for when
-                they're leaving the household entirely, not just this house. */}
-            {member.role !== 'owner' && canManage(viewerRole) && (
-              <button
-                onClick={() => offboardMember(member.user_id, member.full_name ?? member.email)}
-                disabled={offboardingUserId === member.user_id}
-                className="text-[11px] text-dusk underline mt-1.5 disabled:opacity-40"
-              >
-                {offboardingUserId === member.user_id ? 'Offboarding…' : 'Offboard (remove from all properties)'}
-              </button>
-            )}
-            <p className="text-[11px] text-dusk mt-2">Last active: {formatLastActive(member.lastActive)}</p>
-          </div>
-        ))}
+          </CollapsibleCard>
+        </div>
       </div>
 
       {canManage(viewerRole) && (
@@ -750,6 +765,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
       )}
         </>
       )}
+      </div>
     </div>
   );
 }

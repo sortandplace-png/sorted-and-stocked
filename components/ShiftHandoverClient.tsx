@@ -9,7 +9,20 @@ import { compressImageToDataUrl } from '@/lib/compress-image';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import CameraCapture from '@/components/CameraCapture';
+import CollapsibleCard from '@/components/CollapsibleCard';
 import { Camera, Image as ImageIcon, Mic, Square, X } from 'lucide-react';
+
+// Denim header-strip pattern shared with DashboardWidgets.tsx's bento cards
+// (bg-denim, white, 10px, semibold, tracking-[0.17em], uppercase, py-[11px]
+// px-5) -- not reinvented here, just reused so a 'split' card visually
+// matches the real Dashboard cards rather than approximating them.
+export function CardHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
+      {children}
+    </div>
+  );
+}
 
 type Handover = {
   id: string;
@@ -40,7 +53,19 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-export default function ShiftHandoverClient({ propertyId }: { propertyId: string }) {
+export default function ShiftHandoverClient({
+  propertyId,
+  layout = 'stacked',
+}: {
+  propertyId: string;
+  // 'stacked' (default) is the original, unchanged single-column render --
+  // used by the standalone /properties/[id]/shift-handover page, which
+  // still exists and is still directly reachable even though SS-214
+  // dropped its nav link. 'split' is SS-202's Staff dashboard embed: same
+  // state/handlers, just the form and the recent-handovers list each get
+  // their own bento card instead of one stacked column.
+  layout?: 'stacked' | 'split';
+}) {
   const t = useTranslations('shiftHandover');
   // A real starting structure, not vanishing placeholder text -- lands in
   // the textarea itself so there's something to edit around instead of a
@@ -269,17 +294,9 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
     return new Date(iso).toLocaleDateString();
   }
 
-  return (
-    <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-denim mb-1">Shift Handover</h1>
-      <p className="text-sm text-dusk mb-4">
-        Leave a quick note for whoever's coming on next — no long write-up needed.
-      </p>
-
-      <CameraCapture open={showCamera} onCapture={handleCameraFile} onClose={() => setShowCamera(false)} />
-
-      <div className="bg-card rounded-xl2 shadow-card p-4 mb-6 space-y-3">
-        <div className="flex flex-wrap gap-1.5">
+  const formContent = (
+    <>
+      <div className="flex flex-wrap gap-1.5">
           {QUICK_TEMPLATES.map((template) => (
             <button
               key={template}
@@ -379,9 +396,11 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
         >
           {submitting ? 'Saving…' : 'Leave handover note'}
         </button>
-      </div>
+    </>
+  );
 
-      <h2 className="font-display text-lg text-denim mb-2">Recent handovers</h2>
+  const recentContent = (
+    <>
       {loading ? (
         <SkeletonList rows={3} />
       ) : handovers.length === 0 ? (
@@ -430,6 +449,48 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
           })}
         </ul>
       )}
+    </>
+  );
+
+  if (layout === 'split') {
+    return (
+      <>
+        <CameraCapture open={showCamera} onCapture={handleCameraFile} onClose={() => setShowCamera(false)} />
+
+        <CollapsibleCard
+          cardId="staff-handover-form"
+          pinSize="sm"
+          className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden mb-6"
+          header={<CardHeader>Shift Handover</CardHeader>}
+        >
+          <div className="p-4 space-y-3">{formContent}</div>
+        </CollapsibleCard>
+
+        <CollapsibleCard
+          cardId="staff-handover-recent"
+          pinSize="sm"
+          className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden"
+          header={<CardHeader>Recent Handovers</CardHeader>}
+        >
+          <div className="p-4">{recentContent}</div>
+        </CollapsibleCard>
+      </>
+    );
+  }
+
+  return (
+    <div className="max-w-md mx-auto p-4">
+      <h1 className="text-2xl font-display text-denim mb-1">Shift Handover</h1>
+      <p className="text-sm text-dusk mb-4">
+        Leave a quick note for whoever's coming on next — no long write-up needed.
+      </p>
+
+      <CameraCapture open={showCamera} onCapture={handleCameraFile} onClose={() => setShowCamera(false)} />
+
+      <div className="bg-card rounded-xl2 shadow-card p-4 mb-6 space-y-3">{formContent}</div>
+
+      <h2 className="font-display text-lg text-denim mb-2">Recent handovers</h2>
+      {recentContent}
     </div>
   );
 }
