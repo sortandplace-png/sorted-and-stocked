@@ -11,6 +11,23 @@ import { format, parseISO } from 'date-fns';
 import { SkeletonList } from '@/components/Skeleton';
 import { createClient } from '@/lib/supabase/client';
 import { groupYomTovOccasions, type YomTovOccasion } from '@/lib/yom-tov';
+import Pin from '@/components/PinAccent';
+import { CardHeader } from '@/components/ShiftHandoverClient';
+
+// Concept B card shell -- rounded-xl3/border-cardBorder/shadow-card/PinAccent
+// sm/denim header strip, matching the pattern already live on StaffClient's
+// bento cards and SquarePaymentCard. Local to this file since every card
+// here needs the identical wrapper and there's no third consumer yet to
+// justify a shared component.
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
+      <Pin size="sm" />
+      <CardHeader>{title}</CardHeader>
+      <div className="p-4">{children}</div>
+    </div>
+  );
+}
 
 const BEDIKAS_TOLAIM_ITEMS = [
   { item: 'Romaine lettuce', note: 'Check leaves individually against light, or use pre-checked bagged romaine.' },
@@ -67,12 +84,11 @@ export default function HalachicCalendarClient() {
   };
 
   return (
-    <div className="max-w-md mx-auto p-4 space-y-4">
+    <div className="bg-mist p-4 space-y-4">
       <h1 className="text-2xl font-display text-denim mb-1">Halachic Calendar</h1>
 
       {upcoming && upcoming.length > 0 && (
-        <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-4">
-          <h2 className="font-display text-lg text-denim mb-2">Upcoming</h2>
+        <Card title="Upcoming">
           <ul className="space-y-1.5">
             {upcoming.map((occ) => (
               <li key={occ.name + occ.date} className="flex items-center justify-between text-sm">
@@ -83,20 +99,18 @@ export default function HalachicCalendarClient() {
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
       )}
 
-      <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-4">
-        <h2 className="font-display text-lg text-denim mb-1">Sefiras HaOmer</h2>
+      <Card title="Sefiras HaOmer">
         {omerTitle ? (
           <p className="text-sm text-denim">Tonight/today: {omerTitle}</p>
         ) : (
           <p className="text-sm text-dusk">Not currently within the Omer count.</p>
         )}
-      </div>
+      </Card>
 
-      <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-4">
-        <h2 className="font-display text-lg text-denim mb-1">Rosh Chodesh</h2>
+      <Card title="Rosh Chodesh">
         {roshChodeshStatus ? (
           <p className="text-sm text-denim">
             {roshChodeshStatus.isToday
@@ -108,10 +122,9 @@ export default function HalachicCalendarClient() {
         ) : (
           <p className="text-sm text-dusk">No Rosh Chodesh in the next 5 days.</p>
         )}
-      </div>
+      </Card>
 
-      <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-4">
-        <h2 className="font-display text-lg text-denim mb-1">Erev Pesach Countdown</h2>
+      <Card title="Erev Pesach Countdown">
         {erevPesach && daysUntilPesach !== null ? (
           <p className="text-sm text-denim">
             {daysUntilPesach === 0
@@ -126,10 +139,9 @@ export default function HalachicCalendarClient() {
         <p className="text-xs text-dusk mt-1">
           Date only, not halachic times — Hebcal doesn't expose sof zman achilas/biur chametz through this API.
         </p>
-      </div>
+      </Card>
 
-      <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-4">
-        <h2 className="font-display text-lg text-denim mb-2">Bedikas Tolaim Reference</h2>
+      <Card title="Bedikas Tolaim Reference">
         <ul className="space-y-2">
           {BEDIKAS_TOLAIM_ITEMS.map((entry) => (
             <li key={entry.item}>
@@ -138,7 +150,7 @@ export default function HalachicCalendarClient() {
             </li>
           ))}
         </ul>
-      </div>
+      </Card>
     </div>
   );
 }
