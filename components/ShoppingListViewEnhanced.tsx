@@ -12,12 +12,12 @@ import {
   removeShoppingItem,
   type ShoppingItemSource,
 } from '@/lib/api/shoppingList';
-import { Trash2, CheckCircle2, Circle, Printer, Sparkles, MoreVertical, ShoppingCart, AlertTriangle, Repeat, Store, BookOpen } from 'lucide-react';
+import { Trash2, CheckCircle2, Circle, Printer, Sparkles, MoreVertical, ShoppingCart, AlertTriangle, Repeat, Store, BookOpen, MapPin } from 'lucide-react';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { useToast } from '@/components/Toast';
 import { createClient } from '@/lib/supabase/client';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
-import type { ReorderSource } from '@/lib/reorder-sources';
+import { getPreferredSource, type ReorderSource } from '@/lib/reorder-sources';
 import OrderLink from '@/components/OrderLink';
 import PhotoOrFallback from '@/components/PhotoOrFallback';
 
@@ -54,7 +54,7 @@ const KOSHER_PILL_STYLE: Record<string, string> = {
   Parve: 'bg-sage/15 text-sage',
 };
 
-type GroupBy = 'staples-first' | 'category' | 'by-recipe';
+type GroupBy = 'staples-first' | 'category' | 'by-recipe' | 'by-store';
 
 // Present only on display rows produced by aggregateDuplicates — carries
 // the real underlying row ids so toggling/deleting an aggregated row still
@@ -492,6 +492,28 @@ export default function ShoppingListViewEnhanced({
         return a.title.localeCompare(b.title);
       });
     }
+    if (mode === 'by-store') {
+      // Groups by each item's own preferred reorder source (the same
+      // is_preferred pick OrderLink/ReorderSourcePicker already use
+      // elsewhere) -- an item with no reorder_sources at all falls into
+      // "Other" rather than disappearing, same convention as the other
+      // modes' uncategorized bucket.
+      const byStore = bucketItems.reduce(
+        (acc, item) => {
+          const store = getPreferredSource(item.reorder_sources)?.retailer_name || 'Other';
+          (acc[store] ??= []).push(item);
+          return acc;
+        },
+        {} as Record<string, DisplayItem[]>
+      );
+      return Object.entries(byStore)
+        .map(([title, items]) => ({ title, items }))
+        .sort((a, b) => {
+          if (a.title === 'Other') return 1;
+          if (b.title === 'Other') return -1;
+          return a.title.localeCompare(b.title);
+        });
+    }
     const byCategory = bucketItems.reduce(
       (acc, item) => {
         const cat = item.category || 'Other';
@@ -774,6 +796,7 @@ export default function ShoppingListViewEnhanced({
           ['staples-first', Repeat, 'Staples'] as const,
           ['category', Store, 'By Aisle'] as const,
           ['by-recipe', BookOpen, 'By Recipe'] as const,
+          ['by-store', MapPin, 'By Store'] as const,
         ]).map(([option, Icon, label]) => (
           <button
             key={option}
