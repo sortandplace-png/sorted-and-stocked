@@ -30,7 +30,13 @@ type Member = {
   full_name: string | null;
   email: string | null;
   lastActive: string | null; // real auth.users.last_sign_in_at, null if never signed in
+  assigned_zones: string[];
 };
+
+// Plain strings on property_members.assigned_zones (text[], default '{}') --
+// not linked to any zone table, per the scoping this was given. Starting
+// set only; not exhaustive of every room in either property.
+const ZONE_OPTIONS = ['Kitchen', 'Pantry', 'Primary Suite', 'Guest House'] as const;
 
 function formatLastActive(iso: string | null): string {
   if (!iso) return 'Never';
@@ -156,6 +162,8 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
   const [householdProperties, setHouseholdProperties] = useState<HouseholdProperty[]>([]);
   const [selectedPropertyIds, setSelectedPropertyIds] = useState<string[]>([propertyId]);
   const [offboardingUserId, setOffboardingUserId] = useState<string | null>(null);
+  const [zoneEditorMemberId, setZoneEditorMemberId] = useState<string | null>(null);
+  const [savingZonesId, setSavingZonesId] = useState<string | null>(null);
 
   const supabase = createClient();
   const showToast = useToast();
@@ -176,7 +184,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     // on the absence being permanent.
     const { data, error: loadError } = await supabase
       .from('property_members')
-      .select('id, user_id, role, profiles(full_name)')
+      .select('id, user_id, role, assigned_zones, profiles(full_name)')
       .eq('property_id', propertyId)
       .neq('user_id', '6d36e852-63e1-4680-a326-05c6a3f0635c')
       .order('joined_at');
@@ -195,6 +203,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
         full_name: (m.profiles as unknown as { full_name: string | null } | null)?.full_name ?? null,
         email: null,
         lastActive: null,
+        assigned_zones: (m.assigned_zones as string[] | null) ?? [],
       }))
     );
     setLoading(false);
@@ -423,6 +432,28 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     loadActivity();
   }
 
+  async function toggleZone(memberId: string, zone: string) {
+    const member = members.find((m) => m.id === memberId);
+    if (!member) return;
+    const previous = member.assigned_zones;
+    const next = previous.includes(zone) ? previous.filter((z) => z !== zone) : [...previous, zone];
+
+    setMembers((prev) => prev.map((m) => (m.id === memberId ? { ...m, assigned_zones: next } : m)));
+    setSavingZonesId(memberId);
+
+    const { error: updateError } = await supabase
+      .from('property_members')
+      .update({ assigned_zones: next })
+      .eq('id', memberId);
+
+    setSavingZonesId(null);
+
+    if (updateError) {
+      setMembers((prev) => prev.map((m) => (m.id === memberId ? { ...m, assigned_zones: previous } : m)));
+      showToast(updateError.message, { variant: 'error', durationMs: 6000 });
+    }
+  }
+
   async function removeMember(memberId: string, name: string | null) {
     const member = members.find((m) => m.id === memberId);
     if (!member) return;
@@ -495,6 +526,53 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
                         <span>{perm}</span>
                       </div>
                     ))}
+                  </div>
+                  {/* Zones -- property_members.assigned_zones (text[]),
+                      plain strings, not linked to any zone table. Display is
+                      open to anyone who can see the card; the checkbox
+                      editor itself is manage-gated, same as role/remove. */}
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-medium text-dusk uppercase tracking-wide">Zones</span>
+                      {canManage(viewerRole) && (
+                        <button
+                          onClick={() => setZoneEditorMemberId((id) => (id === member.id ? null : member.id))}
+                          className="text-[11px] text-denim underline"
+                        >
+                          {zoneEditorMemberId === member.id ? 'Done' : 'Edit'}
+                        </button>
+                      )}
+                    </div>
+                    {member.assigned_zones.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {member.assigned_zones.map((zone) => (
+                          <span key={zone} className="bg-mist text-denim text-xs font-medium px-2 py-0.5 rounded-md">
+                            {zone}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-dusk italic">No zones assigned</p>
+                    )}
+                    {zoneEditorMemberId === member.id && (
+                      <div className="mt-2 flex flex-wrap gap-2 bg-mist rounded-xl2 p-2.5">
+                        {ZONE_OPTIONS.map((zone) => {
+                          const checked = member.assigned_zones.includes(zone);
+                          return (
+                            <label key={zone} className="flex items-center gap-1.5 text-xs text-denim">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                disabled={savingZonesId === member.id}
+                                onChange={() => toggleZone(member.id, zone)}
+                                className="accent-brass"
+                              />
+                              {zone}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <select
