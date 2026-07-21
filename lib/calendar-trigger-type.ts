@@ -77,13 +77,42 @@ export async function getIsNineDays(): Promise<boolean> {
   }
 }
 
-// Same shared, non-property-scoped fast_days table getNextObservance()
-// reads -- a plain date match.
+// Pulls live from Hebcal (SS-208) instead of the fast_days table, which
+// only had rows through 2028-01-09 -- past that date this would have
+// silently stopped flagging fast days at all, no error, nothing to notice
+// until someone realized a fast day slipped by unflagged. mf=on ("Minor
+// Fasts") is a real, separate Hebcal flag from min=on ("Minor Holidays");
+// confirmed live that min=on alone never returns Tzom Gedaliah, Asara
+// B'Tevet, Ta'anit Esther, or Tzom Tammuz at all, only mf=on does.
+//
+// Matches on Hebcal's own subcat:'fast', not a title string -- more
+// robust than text matching (the fast_days table itself has inconsistent
+// apostrophe spelling for the same holiday across different years) and
+// naturally excludes Yom Kippur (subcat:'major', handled by the separate
+// yom_kippur trigger already) with no extra exclusion needed.
+//
+// Ta'anit Bechorot (Fast of the Firstborn, day before Pesach) is real in
+// Hebcal's subcat:'fast' set but deliberately excluded here, same pattern
+// as the Rosh Hashana LaBehemot exclusion above -- it's almost always
+// exempted via a siyum in practice and isn't in the household's own
+// curated fast_days table either. Flagging that judgment call, not
+// silently assuming it.
 export async function getIsFastDayToday(todayStr: string): Promise<boolean> {
-  const { createClient } = await import('@/lib/supabase/server')
-  const supabase = await createClient()
-  const { data } = await supabase.from('fast_days').select('date').eq('date', todayStr).maybeSingle()
-  return !!data
+  try {
+    const year = Number(todayStr.slice(0, 4))
+    const years = [year, year + 1]
+    const events: { title: string; date: string; subcat?: string }[] = []
+    for (const y of years) {
+      const res = await fetch(`https://www.hebcal.com/hebcal?cfg=json&v=1&year=${y}&maj=on&min=on&mf=on`, {
+        next: { revalidate: 3600 * 24 },
+      })
+      const data = await res.json()
+      events.push(...(data.items ?? []))
+    }
+    return events.some((e) => e.date === todayStr && e.subcat === 'fast' && !e.title.includes('Bechorot'))
+  } catch {
+    return false
+  }
 }
 
 // yom_tov_dates isn't property-scoped (shared calendar data) -- a plain
