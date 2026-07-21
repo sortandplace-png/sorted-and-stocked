@@ -4,6 +4,7 @@ import { Cormorant_Garamond, Nunito_Sans, Playfair_Display, Inter } from 'next/f
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import OfflineSyncProvider from '@/components/OfflineSyncProvider';
+import ServiceWorkerUpdater from '@/components/ServiceWorkerUpdater';
 import { ToastProvider } from '@/components/Toast';
 import './globals.css';
 
@@ -58,7 +59,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <NextIntlClientProvider messages={messages}>
           <OfflineSyncProvider>
-            <ToastProvider>{children}</ToastProvider>
+            <ToastProvider>
+              <ServiceWorkerUpdater />
+              {children}
+            </ToastProvider>
           </OfflineSyncProvider>
         </NextIntlClientProvider>
       </body>
