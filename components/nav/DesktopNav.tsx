@@ -62,11 +62,11 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // through My Day instead. Was open to every role before that RLS
       // change made a full board something only a manager can actually see.
       { segment: 'tools/tasks', labelKey: 'staffTasks', managerOnly: true },
-      // Handover is owner/manager-only here on purpose: staff get it
-      // embedded directly in My Day, not as a second separate tap target.
-      // Was visible to every role before, which duplicated the My Day
-      // embed for exactly the users it shouldn't have.
-      { segment: 'shift-handover', labelKey: 'handover', managerOnly: true },
+      // Handover nav link removed (SS-214) -- everyone, including owners
+      // and managers, now reaches it the same way: embedded on My Day.
+      // The standalone /shift-handover route file is untouched (still
+      // reachable by direct URL) so nothing breaks for anyone with it
+      // bookmarked; this just stops offering it as its own destination.
       // Team management (invite/role-change/remove) stays owner/manager
       // only, same as it's always been.
       { segment: 'staff', labelKey: 'team', managerOnly: true },
