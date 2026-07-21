@@ -10,11 +10,12 @@ type QRScannerProps = {
   onError?: (message: string) => void;
   active?: boolean; // pass false to pause without unmounting
   debounceMs?: number; // default 2000, matches the original single-scan flow
+  torchOn?: boolean; // rear-camera flashlight, where the device/browser supports it
 };
 
 const ELEMENT_ID = 'qr-reader';
 
-export default function QRScanner({ onScan, onError, active = true, debounceMs = 2000 }: QRScannerProps) {
+export default function QRScanner({ onScan, onError, active = true, debounceMs = 2000, torchOn = false }: QRScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const lastScanRef = useRef<{ text: string; at: number }>({ text: '', at: 0 });
 
@@ -71,6 +72,39 @@ export default function QRScanner({ onScan, onError, active = true, debounceMs =
       }
     };
   }, [active, onScan, onError, debounceMs]);
+
+  // Separate from the start/stop lifecycle above -- toggling the flashlight
+  // shouldn't restart the whole scan session. `torch` is a real W3C Image
+  // Capture API constraint (works on the rear camera in Android Chrome;
+  // iOS Safari has no torch API at all as of this writing) -- not in
+  // TypeScript's bundled MediaTrackConstraintSet typings yet, hence the cast.
+  useEffect(() => {
+    if (!active) return;
+    const scanner = scannerRef.current;
+    if (!scanner) return;
+    // Real crash confirmed in testing, not a hypothetical: when the camera
+    // never actually reached a running state (permission denied, no
+    // camera, blocked entirely), applyVideoConstraints THROWS synchronously
+    // ("Scanning is not in running state...") instead of rejecting its
+    // promise -- the .catch() below can't reach a throw that happens
+    // before the promise is even returned, so it crashed the whole page.
+    // Guard with a real state check, and keep the try/catch as a second
+    // layer in case some environment still throws synchronously despite it.
+    const state = scanner.getState();
+    if (state !== Html5QrcodeScannerState.SCANNING && state !== Html5QrcodeScannerState.PAUSED) {
+      return;
+    }
+    try {
+      scanner
+        .applyVideoConstraints({ advanced: [{ torch: torchOn } as unknown as MediaTrackConstraintSet] })
+        .catch(() => {
+          // Device/browser doesn't support torch control -- the toggle just
+          // won't visibly do anything there, nothing to surface as an error.
+        });
+    } catch {
+      // Same "not running" class of error, thrown synchronously -- no-op.
+    }
+  }, [torchOn, active]);
 
   return <div id={ELEMENT_ID} className="w-full max-w-md mx-auto rounded-lg overflow-hidden" />;
 }

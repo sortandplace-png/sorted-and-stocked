@@ -4,8 +4,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Flashlight, Search } from 'lucide-react';
 import QRScanner from '@/components/QRScanner';
+import Pin from '@/components/PinAccent';
 import { createClient } from '@/lib/supabase/client';
 import { resilientUpdate } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
@@ -45,6 +46,9 @@ export default function ScanClient({
   const [adjustedPrice, setAdjustedPrice] = useState('');
   const [saving, setSaving] = useState(false);
   const [photoPromptItem, setPhotoPromptItem] = useState<{ id: string; name: string } | null>(null);
+  const [torchOn, setTorchOn] = useState(false);
+  const [manualSearchOpen, setManualSearchOpen] = useState(false);
+  const [manualCode, setManualCode] = useState('');
   const router = useRouter();
   const supabase = createClient();
   const showToast = useToast();
@@ -146,19 +150,67 @@ export default function ScanClient({
   }
 
   return (
-    <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-3">Scan a label</h1>
+    <div className="max-w-md mx-auto p-4 bg-mist min-h-screen">
+      <h1 className="font-display text-2xl text-denim mb-4">Scan a label</h1>
 
       {(state.status === 'scanning' || state.status === 'checking') && (
-        <>
-          <div className="relative overflow-hidden rounded-xl">
-            <div className={`absolute inset-0 z-10 pointer-events-none border-4 transition-all duration-150 ${getFlashClass()}`} />
-            <QRScanner onScan={handleScan} active={state.status === 'scanning'} />
+        <div className="relative bg-card border border-cardBorder rounded-xl2 shadow-card overflow-hidden">
+          <Pin size="lg" />
+          <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
+            Price &amp; Label Scanner
           </div>
-          {state.status === 'checking' && (
-            <p className="text-sm text-charcoal/50 text-center mt-3">Looking that up…</p>
-          )}
-        </>
+          <div className="p-6">
+            <div className="relative overflow-hidden rounded-xl">
+              <div className={`absolute inset-0 z-10 pointer-events-none border-4 transition-all duration-150 ${getFlashClass()}`} />
+              <QRScanner onScan={handleScan} active={state.status === 'scanning'} torchOn={torchOn} />
+            </div>
+            {state.status === 'checking' && (
+              <p className="text-sm text-dusk text-center mt-3">Looking that up…</p>
+            )}
+            <p className="text-xs text-dusk text-center mt-3">Align barcode or QR code within frame</p>
+
+            <div className="flex gap-2 mt-3">
+              <button
+                type="button"
+                onClick={() => setTorchOn((v) => !v)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-sm font-medium transition-colors ${
+                  torchOn ? 'bg-brass text-denim' : 'bg-mist text-denim border border-cardBorder'
+                }`}
+              >
+                <Flashlight size={16} strokeWidth={1.75} aria-hidden="true" /> Flashlight
+              </button>
+              <button
+                type="button"
+                onClick={() => setManualSearchOpen((v) => !v)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-sm font-medium bg-denim text-white"
+              >
+                <Search size={16} strokeWidth={1.75} aria-hidden="true" /> Manual Search
+              </button>
+            </div>
+
+            {manualSearchOpen && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (manualCode.trim()) handleScan(manualCode.trim());
+                }}
+                className="flex gap-2 mt-3"
+              >
+                <input
+                  type="text"
+                  value={manualCode}
+                  onChange={(e) => setManualCode(e.target.value)}
+                  placeholder="Enter code"
+                  autoFocus
+                  className="flex-1 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-full px-4 py-2 bg-mist text-sm text-denim"
+                />
+                <button type="submit" className="px-5 rounded-full bg-brass text-denim text-sm font-medium">
+                  Go
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
       )}
 
       {state.status === 'not-found' && (
