@@ -10,7 +10,8 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import ShiftHandoverClient from '@/components/ShiftHandoverClient';
+import ShiftHandoverClient, { CardHeader } from '@/components/ShiftHandoverClient';
+import CollapsibleCard from '@/components/CollapsibleCard';
 import StaffDutyChecklist from '@/components/StaffDutyChecklist';
 import StaffTasksClient from '@/components/StaffTasksClient';
 import ToolModal from '@/components/ToolModal';
@@ -119,14 +120,18 @@ export default function MyDayClient({
           what's assigned to the viewer and actually due, reusing the same
           data layer and mark-done flow as the manager-facing Task Center
           instead of a second, separately-maintained implementation. */}
-      <div className="mb-6">
-        <h2 className="font-display text-lg text-denim mb-2">Today's Tasks</h2>
-        <StaffTasksClient propertyId={propertyId} scope="mine" />
-      </div>
+      <CollapsibleCard
+        cardId="myday-todays-tasks"
+        pinSize="sm"
+        className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden mb-6"
+        header={<CardHeader>Today's Tasks</CardHeader>}
+      >
+        <div className="p-4">
+          <StaffTasksClient propertyId={propertyId} scope="mine" />
+        </div>
+      </CollapsibleCard>
 
-      <div className="-mx-4 border-t border-cardBorder pt-2">
-        <ShiftHandoverClient propertyId={propertyId} />
-      </div>
+      <ShiftHandoverClient propertyId={propertyId} layout="split" />
     </div>
   );
 }
