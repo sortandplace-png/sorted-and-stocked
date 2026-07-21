@@ -236,12 +236,12 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
   return (
     <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
       <Pin size="sm" />
-      {/* Header text intentionally left as the current live label -- a
-          rename to "Household Supplies & Non-Foods" was proposed elsewhere
-          but never confirmed, so this carries the unchanged status quo
-          into the new chrome rather than picking a side. Swapping this one
-          string later is a one-line change, not a re-architecture. */}
-      <CardHeader>Household Staples</CardHeader>
+      {/* Renamed from "Household Staples" per Racquel's direct approval
+          (2026-07-21). t('householdStaplesTab') in messages/en.json /
+          es.json is the source of truth for the actual tab button above
+          this component; this literal string just needs to stay in sync
+          with it. */}
+      <CardHeader>Household Supplies & Non-Foods</CardHeader>
       <div className="p-4 space-y-4">
         {/* Search & Filter Bar */}
         <div className="space-y-3">
