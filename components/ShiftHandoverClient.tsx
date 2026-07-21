@@ -285,7 +285,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
               onClick={() => applyTemplate(template)}
               className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
                 templateTag === template
-                  ? 'bg-brass text-white border-brass'
+                  ? 'bg-denim text-white border-denim'
                   : 'bg-mist text-dusk border-brass/30'
               }`}
             >
