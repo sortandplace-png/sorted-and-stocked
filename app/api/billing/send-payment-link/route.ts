@@ -24,7 +24,7 @@ async function sendPaymentEmail(opts: { toEmail: string; propertyName: string; p
       This is your monthly subscription payment for <strong>${escapeHtml(opts.propertyName)}</strong> on Sort &amp; Place.
     </p>
     <p style="margin:24px 0;">
-      <a href="${opts.paymentLink}" style="background:#8A6E42;color:#FAF7F2;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:600;">
+      <a href="${opts.paymentLink}" style="background:#2E4A62;color:#FFFFFF;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:600;">
         Pay now
       </a>
     </p>

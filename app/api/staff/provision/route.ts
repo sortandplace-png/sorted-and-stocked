@@ -48,7 +48,7 @@ async function sendProvisionEmail(opts: {
     )}</strong> en Sorted &amp; Stocked como <strong>${roleLabelEs}</strong>.</em>
     </p>
     <p style="margin:24px 0;">
-      <a href="${opts.actionLink}" style="display:inline-block;background:#8A6E42;color:#FAF7F2;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:600;text-align:center;">
+      <a href="${opts.actionLink}" style="display:inline-block;background:#2E4A62;color:#FFFFFF;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:600;text-align:center;">
         <span style="display:block;">Accept &amp; set up account</span>
         <span style="display:block;font-size:13px;font-weight:500;opacity:.9;">Aceptar y configurar cuenta</span>
       </a>
