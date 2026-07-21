@@ -12,10 +12,10 @@ export default function SubstitutionCallout({ recipeName, substitutionNotes }: S
   if (!substitutionNotes || substitutionNotes.trim() === "") return null;
 
   return (
-    <div className="my-6 bg-amber-950/40 border border-amber-800/40 rounded-xl p-4 flex gap-3 text-amber-200">
+    <div className="my-6 bg-card border border-cardBorder rounded-xl shadow-card p-4 flex gap-3">
       {/* Alert Icon */}
       <div className="flex-shrink-0 mt-0.5">
-        <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 text-brass" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -27,10 +27,10 @@ export default function SubstitutionCallout({ recipeName, substitutionNotes }: S
 
       {/* Content Cluster */}
       <div className="space-y-1">
-        <h4 className="text-sm font-bold tracking-tight text-amber-400">
+        <h4 className="text-sm font-bold tracking-tight text-denim">
           Substitution Notes
         </h4>
-        <p className="text-xs text-amber-200/80 leading-relaxed font-sans">
+        <p className="text-xs text-dusk leading-relaxed font-sans">
           {substitutionNotes}
         </p>
       </div>

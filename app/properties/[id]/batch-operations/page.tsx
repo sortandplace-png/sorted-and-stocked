@@ -161,7 +161,7 @@ export default function BatchOperationsPage({
 
             <div className="max-h-96 overflow-y-auto">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-stone-50 border-b border-gold-light/30">
+                <thead className="sticky top-0 bg-mist border-b border-gold-light/30">
                   <tr>
                     <th className="text-left px-3 py-2">Ingredient</th>
                     <th className="text-left px-3 py-2">Primary Store</th>
@@ -172,7 +172,7 @@ export default function BatchOperationsPage({
                 </thead>
                 <tbody className="divide-y divide-gold-light/20">
                   {(dryRunResults.updates || []).slice(0, 50).map((update: any, i: number) => (
-                    <tr key={i} className="hover:bg-stone-50">
+                    <tr key={i} className="hover:bg-mist">
                       <td className="px-3 py-2 font-medium text-charcoal">{update.ingredientName}</td>
                       <td className="px-3 py-2 text-charcoal/70">{update.primary_store}</td>
                       <td className="px-3 py-2">{update.is_strictly_kosher ? '✅' : '—'}</td>
