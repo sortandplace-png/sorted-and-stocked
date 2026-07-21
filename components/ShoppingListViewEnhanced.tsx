@@ -20,6 +20,7 @@ import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
 import { getPreferredSource, type ReorderSource } from '@/lib/reorder-sources';
 import OrderLink from '@/components/OrderLink';
 import PhotoOrFallback from '@/components/PhotoOrFallback';
+import Pin from '@/components/PinAccent';
 
 type ShoppingListItem = {
   item_id: string;
@@ -828,8 +829,9 @@ export default function ShoppingListViewEnhanced({
           return (
             <div
               key={group.title}
-              className="bg-card rounded-2xl border border-cardBorder shadow-card p-4"
+              className="relative bg-card rounded-2xl border border-cardBorder shadow-card p-4"
             >
+              <Pin size="sm" />
               <button
                 onClick={() => toggleGroup(group.title)}
                 className="w-full flex items-center gap-2 mb-3 text-left"
@@ -865,7 +867,8 @@ export default function ShoppingListViewEnhanced({
           secondary to what's actually needed, but still worth seeing before
           the fully-done section at the very bottom. */}
       {showNiceToHave && (
-        <div className="print:hidden bg-card rounded-2xl border border-cardBorder shadow-card p-4">
+        <div className="relative print:hidden bg-card rounded-2xl border border-cardBorder shadow-card p-4">
+          <Pin size="sm" />
           <div className="flex items-center gap-2 mb-2">
             <span className="font-display text-lg text-dusk">Convenient to grab</span>
             <span className="text-xs text-dusk">({niceToHaveItems.length})</span>
@@ -903,7 +906,8 @@ export default function ShoppingListViewEnhanced({
           items at reduced opacity with strikethrough text (renderItemCard's
           isChecked styling), unchanged here. */}
       {completedItems.length > 0 && (
-        <div className="print:hidden bg-card rounded-2xl border border-cardBorder shadow-card p-4">
+        <div className="relative print:hidden bg-card rounded-2xl border border-cardBorder shadow-card p-4">
+          <Pin size="sm" />
           <button
             onClick={() => setCompletedExpanded((v) => !v)}
             className="w-full flex items-center gap-2 text-left"
