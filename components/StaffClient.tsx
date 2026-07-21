@@ -8,6 +8,7 @@ import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import Avatar from '@/components/Avatar';
 import FieldLabel from '@/components/FieldLabel';
+import ShiftHandoverClient from '@/components/ShiftHandoverClient';
 
 type Member = {
   id: string; // property_members row id
@@ -431,6 +432,17 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
       {error && (
         <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2 mb-3">{error}</p>
       )}
+
+      {/* SS-206 follow-up: embedded here so an owner/manager reviewing
+          their team sees the latest handover status as part of that same
+          flow, without a separate trip to /my-day -- the only place staff
+          themselves can reach this feature, since this whole page is
+          owner/manager-only (staff redirected server-side, see page.tsx).
+          Reuses ShiftHandoverClient as-is, already on current tokens
+          (bg-card, bg-denim selected pills), not rebuilt here. */}
+      <div className="-mx-4 px-4 pb-4 mb-6 border-b border-cardBorder">
+        <ShiftHandoverClient propertyId={propertyId} />
+      </div>
 
       <div className="space-y-3 mb-6">
         {members.map((member) => (
