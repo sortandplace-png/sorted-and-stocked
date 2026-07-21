@@ -22,6 +22,7 @@ import KitchenOpsToolModal, { type KitchenOpsSlug } from '@/components/KitchenOp
 import AddToMealPlanButton from '@/components/AddToMealPlanButton';
 import { COURSES, type Course } from '@/lib/course-constants';
 import IngredientShoppingLink from '@/components/IngredientShoppingLink';
+import PhotoOrFallback from '@/components/PhotoOrFallback';
 import { fetchRecipeWithIngredients } from '@/lib/recipe-actions';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { classifyProvenance, PROVENANCE_INFO } from '@/lib/recipe-provenance';
@@ -210,7 +211,6 @@ export default function RecipeDetailClient({
     }
   }
   const [checkedIds, setCheckedIds] = useState<Record<string, boolean>>({});
-  const [brokenIngredientPhotoIds, setBrokenIngredientPhotoIds] = useState<Set<string>>(new Set());
   const [addingToListIds, setAddingToListIds] = useState<Record<string, boolean>>({});
   const [showHistory, setShowHistory] = useState(false);
   const [openKitchenOpsTool, setOpenKitchenOpsTool] = useState<KitchenOpsSlug | null>(null);
@@ -1058,16 +1058,8 @@ export default function RecipeDetailClient({
                             aria-label={`Check off ${displayIngredientName(i)}`}
                           />
                         </label>
-                        {i.is_food === false ? null : i.photo_url && !brokenIngredientPhotoIds.has(i.id) ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={i.photo_url}
-                            alt=""
-                            className="w-9 h-9 rounded-lg object-cover shrink-0 bg-mist mt-0.5"
-                            onError={() => setBrokenIngredientPhotoIds((prev) => new Set(prev).add(i.id))}
-                          />
-                        ) : (
-                          <div className="w-9 h-9 rounded-lg bg-mist shrink-0 mt-0.5" aria-hidden="true" />
+                        {i.is_food === false ? null : (
+                          <PhotoOrFallback src={i.photo_url} sizeClass="w-9 h-9" className="mt-0.5" />
                         )}
                         <div className={`flex-1 ${checkedIds[i.id] ? 'opacity-40 line-through' : ''}`}>
                           <div className={view === 'staff' ? 'text-xl' : ''}>{formatQty(i)}</div>

@@ -19,6 +19,7 @@ import { createClient } from '@/lib/supabase/client';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
 import type { ReorderSource } from '@/lib/reorder-sources';
 import OrderLink from '@/components/OrderLink';
+import PhotoOrFallback from '@/components/PhotoOrFallback';
 
 type ShoppingListItem = {
   item_id: string;
@@ -89,9 +90,6 @@ export default function ShoppingListViewEnhanced({
   // items -- matches a real shopping trip, where you don't want a crossed-
   // off item still competing for attention next to what's left to buy.
   const [completedExpanded, setCompletedExpanded] = useState(false);
-  // Same broken-link concern as InventoryClient — photo_url existing isn't
-  // the same as the image actually loading.
-  const [brokenPhotoIds, setBrokenPhotoIds] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
   // "Convenient to grab" tier -- items between min_qty and a slightly
   // higher comfortable level (1.5x min_qty, rounded up), distinct from
@@ -547,18 +545,7 @@ export default function ShoppingListViewEnhanced({
             {isChecked ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
           </button>
 
-          {item.photo_url && !brokenPhotoIds.has(item.item_id) ? (
-            <img
-              src={item.photo_url}
-              alt={item.name}
-              className="h-14 w-14 rounded object-cover flex-shrink-0 bg-mist"
-              onError={() => setBrokenPhotoIds((prev) => new Set(prev).add(item.item_id))}
-            />
-          ) : (
-            <div className="h-14 w-14 rounded bg-mist flex items-center justify-center text-[10px] text-dusk flex-shrink-0">
-              No photo
-            </div>
-          )}
+          <PhotoOrFallback src={item.photo_url} alt={item.name} sizeClass="h-14 w-14" rounded="rounded" />
 
           <div className="flex-1 min-w-0">
             {/* Name + qty + cart on one real row, matching Low Stock
