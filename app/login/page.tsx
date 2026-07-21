@@ -5,7 +5,6 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
-import { SITE_URL } from '@/lib/site-url';
 import AuthLayout from '@/components/auth/AuthLayout';
 import AuthCard from '@/components/auth/AuthCard';
 import AuthWordmark from '@/components/auth/AuthWordmark';
@@ -45,9 +44,16 @@ function LoginForm() {
     // signs the user back out after the redirect if this account has no
     // property_members row, so a stray Google email can't self-provision
     // its way into the app.
+    //
+    // window.location.origin, not SITE_URL -- this redirect completes
+    // synchronously in the same browser session (unlike an emailed reset/
+    // invite link, which may be opened later from anywhere), so there's no
+    // localhost-leak risk to guard against here. Using the fixed SITE_URL
+    // was the actual bug: a Google sign-in started on app.sortandplace.com
+    // always landed back on www.sortandplace.com instead, confirmed live.
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${SITE_URL}/auth/callback` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
   }
 

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
-import { SITE_URL } from '@/lib/site-url';
+import { getEmailLinkOrigin } from '@/lib/site-url';
 import AuthLayout from '@/components/auth/AuthLayout';
 import AuthCard from '@/components/auth/AuthCard';
 import AuthWordmark from '@/components/auth/AuthWordmark';
@@ -31,12 +31,16 @@ export default function ForgotPasswordPage() {
 
     // Routes through the existing /auth/callback code-exchange handler,
     // which then forwards to /reset-password once the recovery session
-    // is established. SITE_URL, not window.location.origin -- local dev
-    // and production share the same Supabase project, so triggering this
-    // from a local dev server previously sent a real person a real email
-    // with a localhost link they couldn't open.
+    // is established. getEmailLinkOrigin, not a bare window.location.origin
+    // or the fixed SITE_URL alone -- this now matches the real hostname
+    // (app.sortandplace.com or www.sortandplace.com) when the request
+    // genuinely came from one of those, but still falls back to SITE_URL
+    // for anything else (localhost, a Vercel preview URL) so triggering
+    // this from a local dev server still can't send a real person a real
+    // email with a localhost link they couldn't open, same guarantee as
+    // before -- see lib/site-url.ts.
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${SITE_URL}/auth/callback?redirectTo=/reset-password`,
+      redirectTo: `${getEmailLinkOrigin(window.location.origin)}/auth/callback?redirectTo=/reset-password`,
     });
 
     setLoading(false);

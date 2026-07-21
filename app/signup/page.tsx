@@ -5,7 +5,6 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
-import { SITE_URL } from '@/lib/site-url';
 import AuthLayout from '@/components/auth/AuthLayout';
 import AuthCard from '@/components/auth/AuthCard';
 import AuthWordmark from '@/components/auth/AuthWordmark';
@@ -50,9 +49,13 @@ function SignupForm() {
     setGoogleLoading(true);
     setError(null);
     const supabase = createClient();
+    // window.location.origin, not SITE_URL -- see the matching comment in
+    // login/page.tsx's handleGoogleSignIn for why this one's safe to make
+    // fully dynamic (synchronous same-session redirect, not an emailed
+    // link opened later from an unknown context).
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${SITE_URL}/auth/callback` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
   }
 
