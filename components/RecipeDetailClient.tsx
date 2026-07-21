@@ -934,14 +934,18 @@ export default function RecipeDetailClient({
           })()}
       </div>
       {recipe.tags && recipe.tags.length > 0 && (
-        <div className="flex items-center gap-1 flex-wrap mb-4">
+        <div className="flex items-center gap-1.5 flex-wrap mb-4">
+          {/* SS-146: matched to the kosher/prep-time/provenance pills just
+              above (text-xs px-2.5 py-1) -- this row previously used a
+              visibly smaller text-[10px]/py-0.5, the one real inconsistency
+              in an otherwise-already-on-token metadata area. */}
           {recipe.tags.map((tag) => (
             <span
               key={tag}
               className={
                 tag === 'NEW'
-                  ? 'text-[10px] font-medium text-white bg-denim px-2 py-0.5 rounded-full'
-                  : 'text-[10px] font-medium text-brass bg-mist px-2 py-0.5 rounded-full'
+                  ? 'text-xs font-medium text-white bg-denim px-2.5 py-1 rounded-full'
+                  : 'text-xs font-medium text-brass bg-mist px-2.5 py-1 rounded-full'
               }
             >
               {tagLabel(tag)}
