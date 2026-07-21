@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { emailShell, escapeHtml } from '@/lib/email-template';
-import { SITE_URL } from '@/lib/site-url';
+import { getEmailLinkOrigin } from '@/lib/site-url';
 
 const RESEND_FROM = 'Sorted & Stocked <invites@sortandplace.com>';
 
@@ -116,13 +116,23 @@ export async function POST(request: Request) {
   // returns the action link without sending anything itself, so the branded
   // Resend email below is the only one that goes out.
   const admin = createAdminClient();
-  // SITE_URL, not the request's own host -- local dev and production share
-  // the same Supabase project, so an invite triggered from someone's local
-  // dev server previously produced a real invite email with a localhost
-  // link (confirmed: this is what happened to Blimie's invite). The
-  // request's host is never the right signal here regardless of forwarded
-  // headers, since the recipient's browser has nothing to do with whichever
-  // machine happened to call this route.
+  // 2026-07-21: was a bare SITE_URL, unconditionally -- real bug, same
+  // class as the OAuth redirectTo fix elsewhere, just for invite emails
+  // instead of sign-in: an invite sent from app.sortandplace.com always
+  // linked back to www.sortandplace.com instead. Fixed with the request's
+  // own forwarded host (request.url reflects the internal host behind a
+  // reverse proxy, not the public-facing domain, hence x-forwarded-host
+  // first) run through getEmailLinkOrigin -- unlike the OAuth fix, this
+  // can't just use the request's origin unconditionally: an invite is an
+  // emailed link that may be opened later, from anywhere, so a request
+  // that happens to originate from localhost or a Vercel preview URL must
+  // still fall back to the fixed SITE_URL default, not leak that origin
+  // into a real person's inbox (confirmed: this is what happened to
+  // Blimie's invite, before SITE_URL existed at all). See lib/site-url.ts.
+  const { origin: rawOrigin } = new URL(request.url);
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const forwardedProto = request.headers.get('x-forwarded-proto');
+  const requestOrigin = forwardedHost ? `${forwardedProto ?? 'https'}://${forwardedHost}` : rawOrigin;
   //
   // /auth/confirm, not /auth/callback -- generateLink never uses PKCE
   // (confirmed against Supabase's own docs: an admin-generated link can't
@@ -137,7 +147,7 @@ export async function POST(request: Request) {
   const { data: linkData, error: inviteError } = await admin.auth.admin.generateLink({
     type: 'invite',
     email,
-    options: { redirectTo: `${SITE_URL}/auth/confirm?redirectTo=/reset-password` },
+    options: { redirectTo: `${getEmailLinkOrigin(requestOrigin)}/auth/confirm?redirectTo=/reset-password` },
   });
 
   if (inviteError) {
