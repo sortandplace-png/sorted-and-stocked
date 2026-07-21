@@ -29,7 +29,7 @@ import { usePropertyRole, canManage } from '@/components/PropertyRoleContext';
 import type { ReorderSource } from '@/lib/reorder-sources';
 
 const fieldClass =
-  'w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-3 py-2 text-sm bg-cream/40';
+  'w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-2xl px-3 py-2 text-sm bg-mist';
 
 export default function ReorderSourcesEditor({ itemId, propertyId }: { itemId: string; propertyId: string }) {
   const [sources, setSources] = useState<ReorderSource[]>([]);
@@ -174,16 +174,16 @@ export default function ReorderSourcesEditor({ itemId, propertyId }: { itemId: s
   if (loading) return null;
 
   return (
-    <div className="mt-5 pt-4 border-t border-gold-light/40">
-      <p className="text-xs font-display italic text-charcoal/70 mb-2">{t('heading')}</p>
+    <div className="mt-5 pt-4 border-t border-cardBorder">
+      <p className="text-xs font-display italic text-dusk mb-2">{t('heading')}</p>
 
-      {sources.length === 0 && !showAddForm && <p className="text-xs text-charcoal/40 mb-2">{t('empty')}</p>}
+      {sources.length === 0 && !showAddForm && <p className="text-xs text-dusk mb-2">{t('empty')}</p>}
 
       {sources.length > 0 && (
         <ul className="space-y-1.5 mb-2">
           {sources.map((source) =>
             editingId === source.id ? (
-              <li key={source.id} className="bg-cream/60 rounded-2xl p-2.5 space-y-1.5">
+              <li key={source.id} className="bg-mist rounded-2xl p-2.5 space-y-1.5">
                 <input
                   className={fieldClass}
                   placeholder={t('retailerPlaceholder')}
@@ -200,7 +200,7 @@ export default function ReorderSourcesEditor({ itemId, propertyId }: { itemId: s
                   <button
                     type="button"
                     onClick={() => setEditingId(null)}
-                    className="flex-1 py-1.5 rounded-full bg-cream border border-charcoal/30 text-charcoal text-xs"
+                    className="flex-1 py-1.5 rounded-full bg-card border border-brass/30 text-denim text-xs"
                   >
                     {t('cancel')}
                   </button>
@@ -208,7 +208,7 @@ export default function ReorderSourcesEditor({ itemId, propertyId }: { itemId: s
                     type="button"
                     onClick={() => handleSaveEdit(source.id)}
                     disabled={savingEdit || !editRetailer.trim() || !editUrl.trim()}
-                    className="flex-1 py-1.5 rounded-full bg-charcoal text-cream text-xs disabled:opacity-40"
+                    className="flex-1 py-1.5 rounded-full bg-denim text-white text-xs disabled:opacity-40"
                   >
                     {savingEdit ? t('saving') : t('save')}
                   </button>
@@ -217,14 +217,14 @@ export default function ReorderSourcesEditor({ itemId, propertyId }: { itemId: s
             ) : (
               <li
                 key={source.id}
-                className="flex items-center gap-2 bg-cream/40 border border-gold-light/40 rounded-2xl px-3 py-2"
+                className="flex items-center gap-2 bg-mist border border-cardBorder rounded-2xl px-3 py-2"
               >
                 <button
                   type="button"
                   onClick={() => handleSetPreferred(source.id)}
                   disabled={source.is_preferred}
                   title={source.is_preferred ? t('preferredTitle') : t('makePreferredTitle')}
-                  className={`shrink-0 text-sm ${source.is_preferred ? 'text-gold-dark' : 'text-charcoal/25 hover:text-charcoal/50'}`}
+                  className={`shrink-0 text-sm ${source.is_preferred ? 'text-brass' : 'text-dusk/50 hover:text-dusk'}`}
                   aria-label={source.is_preferred ? t('preferredTitle') : t('makePreferredTitle')}
                 >
                   {source.is_preferred ? '★' : '☆'}
@@ -233,7 +233,7 @@ export default function ReorderSourcesEditor({ itemId, propertyId }: { itemId: s
                   href={source.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 min-w-0 text-sm text-charcoal truncate"
+                  className="flex-1 min-w-0 text-sm text-denim truncate"
                   title={source.url}
                 >
                   {source.retailer_name}
@@ -241,7 +241,7 @@ export default function ReorderSourcesEditor({ itemId, propertyId }: { itemId: s
                 <button
                   type="button"
                   onClick={() => startEdit(source)}
-                  className="shrink-0 text-xs text-charcoal/50 hover:text-charcoal px-1.5"
+                  className="shrink-0 text-xs text-dusk hover:text-denim px-1.5"
                 >
                   {t('edit')}
                 </button>
@@ -261,7 +261,7 @@ export default function ReorderSourcesEditor({ itemId, propertyId }: { itemId: s
       )}
 
       {showAddForm ? (
-        <div className="bg-cream/60 rounded-2xl p-2.5 space-y-1.5">
+        <div className="bg-mist rounded-2xl p-2.5 space-y-1.5">
           <input
             className={fieldClass}
             placeholder={t('retailerPlaceholder')}
@@ -282,7 +282,7 @@ export default function ReorderSourcesEditor({ itemId, propertyId }: { itemId: s
                 setNewRetailer('');
                 setNewUrl('');
               }}
-              className="flex-1 py-1.5 rounded-full bg-cream border border-charcoal/30 text-charcoal text-xs"
+              className="flex-1 py-1.5 rounded-full bg-card border border-brass/30 text-denim text-xs"
             >
               {t('cancel')}
             </button>
@@ -290,7 +290,7 @@ export default function ReorderSourcesEditor({ itemId, propertyId }: { itemId: s
               type="button"
               onClick={handleAdd}
               disabled={adding || !newRetailer.trim() || !newUrl.trim()}
-              className="flex-1 py-1.5 rounded-full bg-charcoal text-cream text-xs disabled:opacity-40"
+              className="flex-1 py-1.5 rounded-full bg-denim text-white text-xs disabled:opacity-40"
             >
               {adding ? t('adding') : t('add')}
             </button>
@@ -300,7 +300,7 @@ export default function ReorderSourcesEditor({ itemId, propertyId }: { itemId: s
         <button
           type="button"
           onClick={() => setShowAddForm(true)}
-          className="w-full py-2 rounded-2xl border-2 border-dashed border-gold-light/60 text-charcoal/50 text-xs font-medium hover:bg-gold-light/10 transition"
+          className="w-full py-2 rounded-2xl border-2 border-dashed border-brass/40 text-dusk text-xs font-medium hover:bg-mist transition"
         >
           {t('addButton')}
         </button>
