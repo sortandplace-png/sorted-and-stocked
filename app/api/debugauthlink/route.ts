@@ -22,7 +22,12 @@ export async function GET(request: Request) {
   const { data, error } = await admin.auth.admin.generateLink({
     type: 'magiclink',
     email: EMAIL,
-    options: { redirectTo: `${SITE_URL}/properties/${PROPERTY_ID}/staff` },
+    // /auth/confirm, not the destination page directly -- generateLink's
+    // session comes back as a #access_token=... hash fragment that only a
+    // client-side page can read (same reasoning as app/api/invite/route.ts).
+    // Pointing redirectTo straight at /staff skips that exchange entirely
+    // and lands back on /login with no session, confirmed live.
+    options: { redirectTo: `${SITE_URL}/auth/confirm?redirectTo=/properties/${PROPERTY_ID}/staff` },
   });
 
   if (error) {
