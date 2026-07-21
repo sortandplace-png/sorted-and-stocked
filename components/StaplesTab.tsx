@@ -314,15 +314,15 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
             </p>
           </div>
         ) : groups ? (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-stretch">
             {groups.map(([key, groupStaples]) => {
               const collapsed = collapsedGroups.has(key);
               const lowCount = groupStaples.filter((s) => s.is_low).length;
               return (
-                <div key={key}>
+                <div key={key} className="bg-card border border-cardBorder rounded-xl2 shadow-card p-4">
                   <button
                     onClick={() => toggleGroup(key)}
-                    className="w-full flex items-center gap-3 mb-2 bg-mist rounded-xl2 px-3.5 py-2.5 text-left"
+                    className="w-full flex items-center gap-3 mb-2 text-left"
                   >
                     <span className="font-display text-lg text-denim">{key}</span>
                     <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-brass">
