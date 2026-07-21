@@ -166,10 +166,19 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     setLoading(true);
     setError(null);
 
+    // SS-167: qa-test-verification@sortedstocked.local (user_id
+    // 6d36e852-63e1-4680-a326-05c6a3f0635c) stays in auth.users/profiles --
+    // a real inventory_item_history row from 2026-07-10 depends on it
+    // existing -- but is excluded from the active roster here. It currently
+    // has zero property_members rows on any property, so nothing shows
+    // without this filter either; this just keeps it that way if that ever
+    // changes (a re-added membership for testing, say) rather than relying
+    // on the absence being permanent.
     const { data, error: loadError } = await supabase
       .from('property_members')
       .select('id, user_id, role, profiles(full_name)')
       .eq('property_id', propertyId)
+      .neq('user_id', '6d36e852-63e1-4680-a326-05c6a3f0635c')
       .order('joined_at');
 
     if (loadError) {
