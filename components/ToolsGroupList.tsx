@@ -3,13 +3,28 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Lock } from 'lucide-react';
+import { Lock, Tag, Microscope, UtensilsCrossed, Timer, Users, RotateCcw, Hourglass, type LucideIcon } from 'lucide-react';
 import ToolModal, { type ToolModalSlug } from '@/components/ToolModal';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 
 type Tool = { slug: string; icon: string; title: string; description: string; count?: number };
 type Subgroup = { key: string; label: string; lockIcon: boolean; tools: Tool[] };
 type Group = { key: string; label: string; tools: Tool[]; subgroups: Subgroup[] };
+
+// Scanners + Kitchen's top-level tools + Prep & Reset: the emoji-vs-icon
+// fix for these 7 (the rest of the page is still emoji, not yet in
+// scope). Keyed by slug rather than changing TOOLS' own `icon` field in
+// page.tsx, so a slug that's ever renamed/removed here harmlessly falls
+// back to its emoji instead of rendering nothing.
+const TOOL_ICON_OVERRIDES: Record<string, LucideIcon> = {
+  'price-scanner': Tag,
+  'ingredient-scanner': Microscope,
+  'recipe-stealer': UtensilsCrossed,
+  'kitchen-timer': Timer,
+  'guest-scaler': Users,
+  'reset-checklist': RotateCcw,
+  'prep-timeline': Hourglass,
+};
 
 // Same modal treatment already proven for Kitchen Ops (opened from a
 // recipe, via KitchenOpsToolModal) applied here to the tools that are
@@ -55,11 +70,18 @@ export default function ToolsGroupList({ propertyId, groups }: { propertyId: str
   }
 
   function toolCard(tool: Tool) {
+    const OverrideIcon = TOOL_ICON_OVERRIDES[tool.slug];
     const cardInner = (
       <>
-        <span className="w-11 h-11 flex items-center justify-center rounded-full bg-gold/15 text-lg">
-          {tool.icon}
-        </span>
+        {OverrideIcon ? (
+          <span className="w-11 h-11 flex items-center justify-center">
+            <OverrideIcon size={28} className="text-denim" aria-hidden="true" />
+          </span>
+        ) : (
+          <span className="w-11 h-11 flex items-center justify-center rounded-full bg-gold/15 text-lg">
+            {tool.icon}
+          </span>
+        )}
         <span className="flex items-center gap-1.5">
           <span className="font-display font-semibold text-charcoal">{tool.title}</span>
           {typeof tool.count === 'number' && (
