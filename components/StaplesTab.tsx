@@ -4,10 +4,52 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useToast } from '@/components/Toast';
 import { fetchStaplesWithInventory, addStapleToList } from '@/lib/api/staples';
-import { Search, Plus, Check } from 'lucide-react';
+import {
+  Search,
+  Plus,
+  Check,
+  Croissant,
+  Cookie,
+  Droplet,
+  Milk,
+  Snowflake,
+  Wheat,
+  CookingPot,
+  Beef,
+  Package,
+  Carrot,
+  type LucideIcon,
+} from 'lucide-react';
 import Pin from '@/components/PinAccent';
 import { CardHeader } from '@/components/ShiftHandoverClient';
 import PhotoOrFallback from '@/components/PhotoOrFallback';
+
+// Real staple_category values, confirmed live via direct query (14 as of
+// 2026-07-21) -- not guessed from the task's example list, though that
+// list turned out to match exactly. Falls back to Package for anything
+// new; several categories deliberately share an icon where there's no
+// single obvious pick (Condiments/Oils & Vinegars both Droplet, Meat/
+// Proteins both Beef) -- easy to swap individually later.
+const STAPLE_CATEGORY_ICONS: Record<string, LucideIcon> = {
+  Bakery: Croissant,
+  Baking: Cookie,
+  Condiments: Droplet,
+  Dairy: Milk,
+  'Dairy & Eggs': Milk,
+  Frozen: Snowflake,
+  'Grains & Starches': Wheat,
+  'Liquids & Stock': CookingPot,
+  Meat: Beef,
+  'Oils & Vinegars': Droplet,
+  Pantry: Package,
+  Produce: Carrot,
+  Proteins: Beef,
+  Spices: Package,
+  'Spices & Seasonings': Package,
+};
+function getStapleCategoryIcon(category: string): LucideIcon {
+  return STAPLE_CATEGORY_ICONS[category] ?? Package;
+}
 
 type Staple = {
   staple_id: string;
@@ -314,21 +356,23 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
             </p>
           </div>
         ) : groups ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-stretch">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-start">
             {groups.map(([key, groupStaples]) => {
               const collapsed = collapsedGroups.has(key);
               const lowCount = groupStaples.filter((s) => s.is_low).length;
+              const Icon = getStapleCategoryIcon(key);
               return (
-                <div key={key} className="bg-card border border-cardBorder rounded-xl2 shadow-card p-4">
+                <div key={key}>
                   <button
                     onClick={() => toggleGroup(key)}
-                    className="w-full flex items-center gap-3 mb-2 text-left"
+                    className="relative w-full min-h-[128px] flex flex-col items-center justify-center gap-1.5 rounded-xl2 bg-mist border border-brass/30 py-[14px] px-[18px] shadow-card hover:shadow-cardHover transition-shadow text-center"
                   >
+                    <span className="absolute top-2 right-2 text-dusk text-xs">{collapsed ? '▸' : '▾'}</span>
+                    <Icon size={32} className="text-denim" aria-hidden="true" />
                     <span className="font-display text-lg text-denim">{key}</span>
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-brass">
+                    <span className="text-xs text-dusk">
                       {groupStaples.length} {groupStaples.length === 1 ? 'item' : 'items'}
                     </span>
-                    <span className="flex-1" />
                     <span
                       className={`text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${
                         lowCount > 0 ? 'bg-rust/15 text-rust' : 'bg-sage/10 text-sage'
@@ -336,10 +380,9 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
                     >
                       {lowCount > 0 ? `${lowCount} below par` : 'All stocked'}
                     </span>
-                    <span className="text-dusk text-sm shrink-0">{collapsed ? '▸' : '▾'}</span>
                   </button>
                   {!collapsed && (
-                    <div className="space-y-3">{groupStaples.map(renderStapleCard)}</div>
+                    <div className="space-y-3 mt-3">{groupStaples.map(renderStapleCard)}</div>
                   )}
                 </div>
               );

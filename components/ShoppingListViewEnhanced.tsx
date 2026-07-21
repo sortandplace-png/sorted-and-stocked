@@ -12,7 +12,40 @@ import {
   removeShoppingItem,
   type ShoppingItemSource,
 } from '@/lib/api/shoppingList';
-import { Trash2, CheckCircle2, Circle, Printer, Sparkles, MoreVertical, ShoppingCart, AlertTriangle, Repeat, Store, BookOpen, MapPin } from 'lucide-react';
+import {
+  Trash2,
+  CheckCircle2,
+  Circle,
+  Printer,
+  Sparkles,
+  MoreVertical,
+  ShoppingCart,
+  AlertTriangle,
+  Repeat,
+  Store,
+  BookOpen,
+  MapPin,
+  Baby,
+  Cookie,
+  Bath,
+  Coffee,
+  SprayCan,
+  Plug,
+  PartyPopper,
+  ChefHat,
+  WashingMachine,
+  Pill,
+  Briefcase,
+  Package,
+  FileText,
+  PawPrint,
+  Refrigerator,
+  Popcorn,
+  Archive,
+  Wrench,
+  Snowflake,
+  type LucideIcon,
+} from 'lucide-react';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { useToast } from '@/components/Toast';
 import { createClient } from '@/lib/supabase/client';
@@ -21,6 +54,39 @@ import { getPreferredSource, type ReorderSource } from '@/lib/reorder-sources';
 import OrderLink from '@/components/OrderLink';
 import PhotoOrFallback from '@/components/PhotoOrFallback';
 import Pin from '@/components/PinAccent';
+
+// Real inventory_items.category values (lib/icon-maps.ts's own comment:
+// "Matches the real category names in the live categories table, 19 as of
+// July 2026") -- a different taxonomy than StaplesTab's staple_category,
+// confirmed by reading get_staples_with_inventory's actual SQL definition
+// before assuming the two files could share one icon map. "Staples" here
+// is this file's own special first-bucket title (not a real category row),
+// reusing the same Repeat icon its groupBy toggle already uses for it.
+const SHOPPING_CATEGORY_ICONS: Record<string, LucideIcon> = {
+  Staples: Repeat,
+  Baby: Baby,
+  Baking: Cookie,
+  Bathroom: Bath,
+  Beverages: Coffee,
+  Cleaning: SprayCan,
+  Electronics: Plug,
+  Freezer: Snowflake,
+  Holiday: PartyPopper,
+  Kitchen: ChefHat,
+  Laundry: WashingMachine,
+  Medicine: Pill,
+  Office: Briefcase,
+  Pantry: Package,
+  'Paper Goods': FileText,
+  'Pet Supplies': PawPrint,
+  Refrigerator: Refrigerator,
+  Snacks: Popcorn,
+  Storage: Archive,
+  Tools: Wrench,
+};
+function getShoppingCategoryIcon(title: string): LucideIcon {
+  return SHOPPING_CATEGORY_ICONS[title] ?? Package;
+}
 
 type ShoppingListItem = {
   item_id: string;
@@ -822,39 +888,40 @@ export default function ShoppingListViewEnhanced({
           treatment so both tabs feel like the same app rather than two
           different styles. Checked-off items don't appear here at all --
           they move to the single Completed section below. */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-start">
         {groups.map(group => {
           if (group.items.length === 0) return null;
           const collapsed = collapsedGroups.has(group.title);
+          const Icon = getShoppingCategoryIcon(group.title);
           return (
-            <div
-              key={group.title}
-              className="bg-card rounded-2xl border border-cardBorder shadow-card p-4"
-            >
+            <div key={group.title}>
               <button
                 onClick={() => toggleGroup(group.title)}
-                className="w-full flex items-center gap-2 mb-3 text-left"
+                className="relative w-full min-h-[128px] flex flex-col items-center justify-center gap-1.5 rounded-xl2 bg-mist border border-brass/30 py-[14px] px-[18px] shadow-card hover:shadow-cardHover transition-shadow text-center"
               >
+                <span className="absolute top-2 right-2 text-dusk text-xs">{collapsed ? '▸' : '▾'}</span>
                 {/* By Recipe only -- group.photoUrl is undefined in every
                     other grouping mode (category/aisle titles aren't
                     recipes and have no photo to show). Same photo-or-
                     fallback treatment as item cards elsewhere in this file. */}
-                {group.photoUrl !== undefined && (
-                  <span className="w-8 h-8 rounded-md overflow-hidden bg-mist shrink-0 flex items-center justify-center">
+                {group.photoUrl !== undefined ? (
+                  <span className="w-9 h-9 rounded-md overflow-hidden bg-card shrink-0 flex items-center justify-center">
                     {group.photoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={group.photoUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-sm" aria-hidden="true">🍽️</span>
+                      <span className="text-lg" aria-hidden="true">🍽️</span>
                     )}
                   </span>
+                ) : (
+                  <Icon size={32} className="text-denim" aria-hidden="true" />
                 )}
                 <span className="font-display text-lg text-denim">{group.title}</span>
-                <span className="text-xs text-dusk">({group.items.length})</span>
-                <span className="flex-1 border-t border-cardBorder" />
-                <span className="text-dusk text-sm">{collapsed ? '▸' : '▾'}</span>
+                <span className="text-xs text-dusk">
+                  {group.items.length} {group.items.length === 1 ? 'item' : 'items'}
+                </span>
               </button>
-              {!collapsed && <div className="space-y-2">{group.items.map(renderItemCard)}</div>}
+              {!collapsed && <div className="space-y-2 mt-3">{group.items.map(renderItemCard)}</div>}
             </div>
           );
         })}
