@@ -57,13 +57,13 @@ export default function ToolModal({
       onClick={onClose}
     >
       <div
-        className="w-full sm:max-w-lg bg-white rounded-t-[2rem] sm:rounded-2xl max-h-[85vh] overflow-y-auto relative"
+        className="w-full sm:max-w-lg bg-card rounded-t-[2rem] sm:rounded-2xl max-h-[85vh] overflow-y-auto relative"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-3 right-3 w-11 h-11 flex items-center justify-center text-charcoal/50 hover:text-charcoal z-10"
+          className="absolute top-3 right-3 w-11 h-11 flex items-center justify-center text-dusk hover:text-denim z-10"
         >
           <X size={20} strokeWidth={1.75} />
         </button>
@@ -96,7 +96,7 @@ export default function ToolModal({
           (canManage(role) ? (
             <PhotoReviewClient propertyId={propertyId} hideBackLink />
           ) : (
-            <p className="p-5 text-sm text-charcoal/50">Only an owner or manager can use this tool.</p>
+            <p className="p-5 text-sm text-dusk">Only an owner or manager can use this tool.</p>
           ))}
         {slug === 'knowledge-base' && <HouseholdKnowledgeClient propertyId={propertyId} />}
         {slug === 'contacts' && <HouseholdContactsClient propertyId={propertyId} />}
@@ -108,19 +108,19 @@ export default function ToolModal({
           (canManage(role) ? (
             <LinkCapturedPhotosClient propertyId={propertyId} />
           ) : (
-            <p className="p-5 text-sm text-charcoal/50">Only an owner or manager can use this tool.</p>
+            <p className="p-5 text-sm text-dusk">Only an owner or manager can use this tool.</p>
           ))}
         {slug === 'hechsher-verification' &&
           (canManage(role) ? (
             <HechsherVerificationClient propertyId={propertyId} />
           ) : (
-            <p className="p-5 text-sm text-charcoal/50">Only an owner or manager can use this tool.</p>
+            <p className="p-5 text-sm text-dusk">Only an owner or manager can use this tool.</p>
           ))}
         {slug === 'kosher-type-tagging' &&
           (canManage(role) ? (
             <KosherTypeTaggingClient propertyId={propertyId} />
           ) : (
-            <p className="p-5 text-sm text-charcoal/50">Only an owner or manager can use this tool.</p>
+            <p className="p-5 text-sm text-dusk">Only an owner or manager can use this tool.</p>
           ))}
       </div>
     </div>

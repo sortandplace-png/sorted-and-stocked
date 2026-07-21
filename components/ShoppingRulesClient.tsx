@@ -10,6 +10,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
+import Pin from '@/components/PinAccent';
+import { CardHeader } from '@/components/ShiftHandoverClient';
 
 export default function ShoppingRulesClient({ propertyId }: { propertyId: string }) {
   const [autoRestockEnabled, setAutoRestockEnabled] = useState(false);
@@ -54,33 +56,39 @@ export default function ShoppingRulesClient({ propertyId }: { propertyId: string
   if (loading) return <SkeletonList rows={2} />;
 
   return (
-    <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Shopping Rules</h1>
-      <p className="text-sm text-charcoal/50 mb-4">How the shopping list behaves automatically.</p>
+    <div className="bg-mist min-h-screen p-4 max-w-md mx-auto">
+      <h1 className="text-2xl font-display text-denim mb-1">Shopping Rules</h1>
+      <p className="text-sm text-dusk mb-4">How the shopping list behaves automatically.</p>
 
-      <div className="flex items-center justify-between gap-3 bg-white rounded-2xl border border-gold-light/40 px-4 py-3">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-charcoal">Auto-restock</p>
-          <p className="text-xs text-charcoal/50">
-            When an item drops below its par level, add it to the shopping list automatically.
-          </p>
+      <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
+        <Pin size="sm" />
+        <CardHeader>Automation Rules</CardHeader>
+        <div className="p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-denim">Auto-restock</p>
+              <p className="text-xs text-dusk">
+                When an item drops below its par level, add it to the shopping list automatically.
+              </p>
+            </div>
+            <button
+              onClick={toggleAutoRestock}
+              disabled={savingAutoRestock}
+              role="switch"
+              aria-checked={autoRestockEnabled}
+              aria-label="Toggle auto-restock"
+              className={`relative shrink-0 w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${
+                autoRestockEnabled ? 'bg-denim' : 'bg-mist border border-cardBorder'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
+                  autoRestockEnabled ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
         </div>
-        <button
-          onClick={toggleAutoRestock}
-          disabled={savingAutoRestock}
-          role="switch"
-          aria-checked={autoRestockEnabled}
-          aria-label="Toggle auto-restock"
-          className={`relative shrink-0 w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${
-            autoRestockEnabled ? 'bg-gold-dark' : 'bg-gold-light/50'
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
-              autoRestockEnabled ? 'translate-x-5' : 'translate-x-0'
-            }`}
-          />
-        </button>
       </div>
     </div>
   );

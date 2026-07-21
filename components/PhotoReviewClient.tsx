@@ -152,17 +152,19 @@ export default function PhotoReviewClient({
   return (
     <div className="max-w-2xl mx-auto p-4">
       {!hideBackLink && (
-        <Link href={`/properties/${propertyId}/tools`} className="text-sm text-charcoal/50 underline mb-3 inline-block">
+        <Link href={`/properties/${propertyId}/tools`} className="text-sm text-dusk underline mb-3 inline-block">
           ← Tools
         </Link>
       )}
-      <h1 className="font-display text-2xl text-charcoal mb-1">Room Photo Review</h1>
-      <p className="text-sm text-charcoal/60 mb-1">
+      <h1 className="font-display text-2xl text-denim mb-1">Room Photo Review</h1>
+      <p className="text-sm text-dusk mb-3">
         Upload photos, match each to a real room, assign. This is the permanent home for bulk house-photo drops —
         for a single room, the "Add photo" button on that room's card in Inventory still works too.
       </p>
-      <p className="text-xs text-charcoal/40 mb-5">
-        {loadingLocations ? 'Loading rooms…' : `${assignedCount} of ${locations.length} rooms have a photo.`}
+      <p className="mb-5">
+        <span className="inline-block text-xs font-medium bg-mist text-denim px-2.5 py-1 rounded-full">
+          {loadingLocations ? 'Loading rooms…' : `${assignedCount} of ${locations.length} rooms have a photo`}
+        </span>
       </p>
 
       <input
@@ -178,22 +180,22 @@ export default function PhotoReviewClient({
       />
       <button
         onClick={() => fileInputRef.current?.click()}
-        className="w-full py-8 rounded-2xl border-2 border-dashed border-gold-light text-charcoal/60 text-sm hover:bg-gold-light/10 transition-colors mb-6"
+        className="w-full py-8 rounded-xl2 border-2 border-dashed border-brass/40 bg-mist text-denim text-sm font-medium hover:bg-card transition-colors mb-6"
       >
         📸 Choose photos to upload
       </button>
 
       {queue.length === 0 ? (
-        <p className="text-sm text-charcoal/40 text-center py-8">No photos waiting for review.</p>
+        <p className="text-sm text-dusk text-center py-8">No photos waiting for review.</p>
       ) : (
         <div className="space-y-3">
           {queue.map((item) => (
             <div
               key={item.key}
-              className="flex items-center gap-3 bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-3"
+              className="flex items-center gap-3 bg-card rounded-xl2 border border-cardBorder shadow-card p-3"
             >
               {item.status === 'uploading' ? (
-                <div className="w-16 h-16 rounded-xl bg-gold-light/20 shrink-0 flex items-center justify-center text-xs text-charcoal/40">
+                <div className="w-16 h-16 rounded-xl bg-mist shrink-0 flex items-center justify-center text-xs text-dusk">
                   …
                 </div>
               ) : item.status === 'error' ? (
@@ -206,12 +208,12 @@ export default function PhotoReviewClient({
               )}
 
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-charcoal/40 truncate mb-1.5">{item.fileName}</p>
+                <p className="text-xs text-dusk truncate mb-1.5">{item.fileName}</p>
                 <select
                   value={item.selectedLocationId}
                   onChange={(e) => setSelectedLocation(item.key, e.target.value)}
                   disabled={item.status !== 'ready'}
-                  className="w-full rounded-lg border border-gold-light/60 px-2 py-1.5 text-sm text-charcoal disabled:opacity-40"
+                  className="w-full rounded-lg border border-cardBorder px-2 py-1.5 text-sm text-denim disabled:opacity-40"
                 >
                   <option value="">Which room?</option>
                   {locations.map((loc) => (
@@ -227,11 +229,11 @@ export default function PhotoReviewClient({
                 <button
                   onClick={() => assign(item)}
                   disabled={item.status !== 'ready' || !item.selectedLocationId || item.assigning}
-                  className="rounded-full bg-gold-dark px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+                  className="rounded-full bg-denim px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
                 >
                   {item.assigning ? '…' : 'Assign'}
                 </button>
-                <button onClick={() => skip(item.key)} className="text-xs text-charcoal/40">
+                <button onClick={() => skip(item.key)} className="text-xs text-dusk">
                   Skip
                 </button>
               </div>
