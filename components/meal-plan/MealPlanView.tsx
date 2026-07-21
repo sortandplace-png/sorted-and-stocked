@@ -10,7 +10,6 @@ import { resilientInsert, resilientDelete } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import { kosherIcon } from '@/lib/icon-maps';
-import Pin from '@/components/PinAccent';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { COURSES, type Course } from '@/lib/course-constants';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
@@ -1191,10 +1190,10 @@ export default function MealPlanView({
           </button>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center flex-wrap gap-3">
           <button
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 rounded-full border border-brass px-3 py-1.5 text-xs font-medium text-brass"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-card border border-cardBorder px-3 py-1.5 text-xs font-medium text-denim shadow-sm hover:bg-mist"
           >
             <Printer className="h-3.5 w-3.5" />
             {viewMode === 'week' ? t('printWeek') : t('printMonth')}
@@ -1202,7 +1201,7 @@ export default function MealPlanView({
           {viewMode === 'week' && (
             <button
               onClick={shareWeekWhatsApp}
-              className="inline-flex items-center gap-1.5 rounded-full border border-brass px-3 py-1.5 text-xs font-medium text-brass"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-card border border-cardBorder px-3 py-1.5 text-xs font-medium text-denim shadow-sm hover:bg-mist"
             >
               <WhatsAppIcon size={14} />
               Share week
@@ -1213,7 +1212,7 @@ export default function MealPlanView({
               onClick={repeatWeekForward}
               disabled={repeatingWeek}
               title="Copy this week's meals to next week (won't overwrite anything already planned)"
-              className="rounded-full border border-brass px-4 py-1.5 text-xs font-medium text-brass disabled:opacity-40"
+              className="rounded-lg bg-card border border-cardBorder px-3 py-1.5 text-xs font-medium text-denim shadow-sm hover:bg-mist disabled:opacity-40"
             >
               {repeatingWeek ? '…' : 'Repeat next week →'}
             </button>
@@ -1222,7 +1221,7 @@ export default function MealPlanView({
             <button
               onClick={generateShoppingList}
               disabled={pushingToShopping}
-              className="rounded-full bg-denim px-4 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+              className="rounded-lg bg-denim px-4 py-2 text-xs font-medium text-white hover:bg-denim/90 disabled:opacity-40"
             >
               {pushingToShopping ? '…' : t('generateShoppingList')}
             </button>
@@ -1232,7 +1231,7 @@ export default function MealPlanView({
               onClick={() => extendMealPlan(4)}
               disabled={extending}
               title="Repeat the last planned week forward 4 more weeks, wherever the plan currently ends"
-              className="rounded-full bg-linen border border-brass/30 px-4 py-1.5 text-xs font-medium text-denim disabled:opacity-40"
+              className="rounded-lg bg-card border border-cardBorder px-3 py-1.5 text-xs font-medium text-denim shadow-sm hover:bg-mist disabled:opacity-40"
             >
               {extending ? '…' : 'Extend plan +4 weeks'}
             </button>
@@ -1283,66 +1282,61 @@ export default function MealPlanView({
               <div
                 key={dateStr}
                 className={
-                  'relative rounded-2xl bg-card shadow-card overflow-hidden' +
+                  'relative rounded-xl2 bg-card border border-cardBorder shadow-card overflow-hidden' +
                   (isToday ? ' ring-2 ring-brass' : '') +
                   (printOnlyDate && printOnlyDate !== dateStr ? ' print:hidden' : '')
                 }
               >
-                <Pin size="sm" />
-                <div
-                  className={
-                    'flex items-center gap-2 px-4 py-2 ' + (isShabbos ? 'bg-denim/10' : 'bg-mist')
-                  }
-                >
-                  <span className="text-xs font-semibold text-denim">{DAY_LABELS[i]}</span>
-                  <span className="text-xs text-dusk">
-                    {d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                  </span>
-                  {hcal?.isErevShabbos && <Flame className="h-3 w-3 text-brass" />}
-                  {day?.hasMeatDairyBuffer && (
-                    <span
-                      title={t('sameDayWarning')}
-                      className="h-2 w-2 rounded-full bg-rust shrink-0"
-                    />
-                  )}
-                  {getPrepWarning(day?.entries ?? [], hcal?.candleLighting) && (
-                    <span title="Recorded prep time for this day may not finish before candle-lighting">
-                      <AlertTriangle className="h-3.5 w-3.5 text-rust shrink-0" />
+                <div className="flex items-start gap-2 px-4 pt-4 pb-2 border-b border-cardBorder">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-semibold text-denim">{DAY_LABELS[i]}</span>
+                    <span className="text-xs text-dusk">
+                      {d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     </span>
-                  )}
-                  {fastDay?.severity === 'minor' && (
-                    <span
-                      title={fastDay.note}
-                      className="text-[10px] font-medium text-dusk bg-mist px-2 py-0.5 rounded-full shrink-0"
-                    >
-                      {fastDay.holiday_name}
-                    </span>
-                  )}
-                  {hcal && hcal.titles.length > 0 ? (
-                    <span
-                      className={
-                        'ml-auto text-[10px] font-semibold px-2 py-0.5 rounded-full truncate max-w-[60%] ' +
-                        (hcal.isFast
-                          ? 'text-rust bg-rust/10'
-                          : hcal.isYomTov
-                          ? 'text-white bg-denim'
-                          : 'text-denim bg-mist')
-                      }
-                      title={hcal.titles.join(' · ')}
-                    >
-                      ✡︎ {hcal.isFast ? 'Fast: ' : ''}
-                      {hcal.titles.join(' · ')}
-                    </span>
-                  ) : isShabbos ? (
-                    <span className="ml-auto text-[10px] font-semibold text-denim bg-mist px-2 py-0.5 rounded-full">
-                      ✨ Shabbos
-                    </span>
-                  ) : null}
-                </div>
-                <div className="print:hidden flex items-center px-4 py-1.5 border-b border-cardBorder">
+                    {hcal?.isErevShabbos && <Flame className="h-3 w-3 text-brass" />}
+                    {day?.hasMeatDairyBuffer && (
+                      <span
+                        title={t('sameDayWarning')}
+                        className="h-2 w-2 rounded-full bg-rust shrink-0"
+                      />
+                    )}
+                    {getPrepWarning(day?.entries ?? [], hcal?.candleLighting) && (
+                      <span title="Recorded prep time for this day may not finish before candle-lighting">
+                        <AlertTriangle className="h-3.5 w-3.5 text-rust shrink-0" />
+                      </span>
+                    )}
+                    {fastDay?.severity === 'minor' && (
+                      <span
+                        title={fastDay.note}
+                        className="text-[10px] font-medium text-dusk bg-mist px-2 py-0.5 rounded-full shrink-0"
+                      >
+                        {fastDay.holiday_name}
+                      </span>
+                    )}
+                    {hcal && hcal.titles.length > 0 ? (
+                      <span
+                        className={
+                          'text-[10px] font-semibold px-2 py-0.5 rounded-full truncate max-w-[60%] ' +
+                          (hcal.isFast
+                            ? 'text-rust bg-rust/10'
+                            : hcal.isYomTov
+                            ? 'text-white bg-denim'
+                            : 'text-denim bg-mist')
+                        }
+                        title={hcal.titles.join(' · ')}
+                      >
+                        ✡︎ {hcal.isFast ? 'Fast: ' : ''}
+                        {hcal.titles.join(' · ')}
+                      </span>
+                    ) : isShabbos ? (
+                      <span className="text-[10px] font-semibold text-denim bg-mist px-2 py-0.5 rounded-full">
+                        ✨ Shabbos
+                      </span>
+                    ) : null}
+                  </div>
                   <button
                     onClick={() => openDayDrawer(dateStr)}
-                    className="text-[11px] font-medium text-brass ml-auto"
+                    className="print:hidden text-[11px] font-medium text-dusk ml-auto shrink-0 whitespace-nowrap"
                   >
                     Day options →
                   </button>
@@ -1395,7 +1389,7 @@ export default function MealPlanView({
                                 {icon}
                               </span>
                             )}
-                            <span className="text-[11px] text-dusk w-14 shrink-0">
+                            <span className="text-xs text-dusk uppercase tracking-wider w-14 shrink-0">
                               {tCourse(key)}
                               {rows.length > 1 ? ` ${idx + 1}` : ''}
                             </span>
@@ -1415,7 +1409,7 @@ export default function MealPlanView({
                                 {name ? (
                                   <span className="text-denim truncate block">{name}</span>
                                 ) : (
-                                  <span className="text-dusk">{canEdit ? '+ add' : ''}</span>
+                                  <span className="text-brass hover:underline">{canEdit ? '+ add' : ''}</span>
                                 )}
                               </button>
                             )}
