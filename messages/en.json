@@ -99,6 +99,8 @@
     "shop": "Shop",
     "more": "More",
     "home": "Home",
+    "photoReview": "Photo Review",
+    "procurement": "Procurement",
     "scanAriaLabel": "Scan item to inventory"
   },
   "common": {
@@ -518,7 +520,9 @@
     "mobileFooter": {
       "tools": "Tools",
       "staff": "Staff",
-      "settings": "Settings"
+      "settings": "Settings",
+      "photoReview": "Photo Review",
+      "procurement": "Procurement"
     },
     "shabbosModeBanner": "Shabbos Mode • Editing disabled",
     "widgets": {

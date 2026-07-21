@@ -1179,6 +1179,21 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           <Link href={`/properties/${propertyId}/staff`} className="text-dusk hover:text-denim underline underline-offset-2">
             {t('mobileFooter.staff')}
           </Link>
+          {/* Both exist and work already -- Room Photo Review lives inside
+              the Tools grid, Procurement is its own top-level page -- this
+              is purely a findability fix, matching the same two shortcuts
+              added to the desktop "More" dropdown. managerOnly-equivalent
+              gate here since both pages already redirect staff server-side. */}
+          {isOwnerOrManager && (
+            <Link href={`/properties/${propertyId}/tools/photo-review`} className="text-dusk hover:text-denim underline underline-offset-2">
+              {t('mobileFooter.photoReview')}
+            </Link>
+          )}
+          {isOwnerOrManager && (
+            <Link href="/procurement" className="text-dusk hover:text-denim underline underline-offset-2">
+              {t('mobileFooter.procurement')}
+            </Link>
+          )}
           <Link href={`/properties/${propertyId}/settings`} className="text-dusk hover:text-denim underline underline-offset-2">
             {t('mobileFooter.settings')}
           </Link>

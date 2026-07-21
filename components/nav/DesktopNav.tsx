@@ -27,6 +27,13 @@ type NavItem = {
   // lists segments to exclude from THIS item's own active check so the
   // more specific group wins.
   excludeFromActive?: string[];
+  // Overrides the default /properties/{id}/{segment} link target. Needed
+  // for Procurement, which is deliberately cross-property (its own page
+  // stitches every property the viewer manages into one view) rather than
+  // scoped under the current property like every other item here.
+  // `segment` is still set for it, purely so segmentIsActive() has
+  // something to match against.
+  href?: string;
 };
 
 const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
@@ -81,6 +88,15 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // here so this doesn't ALSO light up "More" while on those pages.
       { segment: 'tools', labelKey: 'tools', excludeFromActive: ['tools/tasks'] },
       { segment: 'shopping-rules', labelKey: 'shoppingRules', managerOnly: true },
+      // Both exist and work today -- Room Photo Review sits inside the
+      // Tools grid already, Procurement is its own top-level page -- but
+      // neither had a direct entry point, which read as "hard to find"
+      // even though nothing was actually missing. managerOnly on both
+      // matches the role gate each page already enforces server-side
+      // (staff get redirected out), so this doesn't offer a link staff
+      // would just bounce off of.
+      { segment: 'tools/photo-review', labelKey: 'photoReview', managerOnly: true },
+      { segment: 'procurement', labelKey: 'procurement', managerOnly: true, href: '/procurement' },
       // Not managerOnly -- every role needs this for their own SMS opt-in;
       // the Invite Codes/Broadcast sections inside are what's actually
       // gated, per-role, by the page itself.
@@ -172,7 +188,7 @@ export default function DesktopNav({
                   return (
                     <Link
                       key={item.segment}
-                      href={`/properties/${propertyId}/${item.segment}`}
+                      href={item.href ?? `/properties/${propertyId}/${item.segment}`}
                       role="menuitem"
                       onClick={() => setOpenGroup(null)}
                       aria-current={active ? 'page' : undefined}

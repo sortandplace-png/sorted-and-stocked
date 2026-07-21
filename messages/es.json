@@ -99,6 +99,8 @@
     "shop": "Comprar",
     "more": "Más",
     "home": "Inicio",
+    "photoReview": "Revisión de Fotos",
+    "procurement": "Abastecimiento",
     "scanAriaLabel": "Escanear artículo al inventario"
   },
   "common": {
@@ -518,7 +520,9 @@
     "mobileFooter": {
       "tools": "Herramientas",
       "staff": "Personal",
-      "settings": "Configuración"
+      "settings": "Configuración",
+      "photoReview": "Revisión de Fotos",
+      "procurement": "Abastecimiento"
     },
     "shabbosModeBanner": "Modo Shabat • Edición desactivada",
     "widgets": {
