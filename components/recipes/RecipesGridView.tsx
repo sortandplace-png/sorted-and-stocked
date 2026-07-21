@@ -43,7 +43,7 @@ import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { createClient } from '@/lib/supabase/client';
 import { checkRecipeDeletable, type RecipeDeleteCheck } from '@/lib/recipe-delete-guard';
 import NewRecipeModal from '@/components/NewRecipeModal';
-import FloatingKitchenTimerButton from '@/components/FloatingKitchenTimerButton';
+import FloatingMultiTimer from '@/components/kitchen/FloatingMultiTimer';
 import { useToast } from '@/components/Toast';
 import { FilterPill, FilterPillRow } from '@/components/recipes/FilterPill';
 import { formatMinutes } from '@/lib/format-time';
@@ -1356,7 +1356,7 @@ export default function RecipesGridView({
         </div>
       )}
 
-      <FloatingKitchenTimerButton />
+      <FloatingMultiTimer />
     </div>
   );
 }
