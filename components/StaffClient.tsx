@@ -2,6 +2,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { canManage, usePropertyRole, type PropertyRole } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
@@ -9,6 +10,17 @@ import { SkeletonList } from '@/components/Skeleton';
 import Avatar from '@/components/Avatar';
 import FieldLabel from '@/components/FieldLabel';
 import ShiftHandoverClient from '@/components/ShiftHandoverClient';
+
+// Concept B role-badge tiering (SS-202): owner solid bg-denim per Racquel's
+// explicit instruction, manager/staff step down through the same denim/mist
+// pairing ShiftHandoverClient already uses for selected/unselected pills --
+// preserves the 3-tier scan hierarchy the old gold-dark/gold-light/charcoal
+// badges had, rather than flattening all three roles to one identical color.
+const ROLE_BADGE_CLASSES: Record<PropertyRole, string> = {
+  owner: 'bg-denim text-white',
+  manager: 'bg-mist text-denim',
+  staff: 'bg-mist text-dusk',
+};
 
 type Member = {
   id: string; // property_members row id
@@ -446,34 +458,29 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
 
       <div className="space-y-3 mb-6">
         {members.map((member) => (
-          <div key={member.id} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
-            <div className="flex items-center gap-3 mb-2">
+          <div key={member.id} className="bg-card rounded-xl2 shadow-card p-4">
+            <div className="flex items-center gap-3 mb-3">
               <Avatar fullName={member.full_name} size="md" />
-              <span className="flex-1 truncate text-charcoal font-medium">
+              <span className="flex-1 truncate text-denim font-medium">
                 {member.full_name ?? member.email ?? 'Unnamed user'}
               </span>
-              <span
-                className={`text-[10px] font-medium px-2.5 py-1 rounded-full shrink-0 ${
-                  member.role === 'owner'
-                    ? 'bg-gold-dark text-white'
-                    : member.role === 'manager'
-                    ? 'bg-gold-light/60 text-gold-dark'
-                    : 'bg-charcoal/5 text-charcoal/60'
-                }`}
-              >
+              <span className={`text-[10px] font-medium px-2.5 py-1 rounded-full shrink-0 ${ROLE_BADGE_CLASSES[member.role]}`}>
                 {member.role}
               </span>
             </div>
-            <ul className="text-xs text-charcoal/50 space-y-0.5 mb-3 pl-1">
+            <div className="grid grid-cols-1 gap-1 mb-3">
               {ROLE_PERMISSIONS[member.role].map((perm) => (
-                <li key={perm}>· {perm}</li>
+                <div key={perm} className="flex items-start gap-1.5 text-xs text-dusk">
+                  <Check size={13} className="shrink-0 mt-0.5 text-sage" />
+                  <span>{perm}</span>
+                </div>
               ))}
-            </ul>
+            </div>
             <div className="flex items-center gap-2">
               <select
                 value={member.role}
                 onChange={(e) => changeRole(member.id, e.target.value as PropertyRole)}
-                className="text-sm border border-gold-light/60 rounded-full px-3 py-1 bg-cream/40"
+                className="text-sm text-denim border border-cardBorder rounded-full px-3 py-1 bg-mist"
                 disabled={!viewerIsOwner}
               >
                 <option value="owner">Owner</option>
@@ -497,12 +504,12 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
               <button
                 onClick={() => offboardMember(member.user_id, member.full_name ?? member.email)}
                 disabled={offboardingUserId === member.user_id}
-                className="text-[11px] text-charcoal/40 underline mt-1.5 disabled:opacity-40"
+                className="text-[11px] text-dusk underline mt-1.5 disabled:opacity-40"
               >
                 {offboardingUserId === member.user_id ? 'Offboarding…' : 'Offboard (remove from all properties)'}
               </button>
             )}
-            <p className="text-[11px] text-charcoal/40 mt-2">Last active: {formatLastActive(member.lastActive)}</p>
+            <p className="text-[11px] text-dusk mt-2">Last active: {formatLastActive(member.lastActive)}</p>
           </div>
         ))}
       </div>
