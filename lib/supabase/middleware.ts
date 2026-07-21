@@ -44,13 +44,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Root ("/") is public too, as of app/page.tsx becoming the marketing
-  // landing page (2026-07-21) -- but checked with an EXACT match, never
-  // folded into PUBLIC_PATHS's startsWith() list above. Every path starts
-  // with "/", so adding it there would make isPublicPath true for the
-  // entire app and disable auth everywhere, not just at root.
-  const isRoot = request.nextUrl.pathname === '/';
-  const isPublicPath = isRoot || PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
+  const isPublicPath = PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
 
   if (!user && !isPublicPath) {
     // No ?redirectTo= -- login always lands on /properties (Dashboard, or
