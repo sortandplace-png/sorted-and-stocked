@@ -23,8 +23,17 @@ type Row = {
   sort_order: number;
 };
 
-const ROSTER_OPTIONS = ['amber', 'leti', 'marlyn', 'live_in'] as const;
-const ROSTER_LABELS: Record<string, string> = {
+// 'unassigned' is a real, live value -- every one of the 61 rows in the
+// database has it (the default a new row is created with, before anyone
+// picks a real person). It was missing from this list even though it was
+// never missing from the data: a <select> whose bound value doesn't match
+// any of its <option>s falls back to showing the first option in the
+// browser, which silently displayed "Amber" for every single
+// still-unassigned row -- reading as if triage was already done when none
+// of it had happened. Added as its own real, selectable option instead.
+export const ROSTER_OPTIONS = ['unassigned', 'amber', 'leti', 'marlyn', 'live_in'] as const;
+export const ROSTER_LABELS: Record<string, string> = {
+  unassigned: 'Unassigned',
   amber: 'Amber',
   leti: 'Leti',
   marlyn: 'Marlyn',

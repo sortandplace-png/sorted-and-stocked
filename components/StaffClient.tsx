@@ -11,6 +11,7 @@ import Avatar from '@/components/Avatar';
 import FieldLabel from '@/components/FieldLabel';
 import ShiftHandoverClient, { CardHeader } from '@/components/ShiftHandoverClient';
 import CollapsibleCard from '@/components/CollapsibleCard';
+import StaffDutyOverview from '@/components/StaffDutyOverview';
 
 // Concept B role-badge tiering (SS-202): owner solid bg-denim per Racquel's
 // explicit instruction, manager/staff step down through the same denim/mist
@@ -485,6 +486,16 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
 
       {error && (
         <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2 mb-3">{error}</p>
+      )}
+
+      {/* SS-156: the supervisory audit view -- everyone's rows, not just
+          the viewer's own -- so this only means anything for someone who
+          can actually act on it. Distinct from StaffDutyChecklist, the
+          personal self-checkoff view staff themselves use on My Day. */}
+      {canManage(viewerRole) && (
+        <div className="mb-6">
+          <StaffDutyOverview propertyId={propertyId} />
+        </div>
       )}
 
       {/* SS-202 bento overhaul: left column is Operations & Handover (the
