@@ -9,11 +9,12 @@ type QRScannerProps = {
   onScan: (decodedText: string) => void;
   onError?: (message: string) => void;
   active?: boolean; // pass false to pause without unmounting
+  debounceMs?: number; // default 2000, matches the original single-scan flow
 };
 
 const ELEMENT_ID = 'qr-reader';
 
-export default function QRScanner({ onScan, onError, active = true }: QRScannerProps) {
+export default function QRScanner({ onScan, onError, active = true, debounceMs = 2000 }: QRScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const lastScanRef = useRef<{ text: string; at: number }>({ text: '', at: 0 });
 
@@ -37,7 +38,7 @@ export default function QRScanner({ onScan, onError, active = true }: QRScannerP
         (decodedText) => {
           // Debounce: html5-qrcode fires repeatedly while the code stays in frame.
           const now = Date.now();
-          if (decodedText === lastScanRef.current.text && now - lastScanRef.current.at < 2000) {
+          if (decodedText === lastScanRef.current.text && now - lastScanRef.current.at < debounceMs) {
             return;
           }
           lastScanRef.current = { text: decodedText, at: now };
@@ -69,7 +70,7 @@ export default function QRScanner({ onScan, onError, active = true }: QRScannerP
         // e.g. React StrictMode's mount->cleanup->mount cycle. Safe to ignore.
       }
     };
-  }, [active, onScan, onError]);
+  }, [active, onScan, onError, debounceMs]);
 
   return <div id={ELEMENT_ID} className="w-full max-w-md mx-auto rounded-lg overflow-hidden" />;
 }

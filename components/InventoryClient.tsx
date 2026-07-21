@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef, useId } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useLocale } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientUpdate, resilientUpdateWithVersionCheck, resilientDelete } from '@/lib/resilient-write';
@@ -26,9 +27,16 @@ import { isFoodCategory } from '@/lib/foodCategories';
 import { compressImageToBlob } from '@/lib/compress-image';
 import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
 import CameraCapture from '@/components/CameraCapture';
-import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle, Package, StickyNote, ArrowLeft, Pencil, QrCode as QrCodeIcon } from 'lucide-react';
+import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle, Package, StickyNote, ArrowLeft, Pencil, QrCode as QrCodeIcon, ScanLine } from 'lucide-react';
 import QRCode from 'qrcode';
 import { SITE_URL } from '@/lib/site-url';
+
+// SS-012: html5-qrcode touches `navigator.mediaDevices`/DOM APIs that don't
+// exist during SSR -- dynamic + ssr:false is required here, not optional,
+// or the server render throws.
+const ContinuousQrScanner = dynamic(() => import('@/components/inventory/ContinuousQrScanner'), {
+  ssr: false,
+});
 
 type StorageLocation = {
   id: string;
@@ -277,6 +285,7 @@ export default function InventoryClient({
   // includes) uncleared items on the shopping list.
   const [pesachModeEnabled, setPesachModeEnabled] = useState(false);
   const [savingPesachMode, setSavingPesachMode] = useState(false);
+  const [showBatchScanner, setShowBatchScanner] = useState(false);
   // Content filters below use sessionStorage-backed state (not plain
   // useState) so a phone lock/backgrounding mid-walkthrough doesn't lose
   // them -- see lib/use-session-persisted-state.ts. Room-navigation state
@@ -1372,6 +1381,16 @@ export default function InventoryClient({
           >
             📷
           </a>
+          {/* SS-012: continuous batch scan -- distinct from the single-item
+              scan above, which stops after one match to review/adjust it. */}
+          <button
+            type="button"
+            onClick={() => setShowBatchScanner(true)}
+            className="w-11 h-11 flex items-center justify-center rounded-full bg-linen border border-brass/30 text-denim"
+            aria-label="Batch scan multiple items"
+          >
+            <ScanLine size={18} aria-hidden="true" />
+          </button>
           <a
             href={`/properties/${propertyId}/print-labels`}
             className="w-11 h-11 flex items-center justify-center rounded-full bg-linen border border-brass/30 text-denim text-lg"
@@ -1387,6 +1406,15 @@ export default function InventoryClient({
           </button>
         </div>
       </div>
+
+      {showBatchScanner && (
+        <ContinuousQrScanner
+          propertyId={propertyId}
+          open={showBatchScanner}
+          onClose={() => setShowBatchScanner(false)}
+          onFinish={() => loadData()}
+        />
+      )}
 
       {error && (
         <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2 mb-3">{error}</p>
