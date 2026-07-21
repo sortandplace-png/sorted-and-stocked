@@ -1346,9 +1346,9 @@ export default function MealPlanView({
                   </button>
                 </div>
                 {isFastDayBlackout ? (
-                  <div className="flex items-start gap-2 px-4 py-3">
+                  <div className="flex items-start gap-2 px-4 py-3 bg-rust/10 border border-rust/30">
                     <AlertTriangle className="h-4 w-4 text-rust shrink-0 mt-0.5" />
-                    <p className="text-xs text-rust font-medium">
+                    <p className="text-[11px] text-rust font-semibold tracking-wide">
                       {fastDay!.holiday_name}: {fastDay!.note || 'No meals planned -- fast day.'}
                     </p>
                   </div>
@@ -1546,9 +1546,9 @@ export default function MealPlanView({
                 drawer is the actual add/edit surface both of them open into
                 -- the real enforcement point, not just a visual echo. */}
             {fastDays[dayDrawerOpen] ? (
-              <div className="flex items-start gap-2 px-5 py-4">
+              <div className="flex items-start gap-2 px-5 py-4 bg-rust/10 border border-rust/30">
                 <AlertTriangle className="h-4 w-4 text-rust shrink-0 mt-0.5" />
-                <p className="text-sm text-rust font-medium">
+                <p className="text-[11px] text-rust font-semibold tracking-wide">
                   {fastDays[dayDrawerOpen]!.holiday_name}: {fastDays[dayDrawerOpen]!.note || 'No meals planned -- fast day.'}
                 </p>
               </div>
