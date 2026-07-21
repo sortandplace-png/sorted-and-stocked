@@ -149,7 +149,7 @@ export default function DutyRosterEditor({ propertyId, initialRows }: { property
         <button
           onClick={addRow}
           disabled={adding}
-          className="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-white bg-brass px-4 py-2 rounded-full disabled:opacity-50"
+          className="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-white bg-denim px-4 py-2 rounded-full disabled:opacity-50"
         >
           <Plus size={15} aria-hidden="true" /> Add Row
         </button>

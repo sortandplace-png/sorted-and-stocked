@@ -54,7 +54,7 @@ export default function MobileBottomNav({ propertyId }: { propertyId: string }) 
           <button
             onClick={() => setShowScan(true)}
             aria-label={t('scanAriaLabel')}
-            className="-mt-5 w-14 h-14 min-w-[44px] min-h-[44px] rounded-full bg-brass text-white shadow-md shadow-black/20 flex items-center justify-center hover:opacity-90 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            className="-mt-5 w-14 h-14 min-w-[44px] min-h-[44px] rounded-full bg-denim text-white shadow-md shadow-black/20 flex items-center justify-center hover:opacity-90 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
             <ScanIcon size={24} strokeWidth={1.5} />
           </button>

@@ -370,7 +370,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
         <button
           onClick={submitHandover}
           disabled={submitting}
-          className="w-full py-2.5 rounded-full bg-brass text-white font-medium disabled:opacity-40"
+          className="w-full py-2.5 rounded-full bg-denim text-white font-medium disabled:opacity-40"
         >
           {submitting ? 'Saving…' : 'Leave handover note'}
         </button>
@@ -384,7 +384,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
           <p className="text-sm text-dusk mb-3">No handovers yet.</p>
           <button
             onClick={() => noteTextareaRef.current?.focus()}
-            className="text-sm font-medium text-white bg-brass px-4 py-2 rounded-full"
+            className="text-sm font-medium text-white bg-denim px-4 py-2 rounded-full"
           >
             Create end of day note
           </button>
