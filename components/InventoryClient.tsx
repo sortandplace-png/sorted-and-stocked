@@ -20,6 +20,7 @@ import LocationPhotoUpload from '@/components/LocationPhotoUpload';
 import DuplicateItemWarning from '@/components/DuplicateItemWarning';
 import InventoryBracha from '@/components/InventoryBracha';
 import ReorderSourcesEditor from '@/components/ReorderSourcesEditor';
+import UsedInRecipes from '@/components/UsedInRecipes';
 import OrderLink from '@/components/OrderLink';
 import type { ReorderSource } from '@/lib/reorder-sources';
 import { FilterPill, FilterPillRow } from '@/components/recipes/FilterPill';
@@ -1936,6 +1937,8 @@ export default function InventoryClient({
                     })}
                   </ul>
                 </div>
+
+                <UsedInRecipes itemId={viewingItem.id} propertyId={propertyId} />
 
                 {viewingItem.qr_code && (
                   <div className="mt-5 flex items-center gap-3 bg-linen/40 rounded-xl px-3 py-2.5">
