@@ -1157,10 +1157,9 @@ export default function InventoryClient({
   const lowStockCount = items.filter(isLowStock).length;
   const expiringSoon30Count = items.filter((i) => isExpiringWithin30Days(i.expiration_date)).length;
 
-  // Room summaries for the grid view — one card per real room (a location
-  // one level below a top-level group like Basement/Main Floor/Upstairs),
-  // not just ones that already have items. A brand-new empty room still
-  // needs to show up so there's somewhere to actually add its first item --
+  // Room summaries for the grid view — one card per real room, not just
+  // ones that already have items. A brand-new empty room still needs to
+  // show up so there's somewhere to actually add its first item --
   // deriving this from `grouped` alone silently dropped any room with zero
   // items.
   //
@@ -1169,15 +1168,25 @@ export default function InventoryClient({
   // the old filter was just "has any parent," which can't tell a real room
   // apart from a sub-location of a room. That flattened Kitchen's 6
   // sub-locations into 6 extra sibling cards under Main Floor instead of
-  // one Kitchen card. Now a card only exists for a location whose PARENT is
-  // itself a root (parent_location_id === null); everything deeper rolls
-  // into that room's count via getDescendantIds and shows up through the
-  // sub-location drill-down inside the room instead (see the single-room
-  // view below).
+  // one Kitchen card. A card exists for: a location one level below a
+  // top-level group (parent_location_id !== null && the parent's own
+  // parent is null) -- Main's Basement Bath 1 under Basement, for example
+  // -- OR a top-level location with no children of its own (2026-07-21 fix:
+  // properties with no floor layer at all, like Country's Kitchen/Bathroom/
+  // etc. sitting directly at the top with nothing under them, used to be
+  // silently excluded by the old "parent_location_id === null -> never a
+  // room" rule, so Browse by Room rendered nothing but "+ Add room" for
+  // them). A parentless location WITH children is still treated as a floor/
+  // group instead, not a room -- its children are the real rooms. Everything
+  // deeper than a room rolls into that room's count via getDescendantIds and
+  // shows up through the sub-location drill-down inside the room instead
+  // (see the single-room view below).
   const locationById = new Map(locations.map((l) => [l.id, l]));
   const roomSummaries = locations
     .filter((l) => {
-      if (l.parent_location_id === null) return false;
+      if (l.parent_location_id === null) {
+        return !locations.some((other) => other.parent_location_id === l.id);
+      }
       const parent = locationById.get(l.parent_location_id);
       return !parent || parent.parent_location_id === null;
     })
@@ -1197,7 +1206,15 @@ export default function InventoryClient({
   const roomsByGroup = new Map<string, typeof roomSummaries>();
   for (const summary of roomSummaries) {
     const loc = locations.find((l) => l.name === summary.location);
-    const group = loc ? rootGroupName(locations, loc.id) : 'Unassigned';
+    const rawGroup = loc ? rootGroupName(locations, loc.id) : 'Unassigned';
+    // rootGroupName returns a parentless location's own name (it's its own
+    // root). For a real floor that's never equal to one of its rooms' names
+    // -- but for a room with no floor at all (2026-07-21: Country's flat
+    // properties), it groups under itself, which would otherwise render as
+    // a redundant one-room floor pill/header duplicating the card's own
+    // label. Fold that case into the same flat "no floor" bucket used for
+    // items with no location at all instead.
+    const group = rawGroup === summary.location ? 'Unassigned' : rawGroup;
     (roomsByGroup.get(group) ?? roomsByGroup.set(group, []).get(group)!).push(summary);
   }
   const allFloorNames = [...roomsByGroup.keys()].filter((g) => g !== 'Unassigned').sort((a, b) => a.localeCompare(b));
