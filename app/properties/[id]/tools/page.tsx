@@ -165,6 +165,12 @@ const TOOLS = [
     title: 'Translation Worklist',
     description: 'Recipes, ingredients, and items still missing a Spanish name.',
   },
+  {
+    slug: 'digest',
+    icon: '📰',
+    title: 'Household Digest',
+    description: "A preview of what's low and what's coming up this week.",
+  },
 ];
 
 const TASTE_MEMORY_TOOL = {
@@ -205,7 +211,7 @@ const GROUPS: {
     subgroups: [
       // Location-based pair first (House Manual, Pantry Zone Map), then the
       // people/contact-based pair (Contacts & Vendors, Borrowed & Lent).
-      { key: 'reference', label: 'Reference', slugs: ['knowledge-base', 'pantry-zones', 'contacts', 'borrowed-items'] },
+      { key: 'reference', label: 'Reference', slugs: ['knowledge-base', 'pantry-zones', 'contacts', 'borrowed-items', 'digest'] },
       { key: 'capture-tools', label: 'Capture Tools', slugs: ['capture-inbox', 'capture-photo', 'identify-item', 'photo-review', 'photo-worklist'] },
       {
         key: 'admin-cleanup',
