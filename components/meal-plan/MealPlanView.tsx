@@ -1256,6 +1256,7 @@ export default function MealPlanView({
       )}
 
       {viewMode === 'week' ? (
+        <>
         <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 mb-5">
           {weekDates.map((d, i) => {
             const dateStr = fmt(d);
@@ -1284,7 +1285,7 @@ export default function MealPlanView({
                 className={
                   'relative rounded-xl2 bg-card border border-cardBorder shadow-card overflow-hidden' +
                   (isToday ? ' ring-2 ring-brass' : '') +
-                  (printOnlyDate && printOnlyDate !== dateStr ? ' print:hidden' : '')
+                  (printOnlyDate === dateStr ? '' : ' print:hidden')
                 }
               >
                 <div className="flex items-start gap-2 px-4 pt-4 pb-2 border-b border-cardBorder">
@@ -1460,6 +1461,105 @@ export default function MealPlanView({
             );
           })}
         </div>
+
+        {/* Print-only compact week table -- swaps in for the rich photo
+            cards above (which get print:hidden via the printOnlyDate check
+            in their className, above) whenever a full week prints, so
+            5-8 courses x 7 days fits one page instead of two. Print Day
+            (printOnlyDate set) keeps using the one rich card that check
+            leaves visible instead -- this block doesn't render for that
+            case, so it never competes with it. */}
+        {!printOnlyDate && (
+          <div className="hidden print:block">
+            <table className="w-full border-collapse text-[8.5px] leading-[1.25]">
+              <tbody>
+                {weekDates.flatMap((d, i) => {
+                  const dateStr = fmt(d);
+                  const isShabbos = i === 5 || i === 6;
+                  const isWeekendOrSunday = i === 0 || i === 5 || i === 6;
+                  const hcal = hebcal[dateStr];
+                  const fastDay = fastDays[dateStr];
+                  const isFastDayBlackout = !!fastDay;
+                  const erevInfo = erevOf[dateStr];
+                  const motzeiInfo = motzeiOf[dateStr];
+
+                  const rows = [
+                    <tr key={`${dateStr}-hdr`}>
+                      <td colSpan={2} className="border-b border-black pt-1.5 pb-0.5 font-bold text-[9px] text-black">
+                        {DAY_LABELS[i]}, {d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        {hcal?.isErevShabbos ? ' 🕯️' : ''}
+                        {hcal && hcal.titles.length > 0 ? (
+                          <span className="font-semibold"> — {hcal.isFast ? 'Fast: ' : ''}{hcal.titles.join(' · ')}</span>
+                        ) : isShabbos ? (
+                          <span className="font-semibold"> — Shabbos</span>
+                        ) : null}
+                        {fastDay?.severity === 'minor' && (
+                          <span className="font-semibold"> — {fastDay.holiday_name}{fastDay.note ? `: ${fastDay.note}` : ''}</span>
+                        )}
+                      </td>
+                    </tr>,
+                  ];
+
+                  if (isFastDayBlackout) {
+                    rows.push(
+                      <tr key={`${dateStr}-blackout`}>
+                        <td colSpan={2} className="border border-black px-1.5 py-1 font-semibold text-black">
+                          {fastDay!.holiday_name}: {fastDay!.note || 'No meals planned — fast day.'}
+                        </td>
+                      </tr>
+                    );
+                    return rows;
+                  }
+
+                  if (motzeiInfo) {
+                    rows.push(
+                      <tr key={`${dateStr}-motzei`}>
+                        <td colSpan={2} className="border-b border-dashed border-gray-400 px-0.5 py-0.5 font-medium">
+                          🕯️ Break-Fast — {motzeiInfo.holiday_name} ended
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  const visibleCourses = COURSES.filter(
+                    ({ key }) =>
+                      (key !== 'dessert' || isShabbos || entriesFor(dateStr, key).length > 0) &&
+                      (key !== 'dip' || isShabbos || entriesFor(dateStr, key).length > 0) &&
+                      (key !== 'kids_platter' || !isWeekendOrSunday || entriesFor(dateStr, key).length > 0)
+                  );
+
+                  visibleCourses.forEach(({ key }) => {
+                    const entries = entriesFor(dateStr, key);
+                    const courseRows = entries.length > 0 ? entries : [null];
+                    courseRows.forEach((entry, idx) => {
+                      rows.push(
+                        <tr key={`${dateStr}-${key}-${entry?.id ?? idx}`} className="border-b border-gray-300">
+                          <td className="py-px pr-2 w-24 align-top text-gray-600 whitespace-nowrap">
+                            {tCourse(key)}{courseRows.length > 1 ? ` ${idx + 1}` : ''}
+                          </td>
+                          <td className="py-px">{displayName(entry) || '—'}</td>
+                        </tr>
+                      );
+                    });
+                  });
+
+                  if (erevInfo) {
+                    rows.push(
+                      <tr key={`${dateStr}-erev`}>
+                        <td colSpan={2} className="border-t border-dashed border-gray-400 px-0.5 py-0.5 font-medium">
+                          🕯️ Seudah Hamafsekes — before {erevInfo.holiday_name} begins
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return rows;
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        </>
       ) : (
         <MonthGrid
           days={monthRange(anchor).days}
