@@ -15,6 +15,7 @@ import { categoryIcon } from '@/lib/icon-maps';
 import { getItemIcon } from '@/lib/item-icons';
 import { flattenLocationTree, locationPath, rootGroupName, getDescendantIds } from '@/lib/location-tree';
 import { getLocationIcon } from '@/lib/location-icons';
+import Pin from '@/components/PinAccent';
 import RestockPhotoPrompt from '@/components/RestockPhotoPrompt';
 import LocationPhotoUpload from '@/components/LocationPhotoUpload';
 import DuplicateItemWarning from '@/components/DuplicateItemWarning';
@@ -1713,6 +1714,7 @@ export default function InventoryClient({
                       onClick={() => setLocationFilter(loc ? loc.id : UNASSIGNED)}
                       className="relative text-left bg-card border border-cardBorder rounded-xl2 shadow-card hover:shadow-cardHover overflow-hidden transition-shadow"
                     >
+                      <Pin size="sm" />
                       {loc?.photo_url && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={loc.photo_url} alt="" className="w-full h-20 object-cover" />
