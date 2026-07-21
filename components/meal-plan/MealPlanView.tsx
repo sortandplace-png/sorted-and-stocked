@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { Printer, Flame, AlertTriangle } from 'lucide-react';
@@ -147,6 +147,17 @@ function fmt(d: Date) {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+}
+
+// Local-date arithmetic on a 'YYYY-MM-DD' string, same local-getter
+// approach as fmt() itself -- new Date(dateStr) parses as UTC and can
+// land on the wrong calendar day depending on timezone, the exact bug
+// class the systematic date-anchoring audit found and fixed elsewhere.
+function shiftDate(dateStr: string, deltaDays: number) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const next = new Date(y, m - 1, d);
+  next.setDate(next.getDate() + deltaDays);
+  return fmt(next);
 }
 
 function weekRange(anchor: Date) {
@@ -313,6 +324,30 @@ export default function MealPlanView({
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // SS-063/145: additive to the SS-149 blackout above, not a replacement --
+  // the fast day itself keeps its existing full blackout untouched. Erev
+  // gets a Seudah Hamafsekes reminder as that day's final entry; Motzei
+  // gets a Break-Fast reminder as its first. Applied uniformly to all six
+  // fasts per Racquel's explicit choice (2026-07-21), not split by fast
+  // length. Purely derived from fastDays -- no extra fetch, no new Course
+  // enum value or recipe-picker slot, just a labeled reminder matching the
+  // visual weight the blackout banner itself already uses.
+  const erevOf = useMemo(() => {
+    const map: Record<string, FastDay> = {};
+    for (const [date, fastDay] of Object.entries(fastDays)) {
+      map[shiftDate(date, -1)] = fastDay;
+    }
+    return map;
+  }, [fastDays]);
+
+  const motzeiOf = useMemo(() => {
+    const map: Record<string, FastDay> = {};
+    for (const [date, fastDay] of Object.entries(fastDays)) {
+      map[shiftDate(date, 1)] = fastDay;
+    }
+    return map;
+  }, [fastDays]);
 
   // Reference windows, not property-scoped -- fetched once, same pattern as
   // fastDays above. Current + next Gregorian year comfortably covers both
@@ -1240,6 +1275,8 @@ export default function MealPlanView({
             // non-meat planning on Erev Tisha B'Av, which is what "stays
             // fully plannable" requires there.
             const isFastDayBlackout = !!fastDay;
+            const erevInfo = erevOf[dateStr];
+            const motzeiInfo = motzeiOf[dateStr];
 
             return (
               <div
@@ -1316,6 +1353,15 @@ export default function MealPlanView({
                     </p>
                   </div>
                 ) : (
+                <>
+                {motzeiInfo && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-brass/10 border-b border-cardBorder">
+                    <span className="text-base shrink-0" aria-hidden>🕯️</span>
+                    <p className="text-xs text-denim font-medium">
+                      Break-Fast — {motzeiInfo.holiday_name} ended
+                    </p>
+                  </div>
+                )}
                 <div className="divide-y divide-cardBorder">
                   {COURSES.filter(
                     ({ key }) =>
@@ -1404,6 +1450,15 @@ export default function MealPlanView({
                     ].filter(Boolean);
                   })}
                 </div>
+                {erevInfo && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-brass/10 border-t border-cardBorder">
+                    <span className="text-base shrink-0" aria-hidden>🕯️</span>
+                    <p className="text-xs text-denim font-medium">
+                      Seudah Hamafsekes — before {erevInfo.holiday_name} begins
+                    </p>
+                  </div>
+                )}
+                </>
                 )}
               </div>
             );
@@ -1415,6 +1470,8 @@ export default function MealPlanView({
           data={days}
           hebcal={hebcal}
           fastDays={fastDays}
+          erevOf={erevOf}
+          motzeiOf={motzeiOf}
           recipeTitle={recipeTitle}
           t={t}
           onDayClick={(date) => openDayDrawer(date)}
@@ -1542,6 +1599,15 @@ export default function MealPlanView({
                 >
                   <WhatsAppIcon size={14} /> Share Day
                 </button>
+              </div>
+            )}
+
+            {motzeiOf[dayDrawerOpen] && (
+              <div className="flex items-center gap-2 px-5 py-3 bg-brass/10 border-b border-cardBorder">
+                <span className="text-base shrink-0" aria-hidden>🕯️</span>
+                <p className="text-sm text-denim font-medium">
+                  Break-Fast — {motzeiOf[dayDrawerOpen].holiday_name} ended
+                </p>
               </div>
             )}
 
@@ -1694,6 +1760,15 @@ export default function MealPlanView({
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {erevOf[dayDrawerOpen] && (
+              <div className="flex items-center gap-2 px-5 py-3 bg-brass/10 border-t border-cardBorder">
+                <span className="text-base shrink-0" aria-hidden>🕯️</span>
+                <p className="text-sm text-denim font-medium">
+                  Seudah Hamafsekes — before {erevOf[dayDrawerOpen].holiday_name} begins
+                </p>
               </div>
             )}
             </>
@@ -2027,6 +2102,8 @@ function MonthGrid({
   data,
   hebcal,
   fastDays,
+  erevOf,
+  motzeiOf,
   recipeTitle,
   t,
   onDayClick,
@@ -2036,6 +2113,8 @@ function MonthGrid({
   data: Record<string, DayData>;
   hebcal: Record<string, HebcalDay>;
   fastDays: Record<string, FastDay>;
+  erevOf: Record<string, FastDay>;
+  motzeiOf: Record<string, FastDay>;
   recipeTitle: (r: Recipe) => string;
   t: ReturnType<typeof useTranslations>;
   onDayClick: (date: string) => void;
@@ -2049,6 +2128,8 @@ function MonthGrid({
         const entries = day?.entries ?? [];
         const fastDay = fastDays[date];
         const hasMajorFastConflict = fastDay?.severity === 'major' && entries.length > 0;
+        const erevInfo = erevOf[date];
+        const motzeiInfo = motzeiOf[date];
         const hcal = hebcal[date];
         return (
           // A day cell is a plain div (not <button>) so each dish inside can
@@ -2113,6 +2194,16 @@ function MonthGrid({
             {fastDay?.severity === 'minor' && (
               <p className="text-[10px] text-dusk" title={fastDay.note}>
                 {fastDay.holiday_name} (fast)
+              </p>
+            )}
+            {motzeiInfo && (
+              <p className="text-[10px] font-medium text-denim" title={`${motzeiInfo.holiday_name} ended`}>
+                🕯️ Break-Fast
+              </p>
+            )}
+            {erevInfo && (
+              <p className="text-[10px] font-medium text-denim" title={`Before ${erevInfo.holiday_name} begins`}>
+                🕯️ Seudah Hamafsekes
               </p>
             )}
             {hcal?.hebrewDate && (
