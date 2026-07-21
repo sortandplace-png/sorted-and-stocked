@@ -18,6 +18,7 @@ import {
   getRoshChodeshStatus,
   getMajorHolidayToday,
   getIsNineDays,
+  getDiasporaSecondDayInfo,
   resolveTriggerType,
 } from '@/lib/calendar-trigger-type'
 
@@ -657,7 +658,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const tomorrowUTC = new Date(easternTodayUTC + 24 * 60 * 60 * 1000)
   const easternTomorrowStr = `${tomorrowUTC.getUTCFullYear()}-${String(tomorrowUTC.getUTCMonth() + 1).padStart(2, '0')}-${String(tomorrowUTC.getUTCDate()).padStart(2, '0')}`
 
-  const [omerTitle, isErevYomTov, eruvTavshilin, daysUntilPesach, roshChodeshStatus, isFastDayToday, majorHolidayToday, isNineDaysToday, isYomTovToday] = await Promise.all([
+  const [omerTitle, isErevYomTov, eruvTavshilin, daysUntilPesach, roshChodeshStatus, isFastDayToday, majorHolidayToday, isNineDaysToday, isYomTovToday, diasporaSecondDayInfo] = await Promise.all([
     getOmerStatus(),
     getIsErevYomTov(easternTomorrowStr),
     getEruvTavshilinBanner(easternTodayStr),
@@ -667,6 +668,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     getMajorHolidayToday(easternTodayStr),
     getIsNineDays(),
     getIsErevYomTov(easternTodayStr), // same yom_tov_dates check, just today's date instead of tomorrow's
+    getDiasporaSecondDayInfo(easternTodayStr),
   ])
   const chametzItems = await getChametzCountdown(propertyId, daysUntilPesach)
 
@@ -779,6 +781,18 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                   )}
                   {isShabbos && (
                     <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">{t('shabbosModeActive')}</span>
+                  )}
+                  {/* DRAFT (2026-07-21): proposedBadgeLabel text is not
+                      finalized -- Racquel asked to review the actual copy
+                      before this ships, same standing instruction as the
+                      rest of this Diaspora work. The detection logic
+                      itself (which day counts as the Diaspora-added second
+                      day) is verified against real Hebcal titles and isn't
+                      what's in question here. */}
+                  {diasporaSecondDayInfo && (
+                    <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">
+                      {diasporaSecondDayInfo.proposedBadgeLabel}
+                    </span>
                   )}
                 </div>
                 {omerTitle && <p className="text-xs text-dusk">{omerTitle}</p>}

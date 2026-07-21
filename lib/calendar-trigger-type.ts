@@ -11,10 +11,13 @@
 
 export type TriggerType =
   | 'yom_kippur' | 'fast_day' | 'rosh_hashana' | 'pesach' | 'sukkot' | 'shavuot'
+  | 'shmini_atzeret' | 'simchat_torah'
   | 'purim' | 'chanukah' | 'nine_days' | 'shabbos' | 'rosh_chodesh' | 'omer'
   | 'pre_yomtov' | 'general'
 
-export type MajorHolidayTrigger = 'yom_kippur' | 'rosh_hashana' | 'pesach' | 'sukkot' | 'shavuot' | 'purim' | 'chanukah'
+export type MajorHolidayTrigger =
+  | 'yom_kippur' | 'rosh_hashana' | 'pesach' | 'sukkot' | 'shavuot'
+  | 'shmini_atzeret' | 'simchat_torah' | 'purim' | 'chanukah'
 
 // Title-prefix matchers against Hebcal's real maj=on/min=on event set.
 // Rosh Hashana excludes "Rosh Hashana LaBehemot" (an obscure 1 Elul
@@ -22,11 +25,31 @@ export type MajorHolidayTrigger = 'yom_kippur' | 'rosh_hashana' | 'pesach' | 'su
 // three-week-early false positive. Purim matches exact titles, not a
 // substring check -- "Erev Purim" contains the substring "Purim" too,
 // caught by checking real Hebcal 2026 title output before this was trusted.
+//
+// pesach/sukkot real bug found and fixed while building Diaspora day
+// detection (2026-07-21): both were plain startsWith() checks, which also
+// matches Chol HaMoed ("Pesach III (CH''M)", "Sukkot IV (CH''M)") -- real
+// Hebcal 2026 output confirmed those titles exist and were silently
+// getting the exact same 'pesach'/'sukkot' trigger_type as the actual Yom
+// Tov days, despite Chol HaMoed being a halachically distinct, much
+// lighter-restriction status. Excluded via the "(CH" substring, which
+// covers Hebcal's title regardless of which apostrophe variant it renders
+// with. pesach also excluded "Sheni" -- Pesach Sheni (1 Iyar, an unrelated
+// minor commemorative day, not Yom Tov at all) starts with "Pesach" too
+// and would otherwise false-positive the moment this matcher runs at all.
+// Shmini Atzeret and Simchat Torah were previously undetected entirely --
+// neither title starts with "Sukkot", so both real Yom Tov days fell
+// through to 'general' with zero holiday-specific content. Kept as their
+// own trigger types rather than folded into 'sukkot', matching this file's
+// own existing yom_kippur/fast_day precedent (same holiday cluster,
+// halachically and practically distinct enough to read as its own thing).
 const HOLIDAY_TITLE_MATCHERS: { type: MajorHolidayTrigger; test: (title: string) => boolean }[] = [
   { type: 'yom_kippur', test: (t) => t.startsWith('Yom Kippur') },
   { type: 'rosh_hashana', test: (t) => t.startsWith('Rosh Hashana') && !t.includes('LaBehemot') },
-  { type: 'pesach', test: (t) => t.startsWith('Pesach') },
-  { type: 'sukkot', test: (t) => t.startsWith('Sukkot') },
+  { type: 'pesach', test: (t) => t.startsWith('Pesach') && !t.includes('(CH') && !t.includes('Sheni') },
+  { type: 'sukkot', test: (t) => t.startsWith('Sukkot') && !t.includes('(CH') },
+  { type: 'shmini_atzeret', test: (t) => t === 'Shmini Atzeret' },
+  { type: 'simchat_torah', test: (t) => t === 'Simchat Torah' },
   { type: 'shavuot', test: (t) => t.startsWith('Shavuot') },
   { type: 'purim', test: (t) => t === 'Purim' || t.startsWith('Shushan Purim') },
   { type: 'chanukah', test: (t) => t.startsWith('Chanukah') },
@@ -47,6 +70,59 @@ export async function getMajorHolidayToday(todayStr: string): Promise<MajorHolid
     const todaysTitles = events.filter((e) => e.date === todayStr).map((e) => e.title)
     for (const matcher of HOLIDAY_TITLE_MATCHERS) {
       if (todaysTitles.some(matcher.test)) return matcher.type
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+export type DiasporaSecondDayInfo = {
+  trigger: MajorHolidayTrigger
+  hebcalTitle: string
+  // Draft only -- not finalized. Racquel asked for proposed copy surfaced
+  // for review before this ships as real user-facing text, same standing
+  // instruction as the rest of this calendar work.
+  proposedBadgeLabel: string
+}
+
+// The five Hebcal titles that are genuinely the *Diaspora-added* extra day
+// -- kept as a full second Yom Tov day here in Lakewood, where Israel
+// keeps only one (or, for Shmini Atzeret/Simchat Torah, combines both into
+// one calendar day). Deliberately NOT a generic "any title with a Roman
+// numeral" rule -- two real exclusions matter halachically, not just
+// stylistically:
+//   - Rosh Hashana II: 2 days everywhere, including Israel, on its own
+//     distinct basis (uncertainty around witness-testimony timing that
+//     applies domestically too) -- not a Diaspora-only extension, so
+//     badging it the same way as these five would misstate why it's 2 days.
+//   - Pesach VII: the real, Torah-mandated final day of Pesach, kept in
+//     Israel too. Only Pesach VIII (the day added after it) is the
+//     Diaspora addition.
+const DIASPORA_SECOND_DAY_TITLES: Record<string, { trigger: MajorHolidayTrigger; proposedBadgeLabel: string }> = {
+  'Pesach II': { trigger: 'pesach', proposedBadgeLabel: 'Pesach — Day 2 (Yom Tov Sheni)' },
+  'Pesach VIII': { trigger: 'pesach', proposedBadgeLabel: 'Pesach — Day 8 (Yom Tov Sheni)' },
+  'Shavuot II': { trigger: 'shavuot', proposedBadgeLabel: 'Shavuot — Day 2 (Yom Tov Sheni)' },
+  'Sukkot II': { trigger: 'sukkot', proposedBadgeLabel: 'Sukkot — Day 2 (Yom Tov Sheni)' },
+  'Simchat Torah': { trigger: 'simchat_torah', proposedBadgeLabel: 'Simchat Torah (Yom Tov Sheni)' },
+}
+
+export async function getDiasporaSecondDayInfo(todayStr: string): Promise<DiasporaSecondDayInfo | null> {
+  try {
+    const year = Number(todayStr.slice(0, 4))
+    const years = [year, year + 1]
+    const events: { title: string; date: string }[] = []
+    for (const y of years) {
+      const res = await fetch(`https://www.hebcal.com/hebcal?cfg=json&v=1&year=${y}&maj=on`, {
+        next: { revalidate: 3600 * 24 },
+      })
+      const data = await res.json()
+      events.push(...(data.items ?? []))
+    }
+    const todaysTitles = events.filter((e) => e.date === todayStr).map((e) => e.title)
+    for (const title of todaysTitles) {
+      const match = DIASPORA_SECOND_DAY_TITLES[title]
+      if (match) return { trigger: match.trigger, hebcalTitle: title, proposedBadgeLabel: match.proposedBadgeLabel }
     }
     return null
   } catch {
@@ -182,10 +258,14 @@ export async function getRoshChodeshStatus(todayStr: string): Promise<RoshChodes
 }
 
 // Priority order per spec: yom_kippur > fast_day > rosh_hashana > pesach >
-// sukkot > shavuot > purim > chanukah > nine_days > shabbos > rosh_chodesh >
-// omer > pre_yomtov > general. yom_kippur is checked ahead of fast_day on
-// purpose -- Yom Kippur IS a fast day, but should read as the Yom Tov
-// itself, not the generic fast-day trigger.
+// sukkot > shmini_atzeret > simchat_torah > shavuot > purim > chanukah >
+// nine_days > shabbos > rosh_chodesh > omer > pre_yomtov > general.
+// yom_kippur is checked ahead of fast_day on purpose -- Yom Kippur IS a
+// fast day, but should read as the Yom Tov itself, not the generic
+// fast-day trigger. shmini_atzeret/simchat_torah placement is arbitrary
+// relative to the others -- majorHolidayToday only ever resolves to one
+// value for a given date, so at most one of these branches can ever be
+// true regardless of order.
 export function resolveTriggerType(inputs: {
   majorHolidayToday: MajorHolidayTrigger | null
   isFastDayToday: boolean
@@ -201,6 +281,8 @@ export function resolveTriggerType(inputs: {
   if (majorHolidayToday === 'rosh_hashana') return 'rosh_hashana'
   if (majorHolidayToday === 'pesach') return 'pesach'
   if (majorHolidayToday === 'sukkot') return 'sukkot'
+  if (majorHolidayToday === 'shmini_atzeret') return 'shmini_atzeret'
+  if (majorHolidayToday === 'simchat_torah') return 'simchat_torah'
   if (majorHolidayToday === 'shavuot') return 'shavuot'
   if (majorHolidayToday === 'purim') return 'purim'
   if (majorHolidayToday === 'chanukah') return 'chanukah'
