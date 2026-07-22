@@ -83,18 +83,18 @@ export default function ToolsGroupList({ propertyId, groups }: { propertyId: str
           </span>
         )}
         <span className="flex items-center gap-1.5">
-          <span className="font-display font-semibold text-charcoal">{tool.title}</span>
+          <span className="font-display font-semibold text-denim">{tool.title}</span>
           {typeof tool.count === 'number' && (
-            <span className="text-xs font-medium text-charcoal/40 bg-cream px-1.5 py-0.5 rounded-full">
+            <span className="text-xs font-medium text-brass bg-brass/15 px-1.5 py-0.5 rounded-full">
               {tool.count}
             </span>
           )}
         </span>
-        <span className="block text-sm text-charcoal/50">{tool.description}</span>
+        <span className="block text-sm text-dusk">{tool.description}</span>
       </>
     );
     const cardClass =
-      'flex flex-col items-center text-center gap-2 bg-white rounded-xl2 shadow-sm shadow-charcoal/5 px-4 py-5 hover:shadow-md hover:shadow-charcoal/10 transition-shadow h-full w-full';
+      'flex flex-col items-center text-center gap-2 bg-mist border border-brass/30 rounded-xl2 shadow-card px-4 py-5 hover:shadow-cardHover transition-shadow h-full w-full';
     return (
       <li key={tool.slug}>
         {MODAL_SLUGS.has(tool.slug as ToolModalSlug) ? (
@@ -125,10 +125,10 @@ export default function ToolsGroupList({ propertyId, groups }: { propertyId: str
               onClick={() => toggleGroup(group.key)}
               className="w-full flex items-center gap-2 mb-2 text-left"
             >
-              <span className="text-xs font-medium uppercase tracking-wider text-gold-dark">{group.label}</span>
-              <span className="text-xs text-charcoal/40">({totalCount})</span>
-              <span className="flex-1 border-t border-gold-light/40" />
-              <span className="text-charcoal/40 text-sm">{collapsed ? '▸' : '▾'}</span>
+              <span className="text-xs font-medium uppercase tracking-wider text-brass">{group.label}</span>
+              <span className="text-xs text-dusk">({totalCount})</span>
+              <span className="flex-1 border-t border-cardBorder" />
+              <span className="text-dusk text-sm">{collapsed ? '▸' : '▾'}</span>
             </button>
             {!collapsed && (
               <div className="space-y-4">
@@ -140,8 +140,8 @@ export default function ToolsGroupList({ propertyId, groups }: { propertyId: str
                 {visibleSubgroups.map((sg) => (
                   <div key={sg.key}>
                     <div className="flex items-center gap-1.5 mb-2 pl-1">
-                      {sg.lockIcon && <Lock size={12} strokeWidth={1.5} className="text-charcoal/40" aria-hidden="true" />}
-                      <span className="text-[11px] font-medium uppercase tracking-wider text-charcoal/50">{sg.label}</span>
+                      {sg.lockIcon && <Lock size={12} strokeWidth={1.5} className="text-dusk" aria-hidden="true" />}
+                      <span className="text-[11px] font-medium uppercase tracking-wider text-dusk">{sg.label}</span>
                     </div>
                     <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {sg.tools.map((tool) => toolCard(tool))}
