@@ -242,11 +242,13 @@ export default function InventoryClient({
   initialLocationFilter = null,
   initialOpenNew = false,
   initialItemId = null,
+  initialCategoryFilter = null,
 }: {
   propertyId: string;
   initialLocationFilter?: string | null;
   initialOpenNew?: boolean;
   initialItemId?: string | null;
+  initialCategoryFilter?: string | null;
 }) {
   const locale = useLocale();
   const displayName = (item: { name: string; name_es: string | null }) =>
@@ -690,6 +692,21 @@ export default function InventoryClient({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialItemId, loading, items]);
+
+  // Arrived here via a dashboard card deep-link (e.g. Pantry -> ?category=
+  // Pantry) -- categoryFilter is session-persisted (lib/use-session-
+  // persisted-state.ts), so without this it would silently keep whatever
+  // category was left over from a previous visit instead of the one the
+  // link actually promised. Applied once on mount, same guard pattern as
+  // initialItemId above, so it doesn't fight the user's own later changes.
+  const appliedCategoryFromQueryRef = useRef(false);
+  useEffect(() => {
+    if (initialCategoryFilter && !appliedCategoryFromQueryRef.current) {
+      appliedCategoryFromQueryRef.current = true;
+      setCategoryFilter(initialCategoryFilter);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCategoryFilter]);
 
   function openDetailView(item: InventoryItem) {
     setViewingItem(item);

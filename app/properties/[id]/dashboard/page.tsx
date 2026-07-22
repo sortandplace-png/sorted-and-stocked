@@ -411,6 +411,20 @@ async function getInventoryCount(propertyId: string): Promise<number> {
   return count ?? 0
 }
 
+// SS-275: the Pantry card previously showed the same whole-property total
+// as the "Total Inventory" stat tile below it -- confirmed live this
+// property has 248 Pantry-category items specifically, out of 1,029
+// total, so the card was overstating what's actually in the pantry by 4x.
+async function getPantryInventoryCount(propertyId: string): Promise<number> {
+  const supabase = await createClient()
+  const { count } = await supabase
+    .from('inventory_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('property_id', propertyId)
+    .eq('category', 'Pantry')
+  return count ?? 0
+}
+
 // Owner/manager-only "are we ready" glance: real data already collected for
 // other reasons (staff_tasks, shift_handovers), no new table. Useful any day
 // -- most valuable right before Shabbos/Yom Tov, but not gated to Friday the
@@ -557,7 +571,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const { id: propertyId } = await params
   const t = await getTranslations('dashboard')
   const locale = await getLocale()
-  const [{ meals, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount, widgetPrefs, todaysMeals, lowStockItems] = await Promise.all([
+  const [{ meals, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount, pantryCount, widgetPrefs, todaysMeals, lowStockItems] = await Promise.all([
     getData(propertyId),
     getHebcal(),
     getHebrewInfo(),
@@ -569,6 +583,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     getPrepAheadReminders(propertyId),
     getPrepAheadEnabled(propertyId),
     getInventoryCount(propertyId),
+    getPantryInventoryCount(propertyId),
     getWidgetPrefs(propertyId),
     getTodaysMealPlan(propertyId),
     getLowStockAlerts(propertyId),
@@ -1015,7 +1030,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               fill shows if either ever fails to load. */}
           <CollapsibleCard
             cardId="pantry"
-            href={`/properties/${propertyId}/inventory`}
+            href={`/properties/${propertyId}/inventory?category=Pantry`}
             className="col-span-12 md:col-span-6 rounded-xl3 border border-cardBorder shadow-card overflow-hidden flex flex-col transition-shadow hover:shadow-cardHover"
             header={
               <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
@@ -1034,7 +1049,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               />
               <div className="flex-1 flex flex-col justify-center py-[22px] px-5">
                 <p className="font-display text-[22px] font-normal text-denim mb-[14px]">
-                  {inventoryCount.toLocaleString('en-US')} {inventoryCount === 1 ? t('item') : t('items')}
+                  {pantryCount.toLocaleString('en-US')} {pantryCount === 1 ? t('item') : t('items')}
                 </p>
                 <p className="text-[12px] text-dusk">{t('pantryCard.subtext')}</p>
               </div>

@@ -551,7 +551,7 @@ function PrepAheadWidgetCard({
   return (
     <div className={`relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow overflow-hidden flex flex-col ${collapsed ? '' : 'min-h-[100px]'}`}>
       <Pin size="sm" collapsed={collapsed} onToggle={toggle} />
-      <div className="flex items-center justify-between gap-2 pt-[10px] px-[16px] pb-2">
+      <div className="flex items-center justify-between gap-2 pt-[10px] pl-[16px] pr-[26px] pb-2">
         <span className="flex items-center gap-2">
           <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{title}</span>
           {isEnabled && <span className="text-xs text-dusk font-bold">({reminders.length})</span>}
