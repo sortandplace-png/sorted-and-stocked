@@ -17,6 +17,7 @@ import StaffTasksClient from '@/components/StaffTasksClient';
 import ToolModal from '@/components/ToolModal';
 import KitchenOpsToolModal from '@/components/KitchenOpsToolModal';
 import { Camera, ShoppingCart, Timer, Info } from 'lucide-react';
+import Pin from '@/components/PinAccent';
 
 type DutyTask = { id: string; taskEn: string; taskEs: string; completed: boolean };
 type DutyArea = { areaEn: string; areaEs: string; tasks: DutyTask[] };
@@ -75,8 +76,9 @@ export default function MyDayClient({
       <div className="grid grid-cols-3 gap-[14px] mb-6">
         <button
           onClick={() => setShowCapture(true)}
-          className="flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 py-[14px] px-2 shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+          className="relative flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 py-[14px] px-2 shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
         >
+          <Pin size="sm" />
           <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{t('captureTile')}</span>
           <Camera size={28} className="text-denim" aria-hidden="true" />
           <span className="font-display font-normal text-sm text-denim text-center">{t('captureTile')}</span>
@@ -84,8 +86,9 @@ export default function MyDayClient({
         </button>
         <Link
           href={`/properties/${propertyId}/shopping-list`}
-          className="flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 py-[14px] px-2 shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+          className="relative flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 py-[14px] px-2 shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
         >
+          <Pin size="sm" />
           <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{t('shoppingTile')}</span>
           <ShoppingCart size={28} className="text-denim" aria-hidden="true" />
           <span className="font-display font-normal text-sm text-denim text-center">{t('shoppingTile')}</span>
@@ -93,8 +96,9 @@ export default function MyDayClient({
         </Link>
         <button
           onClick={() => setShowKitchenTimer(true)}
-          className="flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 py-[14px] px-2 shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
+          className="relative flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 py-[14px] px-2 shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
         >
+          <Pin size="sm" />
           <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{t('timerTile')}</span>
           <Timer size={28} className="text-denim" aria-hidden="true" />
           <span className="font-display font-normal text-sm text-denim text-center">{t('timerTile')}</span>
