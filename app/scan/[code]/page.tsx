@@ -13,11 +13,17 @@ export default async function ScanPage({ params }: ScanPageProps) {
 
   // Query inventory item by QR code
   // Assumes code format: ITM-XXXXXXXX or similar barcode
-  const { data: item, error } = await supabase
+  const { data: items, error } = await supabase
     .from('inventory_items')
     .select('id, property_id, name')
     .eq('qr_code', code)
-    .single();
+    .limit(2); // only need to know if there's more than one
+
+  const item = items?.[0] ?? null;
+
+  if (items && items.length > 1) {
+    console.warn(`[scan] duplicate qr_code "${code}" matched ${items.length} rows: ${items.map((i) => i.id).join(', ')} -- routing to the first match.`);
+  }
 
   if (error || !item) {
     return (
