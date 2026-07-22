@@ -12,6 +12,22 @@ const config: Config = {
     './lib/**/*.{ts,tsx}',
   ],
   theme: {
+    // Overrides (not extends) Tailwind's default shadow-color palette --
+    // otherwise it mirrors theme.colors verbatim, and this project's own
+    // custom boxShadow preset keys ("card", "cardHover") collide with the
+    // auto-generated shadow-COLOR utilities for the same-named color
+    // tokens: both compile to the literal class `.shadow-card`. CSS
+    // cascade order let the auto-generated color rule win, silently
+    // overriding every shadow-card usage's --tw-shadow-color to #FFFEFC
+    // (the card background color -- effectively invisible) instead of the
+    // intended rgba(90,120,150,.09) tint. Confirmed live via the compiled
+    // stylesheet, not assumed. Every other color (charcoal, gold, etc.,
+    // still used as shadow-{color}/{opacity} in un-migrated files) keeps
+    // working exactly as before -- only the two colliding keys are removed.
+    boxShadowColor: ({ theme }: { theme: (path: string) => Record<string, string> }) => {
+      const { card, cardHover, ...rest } = theme('colors');
+      return rest;
+    },
     extend: {
       colors: {
         // True ivory/charcoal/gold direction — the earlier deep-plum +
