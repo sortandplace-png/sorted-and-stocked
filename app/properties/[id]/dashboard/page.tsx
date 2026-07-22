@@ -7,7 +7,6 @@ import { Calendar, Camera, Clock, Package, Plus, Scan, ShoppingCart, Square, Cir
 import FloatingScanButton from '@/components/FloatingScanButton'
 import LocationZmanim from '@/components/LocationZmanim'
 import DashboardWidgets from '@/components/DashboardWidgets'
-import ThisWeeksMealsList from '@/components/ThisWeeksMealsList'
 import CollapsibleCard from '@/components/CollapsibleCard'
 import TodayCandleLightingRow from '@/components/TodayCandleLightingRow'
 import Pin from '@/components/PinAccent'
@@ -721,17 +720,6 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   // plan_date+meal_slot pair -- 7 that week, not 38.
   const distinctMealCount = new Set(meals.map((m: any) => `${m.plan_date}|${m.meal_slot}`)).size
 
-  // Same meals array as distinctMealCount above -- grouped by date for
-  // ThisWeeksMealsList's own shape, not a second query.
-  const mealsByDay = Object.values(
-    meals.reduce((acc: Record<string, { date: string; entries: any[] }>, m: any) => {
-      (acc[m.plan_date] ??= { date: m.plan_date, entries: [] }).entries.push({
-        course: m.course, recipe_id: m.recipe_id, recipes: m.recipes,
-      });
-      return acc;
-    }, {})
-  ).sort((a: any, b: any) => a.date.localeCompare(b.date))
-
   return (
     <div
       className={`min-h-screen p-4 md:p-6 font-interDisplay transition-all ${isShabbos ? 'bg-brass/10' : 'bg-linen'}`}
@@ -1120,8 +1108,6 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             <div className="text-xs text-dusk">{t('stats.activeRecipes')}</div>
           </div>
         </div>
-
-        <ThisWeeksMealsList propertyId={propertyId} mealsByDay={mealsByDay} />
 
         <DashboardWidgets
           propertyId={propertyId}
