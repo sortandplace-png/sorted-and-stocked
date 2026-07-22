@@ -1270,6 +1270,13 @@ export default function InventoryClient({
         onClick={() => openDetailView(item)}
       >
         <Pin size="sm" />
+        <button
+          onClick={(e) => toggleFavorite(item.id, e)}
+          className="text-xl shrink-0 self-start w-11 h-11 -m-2.5 flex items-center justify-center"
+          aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          {isFav ? '⭐' : '☆'}
+        </button>
         {hasThumb ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -1391,13 +1398,6 @@ export default function InventoryClient({
               })()}
           </div>
         </div>
-        <button
-          onClick={(e) => toggleFavorite(item.id, e)}
-          className="text-xl shrink-0 self-start w-11 h-11 -m-2.5 flex items-center justify-center"
-          aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
-        >
-          {isFav ? '⭐' : '☆'}
-        </button>
         <span onClick={(e) => e.stopPropagation()} className="absolute bottom-3 right-3">
           <OrderLink itemName={item.name} sources={item.reorder_sources} fallbackLink={item.reorder_link} />
         </span>
