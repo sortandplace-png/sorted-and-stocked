@@ -2249,17 +2249,23 @@ function MonthGrid({
               hcal?.isFast ? 'border-cardBorder bg-linen/60 text-dusk' : 'border-cardBorder bg-card'
             }`}
           >
+            <Pin size="sm" />
             {hcal?.isYomTov && (
               <div className="absolute inset-x-0 top-0 rounded-t-lg bg-mist px-1 py-0.5 text-center text-[9px] font-medium text-denim">
                 {t('yomTov')}
               </div>
             )}
             <div className={`flex items-start justify-between gap-1 flex-wrap ${hcal?.isYomTov ? 'mt-4' : ''}`}>
-              <span className="font-medium">{d.getDate()}</span>
+              <span className="w-5 h-5 shrink-0 flex items-center justify-center rounded-full bg-denim text-white text-[10px] font-bold">
+                {d.getDate()}
+              </span>
               {/* Text labels stay visible at every width, not just on hover/desktop --
                   hover tooltips don't exist on a touch device, which is exactly the
-                  case these are meant to cover. */}
-              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                  case these are meant to cover. pr-4 keeps this row's badges clear of
+                  the Pin dot's fixed top-right footprint (top:11 right:12, ~22px) --
+                  same collision this session already found and fixed for the week
+                  view's "Day options" button. */}
+              <div className="flex items-center gap-1.5 flex-wrap justify-end pr-4">
                 {hcal?.isErevShabbos && (
                   <span className="flex items-center gap-0.5 text-brass whitespace-nowrap">
                     <Flame className="h-3 w-3 shrink-0" />
