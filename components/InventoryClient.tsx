@@ -1738,7 +1738,7 @@ export default function InventoryClient({
                             e.stopPropagation();
                             setPhotoUploadLocation(loc);
                           }}
-                          className="absolute top-2 right-2 p-1.5 rounded-lg bg-card/90 text-dusk hover:bg-mist hover:text-denim transition-colors"
+                          className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-card/90 text-dusk hover:bg-mist hover:text-denim transition-colors"
                           role="button"
                           aria-label={loc.photo_url ? `Replace photo of ${location}` : `Add photo of ${location}`}
                         >
