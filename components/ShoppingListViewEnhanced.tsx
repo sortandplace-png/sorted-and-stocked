@@ -88,6 +88,22 @@ function getShoppingCategoryIcon(title: string): LucideIcon {
   return SHOPPING_CATEGORY_ICONS[title] ?? Package;
 }
 
+// SS-284: By Store mode groups by retailer_name (see bucketByMode below),
+// which never matches a SHOPPING_CATEGORY_ICONS key -- every store fell
+// through to the generic Package icon. These 7 keys are verified exact
+// matches against live reorder_sources.retailer_name values (checked
+// 2026-07-22), not guessed casing. "Other" and any unmapped retailer
+// correctly keep using the generic Icon fallback below, unchanged.
+const STORE_ICON_SRC: Record<string, string> = {
+  Amazon: '/store-icons/amazon.png',
+  Costco: '/store-icons/costco.png',
+  'Gourmet Glatt': '/store-icons/gourmet-glatt.png',
+  Instacart: '/store-icons/instacart.png',
+  'Kosher West': '/store-icons/kosher-west.png',
+  Target: '/store-icons/target.png',
+  Walmart: '/store-icons/walmart.png',
+};
+
 type ShoppingListItem = {
   item_id: string;
   name: string;
@@ -913,6 +929,9 @@ export default function ShoppingListViewEnhanced({
                       <span className="text-lg" aria-hidden="true">🍽️</span>
                     )}
                   </span>
+                ) : groupBy === 'by-store' && STORE_ICON_SRC[group.title] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={STORE_ICON_SRC[group.title]} alt="" className="w-9 h-9 object-contain" />
                 ) : (
                   <Icon size={32} className="text-denim" aria-hidden="true" />
                 )}
