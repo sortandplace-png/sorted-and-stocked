@@ -4,11 +4,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { ExternalLink, Flashlight, Search } from 'lucide-react';
+import { ExternalLink, Flashlight, PackagePlus, Search } from 'lucide-react';
 import QRScanner from '@/components/QRScanner';
 import Pin from '@/components/PinAccent';
 import { createClient } from '@/lib/supabase/client';
-import { resilientUpdate } from '@/lib/resilient-write';
+import { resilientInsert, resilientUpdate } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
 import { useScanFeedback } from '@/lib/hooks/useScanFeedback';
 import RestockPhotoPrompt from '@/components/RestockPhotoPrompt';
@@ -49,6 +49,8 @@ export default function ScanClient({
   const [torchOn, setTorchOn] = useState(false);
   const [manualSearchOpen, setManualSearchOpen] = useState(false);
   const [manualCode, setManualCode] = useState('');
+  const [newItemName, setNewItemName] = useState('');
+  const [addingItem, setAddingItem] = useState(false);
   const router = useRouter();
   const supabase = createClient();
   const showToast = useToast();
@@ -107,6 +109,73 @@ export default function ScanClient({
     },
     [propertyId, router, supabase, triggerFeedback]
   );
+
+  // Registers this scanned code as a brand-new item's qr_code, not a freshly
+  // generated one -- goes straight to the table instead of
+  // create_inventory_item_with_source, since that RPC's own INSERT column
+  // list omits qr_code entirely (confirmed against its definition) and would
+  // just fall through to the auto-generate trigger. The trigger itself
+  // (generate_item_qr_code) only fills qr_code in when it's null, so handing
+  // it a real value here is respected as-is. qr_code has a table-wide unique
+  // constraint (not property-scoped), while the not-found state above is
+  // reached via a property-scoped lookup -- so a code already claimed by a
+  // different property is a real, reachable case here, not a hypothetical.
+  async function addNewItem() {
+    const name = newItemName.trim();
+    if (!name || state.status !== 'not-found') return;
+    setAddingItem(true);
+
+    if (typeof navigator === 'undefined' || navigator.onLine !== false) {
+      const { data: existing } = await supabase
+        .from('inventory_items')
+        .select('id')
+        .eq('qr_code', state.code)
+        .maybeSingle();
+      if (existing) {
+        setAddingItem(false);
+        showToast('This code is already assigned to an item at a different property.', { variant: 'error' });
+        return;
+      }
+    }
+
+    const id = crypto.randomUUID();
+    const result = await resilientInsert(supabase, 'inventory_items', {
+      id,
+      property_id: propertyId,
+      name,
+      qr_code: state.code,
+    });
+    setAddingItem(false);
+    if (!result.ok) {
+      showToast(
+        /qr_code/i.test(result.error)
+          ? 'This code is already assigned to an item at a different property.'
+          : 'Failed to add item.',
+        { variant: 'error' }
+      );
+      return;
+    }
+
+    triggerFeedback('success');
+    setNewItemName('');
+    setAdjustedQty('0');
+    setAdjustedPrice('');
+    setState({
+      status: 'item-found',
+      item: {
+        id,
+        name,
+        current_qty: 0,
+        min_qty: 0,
+        unit: 'pcs',
+        unit_cost: null,
+        photo_url: null,
+        reorder_link: null,
+        reorder_sources: null,
+      },
+    });
+    showToast(result.queued ? 'Added — will sync when back online.' : 'Item added.', { variant: 'success' });
+  }
 
   // Deep-link entry point: a physical label's QR encodes a URL (see
   // app/scan/[code]/page.tsx) that lands here with ?code=..., so a scan from
@@ -214,14 +283,38 @@ export default function ScanClient({
       )}
 
       {state.status === 'not-found' && (
-        <div className="text-center mt-6">
-          <p className="text-sm text-charcoal/60 mb-1">
-            No location or item matches this code.
-          </p>
-          <p className="text-xs text-charcoal/40 font-mono mb-4">{state.code}</p>
+        <div className="relative bg-card border border-cardBorder rounded-xl2 shadow-card p-5 mt-6 text-center">
+          <Pin size="sm" />
+          <p className="text-sm text-denim mb-1">No location or item matches this code.</p>
+          <p className="text-xs text-dusk font-mono mb-4">{state.code}</p>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              addNewItem();
+            }}
+            className="flex gap-2 mb-3"
+          >
+            <input
+              type="text"
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              placeholder="New item name"
+              className="flex-1 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-full px-4 py-2 bg-mist text-sm text-denim"
+            />
+            <button
+              type="submit"
+              disabled={addingItem || !newItemName.trim()}
+              className="shrink-0 flex items-center gap-1.5 px-4 rounded-full bg-brass text-denim text-sm font-medium disabled:opacity-40"
+            >
+              <PackagePlus size={16} strokeWidth={1.75} aria-hidden="true" />
+              {addingItem ? 'Adding…' : 'Add as new item'}
+            </button>
+          </form>
+
           <button
             onClick={() => setState({ status: 'scanning' })}
-            className="py-2.5 px-5 rounded-full bg-charcoal text-cream text-sm"
+            className="py-2.5 px-5 rounded-full bg-denim text-white text-sm"
           >
             Scan again
           </button>
