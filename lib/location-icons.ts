@@ -8,6 +8,7 @@
 import {
   Archive,
   Bath,
+  Bed,
   Briefcase,
   Building2,
   Carrot,
@@ -48,6 +49,10 @@ const EXACT_MATCHES: Record<string, LucideIcon> = {
   'boys bath': Bath,
   'girls bath': Bath,
   'laundry room': WashingMachine,
+  'bedroom': Bed,
+  'master bedroom': Bed,
+  'basement bedroom': Bed,
+  "racheli's room": Bed,
 };
 
 // Most specific phrase first — checked in this exact order.
