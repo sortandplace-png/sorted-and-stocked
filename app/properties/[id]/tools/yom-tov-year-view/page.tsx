@@ -15,14 +15,14 @@ export default async function YomTovYearViewPage({ params }: { params: Promise<{
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <Link href={`/properties/${id}/tools`} className="text-sm text-charcoal/60 mb-4 inline-block">
+      <Link href={`/properties/${id}/tools`} className="text-sm text-dusk mb-4 inline-block">
         ← Tools
       </Link>
-      <h1 className="text-2xl font-display text-charcoal mb-1">Yom Tov Year View</h1>
-      <p className="text-sm text-charcoal/50 mb-6">Every Yom Tov date on the calendar, at a glance.</p>
+      <h1 className="text-2xl font-display text-denim mb-1">Yom Tov Year View</h1>
+      <p className="text-sm text-dusk mb-6">Every Yom Tov date on the calendar, at a glance.</p>
 
       {dates.length === 0 ? (
-        <p className="text-sm text-charcoal/40">No dates on the calendar yet.</p>
+        <p className="text-sm text-dusk">No dates on the calendar yet.</p>
       ) : (
         <ul className="space-y-2">
           {dates.map((d) => {
@@ -33,12 +33,12 @@ export default async function YomTovYearViewPage({ params }: { params: Promise<{
                 className={
                   'flex items-center justify-between rounded-xl px-4 py-3 border ' +
                   (isPast
-                    ? 'border-gold-light/20 bg-cream opacity-50'
-                    : 'border-gold-light/40 bg-white shadow-sm shadow-charcoal/5')
+                    ? 'border-cardBorder bg-linen opacity-50'
+                    : 'border-cardBorder bg-white shadow-sm shadow-charcoal/5')
                 }
               >
-                <span className="font-medium text-charcoal">{d.holiday_name}</span>
-                <span className="text-sm text-charcoal/50">
+                <span className="font-medium text-denim">{d.holiday_name}</span>
+                <span className="text-sm text-dusk">
                   {new Date(`${d.date}T00:00:00`).toLocaleDateString('en-US', {
                     weekday: 'short',
                     month: 'short',

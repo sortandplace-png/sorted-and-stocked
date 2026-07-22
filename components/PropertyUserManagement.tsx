@@ -90,20 +90,20 @@ export default function PropertyUserManagement({ propertyId }: { propertyId: str
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-charcoal/50">Loading team members...</div>;
+    return <div className="text-center py-8 text-dusk">Loading team members...</div>;
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="font-semibold text-charcoal mb-4 flex items-center gap-2">
+        <h3 className="font-semibold text-denim mb-4 flex items-center gap-2">
           <UserPlus className="h-5 w-5" />
           Team Members & Permissions
         </h3>
       </div>
 
       {/* Invite Section */}
-      <div className="bg-gold-light/10 rounded-2xl p-4 border border-gold-light/20">
+      <div className="bg-linen rounded-2xl p-4 border border-cardBorder">
         <div className="space-y-3">
           <div>
             <FieldLabel>Email to invite</FieldLabel>
@@ -112,14 +112,14 @@ export default function PropertyUserManagement({ propertyId }: { propertyId: str
               placeholder="Email to invite"
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
-              className="w-full border border-gold-light/40 rounded-lg px-3 py-2 text-sm bg-white"
+              className="w-full border border-cardBorder rounded-lg px-3 py-2 text-sm bg-white"
             />
           </div>
           <div className="flex gap-2">
             <select
               value={inviteRole}
               onChange={(e) => setInviteRole(e.target.value as any)}
-              className="flex-1 border border-gold-light/40 rounded-lg px-3 py-2 text-sm bg-white"
+              className="flex-1 border border-cardBorder rounded-lg px-3 py-2 text-sm bg-white"
             >
               <option value="staff">Staff</option>
               <option value="manager">Manager</option>
@@ -128,7 +128,7 @@ export default function PropertyUserManagement({ propertyId }: { propertyId: str
             <button
               onClick={inviteUser}
               disabled={inviting || !inviteEmail.trim()}
-              className="px-4 py-2 rounded-lg bg-charcoal text-cream text-sm font-medium disabled:opacity-40"
+              className="px-4 py-2 rounded-lg bg-denim text-white text-sm font-medium disabled:opacity-40"
             >
               {inviting ? 'Inviting...' : 'Invite'}
             </button>
@@ -139,22 +139,22 @@ export default function PropertyUserManagement({ propertyId }: { propertyId: str
       {/* Current Users */}
       <div className="space-y-2">
         {users.length === 0 ? (
-          <p className="text-sm text-charcoal/40">No team members yet — invite one above.</p>
+          <p className="text-sm text-dusk">No team members yet — invite one above.</p>
         ) : (
           users.map((user) => (
             <div
               key={user.id}
-              className="flex items-center justify-between p-3 bg-white rounded-lg border border-gold-light/20"
+              className="flex items-center justify-between p-3 bg-white rounded-lg border border-cardBorder"
             >
               <div className="flex-1">
-                <p className="text-sm font-medium text-charcoal">{user.email || `User ${user.user_id.slice(0, 8)}`}</p>
-                {user.accepted_at && <p className="text-xs text-charcoal/50 mt-0.5">✓ Active</p>}
+                <p className="text-sm font-medium text-denim">{user.email || `User ${user.user_id.slice(0, 8)}`}</p>
+                {user.accepted_at && <p className="text-xs text-dusk mt-0.5">✓ Active</p>}
               </div>
 
               <select
                 value={user.role}
                 onChange={(e) => updateRole(user.user_id, e.target.value)}
-                className="text-xs px-2 py-1 border border-gold-light/40 rounded bg-white"
+                className="text-xs px-2 py-1 border border-cardBorder rounded bg-white"
               >
                 <option value="viewer">Viewer</option>
                 <option value="staff">Staff</option>
@@ -163,7 +163,7 @@ export default function PropertyUserManagement({ propertyId }: { propertyId: str
 
               <button
                 onClick={() => removeUser(user.user_id)}
-                className="ml-2 p-1.5 text-charcoal/40 hover:text-rust transition-colors"
+                className="ml-2 p-1.5 text-dusk hover:text-rust transition-colors"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -173,7 +173,7 @@ export default function PropertyUserManagement({ propertyId }: { propertyId: str
       </div>
 
       {/* Role Legend */}
-      <div className="text-xs text-charcoal/50 space-y-1 pt-4 border-t border-gold-light/20">
+      <div className="text-xs text-dusk space-y-1 pt-4 border-t border-cardBorder">
         <p><strong>Owner:</strong> Full access + user management</p>
         <p><strong>Manager:</strong> Can manage inventory & shopping lists</p>
         <p><strong>Staff:</strong> Can audit items & add to lists</p>

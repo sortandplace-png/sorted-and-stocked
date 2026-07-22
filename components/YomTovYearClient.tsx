@@ -66,42 +66,42 @@ export default function YomTovYearClient({ propertyId }: { propertyId: string })
     <div className="max-w-md lg:max-w-2xl mx-auto p-4">
       <Link
         href={`/properties/${propertyId}/meal-plan`}
-        className="text-sm text-charcoal font-medium mb-3 inline-block"
+        className="text-sm text-denim font-medium mb-3 inline-block"
       >
         ← Meal plan
       </Link>
-      <h1 className="text-2xl font-display text-charcoal mb-1">Yom Tov — the year ahead</h1>
-      <p className="text-sm text-charcoal/50 mb-4">
+      <h1 className="text-2xl font-display text-denim mb-1">Yom Tov — the year ahead</h1>
+      <p className="text-sm text-dusk mb-4">
         Every major Yom Tov and fast day for the next 12 months, at a glance — for planning menus
         and shopping well in advance.
       </p>
 
-      {loading && <p className="text-sm text-charcoal/40 text-center mt-8">Loading calendar…</p>}
+      {loading && <p className="text-sm text-dusk text-center mt-8">Loading calendar…</p>}
       {error && <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2">{error}</p>}
 
       {!loading && !error && entries.length === 0 && (
-        <p className="text-sm text-charcoal/40 text-center mt-8">No Yom Tov or fast dates found.</p>
+        <p className="text-sm text-dusk text-center mt-8">No Yom Tov or fast dates found.</p>
       )}
 
       <div className="space-y-5">
         {[...grouped.entries()].map(([monthKey, monthEntries]) => (
           <div key={monthKey}>
-            <h2 className="text-xs font-display italic tracking-[0.1em] text-charcoal/70 mb-2">
+            <h2 className="text-xs font-display italic tracking-[0.1em] text-dusk mb-2">
               {new Date(monthKey + '-02').toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
             </h2>
-            <ul className="divide-y divide-gold-light/30 rounded-2xl bg-white shadow-sm shadow-charcoal/5 overflow-hidden">
+            <ul className="divide-y divide-cardBorder rounded-2xl bg-white shadow-sm shadow-charcoal/5 overflow-hidden">
               {monthEntries.map((entry, i) => (
                 <li key={i} className="flex items-center gap-3 px-4 py-3">
                   <span
                     className={
                       'text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 ' +
-                      (entry.isFast ? 'text-rust bg-rust/10' : 'text-cream bg-charcoal')
+                      (entry.isFast ? 'text-rust bg-rust/10' : 'text-white bg-denim')
                     }
                   >
                     {entry.isFast ? '🕯️ Fast' : '✡︎ Yom Tov'}
                   </span>
-                  <span className="flex-1 text-sm text-charcoal truncate">{entry.title}</span>
-                  <span className="text-xs text-charcoal/40 shrink-0">
+                  <span className="flex-1 text-sm text-denim truncate">{entry.title}</span>
+                  <span className="text-xs text-dusk shrink-0">
                     {new Date(entry.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </span>
                 </li>

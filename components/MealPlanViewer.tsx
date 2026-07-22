@@ -61,11 +61,11 @@ export default function MealPlanViewer({ initialEntries }: MealPlanViewerProps) 
   });
 
   return (
-    <div className="bg-cream p-6 rounded-2xl border border-sand shadow-sm text-charcoal">
+    <div className="bg-linen p-6 rounded-2xl border border-sand shadow-sm text-denim">
       {/* Top Controller */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-sand">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-charcoal">Meal Plan</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-denim">Meal Plan</h2>
           <p className="text-xs text-slate-500">Active and upcoming meals</p>
         </div>
 
@@ -117,7 +117,7 @@ export default function MealPlanViewer({ initialEntries }: MealPlanViewerProps) 
                     <span className="text-xs italic text-slate-400 block pt-4">No meals scheduled</span>
                   ) : (
                     dayMeals.map((meal) => (
-                      <div key={meal.id} className="text-xs p-2 bg-cream rounded border border-sand">
+                      <div key={meal.id} className="text-xs p-2 bg-linen rounded border border-sand">
                         <div className="flex items-center gap-1.5 mb-1">
                           <span>{getCourseIcon(meal.course)}</span>
                           <span className="font-semibold text-slate-700 truncate">

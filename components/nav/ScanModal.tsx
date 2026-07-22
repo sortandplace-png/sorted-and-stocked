@@ -21,12 +21,12 @@ export default function ScanModal({
       onClick={onClose}
     >
       <div
-        className="bg-cream w-full rounded-t-[2rem] sm:rounded-3xl max-w-md mx-auto max-h-[90vh] overflow-y-auto relative"
+        className="bg-linen w-full rounded-t-[2rem] sm:rounded-3xl max-w-md mx-auto max-h-[90vh] overflow-y-auto relative"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-charcoal/60 hover:text-charcoal"
+          className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-dusk hover:text-denim"
           aria-label="Close scan"
         >
           <X size={16} strokeWidth={1.75} />

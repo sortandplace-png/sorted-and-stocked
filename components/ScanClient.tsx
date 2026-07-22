@@ -326,7 +326,7 @@ export default function ScanClient({
           <p className="text-sm text-rust mb-4">{state.message}</p>
           <button
             onClick={() => setState({ status: 'scanning' })}
-            className="py-2.5 px-5 rounded-full bg-charcoal text-cream text-sm"
+            className="py-2.5 px-5 rounded-full bg-denim text-white text-sm"
           >
             Try again
           </button>
@@ -340,11 +340,11 @@ export default function ScanClient({
             <img
               src={state.item.photo_url}
               alt=""
-              className="w-full h-40 object-cover rounded-xl border border-gold-light/40 mb-3"
+              className="w-full h-40 object-cover rounded-xl border border-cardBorder mb-3"
             />
           )}
-          <p className="font-display text-lg text-charcoal mb-1">{state.item.name}</p>
-          <p className="text-xs text-charcoal/40 mb-3">
+          <p className="font-display text-lg text-denim mb-1">{state.item.name}</p>
+          <p className="text-xs text-dusk mb-3">
             Min stock: {state.item.min_qty} {state.item.unit}
           </p>
           {(state.item.reorder_sources?.length ?? 0) > 1 ? (
@@ -355,40 +355,40 @@ export default function ScanClient({
                 href={getPreferredSource(state.item.reorder_sources)!.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-full border border-gold text-gold-dark text-sm font-medium mb-3"
+                className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-full border border-gold text-brass text-sm font-medium mb-3"
               >
                 <ExternalLink size={14} strokeWidth={1.75} /> {t('reorder')}
               </a>
             )
           )}
-          <label className="text-sm text-charcoal/60 block mb-1">Current quantity</label>
+          <label className="text-sm text-dusk block mb-1">Current quantity</label>
           <input
             type="number"
             value={adjustedQty}
             onChange={(e) => setAdjustedQty(e.target.value)}
-            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-2.5 mb-3 bg-cream/40"
+            className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-2xl px-4 py-2.5 mb-3 bg-linen"
             autoFocus
           />
-          <label className="text-sm text-charcoal/60 block mb-1">Price ($, optional)</label>
+          <label className="text-sm text-dusk block mb-1">Price ($, optional)</label>
           <input
             type="number"
             step="0.01"
             value={adjustedPrice}
             onChange={(e) => setAdjustedPrice(e.target.value)}
             placeholder="—"
-            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-2.5 mb-3 bg-cream/40"
+            className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-2xl px-4 py-2.5 mb-3 bg-linen"
           />
           <div className="flex gap-2">
             <button
               onClick={() => setState({ status: 'scanning' })}
-              className="flex-1 py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal"
+              className="flex-1 py-2.5 rounded-full bg-linen border border-denim/20 text-denim"
             >
               Cancel
             </button>
             <button
               onClick={saveQty}
               disabled={saving}
-              className="flex-1 py-2.5 rounded-full bg-charcoal text-cream disabled:opacity-40"
+              className="flex-1 py-2.5 rounded-full bg-denim text-white disabled:opacity-40"
             >
               {saving ? 'Saving…' : 'Save'}
             </button>

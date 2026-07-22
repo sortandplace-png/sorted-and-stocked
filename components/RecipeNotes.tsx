@@ -15,8 +15,8 @@ export default function RecipeNotes({ notes }: { notes: string | null }) {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
-      <h2 className="font-display text-lg text-charcoal mb-2">Notes</h2>
-      <p className="text-sm text-charcoal/80 whitespace-pre-wrap">{notes}</p>
+      <h2 className="font-display text-lg text-denim mb-2">Notes</h2>
+      <p className="text-sm text-dusk whitespace-pre-wrap">{notes}</p>
     </div>
   );
 }

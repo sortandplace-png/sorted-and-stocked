@@ -127,14 +127,14 @@ export default function BrachaCategorySelect({
         aria-expanded={open}
         aria-controls={listId}
         aria-activedescendant={open ? `${listId}-opt-${activeIndex}` : undefined}
-        className="w-full flex items-center justify-between gap-2 border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-xl px-3 py-2.5 text-sm text-charcoal disabled:opacity-60 bg-white text-left"
+        className="w-full flex items-center justify-between gap-2 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl px-3 py-2.5 text-sm text-denim disabled:opacity-60 bg-white text-left"
       >
         <span className="min-w-0">
-          <span className="font-semibold text-charcoal">{current.label}</span>
-          {current.sub && <span className="block text-xs text-charcoal/50 leading-tight">{current.sub}</span>}
+          <span className="font-semibold text-denim">{current.label}</span>
+          {current.sub && <span className="block text-xs text-dusk leading-tight">{current.sub}</span>}
         </span>
         <span
-          className={`text-charcoal/40 text-xs shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`text-dusk text-xs shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
           aria-hidden="true"
         >
           ▼
@@ -145,7 +145,7 @@ export default function BrachaCategorySelect({
         <ul
           id={listId}
           role="listbox"
-          className="absolute left-0 right-0 mt-1 max-h-72 overflow-y-auto bg-white border border-gold-light/60 rounded-xl shadow-md shadow-charcoal/10 z-30 py-1"
+          className="absolute left-0 right-0 mt-1 max-h-72 overflow-y-auto bg-white border border-cardBorder rounded-xl shadow-md shadow-charcoal/10 z-30 py-1"
         >
           {options.map((o, i) => (
             <li
@@ -155,10 +155,10 @@ export default function BrachaCategorySelect({
               aria-selected={o.category === value}
               onMouseEnter={() => setActiveIndex(i)}
               onClick={() => selectOption(i)}
-              className={`px-3 py-2 cursor-pointer ${i === activeIndex ? 'bg-gold-light/20' : ''}`}
+              className={`px-3 py-2 cursor-pointer ${i === activeIndex ? 'bg-linen' : ''}`}
             >
-              <span className="block text-sm font-semibold text-charcoal">{o.label}</span>
-              {o.sub && <span className="block text-xs text-charcoal/50">{o.sub}</span>}
+              <span className="block text-sm font-semibold text-denim">{o.label}</span>
+              {o.sub && <span className="block text-xs text-dusk">{o.sub}</span>}
             </li>
           ))}
         </ul>

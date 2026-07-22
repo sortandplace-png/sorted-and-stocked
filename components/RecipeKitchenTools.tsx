@@ -141,25 +141,25 @@ export default function RecipeKitchenTools({
 
   return (
     <div className="bg-white rounded-xl2 shadow-sm shadow-charcoal/5 p-5 print:hidden">
-      <h3 className="font-display text-lg text-charcoal mb-1">{t('title')}</h3>
-      <p className="text-xs text-charcoal/50 mb-2">{t('description')}</p>
+      <h3 className="font-display text-lg text-denim mb-1">{t('title')}</h3>
+      <p className="text-xs text-dusk mb-2">{t('description')}</p>
 
       {equipment.length === 0 && !isPending && (
-        <p className="text-sm text-charcoal/40 mb-2">{t('empty')}</p>
+        <p className="text-sm text-dusk mb-2">{t('empty')}</p>
       )}
 
       <div className="flex flex-wrap gap-1.5 mb-2">
         {equipment.map((item) => (
           <span
             key={item}
-            className="inline-flex items-center gap-1 text-xs font-medium text-charcoal bg-gold-light/30 border border-gold-light/50 pl-2.5 pr-1 py-1 rounded-full"
+            className="inline-flex items-center gap-1 text-xs font-medium text-denim bg-linen border border-cardBorder pl-2.5 pr-1 py-1 rounded-full"
           >
             {item}
             <button
               onClick={() => removeItem(item)}
               disabled={isPending}
               aria-label={t('remove', { item })}
-              className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-charcoal/10 transition"
+              className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-denim/10 transition"
             >
               <X size={12} strokeWidth={2} />
             </button>
@@ -180,12 +180,12 @@ export default function RecipeKitchenTools({
           }}
           disabled={isPending}
           placeholder={t('placeholder')}
-          className="flex-1 border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-xl px-3 py-1.5 text-sm text-charcoal disabled:opacity-60"
+          className="flex-1 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl px-3 py-1.5 text-sm text-denim disabled:opacity-60"
         />
         <button
           onClick={addItem}
           disabled={isPending || !draft.trim()}
-          className="text-sm font-medium text-gold-dark border border-gold-light/60 px-3 py-1.5 rounded-xl disabled:opacity-40"
+          className="text-sm font-medium text-brass border border-cardBorder px-3 py-1.5 rounded-xl disabled:opacity-40"
         >
           {t('addButton')}
         </button>
@@ -195,7 +195,7 @@ export default function RecipeKitchenTools({
         {isDirty && !isPending && (
           <button
             onClick={() => setEquipment(saved)}
-            className="text-sm text-charcoal/50 hover:text-charcoal px-3 py-1.5"
+            className="text-sm text-dusk hover:text-denim px-3 py-1.5"
           >
             {tc('revert')}
           </button>
@@ -203,28 +203,28 @@ export default function RecipeKitchenTools({
         <button
           onClick={handleSave}
           disabled={!isDirty || isPending}
-          className="text-sm font-medium bg-gold-dark text-white px-4 py-1.5 rounded-full disabled:opacity-40"
+          className="text-sm font-medium bg-denim text-white px-4 py-1.5 rounded-full disabled:opacity-40"
         >
           {isPending ? tc('saving') : tc('save')}
         </button>
       </div>
 
       {matchedTools.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gold-light/40">
-          <p className="text-xs font-medium text-charcoal mb-2">
+        <div className="mt-4 pt-4 border-t border-cardBorder">
+          <p className="text-xs font-medium text-denim mb-2">
             {t('ownedSummary', { owned: ownedCount, total: matchedTools.length })}
             {ownedCount === matchedTools.length ? ` · ${t('readyForPrep')}` : ''}
           </p>
           <ul className="space-y-1.5 mb-3">
             {matchedTools.map((tool) => (
               <li key={tool.id} className="flex items-center justify-between text-sm">
-                <span className="text-charcoal">{tool.name}</span>
+                <span className="text-denim">{tool.name}</span>
                 <button
                   onClick={() => toggleOwned(tool)}
                   className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${
                     ownership[tool.id]
                       ? 'bg-sage/15 text-sage'
-                      : 'bg-cream border border-gold-light/60 text-charcoal/60'
+                      : 'bg-linen border border-cardBorder text-dusk'
                   }`}
                 >
                   {ownership[tool.id] ? t('owned') : t('notOwned')}
@@ -237,11 +237,11 @@ export default function RecipeKitchenTools({
               <button
                 onClick={addMissingToList}
                 disabled={addingToList}
-                className="text-sm font-medium bg-gold-dark text-white px-4 py-1.5 rounded-full disabled:opacity-40 self-start"
+                className="text-sm font-medium bg-denim text-white px-4 py-1.5 rounded-full disabled:opacity-40 self-start"
               >
                 {addingToList ? tc('saving') : t('addAllToPrepList', { count: missingTools.length })}
               </button>
-              <Link href={`/properties/${propertyId}/shopping-list`} className="text-xs text-charcoal/40 underline self-start">
+              <Link href={`/properties/${propertyId}/shopping-list`} className="text-xs text-dusk underline self-start">
                 {t('customizePrepList')}
               </Link>
             </div>

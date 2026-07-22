@@ -60,13 +60,13 @@ export default function Footer({ propertyId }: { propertyId?: string }) {
   }
 
   return (
-    <footer className="print:hidden py-6 text-center text-xs text-charcoal/40 space-y-1">
+    <footer className="print:hidden py-6 text-center text-xs text-dusk space-y-1">
       <div>
         {propertyId && (
           <>
             <Link
               href={`/properties/${propertyId}/sitemap`}
-              className="hover:text-charcoal underline underline-offset-2"
+              className="hover:text-denim underline underline-offset-2"
             >
               Sitemap
             </Link>
@@ -84,12 +84,12 @@ export default function Footer({ propertyId }: { propertyId?: string }) {
           href="https://mail.google.com/mail/?view=cm&fs=1&to=sortandplace@gmail.com&su=Sorted%20%26%20Stocked%20Support"
           target="_blank"
           rel="noopener noreferrer"
-          className="hover:text-charcoal underline underline-offset-2"
+          className="hover:text-denim underline underline-offset-2"
         >
           Contact
         </a>
       </div>
-      <div className="text-[11px] text-charcoal/30">Powered by Sort + Place</div>
+      <div className="text-[11px] text-dusk">Powered by Sort + Place</div>
     </footer>
   );
 }

@@ -26,10 +26,10 @@ export default function FloatingScanButton({ propertyId }: { propertyId: string 
         aria-label={t('scan')}
         className="hidden md:flex fixed bottom-6 right-6 z-40 flex-col items-center gap-1 print:hidden"
       >
-        <span className="w-14 h-14 rounded-full bg-gold-dark text-white shadow-lg shadow-charcoal/20 flex items-center justify-center hover:opacity-90 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal">
+        <span className="w-14 h-14 rounded-full bg-denim text-white shadow-lg shadow-charcoal/20 flex items-center justify-center hover:opacity-90 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal">
           <Scan size={24} strokeWidth={1.75} aria-hidden="true" />
         </span>
-        <span className="text-[10px] font-medium text-charcoal bg-white/90 px-2 py-0.5 rounded-full shadow-sm">
+        <span className="text-[10px] font-medium text-denim bg-white/90 px-2 py-0.5 rounded-full shadow-sm">
           {t('scan')}
         </span>
       </button>

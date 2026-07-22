@@ -403,21 +403,21 @@ export default function NewRecipeModal({
         className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="font-display text-xl text-charcoal mb-3">{isEditing ? 'Edit recipe' : 'New recipe'}</h2>
+        <h2 className="font-display text-xl text-denim mb-3">{isEditing ? 'Edit recipe' : 'New recipe'}</h2>
 
         {!isEditing && existingDraft && (
-          <div className="bg-gold-light/20 border border-gold-light rounded-2xl p-3 mb-3 text-sm">
-            <p className="text-charcoal mb-2">You have an unsaved draft of a recipe.</p>
+          <div className="bg-linen border border-cardBorder rounded-2xl p-3 mb-3 text-sm">
+            <p className="text-denim mb-2">You have an unsaved draft of a recipe.</p>
             <div className="flex gap-2">
               <button
                 onClick={() => applyDraft(resumeDraft() as RecipeDraft)}
-                className="flex-1 py-2 rounded-full bg-charcoal text-cream font-medium text-xs"
+                className="flex-1 py-2 rounded-full bg-denim text-white font-medium text-xs"
               >
                 Resume draft
               </button>
               <button
                 onClick={() => discardDraft()}
-                className="flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-xs"
+                className="flex-1 py-2 rounded-full bg-linen border border-denim/20 text-denim text-xs"
               >
                 Discard
               </button>
@@ -439,18 +439,18 @@ export default function NewRecipeModal({
               <img
                 src={displayedPhoto}
                 alt=""
-                className="w-full h-40 object-cover rounded-2xl border border-gold-light/60"
+                className="w-full h-40 object-cover rounded-2xl border border-cardBorder"
               />
               <div className="flex gap-2 mt-2">
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-xs font-medium"
+                  className="flex-1 py-2 rounded-full bg-linen border border-denim/20 text-denim text-xs font-medium"
                 >
                   Replace photo
                 </button>
                 <button
                   onClick={removePhoto}
-                  className="flex-1 py-2 rounded-full bg-cream border border-rust/40 text-rust text-xs font-medium"
+                  className="flex-1 py-2 rounded-full bg-linen border border-rust/40 text-rust text-xs font-medium"
                 >
                   Remove photo
                 </button>
@@ -459,7 +459,7 @@ export default function NewRecipeModal({
           ) : (
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full h-24 rounded-2xl border-2 border-dashed border-gold-light/60 text-charcoal/50 text-sm font-medium hover:bg-gold-light/10 transition"
+              className="w-full h-24 rounded-2xl border-2 border-dashed border-cardBorder text-dusk text-sm font-medium hover:bg-linen transition"
             >
               + Add a photo
             </button>
@@ -473,7 +473,7 @@ export default function NewRecipeModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Recipe name"
-              className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
+              className="w-full border border-cardBorder rounded-2xl px-4 py-2.5 bg-linen"
               autoFocus
             />
           </div>
@@ -483,7 +483,7 @@ export default function NewRecipeModal({
               value={nameEs}
               onChange={(e) => setNameEs(e.target.value)}
               placeholder="Nombre en español"
-              className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
+              className="w-full border border-cardBorder rounded-2xl px-4 py-2.5 bg-linen"
             />
           </div>
           <div className="flex gap-3">
@@ -492,7 +492,7 @@ export default function NewRecipeModal({
               <select
                 value={course}
                 onChange={(e) => setCourse(e.target.value as Course)}
-                className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
+                className="w-full border border-cardBorder rounded-2xl px-4 py-2.5 bg-linen"
               >
                 {COURSES.map((c) => (
                   <option key={c.key} value={c.key}>
@@ -506,7 +506,7 @@ export default function NewRecipeModal({
               <select
                 value={kosherType}
                 onChange={(e) => setKosherType(e.target.value)}
-                className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
+                className="w-full border border-cardBorder rounded-2xl px-4 py-2.5 bg-linen"
               >
                 <option value="">Not set</option>
                 {KOSHER_TYPES.map((k) => (
@@ -525,7 +525,7 @@ export default function NewRecipeModal({
                 value={servings}
                 onChange={(e) => setServings(e.target.value)}
                 placeholder="Servings"
-                className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
+                className="w-full border border-cardBorder rounded-2xl px-4 py-2.5 bg-linen"
               />
             </div>
             <div className="flex-1">
@@ -535,7 +535,7 @@ export default function NewRecipeModal({
                 value={approxTotalMinutes}
                 onChange={(e) => setApproxTotalMinutes(e.target.value)}
                 placeholder="Optional"
-                className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
+                className="w-full border border-cardBorder rounded-2xl px-4 py-2.5 bg-linen"
               />
             </div>
             <div className="flex-1">
@@ -545,7 +545,7 @@ export default function NewRecipeModal({
                 value={prepLeadDays}
                 onChange={(e) => setPrepLeadDays(e.target.value)}
                 placeholder="Optional"
-                className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40"
+                className="w-full border border-cardBorder rounded-2xl px-4 py-2.5 bg-linen"
               />
             </div>
           </div>
@@ -556,7 +556,7 @@ export default function NewRecipeModal({
               onChange={(e) => setInstructionsEn(e.target.value)}
               placeholder="Step-by-step instructions"
               rows={5}
-              className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40 text-sm"
+              className="w-full border border-cardBorder rounded-2xl px-4 py-2.5 bg-linen text-sm"
             />
           </div>
           <div>
@@ -565,7 +565,7 @@ export default function NewRecipeModal({
               value={tagsText}
               onChange={(e) => setTagsText(e.target.value)}
               placeholder="Comma-separated, e.g. quick-easy, oven, freezer-friendly"
-              className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40 text-sm"
+              className="w-full border border-cardBorder rounded-2xl px-4 py-2.5 bg-linen text-sm"
             />
           </div>
           <div>
@@ -574,7 +574,7 @@ export default function NewRecipeModal({
               value={equipmentText}
               onChange={(e) => setEquipmentText(e.target.value)}
               placeholder="Comma-separated, e.g. 9x13 pan, immersion blender"
-              className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40 text-sm"
+              className="w-full border border-cardBorder rounded-2xl px-4 py-2.5 bg-linen text-sm"
             />
           </div>
           <div className="flex gap-4 text-sm">
@@ -593,28 +593,28 @@ export default function NewRecipeModal({
           </div>
         </div>
 
-        <p className="text-sm font-medium text-charcoal mb-2">Ingredients</p>
+        <p className="text-sm font-medium text-denim mb-2">Ingredients</p>
         {/* Two lines per row, not a 5th narrow column squeezed into the
             original 5-across layout -- Spanish name is now required
             alongside English (Racquel: every add/edit form gets one), and a
             name field that narrow isn't usable on mobile. */}
         <div className="space-y-2 mb-2">
           {ingredientRows.map((row, i) => (
-            <div key={i} className="flex flex-col gap-1.5 border border-gold-light/40 rounded-xl p-2">
+            <div key={i} className="flex flex-col gap-1.5 border border-cardBorder rounded-xl p-2">
               <div className="flex gap-2">
                 <input
                   value={row.name}
                   onChange={(e) => updateIngredientRow(i, 'name', e.target.value)}
                   placeholder="Ingredient"
                   aria-label="Ingredient"
-                  className="flex-1 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
+                  className="flex-1 border border-cardBorder rounded-xl px-3 py-2 bg-linen text-sm"
                 />
                 <input
                   value={row.nameEs}
                   onChange={(e) => updateIngredientRow(i, 'nameEs', e.target.value)}
                   placeholder="Nombre en español"
                   aria-label="Spanish ingredient name"
-                  className="flex-1 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
+                  className="flex-1 border border-cardBorder rounded-xl px-3 py-2 bg-linen text-sm"
                 />
               </div>
               <div className="flex gap-2">
@@ -623,41 +623,41 @@ export default function NewRecipeModal({
                   onChange={(e) => updateIngredientRow(i, 'quantity', e.target.value)}
                   placeholder="Qty"
                   aria-label="Quantity"
-                  className="w-1/3 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
+                  className="w-1/3 border border-cardBorder rounded-xl px-3 py-2 bg-linen text-sm"
                 />
                 <input
                   value={row.unit}
                   onChange={(e) => updateIngredientRow(i, 'unit', e.target.value)}
                   placeholder="Unit"
                   aria-label="Unit"
-                  className="w-1/3 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
+                  className="w-1/3 border border-cardBorder rounded-xl px-3 py-2 bg-linen text-sm"
                 />
                 <input
                   value={row.category}
                   onChange={(e) => updateIngredientRow(i, 'category', e.target.value)}
                   placeholder="Aisle"
                   aria-label="Aisle"
-                  className="w-1/3 border border-gold-light/60 rounded-xl px-3 py-2 bg-cream/40 text-sm"
+                  className="w-1/3 border border-cardBorder rounded-xl px-3 py-2 bg-linen text-sm"
                 />
               </div>
             </div>
           ))}
         </div>
-        <button onClick={addIngredientRow} className="text-sm text-charcoal underline mb-4">
+        <button onClick={addIngredientRow} className="text-sm text-denim underline mb-4">
           + Add ingredient
         </button>
 
         <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal"
+            className="flex-1 py-2.5 rounded-full bg-linen border border-denim/20 text-denim"
           >
             Cancel
           </button>
           <button
             onClick={saveNewRecipe}
             disabled={saving || !name.trim()}
-            className="flex-1 py-2.5 rounded-full bg-charcoal text-cream disabled:opacity-40"
+            className="flex-1 py-2.5 rounded-full bg-denim text-white disabled:opacity-40"
           >
             {saving ? 'Saving…' : isEditing ? 'Save changes' : 'Save recipe'}
           </button>

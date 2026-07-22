@@ -37,14 +37,14 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center px-6">
+    <div className="min-h-screen bg-linen flex items-center justify-center px-6">
       <div className="max-w-sm w-full">
         <div className="flex justify-center mb-4">
           <LogoMark className="w-24 h-24" />
         </div>
-        <h1 className="font-display text-2xl text-charcoal mb-1 text-center">Set a new password</h1>
-        <p className="text-sm text-charcoal/50 mb-1 tracking-wide text-center">Sorted &amp; Stocked</p>
-        <p className="text-sm text-charcoal/50 mb-6 text-center">Choose something you haven't used before.</p>
+        <h1 className="font-display text-2xl text-denim mb-1 text-center">Set a new password</h1>
+        <p className="text-sm text-dusk mb-1 tracking-wide text-center">Sorted &amp; Stocked</p>
+        <p className="text-sm text-dusk mb-6 text-center">Choose something you haven't used before.</p>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
@@ -52,7 +52,7 @@ export default function ResetPasswordPage() {
             placeholder="New password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2.5 bg-white"
+            className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-full px-4 py-2.5 bg-white"
             minLength={6}
             autoComplete="new-password"
             required
@@ -62,7 +62,7 @@ export default function ResetPasswordPage() {
             placeholder="Confirm new password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
-            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2.5 bg-white"
+            className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-full px-4 py-2.5 bg-white"
             minLength={6}
             autoComplete="new-password"
             required
@@ -71,7 +71,7 @@ export default function ResetPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
+            className="w-full py-2.5 rounded-full bg-denim text-white font-medium disabled:opacity-40"
           >
             {loading ? 'Saving…' : 'Save password'}
           </button>

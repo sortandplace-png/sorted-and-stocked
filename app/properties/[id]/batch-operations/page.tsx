@@ -94,20 +94,20 @@ export default function BatchOperationsPage({
   };
 
   return (
-    <div className="min-h-screen bg-cream p-6">
+    <div className="min-h-screen bg-linen p-6">
       <div className="max-w-4xl mx-auto">
         <Link
           href="/dashboard"
-          className="text-sm text-charcoal font-medium mb-4 inline-block"
+          className="text-sm text-denim font-medium mb-4 inline-block"
         >
           ← Back
         </Link>
 
-        <h1 className="text-3xl font-serif mb-6 text-charcoal">Batch Operations</h1>
+        <h1 className="text-3xl font-serif mb-6 text-denim">Batch Operations</h1>
 
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
           <div className="mb-4">
-            <label className="block text-sm font-medium text-charcoal mb-2">
+            <label className="block text-sm font-medium text-denim mb-2">
               Property ID
             </label>
             <input
@@ -115,7 +115,7 @@ export default function BatchOperationsPage({
               value={propertyId}
               onChange={e => setPropertyId(e.target.value)}
               placeholder="ba9ed5a7-4e05-4eb6-a315-dfda3ae7e57a"
-              className="w-full px-4 py-2 border border-gold-light/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gold/30"
+              className="w-full px-4 py-2 border border-cardBorder rounded-xl focus:outline-none focus:ring-2 focus:ring-brass/40"
             />
           </div>
 
@@ -123,7 +123,7 @@ export default function BatchOperationsPage({
             <button
               onClick={handleDryRun}
               disabled={!propertyId || loading}
-              className="px-4 py-3 bg-charcoal text-cream rounded-full font-medium hover:opacity-90 disabled:opacity-40 transition"
+              className="px-4 py-3 bg-denim text-white rounded-full font-medium hover:opacity-90 disabled:opacity-40 transition"
             >
               {loading ? '⏳ Running...' : '📋 Preview Changes (Dry Run)'}
             </button>
@@ -154,14 +154,14 @@ export default function BatchOperationsPage({
 
         {dryRunResults && (
           <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
-            <h2 className="text-xl font-serif mb-4 text-charcoal">Dry Run Results</h2>
-            <p className="text-sm text-charcoal/70 mb-4">
+            <h2 className="text-xl font-serif mb-4 text-denim">Dry Run Results</h2>
+            <p className="text-sm text-dusk mb-4">
               Total ingredients: {dryRunResults.totalIngredients} | Total rows to update: {dryRunResults.totalRows}
             </p>
 
             <div className="max-h-96 overflow-y-auto">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-mist border-b border-gold-light/30">
+                <thead className="sticky top-0 bg-mist border-b border-cardBorder">
                   <tr>
                     <th className="text-left px-3 py-2">Ingredient</th>
                     <th className="text-left px-3 py-2">Primary Store</th>
@@ -170,20 +170,20 @@ export default function BatchOperationsPage({
                     <th className="text-left px-3 py-2">Reasoning</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gold-light/20">
+                <tbody className="divide-y divide-cardBorder">
                   {(dryRunResults.updates || []).slice(0, 50).map((update: any, i: number) => (
                     <tr key={i} className="hover:bg-mist">
-                      <td className="px-3 py-2 font-medium text-charcoal">{update.ingredientName}</td>
-                      <td className="px-3 py-2 text-charcoal/70">{update.primary_store}</td>
+                      <td className="px-3 py-2 font-medium text-denim">{update.ingredientName}</td>
+                      <td className="px-3 py-2 text-dusk">{update.primary_store}</td>
                       <td className="px-3 py-2">{update.is_strictly_kosher ? '✅' : '—'}</td>
-                      <td className="px-3 py-2 text-charcoal/70">{update.affectedRows}</td>
-                      <td className="px-3 py-2 text-xs text-charcoal/50">{update.reasoning}</td>
+                      <td className="px-3 py-2 text-dusk">{update.affectedRows}</td>
+                      <td className="px-3 py-2 text-xs text-dusk">{update.reasoning}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               {(dryRunResults.updates || []).length > 50 && (
-                <p className="text-xs text-charcoal/40 mt-2">Showing 50 of {dryRunResults.updates.length} changes...</p>
+                <p className="text-xs text-dusk mt-2">Showing 50 of {dryRunResults.updates.length} changes...</p>
               )}
             </div>
           </div>

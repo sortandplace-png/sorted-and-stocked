@@ -44,14 +44,14 @@ export default function WelcomePage() {
             <div className="w-[34px] h-[34px] rounded bg-ink overflow-hidden">{HOUSE_MARK}</div>
             <span className="font-display font-bold text-xl text-ink">Sorted &amp; Stocked</span>
           </div>
-          <a href="#cta" className="text-[12.5px] font-extrabold tracking-wide bg-ink text-cream px-5 py-2.5 rounded whitespace-nowrap">
+          <a href="#cta" className="text-[12.5px] font-extrabold tracking-wide bg-ink text-white px-5 py-2.5 rounded whitespace-nowrap">
             Request Early Access
           </a>
         </nav>
 
         <section className="grid md:grid-cols-2 gap-10 items-center py-12">
           <div>
-            <p className="text-[11px] tracking-[0.2em] uppercase font-bold text-gold-dark border-b border-gold inline-block pb-1 mb-4">
+            <p className="text-[11px] tracking-[0.2em] uppercase font-bold text-brass border-b border-gold inline-block pb-1 mb-4">
               For Orthodox Households
             </p>
             <h1 className="font-display font-bold text-4xl md:text-5xl text-ink leading-[1.1] mb-5">
@@ -62,7 +62,7 @@ export default function WelcomePage() {
               Tov — built by a professional organizer, not retrofitted from a generic recipe app.
             </p>
             <div className="flex items-center gap-4 flex-wrap">
-              <a href="#cta" className="bg-ink text-cream font-bold text-sm px-7 py-3.5 rounded">
+              <a href="#cta" className="bg-ink text-white font-bold text-sm px-7 py-3.5 rounded">
                 Request Early Access
               </a>
               <a href="#signature" className="font-bold text-sm text-ink underline decoration-line underline-offset-4">
@@ -85,7 +85,7 @@ export default function WelcomePage() {
                 </span>
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-[#A89F8F] font-bold">{row.course}</p>
-                  <p className="font-display font-semibold text-base text-cream">{row.name}</p>
+                  <p className="font-display font-semibold text-base text-white">{row.name}</p>
                 </div>
               </div>
             ))}
@@ -120,7 +120,7 @@ export default function WelcomePage() {
       <section id="signature" className="bg-ink py-14 -mx-4 px-4">
         <div className="max-w-[1080px] mx-auto">
           <p className="text-[11px] tracking-[0.18em] uppercase font-bold text-gold mb-3.5">The Difference</p>
-          <h2 className="font-display font-semibold text-3xl text-cream mb-4">One glance. Always safe.</h2>
+          <h2 className="font-display font-semibold text-3xl text-white mb-4">One glance. Always safe.</h2>
           <p className="text-[#C9C2B4] text-[15px] max-w-[520px] leading-relaxed mb-9">
             Every recipe and every inventory item carries one of three tags — bold enough to see at a glance,
             built into the product from day one, not bolted on after.
@@ -133,7 +133,7 @@ export default function WelcomePage() {
             ].map(([title, bg, body]) => (
               <div key={title} className="border border-white/15 rounded p-6">
                 <div className={`w-full h-1.5 rounded mb-4 ${bg}`} />
-                <p className="font-display font-bold text-xl text-cream mb-2">{title}</p>
+                <p className="font-display font-bold text-xl text-white mb-2">{title}</p>
                 <p className="text-[#B8B0A2] text-[13px] leading-relaxed">{body}</p>
               </div>
             ))}

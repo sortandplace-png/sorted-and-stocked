@@ -53,33 +53,33 @@ export default function RecipeHistoryModal({ recipeId, onClose }: { recipeId: st
 
   return (
     <div
-      className="fixed inset-0 bg-charcoal/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+      className="fixed inset-0 bg-denim/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
       onClick={onClose}
     >
       <div
         className="bg-white rounded-t-3xl sm:rounded-2xl shadow-xl w-full sm:max-w-md max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gold-light/40">
-          <h2 className="font-display text-lg text-charcoal">Edit history</h2>
-          <button onClick={onClose} className="text-charcoal/50 hover:text-charcoal text-xl leading-none" aria-label="Close">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-cardBorder">
+          <h2 className="font-display text-lg text-denim">Edit history</h2>
+          <button onClick={onClose} className="text-dusk hover:text-denim text-xl leading-none" aria-label="Close">
             ×
           </button>
         </div>
 
         <div className="overflow-y-auto px-5 py-4 space-y-3">
           {error && <p className="text-sm text-rust">{error}</p>}
-          {!error && entries === null && <p className="text-sm text-charcoal/40">Loading…</p>}
+          {!error && entries === null && <p className="text-sm text-dusk">Loading…</p>}
           {entries?.length === 0 && (
-            <p className="text-sm text-charcoal/40">No edits recorded for this recipe yet.</p>
+            <p className="text-sm text-dusk">No edits recorded for this recipe yet.</p>
           )}
           {entries?.map((entry) => (
-            <div key={entry.id} className="border border-gold-light/30 rounded-xl p-3">
+            <div key={entry.id} className="border border-cardBorder rounded-xl p-3">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-medium text-charcoal bg-gold-light/30 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-medium text-denim bg-linen px-2 py-0.5 rounded-full">
                   {FIELD_LABELS[entry.field_name] ?? entry.field_name}
                 </span>
-                <span className="text-xs text-charcoal/40">
+                <span className="text-xs text-dusk">
                   {new Date(entry.created_at).toLocaleString('en-US', {
                     month: 'short',
                     day: 'numeric',
@@ -88,13 +88,13 @@ export default function RecipeHistoryModal({ recipeId, onClose }: { recipeId: st
                   })}
                 </span>
               </div>
-              <p className="text-sm text-charcoal/70">
-                <span className="line-through text-charcoal/40">{truncate(entry.old_value)}</span>
+              <p className="text-sm text-dusk">
+                <span className="line-through text-dusk">{truncate(entry.old_value)}</span>
                 {' → '}
-                <span className="text-charcoal">{truncate(entry.new_value)}</span>
+                <span className="text-denim">{truncate(entry.new_value)}</span>
               </p>
               {entry.editor_name && (
-                <p className="text-xs text-charcoal/40 mt-1">by {entry.editor_name}</p>
+                <p className="text-xs text-dusk mt-1">by {entry.editor_name}</p>
               )}
             </div>
           ))}

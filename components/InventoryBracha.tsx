@@ -108,8 +108,8 @@ export default function InventoryBracha({ itemId, itemName }: { itemId: string; 
 
   return (
     <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
-      <h3 className="font-display text-base text-charcoal mb-1">Bracha</h3>
-      <p className="text-xs text-charcoal/50 mb-2">
+      <h3 className="font-display text-base text-denim mb-1">Bracha</h3>
+      <p className="text-xs text-dusk mb-2">
         Which bracha applies — a manual judgment call, never auto-assigned.
       </p>
 
@@ -122,12 +122,12 @@ export default function InventoryBracha({ itemId, itemName }: { itemId: string; 
       />
 
       {selectedRow && (
-        <div className="mt-2 text-xs text-charcoal/60 bg-cream px-3 py-2 rounded-lg space-y-0.5">
+        <div className="mt-2 text-xs text-dusk bg-linen px-3 py-2 rounded-lg space-y-0.5">
           <div>
-            <span className="font-medium text-charcoal">Before:</span> {selectedRow.bracha_rishona}
+            <span className="font-medium text-denim">Before:</span> {selectedRow.bracha_rishona}
           </div>
           <div>
-            <span className="font-medium text-charcoal">After:</span> {selectedRow.bracha_achrona}
+            <span className="font-medium text-denim">After:</span> {selectedRow.bracha_achrona}
           </div>
           {selectedRow.note && <div className="italic pt-1">{selectedRow.note}</div>}
         </div>
@@ -145,9 +145,9 @@ export default function InventoryBracha({ itemId, itemName }: { itemId: string; 
         selected &&
         selected === saved &&
         achrona && (
-          <div className="mt-2 text-xs px-3 py-2 rounded-lg bg-sage/10 text-charcoal">
+          <div className="mt-2 text-xs px-3 py-2 rounded-lg bg-sage/10 text-denim">
             <span className="font-medium">Bracha achrona (after):</span> {achrona}
-            {achronaNote && <div className="italic text-charcoal/60 pt-1">{achronaNote}</div>}
+            {achronaNote && <div className="italic text-dusk pt-1">{achronaNote}</div>}
           </div>
         )
       )}
@@ -156,7 +156,7 @@ export default function InventoryBracha({ itemId, itemName }: { itemId: string; 
         {isDirty && !isPending && (
           <button
             onClick={() => setSelected(saved)}
-            className="text-sm text-charcoal/50 hover:text-charcoal px-3 py-1.5"
+            className="text-sm text-dusk hover:text-denim px-3 py-1.5"
           >
             Revert
           </button>
@@ -164,7 +164,7 @@ export default function InventoryBracha({ itemId, itemName }: { itemId: string; 
         <button
           onClick={handleSave}
           disabled={!isDirty || isPending}
-          className="text-sm font-medium bg-gold-dark text-white px-4 py-1.5 rounded-full disabled:opacity-40"
+          className="text-sm font-medium bg-denim text-white px-4 py-1.5 rounded-full disabled:opacity-40"
         >
           {isPending ? 'Saving…' : 'Save'}
         </button>

@@ -73,10 +73,10 @@ export default async function PropertyLayout({
 
   return (
     <PropertyRoleProvider role={membership.role as PropertyRole}>
-      <div className="min-h-screen bg-cream">
+      <div className="min-h-screen bg-linen">
         {/* Shared chrome (header + DesktopNav below) -- migrated to Concept B
             (denim/brass/mist/linen) per the app-wide palette reversal. The
-            root page background above stays bg-cream on purpose: page
+            root page background above stays bg-linen on purpose: page
             bodies not yet migrated (Plan, Staff, Inventory, etc.) rely on
             it as their backdrop, and changing it here would expose a
             mismatched strip behind any page that doesn't paint its own

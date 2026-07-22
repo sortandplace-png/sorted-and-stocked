@@ -259,7 +259,7 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="max-w-md lg:max-w-4xl mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-4">Tools</h1>
+      <h1 className="text-2xl font-display text-denim mb-4">Tools</h1>
       <ToolsGroupList propertyId={id} groups={groups} />
     </div>
   );

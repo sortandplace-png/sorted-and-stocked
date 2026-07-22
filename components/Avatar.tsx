@@ -51,7 +51,7 @@ export default function Avatar({
   const initials = getInitials(fullName, email);
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-full bg-gold-dark text-white font-display font-semibold shrink-0 ${SIZE_CLASSES[size]} ${className}`}
+      className={`inline-flex items-center justify-center rounded-full bg-denim text-white font-display font-semibold shrink-0 ${SIZE_CLASSES[size]} ${className}`}
       aria-hidden="true"
       title={fullName?.trim() || email || undefined}
     >

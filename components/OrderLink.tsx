@@ -50,7 +50,7 @@ export default function OrderLink({
   const iconClass =
     variant === 'conceptB'
       ? 'text-brass hover:text-denim bg-mist'
-      : 'text-gold-dark hover:bg-gold-light/10 border border-gold-light/60';
+      : 'text-brass hover:bg-linen border border-cardBorder';
 
   return (
     <a

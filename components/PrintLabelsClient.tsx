@@ -469,12 +469,12 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
 
   return (
     <div className="max-w-md lg:max-w-6xl mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Print Item Labels</h1>
-      <p className="text-sm text-charcoal/50 mb-1">
+      <h1 className="text-2xl font-display text-denim mb-1">Print Item Labels</h1>
+      <p className="text-sm text-dusk mb-1">
         Avery 22807 (2"×2" squares) · 20 labels per sheet · one label per item, with photo where available.
       </p>
       {items.length > 0 && (
-        <p className="text-xs text-charcoal/40 mb-4">
+        <p className="text-xs text-dusk mb-4">
           {photoCount} of {items.length} items have a usable photo — the rest print QR + name only.
         </p>
       )}
@@ -487,7 +487,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
         {/* Filters panel */}
         <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-4 lg:mb-0 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-medium uppercase tracking-wider text-gold-dark">Filters</h2>
+            <h2 className="text-xs font-medium uppercase tracking-wider text-brass">Filters</h2>
             {(search || locationFilter || photosOnly || lowStockOnly || categoryFilter || labelStatusFilter) && (
               <button
                 onClick={() => {
@@ -498,7 +498,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
                   setCategoryFilter(null);
                   setLabelStatusFilter(null);
                 }}
-                className="text-xs text-gold-dark underline"
+                className="text-xs text-brass underline"
               >
                 Clear
               </button>
@@ -508,12 +508,12 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name…"
-            className="w-full border border-gold-light/60 rounded-full px-3 py-2 text-sm"
+            className="w-full border border-cardBorder rounded-full px-3 py-2 text-sm"
           />
           <select
             value={locationFilter ?? ''}
             onChange={(e) => setLocationFilter(e.target.value || null)}
-            className="w-full border border-gold-light/60 rounded-full px-3 py-2 text-sm"
+            className="w-full border border-cardBorder rounded-full px-3 py-2 text-sm"
           >
             <option value="">All locations</option>
             {locations
@@ -525,16 +525,16 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
               ))}
           </select>
 
-          <div className="flex rounded-full border border-gold-light/60 overflow-hidden text-[10px] font-semibold uppercase tracking-[0.15em]">
+          <div className="flex rounded-full border border-cardBorder overflow-hidden text-[10px] font-semibold uppercase tracking-[0.15em]">
             <button
               onClick={() => handleSortModeChange('macro')}
-              className={`flex-1 py-1.5 ${sortMode === 'macro' ? 'bg-gold-dark text-white' : 'bg-cream/40 text-charcoal/60'}`}
+              className={`flex-1 py-1.5 ${sortMode === 'macro' ? 'bg-denim text-white' : 'bg-linen text-dusk'}`}
             >
               Broad
             </button>
             <button
               onClick={() => handleSortModeChange('micro')}
-              className={`flex-1 py-1.5 ${sortMode === 'micro' ? 'bg-gold-dark text-white' : 'bg-cream/40 text-charcoal/60'}`}
+              className={`flex-1 py-1.5 ${sortMode === 'micro' ? 'bg-denim text-white' : 'bg-linen text-dusk'}`}
             >
               Detailed
             </button>
@@ -542,7 +542,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
           <select
             value={categoryFilter ?? ''}
             onChange={(e) => setCategoryFilter(e.target.value || null)}
-            className="w-full border border-gold-light/60 rounded-full px-3 py-2 text-sm"
+            className="w-full border border-cardBorder rounded-full px-3 py-2 text-sm"
           >
             <option value="">All categories</option>
             {categoryOptions.map((c) => (
@@ -552,29 +552,29 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
             ))}
           </select>
 
-          <label className={`flex items-center justify-between text-sm text-charcoal ${!photosOnly && photosOnlyCount === 0 ? 'opacity-40' : ''}`}>
-            <span>Only items with photos {!photosOnly && <span className="text-charcoal/40">({photosOnlyCount})</span>}</span>
+          <label className={`flex items-center justify-between text-sm text-denim ${!photosOnly && photosOnlyCount === 0 ? 'opacity-40' : ''}`}>
+            <span>Only items with photos {!photosOnly && <span className="text-dusk">({photosOnlyCount})</span>}</span>
             <input
               type="checkbox"
               checked={photosOnly}
               disabled={!photosOnly && photosOnlyCount === 0}
               onChange={(e) => setPhotosOnly(e.target.checked)}
-              className="h-4 w-4 accent-gold-dark rounded disabled:cursor-not-allowed"
+              className="h-4 w-4 accent-brass rounded disabled:cursor-not-allowed"
             />
           </label>
-          <label className={`flex items-center justify-between text-sm text-charcoal ${!lowStockOnly && lowStockOnlyCount === 0 ? 'opacity-40' : ''}`}>
-            <span>Low stock only {!lowStockOnly && <span className="text-charcoal/40">({lowStockOnlyCount})</span>}</span>
+          <label className={`flex items-center justify-between text-sm text-denim ${!lowStockOnly && lowStockOnlyCount === 0 ? 'opacity-40' : ''}`}>
+            <span>Low stock only {!lowStockOnly && <span className="text-dusk">({lowStockOnlyCount})</span>}</span>
             <input
               type="checkbox"
               checked={lowStockOnly}
               disabled={!lowStockOnly && lowStockOnlyCount === 0}
               onChange={(e) => setLowStockOnly(e.target.checked)}
-              className="h-4 w-4 accent-gold-dark rounded disabled:cursor-not-allowed"
+              className="h-4 w-4 accent-brass rounded disabled:cursor-not-allowed"
             />
           </label>
 
           <div>
-            <p className="text-sm text-charcoal mb-1.5">Label status</p>
+            <p className="text-sm text-denim mb-1.5">Label status</p>
             {/* Cross-narrowing applies here too: All is always live (it's
                 the union), and whichever status is currently active stays
                 clickable so you can back out of it, but a status with zero
@@ -583,9 +583,9 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
             <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
               <button
                 onClick={() => setLabelStatusFilter(null)}
-                className={`flex items-center gap-1 ${labelStatusFilter === null ? 'text-gold-dark font-medium' : 'text-charcoal/50'}`}
+                className={`flex items-center gap-1 ${labelStatusFilter === null ? 'text-brass font-medium' : 'text-dusk'}`}
               >
-                {labelStatusFilter === null && <span className="w-1.5 h-1.5 rounded-full bg-gold-dark" aria-hidden="true" />}
+                {labelStatusFilter === null && <span className="w-1.5 h-1.5 rounded-full bg-denim" aria-hidden="true" />}
                 All
               </button>
               {(Object.keys(LABEL_STATUS_TEXT) as LabelStatus[]).map((s) => {
@@ -597,10 +597,10 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
                     onClick={() => setLabelStatusFilter(s)}
                     disabled={disabled}
                     className={`flex items-center gap-1 disabled:cursor-not-allowed disabled:opacity-40 ${
-                      labelStatusFilter === s ? 'text-gold-dark font-medium' : 'text-charcoal/50'
+                      labelStatusFilter === s ? 'text-brass font-medium' : 'text-dusk'
                     }`}
                   >
-                    {labelStatusFilter === s && <span className="w-1.5 h-1.5 rounded-full bg-gold-dark" aria-hidden="true" />}
+                    {labelStatusFilter === s && <span className="w-1.5 h-1.5 rounded-full bg-denim" aria-hidden="true" />}
                     {LABEL_STATUS_TEXT[s]} ({count})
                   </button>
                 );
@@ -609,12 +609,12 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
           </div>
 
           <div>
-            <p className="text-sm text-charcoal mb-1.5">Label language</p>
+            <p className="text-sm text-denim mb-1.5">Label language</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setLabelLanguage('en')}
                 className={`flex-1 py-1.5 rounded-full text-xs font-medium border ${
-                  labelLanguage === 'en' ? 'bg-gold-dark text-white border-gold-dark' : 'bg-cream/40 text-charcoal border-gold-light/60'
+                  labelLanguage === 'en' ? 'bg-denim text-white border-denim' : 'bg-linen text-denim border-cardBorder'
                 }`}
               >
                 English
@@ -622,7 +622,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
               <button
                 onClick={() => setLabelLanguage('es')}
                 className={`flex-1 py-1.5 rounded-full text-xs font-medium border ${
-                  labelLanguage === 'es' ? 'bg-gold-dark text-white border-gold-dark' : 'bg-cream/40 text-charcoal border-gold-light/60'
+                  labelLanguage === 'es' ? 'bg-denim text-white border-denim' : 'bg-linen text-denim border-cardBorder'
                 }`}
               >
                 Español
@@ -634,10 +634,10 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
         {/* Items panel — deduplicated by name */}
         <div className="mb-4 lg:mb-0">
           <div className="flex justify-end gap-3 mb-2 text-xs">
-            <button onClick={() => selectAll(true)} className="text-charcoal underline">
+            <button onClick={() => selectAll(true)} className="text-denim underline">
               Select all
             </button>
-            <button onClick={() => selectAll(false)} className="text-charcoal underline">
+            <button onClick={() => selectAll(false)} className="text-denim underline">
               Clear
             </button>
           </div>
@@ -663,13 +663,13 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
             <div className="text-center mt-8">
               {items.length === 0 ? (
                 <>
-                  <p className="text-sm text-charcoal/50 mb-2">No items yet.</p>
-                  <Link href={`/properties/${propertyId}/inventory`} className="text-sm font-medium text-gold-dark underline">
+                  <p className="text-sm text-dusk mb-2">No items yet.</p>
+                  <Link href={`/properties/${propertyId}/inventory`} className="text-sm font-medium text-brass underline">
                     Add items in Inventory →
                   </Link>
                 </>
               ) : (
-                <p className="text-sm text-charcoal/40">No items match these filters.</p>
+                <p className="text-sm text-dusk">No items match these filters.</p>
               )}
             </div>
           )}
@@ -680,10 +680,10 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
             generatePdf() below is still the source of truth for the
             actual output. */}
         <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
-          <h2 className="text-xs font-medium uppercase tracking-wider text-gold-dark mb-3">
+          <h2 className="text-xs font-medium uppercase tracking-wider text-brass mb-3">
             Live Preview {selectedItems.length > 20 && `(page 1 of ${Math.ceil(selectedItems.length / 20)})`}
           </h2>
-          <div className="grid grid-cols-4 gap-1 bg-cream/60 p-2 rounded-lg border border-gold-light/40">
+          <div className="grid grid-cols-4 gap-1 bg-linen p-2 rounded-lg border border-cardBorder">
             {Array.from({ length: 20 }).map((_, i) => {
               const item = selectedItems[i];
               const hasPhoto = !!item && !!item.photo_url && isDirectImageUrl(item.photo_url);
@@ -693,8 +693,8 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
                   className={`aspect-square rounded-sm flex flex-col items-center justify-center p-0.5 overflow-hidden ${
                     item
                       ? hasPhoto
-                        ? 'border border-gold-light/50 bg-white'
-                        // Previously bg-cream/50 inside a bg-cream/60
+                        ? 'border border-cardBorder bg-white'
+                        // Previously bg-linen inside a bg-linen
                         // container -- computed the actual blended colors:
                         // that left about a 1-2 unit RGB difference from
                         // the container, functionally invisible. This
@@ -703,25 +703,25 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
                         // container and the white has-photo cells --
                         // genuinely visible at a glance, still just the
                         // gold family, no new color introduced.
-                        : 'border border-dashed border-gold-dark/50 bg-gold-light/40'
-                      : 'border border-gold-light/50 bg-white'
+                        : 'border border-dashed border-denim/50 bg-linen'
+                      : 'border border-cardBorder bg-white'
                   }`}
                 >
                   {item ? (
                     <>
                       <span className="text-[10px] leading-none">{hasPhoto ? '📷' : '🏷️'}</span>
-                      <span className="text-[6px] leading-tight text-center text-charcoal/70 line-clamp-2 mt-0.5">
+                      <span className="text-[6px] leading-tight text-center text-dusk line-clamp-2 mt-0.5">
                         {truncateForLabel(labelName(item, labelLanguage))}
                       </span>
                     </>
                   ) : (
-                    <span className="text-[8px] text-charcoal/15">—</span>
+                    <span className="text-[8px] text-dusk">—</span>
                   )}
                 </div>
               );
             })}
           </div>
-          <p className="text-xs text-charcoal/40 mt-2">{selectedItems.length} label{selectedItems.length === 1 ? '' : 's'} selected</p>
+          <p className="text-xs text-dusk mt-2">{selectedItems.length} label{selectedItems.length === 1 ? '' : 's'} selected</p>
         </div>
       </div>
 
@@ -731,19 +731,19 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
           without scrolling back down through a long virtualized list. */}
       <div className="sticky bottom-16 md:bottom-2 z-20 mt-4 space-y-2">
         {showSelectionPanel && selectedGroups.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-md shadow-charcoal/10 border border-gold-light/40 p-3 max-h-56 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-md shadow-charcoal/10 border border-cardBorder p-3 max-h-56 overflow-y-auto">
             <div className="flex flex-wrap gap-1.5">
               {selectedGroups.map((group) => (
                 <button
                   key={group.name}
                   onClick={() => toggleGroup(group.items)}
-                  className="inline-flex items-center gap-1.5 text-xs bg-gold-light/20 text-charcoal pl-2.5 pr-2 py-1 rounded-full hover:bg-gold-light/30 transition"
+                  className="inline-flex items-center gap-1.5 text-xs bg-linen text-denim pl-2.5 pr-2 py-1 rounded-full hover:bg-linen transition"
                 >
                   <span className="truncate max-w-[10rem]">{group.name}</span>
                   {group.items.length > 1 && (
-                    <span className="text-charcoal/40 shrink-0">×{group.items.length}</span>
+                    <span className="text-dusk shrink-0">×{group.items.length}</span>
                   )}
-                  <span aria-hidden="true" className="text-charcoal/40 shrink-0">
+                  <span aria-hidden="true" className="text-dusk shrink-0">
                     ✕
                   </span>
                 </button>
@@ -755,32 +755,32 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
         {/* Guardrail: only past a real batch size, not for a handful of
             labels where a misclick can't do much damage. */}
         {selected.size > 50 && (
-          <div className="bg-gold-light/20 border border-gold-light/50 rounded-2xl px-4 py-2 text-xs text-charcoal flex items-center justify-between gap-3 flex-wrap">
+          <div className="bg-linen border border-cardBorder rounded-2xl px-4 py-2 text-xs text-denim flex items-center justify-between gap-3 flex-wrap">
             <span>
               {selected.size} labels = {Math.ceil(selected.size / 20)} sheets of Avery 22807
             </span>
             <button
               onClick={() => generatePdf(true)}
               disabled={generating}
-              className="shrink-0 text-xs font-medium text-gold-dark underline disabled:opacity-40"
+              className="shrink-0 text-xs font-medium text-brass underline disabled:opacity-40"
             >
               Print 1 test sheet
             </button>
           </div>
         )}
 
-        <div className="bg-white rounded-2xl shadow-md shadow-charcoal/10 border border-gold-light/40 p-3 flex items-center gap-3">
+        <div className="bg-white rounded-2xl shadow-md shadow-charcoal/10 border border-cardBorder p-3 flex items-center gap-3">
           <button
             onClick={() => setShowSelectionPanel((v) => !v)}
             disabled={selected.size === 0}
-            className="text-sm text-charcoal underline shrink-0 disabled:opacity-40 disabled:no-underline"
+            className="text-sm text-denim underline shrink-0 disabled:opacity-40 disabled:no-underline"
           >
             {selected.size} selected
           </button>
           <button
             onClick={() => generatePdf(false)}
             disabled={generating || selected.size === 0}
-            className="flex-1 py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40 text-sm"
+            className="flex-1 py-2.5 rounded-full bg-denim text-white font-medium disabled:opacity-40 text-sm"
           >
             {generating ? 'Generating…' : `Generate PDF (${selected.size} labels)`}
           </button>
@@ -819,7 +819,7 @@ function VirtualGroupRow({
     <div
       {...ariaAttributes}
       style={style}
-      className={`flex items-center gap-3 px-4 py-3 ${index < groups.length - 1 ? 'border-b border-gold-light/30' : ''}`}
+      className={`flex items-center gap-3 px-4 py-3 ${index < groups.length - 1 ? 'border-b border-cardBorder' : ''}`}
     >
       <input
         ref={checkboxRef}
@@ -828,9 +828,9 @@ function VirtualGroupRow({
         onChange={() => onToggle(group.items)}
         className="h-5 w-5 accent-gold rounded"
       />
-      <span className="flex-1 text-charcoal truncate">{group.name}</span>
+      <span className="flex-1 text-denim truncate">{group.name}</span>
       {group.items.length > 1 && (
-        <span className="text-xs text-charcoal/40 shrink-0">×{group.items.length}</span>
+        <span className="text-xs text-dusk shrink-0">×{group.items.length}</span>
       )}
       {hasPhoto && <span className="text-xs text-sage shrink-0">📷</span>}
     </div>

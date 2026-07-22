@@ -113,18 +113,18 @@ export default function LinkCapturedPhotosClient({ propertyId }: { propertyId: s
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Link Captured Photos</h1>
-      <p className="text-sm text-charcoal/50 mb-5">
+      <h1 className="text-2xl font-display text-denim mb-1">Link Captured Photos</h1>
+      <p className="text-sm text-dusk mb-5">
         Match each photo staff took to a real inventory item or room.
       </p>
 
       {captures.length === 0 ? (
-        <p className="text-sm text-charcoal/40 text-center py-8 bg-white rounded-2xl shadow-sm shadow-charcoal/5">
+        <p className="text-sm text-dusk text-center py-8 bg-white rounded-2xl shadow-sm shadow-charcoal/5">
           Nothing waiting to be linked.
         </p>
       ) : (
         <>
-          <p className="text-xs text-charcoal/50 mb-3">{captures.length} photo{captures.length === 1 ? '' : 's'} waiting.</p>
+          <p className="text-xs text-dusk mb-3">{captures.length} photo{captures.length === 1 ? '' : 's'} waiting.</p>
           {(() => {
             const current = captures[0];
             const photoUrl = current.raw_payload.photo_url;
@@ -132,19 +132,19 @@ export default function LinkCapturedPhotosClient({ propertyId }: { propertyId: s
               <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
                 {photoUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={photoUrl} alt="" className="w-full h-56 object-contain rounded-xl bg-cream/40 mb-3" />
+                  <img src={photoUrl} alt="" className="w-full h-56 object-contain rounded-xl bg-linen mb-3" />
                 )}
-                <p className="text-xs text-charcoal/40 mb-3">
+                <p className="text-xs text-dusk mb-3">
                   {current.submitted_by_name ?? 'Someone'} · {new Date(current.created_at).toLocaleDateString()}
                 </p>
 
-                <div className="inline-flex rounded-full border border-gold-light/60 bg-cream/40 p-0.5 text-sm mb-3">
+                <div className="inline-flex rounded-full border border-cardBorder bg-linen p-0.5 text-sm mb-3">
                   <button
                     onClick={() => {
                       setTargetType('item');
                       setSearch('');
                     }}
-                    className={`rounded-full px-4 py-1.5 ${targetType === 'item' ? 'bg-gold-dark text-white' : 'text-charcoal/60'}`}
+                    className={`rounded-full px-4 py-1.5 ${targetType === 'item' ? 'bg-denim text-white' : 'text-dusk'}`}
                   >
                     Inventory Item
                   </button>
@@ -153,7 +153,7 @@ export default function LinkCapturedPhotosClient({ propertyId }: { propertyId: s
                       setTargetType('room');
                       setSearch('');
                     }}
-                    className={`rounded-full px-4 py-1.5 ${targetType === 'room' ? 'bg-gold-dark text-white' : 'text-charcoal/60'}`}
+                    className={`rounded-full px-4 py-1.5 ${targetType === 'room' ? 'bg-denim text-white' : 'text-dusk'}`}
                   >
                     Room
                   </button>
@@ -163,29 +163,29 @@ export default function LinkCapturedPhotosClient({ propertyId }: { propertyId: s
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={targetType === 'item' ? 'Search for the matching item…' : 'Search for the matching room…'}
-                  className="w-full border border-gold-light/60 rounded-2xl px-4 py-2.5 bg-cream/40 mb-2"
+                  className="w-full border border-cardBorder rounded-2xl px-4 py-2.5 bg-linen mb-2"
                 />
-                <div className="max-h-56 overflow-y-auto border border-gold-light/40 rounded-2xl divide-y divide-gold-light/20">
+                <div className="max-h-56 overflow-y-auto border border-cardBorder rounded-2xl divide-y divide-cardBorder">
                   {filteredTargets.slice(0, 30).map((t) => (
                     <button
                       key={t.id}
                       onClick={() => photoUrl && assign(current.id, photoUrl, t.id)}
                       disabled={processingId === current.id}
-                      className="w-full flex items-center gap-2 text-left px-4 py-2.5 text-sm hover:bg-gold-light/10 disabled:opacity-40"
+                      className="w-full flex items-center gap-2 text-left px-4 py-2.5 text-sm hover:bg-linen disabled:opacity-40"
                     >
-                      <span className="flex-1 truncate text-charcoal">{t.name}</span>
+                      <span className="flex-1 truncate text-denim">{t.name}</span>
                       {t.photo_url && <span className="text-xs text-sage shrink-0">has photo</span>}
                     </button>
                   ))}
                   {filteredTargets.length === 0 && (
-                    <p className="px-4 py-3 text-sm text-charcoal/40">No matches.</p>
+                    <p className="px-4 py-3 text-sm text-dusk">No matches.</p>
                   )}
                 </div>
 
                 <button
                   onClick={() => reject(current.id)}
                   disabled={processingId === current.id}
-                  className="w-full text-center text-sm text-charcoal/40 mt-3 py-2 disabled:opacity-40"
+                  className="w-full text-center text-sm text-dusk mt-3 py-2 disabled:opacity-40"
                 >
                   Not useful — discard →
                 </button>

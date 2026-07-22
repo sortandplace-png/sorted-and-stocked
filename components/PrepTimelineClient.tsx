@@ -86,28 +86,28 @@ export default function PrepTimelineClient({ propertyId }: { propertyId: string 
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Prep Timeline</h1>
-      <p className="text-sm text-charcoal/50 mb-4">Working backward from when you want dinner ready.</p>
+      <h1 className="text-2xl font-display text-denim mb-1">Prep Timeline</h1>
+      <p className="text-sm text-dusk mb-4">Working backward from when you want dinner ready.</p>
 
       <div className="flex gap-2 mb-4">
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="flex-1 border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+          className="flex-1 border border-cardBorder rounded-xl px-3 py-2 text-sm"
         />
         <input
           type="time"
           value={readyTime}
           onChange={(e) => setReadyTime(e.target.value)}
-          className="flex-1 border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+          className="flex-1 border border-cardBorder rounded-xl px-3 py-2 text-sm"
         />
       </div>
 
       {entries.length === 0 && (
         <div className="text-center py-8">
-          <p className="text-sm text-charcoal/50 mb-2">Nothing planned for this day yet.</p>
-          <Link href={`/properties/${propertyId}/meal-plan`} className="text-sm font-medium text-gold-dark underline">
+          <p className="text-sm text-dusk mb-2">Nothing planned for this day yet.</p>
+          <Link href={`/properties/${propertyId}/meal-plan`} className="text-sm font-medium text-brass underline">
             Plan a meal for this day →
           </Link>
         </div>
@@ -115,20 +115,20 @@ export default function PrepTimelineClient({ propertyId }: { propertyId: string 
 
       {bedikahIngredients.length > 0 && (
         <div className="bg-sage/10 border border-sage/20 rounded-2xl p-4 mb-4">
-          <p className="text-sm font-medium text-charcoal mb-1">🔎 Bedikas Tolaim: {bedikahIngredients.join(', ')}</p>
-          <p className="text-xs text-charcoal/60">{BEDIKAS_TOLAIM_NOTE}</p>
+          <p className="text-sm font-medium text-denim mb-1">🔎 Bedikas Tolaim: {bedikahIngredients.join(', ')}</p>
+          <p className="text-xs text-dusk">{BEDIKAS_TOLAIM_NOTE}</p>
         </div>
       )}
 
       {kidsPlatterEntries.length > 0 && (
-        <div className="bg-gold-light/15 border border-gold-light/60 rounded-2xl p-4 mb-4">
-          <p className="text-sm font-medium text-charcoal mb-1">🧸 Kids Platter — put out early</p>
-          <p className="text-xs text-charcoal/50 mb-2">
+        <div className="bg-linen border border-cardBorder rounded-2xl p-4 mb-4">
+          <p className="text-sm font-medium text-denim mb-1">🧸 Kids Platter — put out early</p>
+          <p className="text-xs text-dusk mb-2">
             30–45 min before serving ({minutesToClock(readyTotalMinutes, 45)}–{minutesToClock(readyTotalMinutes, 30)}) — not part of the cooking countdown:
           </p>
           <ul className="space-y-1">
             {kidsPlatterEntries.map((e) => (
-              <li key={e.id} className="text-sm text-charcoal">
+              <li key={e.id} className="text-sm text-denim">
                 {e.recipes?.name ?? e.custom_name}
               </li>
             ))}
@@ -141,34 +141,34 @@ export default function PrepTimelineClient({ propertyId }: { propertyId: string 
           <ul className="space-y-3">
             {withTimes.map((item, i) => (
               <li key={i} className="flex items-center gap-3">
-                <span className="text-sm font-medium text-gold-dark w-20 shrink-0">{item.startClock}</span>
-                <div className="flex-1 border-l-2 border-gold-light/40 pl-3">
-                  <p className="text-sm text-charcoal">{item.name}</p>
-                  <p className="text-xs text-charcoal/40">~{formatMinutes(item.minutes)}</p>
+                <span className="text-sm font-medium text-brass w-20 shrink-0">{item.startClock}</span>
+                <div className="flex-1 border-l-2 border-cardBorder pl-3">
+                  <p className="text-sm text-denim">{item.name}</p>
+                  <p className="text-xs text-dusk">~{formatMinutes(item.minutes)}</p>
                 </div>
               </li>
             ))}
             <li className="flex items-center gap-3">
-              <span className="text-sm font-medium text-charcoal w-20 shrink-0">
+              <span className="text-sm font-medium text-denim w-20 shrink-0">
                 {minutesToClock(readyTotalMinutes, 0)}
               </span>
-              <p className="text-sm text-charcoal font-medium">🍽️ Ready to serve</p>
+              <p className="text-sm text-denim font-medium">🍽️ Ready to serve</p>
             </li>
           </ul>
         </div>
       )}
 
       {(noTimeRecorded.length > 0 || customOnly.length > 0) && (
-        <div className="bg-cream rounded-2xl p-4">
-          <p className="text-xs text-charcoal/50 mb-2">No prep time recorded — can't schedule these:</p>
+        <div className="bg-linen rounded-2xl p-4">
+          <p className="text-xs text-dusk mb-2">No prep time recorded — can't schedule these:</p>
           <ul className="space-y-1">
             {noTimeRecorded.map((e) => (
-              <li key={e.id} className="text-sm text-charcoal/70">
+              <li key={e.id} className="text-sm text-dusk">
                 {e.recipes!.name}
               </li>
             ))}
             {customOnly.map((e) => (
-              <li key={e.id} className="text-sm text-charcoal/70">
+              <li key={e.id} className="text-sm text-dusk">
                 {e.custom_name}
               </li>
             ))}

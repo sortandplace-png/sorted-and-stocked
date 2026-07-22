@@ -49,7 +49,7 @@ export default function PropertyNav({
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 text-cream/90 text-sm font-medium"
+        className="flex items-center gap-2 text-white/90 text-sm font-medium"
       >
         <span className="text-lg leading-none">{current?.icon ?? '☰'}</span>
         {current?.label ?? 'Menu'}
@@ -65,8 +65,8 @@ export default function PropertyNav({
               onClick={() => setOpen(false)}
               className={
                 pathname.includes(`/${item.segment}`)
-                  ? 'flex items-center gap-3 px-4 py-3 bg-gold-light/20 text-charcoal font-medium'
-                  : 'flex items-center gap-3 px-4 py-3 text-charcoal hover:bg-gold-light/15 transition-colors'
+                  ? 'flex items-center gap-3 px-4 py-3 bg-linen text-denim font-medium'
+                  : 'flex items-center gap-3 px-4 py-3 text-denim hover:bg-linen transition-colors'
               }
             >
               <span className="text-lg">{item.icon}</span>

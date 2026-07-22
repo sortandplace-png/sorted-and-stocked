@@ -81,7 +81,7 @@ export default function KosherTypeTaggingClient({ propertyId }: { propertyId: st
   }
 
   if (!canManage(role)) {
-    return <p className="max-w-md mx-auto p-4 text-sm text-charcoal/50">Only an owner or manager can use this tool.</p>;
+    return <p className="max-w-md mx-auto p-4 text-sm text-dusk">Only an owner or manager can use this tool.</p>;
   }
 
   if (loading) return <SkeletonList />;
@@ -98,14 +98,14 @@ export default function KosherTypeTaggingClient({ propertyId }: { propertyId: st
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Kosher Type Tagging</h1>
-      <p className="text-sm text-charcoal/50 mb-5">
+      <h1 className="text-2xl font-display text-denim mb-1">Kosher Type Tagging</h1>
+      <p className="text-sm text-dusk mb-5">
         {items.length} item{items.length === 1 ? '' : 's'} with no kosher type on file yet, grouped by category.
         Select all, uncheck any real exceptions, then tag the rest in one click.
       </p>
 
       {groups.length === 0 ? (
-        <p className="text-sm text-charcoal/40 text-center py-8 bg-white rounded-2xl shadow-sm shadow-charcoal/5">
+        <p className="text-sm text-dusk text-center py-8 bg-white rounded-2xl shadow-sm shadow-charcoal/5">
           Nothing left to tag.
         </p>
       ) : (
@@ -116,10 +116,10 @@ export default function KosherTypeTaggingClient({ propertyId }: { propertyId: st
             return (
               <div key={category} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="font-display text-base text-charcoal">
-                    {category} <span className="text-charcoal/40 font-normal text-sm">({groupItems.length})</span>
+                  <h2 className="font-display text-base text-denim">
+                    {category} <span className="text-dusk font-normal text-sm">({groupItems.length})</span>
                   </h2>
-                  <div className="flex gap-2 text-xs font-medium text-gold-dark">
+                  <div className="flex gap-2 text-xs font-medium text-brass">
                     <button onClick={() => selectAllInGroup(groupItems)}>Select all</button>
                     <button onClick={() => clearGroup(groupItems)}>Clear</button>
                   </div>
@@ -128,12 +128,12 @@ export default function KosherTypeTaggingClient({ propertyId }: { propertyId: st
                 <ul className="space-y-1 mb-3 max-h-48 overflow-y-auto">
                   {groupItems.map((item) => (
                     <li key={item.id}>
-                      <label className="flex items-center gap-2 py-1 text-sm text-charcoal cursor-pointer">
+                      <label className="flex items-center gap-2 py-1 text-sm text-denim cursor-pointer">
                         <input
                           type="checkbox"
                           checked={selected.has(item.id)}
                           onChange={() => toggle(item.id)}
-                          className="rounded border-gold-light/60 text-gold-dark"
+                          className="rounded border-cardBorder text-brass"
                         />
                         {item.name}
                       </label>
@@ -142,13 +142,13 @@ export default function KosherTypeTaggingClient({ propertyId }: { propertyId: st
                 </ul>
 
                 <div className="flex gap-2 flex-wrap items-center">
-                  <span className="text-xs text-charcoal/50">{groupSelectedCount} selected</span>
+                  <span className="text-xs text-dusk">{groupSelectedCount} selected</span>
                   {KOSHER_TYPES.map((kt) => (
                     <button
                       key={kt}
                       onClick={() => applyToGroup(groupItems, kt)}
                       disabled={busy || groupSelectedCount === 0}
-                      className="text-xs font-medium text-white bg-gold-dark px-3 py-1.5 rounded-full disabled:opacity-40"
+                      className="text-xs font-medium text-white bg-denim px-3 py-1.5 rounded-full disabled:opacity-40"
                     >
                       {busy ? '…' : `Tag ${kt}`}
                     </button>

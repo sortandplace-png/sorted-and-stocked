@@ -110,8 +110,8 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Identify New Item</h1>
-      <p className="text-sm text-charcoal/50 mb-5">
+      <h1 className="text-2xl font-display text-denim mb-1">Identify New Item</h1>
+      <p className="text-sm text-dusk mb-5">
         For something new — not a barcode or a label. Photograph it, confirm the name, and it lands in the
         Capture Inbox for review.
       </p>
@@ -121,7 +121,7 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
           <CameraCapture open={showCamera} onCapture={handleFile} onClose={() => setShowCamera(false)} />
           <button
             onClick={() => setShowCamera(true)}
-            className="w-full py-10 rounded-2xl border-2 border-dashed border-gold-light text-charcoal/70 hover:bg-gold-light/10 transition-colors"
+            className="w-full py-10 rounded-2xl border-2 border-dashed border-cardBorder text-dusk hover:bg-linen transition-colors"
           >
             🆕 Tap to photograph the item
           </button>
@@ -135,7 +135,7 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
 
       {step === 'identifying' && (
         <div className="text-center py-8">
-          <p className="text-sm text-charcoal/60 animate-pulse font-display italic">Identifying…</p>
+          <p className="text-sm text-dusk animate-pulse font-display italic">Identifying…</p>
         </div>
       )}
 
@@ -143,22 +143,22 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
         <div className="space-y-3">
           {error && <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2">{error}</p>}
           {!error && uncertain && (
-            <p className="text-xs text-gold-dark bg-gold-light/20 rounded-xl px-3 py-2">
+            <p className="text-xs text-brass bg-linen rounded-xl px-3 py-2">
               Low-confidence guess — double-check before adding.
             </p>
           )}
           <div>
-            <label className="block text-xs font-medium uppercase tracking-wider text-gold-dark mb-1">
+            <label className="block text-xs font-medium uppercase tracking-wider text-brass mb-1">
               Item name
             </label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Red Onions"
-              className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-xl px-3 py-2.5 text-sm"
+              className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl px-3 py-2.5 text-sm"
             />
           </div>
-          <p className="text-[11px] text-charcoal/40">
+          <p className="text-[11px] text-dusk">
             Just the name for now — category, location, and quantity get filled in when this is reviewed in the
             Capture Inbox.
           </p>
@@ -166,14 +166,14 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
             <button
               onClick={reset}
               disabled={step === 'saving'}
-              className="flex-1 py-2.5 rounded-full border border-gold-light/60 text-charcoal text-sm disabled:opacity-40"
+              className="flex-1 py-2.5 rounded-full border border-cardBorder text-denim text-sm disabled:opacity-40"
             >
               Retake
             </button>
             <button
               onClick={handleAdd}
               disabled={step === 'saving' || !name.trim()}
-              className="flex-1 py-2.5 rounded-full bg-charcoal text-cream text-sm font-medium disabled:opacity-40"
+              className="flex-1 py-2.5 rounded-full bg-denim text-white text-sm font-medium disabled:opacity-40"
             >
               {step === 'saving' ? 'Saving…' : 'Add to Capture Inbox'}
             </button>
@@ -183,12 +183,12 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
 
       {step === 'done' && (
         <div className="text-center py-8">
-          <p className="text-sm text-charcoal mb-4">
+          <p className="text-sm text-denim mb-4">
             Sent to the Capture Inbox as <span className="font-medium">"{name.trim()}"</span> for review.
           </p>
           <button
             onClick={reset}
-            className="w-full py-2.5 rounded-full bg-gold-dark text-white text-sm font-medium"
+            className="w-full py-2.5 rounded-full bg-denim text-white text-sm font-medium"
           >
             Photograph another
           </button>

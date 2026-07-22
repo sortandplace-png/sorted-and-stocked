@@ -158,13 +158,13 @@ export default function ResetChecklistClient({ propertyId }: { propertyId: strin
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Reset Checklists</h1>
-      <p className="text-sm text-charcoal/50 mb-4">
+      <h1 className="text-2xl font-display text-denim mb-1">Reset Checklists</h1>
+      <p className="text-sm text-dusk mb-4">
         Run through after Shabbos or Yom Tov. Progress is saved — pick up where you left off.
       </p>
 
       {templates.length === 0 && (
-        <p className="text-sm text-charcoal/40 text-center py-8">
+        <p className="text-sm text-dusk text-center py-8">
           No checklist templates set up yet — these are configured by a household admin.
         </p>
       )}
@@ -227,19 +227,19 @@ function ChecklistCard({
   return (
     <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="font-display text-lg text-charcoal">{template.template_name}</h2>
+        <h2 className="font-display text-lg text-denim">{template.template_name}</h2>
       </div>
-      <p className="text-xs text-gold-dark mb-1.5">
+      <p className="text-xs text-brass mb-1.5">
         {done} of {total} tasks completed, {pct}%
       </p>
-      <div className="w-full bg-gold-light/30 h-2 rounded-full mb-4 overflow-hidden">
+      <div className="w-full bg-linen h-2 rounded-full mb-4 overflow-hidden">
         <div className="bg-sage h-2 transition-all" style={{ width: `${pct}%` }} />
       </div>
 
       <div className="space-y-5">
         {sections.map((section) => (
           <div key={section.name}>
-            <h3 className="text-xs font-medium uppercase tracking-wider text-gold-dark mb-2">{section.name}</h3>
+            <h3 className="text-xs font-medium uppercase tracking-wider text-brass mb-2">{section.name}</h3>
             <ul className="space-y-2.5">
               {section.tasks.map((task) => {
                 const s = taskState(section.name, task);
@@ -250,17 +250,17 @@ function ChecklistCard({
                         type="checkbox"
                         checked={s.completed}
                         onChange={() => onToggle(section.name, task)}
-                        className="h-4 w-4 accent-gold-dark"
+                        className="h-4 w-4 accent-brass"
                       />
                     </label>
                     <div className="flex-1 min-w-0">
-                      <span className={`block text-sm text-charcoal ${s.completed ? 'line-through opacity-40' : ''}`}>
+                      <span className={`block text-sm text-denim ${s.completed ? 'line-through opacity-40' : ''}`}>
                         {task}
                       </span>
                       <select
                         value={s.assigneeId ?? ''}
                         onChange={(e) => onAssign(section.name, task, e.target.value || null)}
-                        className="mt-1 text-xs border border-gold-light/50 rounded-full px-2 py-0.5 bg-cream/40 text-charcoal/70"
+                        className="mt-1 text-xs border border-cardBorder rounded-full px-2 py-0.5 bg-linen text-dusk"
                       >
                         <option value="">Unassigned</option>
                         {members.map((m) => (
@@ -282,14 +282,14 @@ function ChecklistCard({
         <button
           onClick={onSaveDraft}
           disabled={saving}
-          className="flex-1 py-2 rounded-full border border-gold-light/60 text-charcoal text-sm font-medium disabled:opacity-40"
+          className="flex-1 py-2 rounded-full border border-cardBorder text-denim text-sm font-medium disabled:opacity-40"
         >
           Save Draft
         </button>
         <button
           onClick={onMarkAllComplete}
           disabled={saving}
-          className="flex-1 py-2 rounded-full bg-gold-dark text-white text-sm font-medium disabled:opacity-40"
+          className="flex-1 py-2 rounded-full bg-denim text-white text-sm font-medium disabled:opacity-40"
         >
           Mark All Complete
         </button>

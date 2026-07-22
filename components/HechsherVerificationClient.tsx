@@ -91,7 +91,7 @@ export default function HechsherVerificationClient({ propertyId }: { propertyId:
   }
 
   if (!canManage(role)) {
-    return <p className="max-w-md mx-auto p-4 text-sm text-charcoal/50">Only an owner or manager can use this tool.</p>;
+    return <p className="max-w-md mx-auto p-4 text-sm text-dusk">Only an owner or manager can use this tool.</p>;
   }
 
   if (loading) return <SkeletonList />;
@@ -105,8 +105,8 @@ export default function HechsherVerificationClient({ propertyId }: { propertyId:
     return (
       <li key={item.id} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 space-y-2">
         <div>
-          <p className="font-medium text-sm text-charcoal">{item.name}</p>
-          {item.category && <p className="text-xs text-charcoal/50">{item.category}</p>}
+          <p className="font-medium text-sm text-denim">{item.name}</p>
+          {item.category && <p className="text-xs text-dusk">{item.category}</p>}
         </div>
 
         {showLinks && (
@@ -115,7 +115,7 @@ export default function HechsherVerificationClient({ propertyId }: { propertyId:
               href={ouLink(item.name)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-medium text-gold-dark bg-gold-light/20 px-2.5 py-1 rounded-full hover:bg-gold-light/30"
+              className="inline-flex items-center gap-1 text-xs font-medium text-brass bg-linen px-2.5 py-1 rounded-full hover:bg-linen"
             >
               Search OU <ExternalLink size={11} strokeWidth={2} aria-hidden="true" />
             </a>
@@ -123,7 +123,7 @@ export default function HechsherVerificationClient({ propertyId }: { propertyId:
               href={okLink(item.name)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-medium text-gold-dark bg-gold-light/20 px-2.5 py-1 rounded-full hover:bg-gold-light/30"
+              className="inline-flex items-center gap-1 text-xs font-medium text-brass bg-linen px-2.5 py-1 rounded-full hover:bg-linen"
             >
               Search OK <ExternalLink size={11} strokeWidth={2} aria-hidden="true" />
             </a>
@@ -135,12 +135,12 @@ export default function HechsherVerificationClient({ propertyId }: { propertyId:
             value={draft}
             onChange={(e) => setDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))}
             placeholder="e.g. OU, OK, OU-D…"
-            className="flex-1 border border-gold-light/60 rounded-full px-3 py-1.5 text-sm bg-cream/40"
+            className="flex-1 border border-cardBorder rounded-full px-3 py-1.5 text-sm bg-linen"
           />
           <button
             onClick={() => save(item, draft)}
             disabled={busy || !draft.trim()}
-            className="text-xs font-medium text-white bg-gold-dark px-3 py-1.5 rounded-full disabled:opacity-40 shrink-0"
+            className="text-xs font-medium text-white bg-denim px-3 py-1.5 rounded-full disabled:opacity-40 shrink-0"
           >
             {busy ? '…' : 'Confirm'}
           </button>
@@ -148,7 +148,7 @@ export default function HechsherVerificationClient({ propertyId }: { propertyId:
         <button
           onClick={() => skip(item)}
           disabled={busy}
-          className="text-xs text-charcoal/40 disabled:opacity-40"
+          className="text-xs text-dusk disabled:opacity-40"
         >
           Skip — needs physical label check
         </button>
@@ -158,13 +158,13 @@ export default function HechsherVerificationClient({ propertyId }: { propertyId:
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Hechsher Verification</h1>
-      <p className="text-sm text-charcoal/50 mb-5">
+      <h1 className="text-2xl font-display text-denim mb-1">Hechsher Verification</h1>
+      <p className="text-sm text-dusk mb-5">
         {items.length} item{items.length === 1 ? '' : 's'} with no hechsher on file yet.
       </p>
 
       {searchableItems.length === 0 && meatItems.length === 0 ? (
-        <p className="text-sm text-charcoal/40 text-center py-8 bg-white rounded-2xl shadow-sm shadow-charcoal/5">
+        <p className="text-sm text-dusk text-center py-8 bg-white rounded-2xl shadow-sm shadow-charcoal/5">
           Nothing left to verify.
         </p>
       ) : (
@@ -175,8 +175,8 @@ export default function HechsherVerificationClient({ propertyId }: { propertyId:
 
           {meatItems.length > 0 && (
             <div>
-              <h2 className="font-display text-lg text-charcoal mb-1">Meat & Seafood</h2>
-              <p className="text-xs text-charcoal/50 mb-3">
+              <h2 className="font-display text-lg text-denim mb-1">Meat & Seafood</h2>
+              <p className="text-xs text-dusk mb-3">
                 These depend on the specific butcher or supplier, not a searchable product database — OU/OK
                 product search won't resolve them. Confirm directly with the supplier, or skip for a physical
                 label check.

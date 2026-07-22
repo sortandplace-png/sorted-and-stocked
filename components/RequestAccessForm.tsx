@@ -34,25 +34,25 @@ export default function RequestAccessForm() {
         name="name"
         placeholder="Your name"
         required
-        className="px-4 py-3 border border-line rounded bg-cream text-sm"
+        className="px-4 py-3 border border-line rounded bg-linen text-sm"
       />
       <input
         type="email"
         name="email"
         placeholder="Email address"
         required
-        className="px-4 py-3 border border-line rounded bg-cream text-sm"
+        className="px-4 py-3 border border-line rounded bg-linen text-sm"
       />
       <input
         type="text"
         name="city"
         placeholder="City (optional)"
-        className="px-4 py-3 border border-line rounded bg-cream text-sm"
+        className="px-4 py-3 border border-line rounded bg-linen text-sm"
       />
       <button
         type="submit"
         disabled={status === 'sending'}
-        className="bg-ink text-cream font-bold text-sm py-3.5 rounded disabled:opacity-50"
+        className="bg-ink text-white font-bold text-sm py-3.5 rounded disabled:opacity-50"
       >
         {status === 'sending' ? 'Sending…' : 'Request Early Access'}
       </button>

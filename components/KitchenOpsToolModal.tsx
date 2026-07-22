@@ -43,7 +43,7 @@ export default function KitchenOpsToolModal({
         <button
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-3 right-3 w-11 h-11 flex items-center justify-center text-charcoal/50 hover:text-charcoal z-10"
+          className="absolute top-3 right-3 w-11 h-11 flex items-center justify-center text-dusk hover:text-denim z-10"
         >
           <X size={20} strokeWidth={1.75} />
         </button>

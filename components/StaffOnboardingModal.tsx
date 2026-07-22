@@ -80,11 +80,11 @@ export default function StaffOnboardingModal({
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4">
-      <div className="w-full max-w-[400px] bg-cream rounded-2xl shadow-xl min-h-[600px] flex flex-col overflow-hidden">
+      <div className="w-full max-w-[400px] bg-linen rounded-2xl shadow-xl min-h-[600px] flex flex-col overflow-hidden">
         <div className="flex-1 flex flex-col px-7 pt-9 pb-2">
           {screen === 1 && (
             <>
-              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-charcoal flex items-center justify-center overflow-hidden">
+              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-denim flex items-center justify-center overflow-hidden">
                 <svg viewBox="0 0 100 100" className="w-10 h-10">
                   <rect x="64" y="14" width="9" height="27" fill="#C5A46D" />
                   <polygon points="50,8 92,44 8,44" fill="#C5A46D" />
@@ -102,10 +102,10 @@ export default function StaffOnboardingModal({
                   </text>
                 </svg>
               </div>
-              <h1 className="font-display font-bold text-[26px] text-center text-charcoal leading-tight mb-3">
+              <h1 className="font-display font-bold text-[26px] text-center text-denim leading-tight mb-3">
                 {t('screen1Headline')}
               </h1>
-              <p className="text-center text-sm text-charcoal/60 leading-relaxed max-w-[280px] mx-auto">
+              <p className="text-center text-sm text-dusk leading-relaxed max-w-[280px] mx-auto">
                 {t('screen1Sub', { propertyName })}
               </p>
             </>
@@ -113,11 +113,11 @@ export default function StaffOnboardingModal({
 
           {screen === 2 && (
             <>
-              <p className="text-center text-[10.5px] tracking-widest uppercase font-bold text-gold-dark mb-4">
+              <p className="text-center text-[10.5px] tracking-widest uppercase font-bold text-brass mb-4">
                 {t('screen2Eyebrow')}
               </p>
-              <h1 className="font-display font-bold text-xl text-center text-charcoal mb-3">{t('screen2Headline')}</h1>
-              <p className="text-center text-sm text-charcoal/60 leading-relaxed mb-5">{t('screen2Sub')}</p>
+              <h1 className="font-display font-bold text-xl text-center text-denim mb-3">{t('screen2Headline')}</h1>
+              <p className="text-center text-sm text-dusk leading-relaxed mb-5">{t('screen2Sub')}</p>
               {(['Fleishig', 'Milchig', 'Parve'] as const).map((k) => {
                 const { bg, Icon } = KASH_STYLE[k];
                 const label = k === 'Fleishig' ? t('screen2Fleishig') : k === 'Milchig' ? t('screen2Milchig') : t('screen2Parve');
@@ -127,15 +127,15 @@ export default function StaffOnboardingModal({
                       <Icon className="w-2.5 h-2.5" fill="currentColor" aria-hidden="true" />
                       {k}
                     </span>
-                    <span className="text-sm text-charcoal/70">{label}</span>
+                    <span className="text-sm text-dusk">{label}</span>
                   </div>
                 );
               })}
               {example && (
-                <div className="mt-4 p-3.5 border border-gold-light/50 rounded-xl">
-                  <p className="text-[10px] uppercase tracking-wider font-bold text-charcoal/40 mb-1.5">{t('screen2Example')}</p>
+                <div className="mt-4 p-3.5 border border-cardBorder rounded-xl">
+                  <p className="text-[10px] uppercase tracking-wider font-bold text-dusk mb-1.5">{t('screen2Example')}</p>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-display font-bold text-charcoal">{example.name}</span>
+                    <span className="font-display font-bold text-denim">{example.name}</span>
                     {(() => {
                       const k = kashKey(example.kosherType);
                       const { bg, Icon } = KASH_STYLE[k];
@@ -154,11 +154,11 @@ export default function StaffOnboardingModal({
 
           {screen === 3 && (
             <>
-              <p className="text-center text-[10.5px] tracking-widest uppercase font-bold text-gold-dark mb-4">
+              <p className="text-center text-[10.5px] tracking-widest uppercase font-bold text-brass mb-4">
                 {t('screen3Eyebrow')}
               </p>
-              <h1 className="font-display font-bold text-xl text-center text-charcoal mb-3">{t('screen3Headline')}</h1>
-              <p className="text-center text-sm text-charcoal/60 leading-relaxed mb-5">{t('screen3Sub')}</p>
+              <h1 className="font-display font-bold text-xl text-center text-denim mb-3">{t('screen3Headline')}</h1>
+              <p className="text-center text-sm text-dusk leading-relaxed mb-5">{t('screen3Sub')}</p>
               <div className="grid grid-cols-2 gap-2.5">
                 {[
                   { Icon: Calendar, label: 'Meal Plan' },
@@ -167,8 +167,8 @@ export default function StaffOnboardingModal({
                   { Icon: ShoppingCart, label: 'Shopping List' },
                 ].map(({ Icon, label }) => (
                   <div key={label} className="flex flex-col items-center gap-2 bg-white rounded-xl p-4 text-center shadow-sm shadow-charcoal/5">
-                    <Icon size={20} className="text-gold-dark" aria-hidden="true" />
-                    <span className="text-xs font-bold text-charcoal">{label}</span>
+                    <Icon size={20} className="text-brass" aria-hidden="true" />
+                    <span className="text-xs font-bold text-denim">{label}</span>
                   </div>
                 ))}
               </div>
@@ -177,10 +177,10 @@ export default function StaffOnboardingModal({
 
           {screen === 4 && (
             <>
-              <p className="text-center text-[10.5px] tracking-widest uppercase font-bold text-gold-dark mb-4">
+              <p className="text-center text-[10.5px] tracking-widest uppercase font-bold text-brass mb-4">
                 {t('screen4Eyebrow')}
               </p>
-              <h1 className="font-display font-bold text-xl text-center text-charcoal mb-5 leading-tight">
+              <h1 className="font-display font-bold text-xl text-center text-denim mb-5 leading-tight">
                 {t('screen4Headline', { propertyName })}
               </h1>
               {[
@@ -188,18 +188,18 @@ export default function StaffOnboardingModal({
                 { title: t('screen4Check2Title'), body: t('screen4Check2Body') },
                 { title: t('screen4Check3Title'), body: t('screen4Check3Body') },
               ].map((c, i) => (
-                <div key={i} className="flex gap-3 py-2.5 border-t border-gold-light/40 first:border-t-0">
-                  <span className="font-display font-bold text-gold-dark shrink-0">{i + 1}</span>
+                <div key={i} className="flex gap-3 py-2.5 border-t border-cardBorder first:border-t-0">
+                  <span className="font-display font-bold text-brass shrink-0">{i + 1}</span>
                   <div>
-                    <p className="text-sm font-bold text-charcoal">{c.title}</p>
-                    <p className="text-xs text-charcoal/60">{c.body}</p>
+                    <p className="text-sm font-bold text-denim">{c.title}</p>
+                    <p className="text-xs text-dusk">{c.body}</p>
                   </div>
                 </div>
               ))}
               <div className="flex-1" />
               <button
                 onClick={finish}
-                className="w-full mt-6 py-3 rounded-full bg-charcoal text-cream text-sm font-bold"
+                className="w-full mt-6 py-3 rounded-full bg-denim text-white text-sm font-bold"
               >
                 {t('finish')}
               </button>
@@ -211,25 +211,25 @@ export default function StaffOnboardingModal({
           {Array.from({ length: total }).map((_, i) => (
             <span
               key={i}
-              className={`h-1.5 rounded-full transition-all ${i + 1 === screen ? 'w-[18px] bg-gold-dark' : 'w-1.5 bg-gold-light'}`}
+              className={`h-1.5 rounded-full transition-all ${i + 1 === screen ? 'w-[18px] bg-denim' : 'w-1.5 bg-linen'}`}
             />
           ))}
         </div>
 
         {screen < 4 && (
           <div className="flex items-center justify-between px-7 py-5">
-            <button onClick={skip} className="text-xs text-charcoal/40 underline">
+            <button onClick={skip} className="text-xs text-dusk underline">
               {t('skip')}
             </button>
             <div className="flex items-center gap-4">
               {screen > 1 && (
-                <button onClick={() => setScreen((s) => s - 1)} className="text-sm font-medium text-charcoal/50">
+                <button onClick={() => setScreen((s) => s - 1)} className="text-sm font-medium text-dusk">
                   {t('back')}
                 </button>
               )}
               <button
                 onClick={() => setScreen((s) => s + 1)}
-                className="px-6 py-2.5 rounded-full bg-charcoal text-cream text-sm font-bold"
+                className="px-6 py-2.5 rounded-full bg-denim text-white text-sm font-bold"
               >
                 {t('next')}
               </button>

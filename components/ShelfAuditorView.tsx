@@ -43,18 +43,18 @@ export default function ShelfAuditorView({
     useShelfAuditor(items, onComplete);
 
   if (loading) {
-    return <div className="text-center py-8 text-charcoal/50">Loading shelf items...</div>;
+    return <div className="text-center py-8 text-dusk">Loading shelf items...</div>;
   }
 
   if (!activeItem) {
     return (
       <div className="p-8 text-center bg-white rounded-2xl max-w-md mx-auto shadow-md border">
         <Sparkles className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-charcoal">Audit Complete! ✨</h3>
-        <p className="text-sm text-charcoal/50 mt-2">All items in this location verified.</p>
+        <h3 className="text-xl font-bold text-denim">Audit Complete! ✨</h3>
+        <p className="text-sm text-dusk mt-2">All items in this location verified.</p>
         <button
           onClick={onComplete}
-          className="mt-4 px-6 py-2 rounded-full bg-charcoal text-cream text-sm font-medium"
+          className="mt-4 px-6 py-2 rounded-full bg-denim text-white text-sm font-medium"
         >
           Done
         </button>
@@ -65,25 +65,25 @@ export default function ShelfAuditorView({
   return (
     <div className="max-w-md mx-auto p-4">
       {/* Progress Header */}
-      <div className="flex justify-between items-center text-xs font-bold text-charcoal/60 uppercase tracking-widest mb-2">
+      <div className="flex justify-between items-center text-xs font-bold text-dusk uppercase tracking-widest mb-2">
         <span>Shelf Audit Progress</span>
         <span>{progressText}</span>
       </div>
-      <div className="w-full bg-gold-light/20 h-2 rounded-full overflow-hidden mb-6">
-        <div className="bg-charcoal h-full transition-all duration-300" style={{ width: `${percentComplete}%` }} />
+      <div className="w-full bg-linen h-2 rounded-full overflow-hidden mb-6">
+        <div className="bg-denim h-full transition-all duration-300" style={{ width: `${percentComplete}%` }} />
       </div>
 
       {/* Main Focus Card */}
-      <div className="bg-white border-2 border-gold-light/30 rounded-3xl p-6 shadow-lg text-center flex flex-col items-center justify-between min-h-[360px]">
+      <div className="bg-white border-2 border-cardBorder rounded-3xl p-6 shadow-lg text-center flex flex-col items-center justify-between min-h-[360px]">
         <div>
-          <span className="text-xs font-bold bg-gold-light/30 text-charcoal px-3 py-1 rounded-full uppercase">
+          <span className="text-xs font-bold bg-linen text-denim px-3 py-1 rounded-full uppercase">
             {activeItem.category_name}
           </span>
-          <h2 className="text-2xl font-bold text-charcoal mt-4 px-2">{activeItem.name}</h2>
-          <p className="text-sm text-charcoal/60 mt-2">
-            Expected: <strong className="text-charcoal/90">{activeItem.min_qty} {activeItem.unit || 'units'}</strong>
+          <h2 className="text-2xl font-bold text-denim mt-4 px-2">{activeItem.name}</h2>
+          <p className="text-sm text-dusk mt-2">
+            Expected: <strong className="text-dusk">{activeItem.min_qty} {activeItem.unit || 'units'}</strong>
           </p>
-          <p className="text-xs text-charcoal/40 mt-1">Currently: {activeItem.current_qty}</p>
+          <p className="text-xs text-dusk mt-1">Currently: {activeItem.current_qty}</p>
         </div>
 
         {/* Action Buttons */}
@@ -106,7 +106,7 @@ export default function ShelfAuditorView({
         </div>
       </div>
 
-      <p className="text-xs text-charcoal/40 text-center mt-4">
+      <p className="text-xs text-dusk text-center mt-4">
         Tap left if empty or low. Tap right if stock is normal.
       </p>
     </div>

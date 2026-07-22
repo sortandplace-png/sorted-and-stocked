@@ -629,7 +629,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
 
       {canManage(viewerRole) && (
         <>
-      <h2 className="font-display text-lg text-charcoal mb-2">Add Person</h2>
+      <h2 className="font-display text-lg text-denim mb-2">Add Person</h2>
       <form onSubmit={handleAddPerson} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 space-y-3">
         <div>
           <FieldLabel>Full name</FieldLabel>
@@ -638,7 +638,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
             placeholder="Full name"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-cream/40"
+            className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-full px-4 py-2 bg-linen"
             required
           />
         </div>
@@ -648,12 +648,12 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
           <select
             value={inviteRole}
             onChange={(e) => handleRoleChange(e.target.value as PropertyRole)}
-            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-cream/40"
+            className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-full px-4 py-2 bg-linen"
           >
             <option value="staff">Staff</option>
             <option value="manager">Manager</option>
           </select>
-          <p className="text-xs text-charcoal/40 mt-1">
+          <p className="text-xs text-dusk mt-1">
             {inviteRole === 'manager'
               ? ROLE_PERMISSIONS.manager[0] + '; ' + ROLE_PERMISSIONS.manager[1].toLowerCase()
               : ROLE_PERMISSIONS.staff[0] + '; ' + ROLE_PERMISSIONS.staff[1].toLowerCase()}
@@ -669,8 +669,8 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
                   key={p.id}
                   className={`flex items-center gap-1.5 text-sm rounded-full px-3 py-1.5 border cursor-pointer ${
                     selectedPropertyIds.includes(p.id)
-                      ? 'bg-gold-dark text-white border-gold-dark'
-                      : 'bg-cream/40 text-charcoal border-gold-light/60'
+                      ? 'bg-denim text-white border-denim'
+                      : 'bg-linen text-denim border-cardBorder'
                   }`}
                 >
                   <input
@@ -684,7 +684,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
               ))}
             </div>
             {inviteRole === 'staff' && (
-              <p className="text-xs text-charcoal/40 mt-1">Defaults to every property you manage -- housekeepers typically work both houses.</p>
+              <p className="text-xs text-dusk mt-1">Defaults to every property you manage -- housekeepers typically work both houses.</p>
             )}
           </div>
         )}
@@ -696,7 +696,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
               type="button"
               onClick={() => setAuthMode('email')}
               className={`flex-1 py-2 rounded-full text-sm font-medium border ${
-                authMode === 'email' ? 'bg-gold-dark text-white border-gold-dark' : 'bg-cream/40 text-charcoal border-gold-light/60'
+                authMode === 'email' ? 'bg-denim text-white border-denim' : 'bg-linen text-denim border-cardBorder'
               }`}
             >
               Email invite
@@ -705,13 +705,13 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
               type="button"
               onClick={() => setAuthMode('issued')}
               className={`flex-1 py-2 rounded-full text-sm font-medium border ${
-                authMode === 'issued' ? 'bg-gold-dark text-white border-gold-dark' : 'bg-cream/40 text-charcoal border-gold-light/60'
+                authMode === 'issued' ? 'bg-denim text-white border-denim' : 'bg-linen text-denim border-cardBorder'
               }`}
             >
               Issued login
             </button>
           </div>
-          <p className="text-xs text-charcoal/40 mt-1">
+          <p className="text-xs text-dusk mt-1">
             {authMode === 'email'
               ? 'They get an email with a link to set up their own account.'
               : "You set a login and password directly and hand it to them -- no email required. This only applies to a brand-new person; it's ignored if they already have an account."}
@@ -725,7 +725,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
             placeholder={authMode === 'email' ? 'Email address' : 'housekeeper1@sortandplace.app'}
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
-            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-cream/40"
+            className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-full px-4 py-2 bg-linen"
             required
           />
         </div>
@@ -738,30 +738,30 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
               placeholder="Password to hand them"
               value={issuedPassword}
               onChange={(e) => setIssuedPassword(e.target.value)}
-              className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2 bg-cream/40"
+              className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-full px-4 py-2 bg-linen"
               minLength={6}
               required
             />
           </div>
         )}
 
-        {inviteMessage && <p className="text-sm text-charcoal/60">{inviteMessage}</p>}
+        {inviteMessage && <p className="text-sm text-dusk">{inviteMessage}</p>}
 
         {provisionResult?.issuedLogin && (
-          <div className="bg-gold-light/30 rounded-2xl p-3 text-sm space-y-1">
+          <div className="bg-linen rounded-2xl p-3 text-sm space-y-1">
             {/* accessConfirmation?.name, not fullName -- fullName is reset
                 to '' right after this same submission, before this ever
                 renders, so it would already read "them" here. */}
-            <p className="text-charcoal font-medium">
+            <p className="text-denim font-medium">
               Share these with {accessConfirmation?.name || 'them'} directly -- shown only once:
             </p>
-            <p className="text-charcoal">
+            <p className="text-denim">
               Login: <span className="font-mono">{provisionResult.issuedLogin.login}</span>
             </p>
-            <p className="text-charcoal">
+            <p className="text-denim">
               Password: <span className="font-mono">{provisionResult.issuedLogin.password}</span>
             </p>
-            <button type="button" onClick={() => setProvisionResult(null)} className="text-xs text-gold-dark underline">
+            <button type="button" onClick={() => setProvisionResult(null)} className="text-xs text-brass underline">
               Dismiss
             </button>
           </div>
@@ -769,16 +769,16 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
 
         {accessConfirmation && (
           <div className="bg-sage/10 border border-sage/30 rounded-2xl p-3 text-sm space-y-1.5">
-            <p className="text-charcoal font-medium">
+            <p className="text-denim font-medium">
               Access confirmed for {accessConfirmation.name} ({accessConfirmation.role}) on {accessConfirmation.propertyNames || 'the selected properties'}:
             </p>
-            <p className="text-charcoal/70">
+            <p className="text-dusk">
               <span className="text-sage font-medium">Can see:</span> {ACCESS_CONFIRMATION_TEXT[accessConfirmation.role].canSee}
             </p>
-            <p className="text-charcoal/70">
+            <p className="text-dusk">
               <span className="text-rust font-medium">Cannot see:</span> {ACCESS_CONFIRMATION_TEXT[accessConfirmation.role].cannotSee}
             </p>
-            <button type="button" onClick={() => setAccessConfirmation(null)} className="text-xs text-gold-dark underline">
+            <button type="button" onClick={() => setAccessConfirmation(null)} className="text-xs text-brass underline">
               Dismiss
             </button>
           </div>
@@ -787,32 +787,32 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
         <button
           type="submit"
           disabled={inviting || !fullName.trim() || !inviteEmail.trim() || selectedPropertyIds.length === 0 || (authMode === 'issued' && issuedPassword.length < 6)}
-          className="w-full py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
+          className="w-full py-2.5 rounded-full bg-denim text-white font-medium disabled:opacity-40"
         >
           {inviting ? 'Adding…' : 'Add Person'}
         </button>
       </form>
 
-      <p className="text-xs text-charcoal/40 mt-4">
+      <p className="text-xs text-dusk mt-4">
         Owner role can only be granted from this list by promoting an existing member — invites max out at Manager.
       </p>
 
       {pendingInvites.length > 0 && (
         <div className="mt-6">
-          <h2 className="font-display text-lg text-charcoal mb-2">Pending Invites</h2>
-          <ul className="divide-y divide-gold-light/30 rounded-2xl bg-white shadow-sm shadow-charcoal/5 overflow-hidden">
+          <h2 className="font-display text-lg text-denim mb-2">Pending Invites</h2>
+          <ul className="divide-y divide-cardBorder rounded-2xl bg-white shadow-sm shadow-charcoal/5 overflow-hidden">
             {pendingInvites.map((inv) => (
               <li key={inv.userId} className="flex items-center gap-3 px-4 py-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-charcoal truncate">{inv.email}</p>
-                  <p className="text-xs text-charcoal/40">
+                  <p className="text-sm text-denim truncate">{inv.email}</p>
+                  <p className="text-xs text-dusk">
                     {inv.role} · invited {new Date(inv.invitedAt).toLocaleDateString()}
                   </p>
                 </div>
                 <button
                   onClick={() => resendInvite(inv.userId, inv.email)}
                   disabled={resendingUserId === inv.userId}
-                  className="text-xs font-medium text-gold-dark underline disabled:opacity-40 shrink-0"
+                  className="text-xs font-medium text-brass underline disabled:opacity-40 shrink-0"
                 >
                   {resendingUserId === inv.userId ? 'Sending…' : 'Resend'}
                 </button>
@@ -824,20 +824,20 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
 
       {teamActivity && teamActivity.length > 0 && (
         <div className="mt-6">
-          <h2 className="font-display text-lg text-charcoal mb-2">Team Activity</h2>
+          <h2 className="font-display text-lg text-denim mb-2">Team Activity</h2>
           <ul className="space-y-2">
             {teamActivity.map((row) => (
               <li key={`${row.email}-${row.property}`} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
                 <div className="flex items-center gap-2 mb-1.5">
-                  <span className="flex-1 truncate text-charcoal font-medium text-sm">{row.person}</span>
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-charcoal/5 text-charcoal/60 shrink-0 capitalize">
+                  <span className="flex-1 truncate text-denim font-medium text-sm">{row.person}</span>
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-denim/5 text-dusk shrink-0 capitalize">
                     {row.role}
                   </span>
                 </div>
-                <p className="text-[11px] text-charcoal/40 mb-2">
+                <p className="text-[11px] text-dusk mb-2">
                   {row.property} · Last signed in: {formatLastActive(row.last_signed_in)}
                 </p>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-charcoal/60">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-dusk">
                   <span>{row.tasks_assigned} tasks assigned</span>
                   <span>{row.completed_last_7_days} completed (7d)</span>
                   {row.last_handover && <span>Last handover: {new Date(row.last_handover).toLocaleDateString()}</span>}
@@ -850,11 +850,11 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
 
       {activity.length > 0 && (
         <div className="mt-6">
-          <h2 className="font-display text-lg text-charcoal mb-2">Activity</h2>
+          <h2 className="font-display text-lg text-denim mb-2">Activity</h2>
           <ul className="space-y-1.5">
             {activity.map((a) => (
-              <li key={a.id} className="text-xs text-charcoal/50">
-                <span className="text-charcoal/30">{new Date(a.created_at).toLocaleDateString()}</span>{' '}
+              <li key={a.id} className="text-xs text-dusk">
+                <span className="text-dusk">{new Date(a.created_at).toLocaleDateString()}</span>{' '}
                 — {describeActivity(a)}
               </li>
             ))}

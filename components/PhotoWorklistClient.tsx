@@ -101,8 +101,8 @@ export default function PhotoWorklistClient({ propertyId }: { propertyId: string
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">{t('title')}</h1>
-      <p className="text-sm text-charcoal/50 mb-5">{t('subtitle')}</p>
+      <h1 className="text-2xl font-display text-denim mb-1">{t('title')}</h1>
+      <p className="text-sm text-dusk mb-5">{t('subtitle')}</p>
 
       {savedCount > 0 && (
         <p className="text-xs text-sage font-medium mb-3">{t('sessionCount', { count: savedCount })}</p>
@@ -120,7 +120,7 @@ export default function PhotoWorklistClient({ propertyId }: { propertyId: string
       {loading ? (
         <SkeletonList />
       ) : items.length === 0 ? (
-        <p className="text-sm text-charcoal/40 text-center mt-8">{t('allDone')}</p>
+        <p className="text-sm text-dusk text-center mt-8">{t('allDone')}</p>
       ) : (
         <ul className="space-y-1.5">
           {items.map((item) => (
@@ -131,12 +131,12 @@ export default function PhotoWorklistClient({ propertyId }: { propertyId: string
                 disabled={uploadingId === item.id}
                 className="w-full flex items-center gap-3 bg-white rounded-2xl shadow-sm shadow-charcoal/5 px-4 py-3 text-left hover:shadow-md transition-shadow disabled:opacity-50"
               >
-                <span className="w-10 h-10 rounded-lg bg-gold-light/20 shrink-0 flex items-center justify-center text-charcoal/30">
+                <span className="w-10 h-10 rounded-lg bg-linen shrink-0 flex items-center justify-center text-dusk">
                   <Camera size={16} aria-hidden="true" />
                 </span>
                 <span className="flex-1 min-w-0">
-                  <span className="block font-medium text-charcoal truncate">{item.name}</span>
-                  <span className="block text-xs text-charcoal/50 truncate">
+                  <span className="block font-medium text-denim truncate">{item.name}</span>
+                  <span className="block text-xs text-dusk truncate">
                     {[item.category, item.location_name].filter(Boolean).join(' · ')}
                   </span>
                 </span>

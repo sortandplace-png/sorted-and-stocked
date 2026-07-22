@@ -17,7 +17,7 @@ import type { ReorderSource } from '@/lib/reorder-sources';
 // system -- same behavior either way, just different tokens so the pills
 // don't clash with whichever page they land on.
 const VARIANT_CLASS: Record<'default' | 'conceptB', string> = {
-  default: 'border-gold-light/60 text-gold-dark hover:bg-gold-light/10',
+  default: 'border-cardBorder text-brass hover:bg-linen',
   conceptB: 'border-brass/40 text-brass bg-mist hover:bg-mist/70',
 };
 

@@ -72,8 +72,8 @@ function ConfirmInner() {
   }, [router, searchParams]);
 
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center px-6">
-      <p className="text-sm text-charcoal/50">Signing you in…</p>
+    <div className="min-h-screen bg-linen flex items-center justify-center px-6">
+      <p className="text-sm text-dusk">Signing you in…</p>
     </div>
   );
 }
