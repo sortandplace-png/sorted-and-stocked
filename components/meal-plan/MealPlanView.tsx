@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { Printer, Flame, AlertTriangle } from 'lucide-react';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
+import Pin from '@/components/PinAccent';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientDelete } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
@@ -1288,10 +1289,11 @@ export default function MealPlanView({
                   (printOnlyDate === dateStr ? '' : ' print:hidden')
                 }
               >
-                <div className="flex items-start gap-2 px-4 pt-4 pb-2 border-b border-cardBorder">
+                <div className="relative flex items-start gap-2 px-4 py-3 bg-denim">
+                  <Pin size="sm" />
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-semibold text-denim">{DAY_LABELS[i]}</span>
-                    <span className="text-xs text-dusk">
+                    <span className="text-sm font-bold uppercase text-white">{DAY_LABELS[i]}</span>
+                    <span className="text-xs text-white/90">
                       {d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     </span>
                     {hcal?.isErevShabbos && <Flame className="h-3 w-3 text-brass" />}
@@ -1337,7 +1339,7 @@ export default function MealPlanView({
                   </div>
                   <button
                     onClick={() => openDayDrawer(dateStr)}
-                    className="print:hidden text-[11px] font-medium text-dusk ml-auto shrink-0 whitespace-nowrap"
+                    className="print:hidden text-[11px] font-medium text-white/90 ml-auto mr-4 shrink-0 whitespace-nowrap"
                   >
                     Day options →
                   </button>
@@ -1359,7 +1361,7 @@ export default function MealPlanView({
                     </p>
                   </div>
                 )}
-                <div className="divide-y divide-cardBorder">
+                <div>
                   {COURSES.filter(
                     ({ key }) =>
                       (key !== 'dessert' || isShabbos || entriesFor(dateStr, key).length > 0) &&
@@ -1381,16 +1383,17 @@ export default function MealPlanView({
                         const photo = entry?.recipes?.photo_url;
                         const linkedRecipeId = entry?.recipe_id;
                         return (
-                          <div key={`${key}-${entry?.id ?? 'empty'}`} className="flex items-center gap-2.5 px-4 py-2">
+                          <div key={`${key}-${entry?.id ?? 'empty'}`} className="relative flex items-center gap-2.5 mx-3 my-1.5 px-3 py-2.5 rounded-xl2 bg-mist">
+                            <Pin size="sm" />
                             {photo && isDirectImageUrl(photo) ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={photo} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
                             ) : (
-                              <span className="w-12 h-12 rounded-lg bg-mist shrink-0 flex items-center justify-center text-lg">
+                              <span className="w-12 h-12 rounded-lg bg-card shrink-0 flex items-center justify-center text-lg">
                                 {icon}
                               </span>
                             )}
-                            <span className="text-xs text-dusk uppercase tracking-wider w-14 shrink-0">
+                            <span className="text-xs text-brass font-semibold uppercase tracking-wider w-14 shrink-0">
                               {tCourse(key)}
                               {rows.length > 1 ? ` ${idx + 1}` : ''}
                             </span>
