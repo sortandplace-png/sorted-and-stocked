@@ -1193,7 +1193,7 @@ export default function MealPlanView({
         <div className="flex items-center flex-wrap gap-3">
           <button
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-card border border-cardBorder px-3 py-1.5 text-xs font-medium text-denim shadow-sm hover:bg-mist"
+            className="inline-flex items-center gap-1.5 rounded-full bg-card border border-cardBorder px-3 py-1.5 text-xs font-medium text-denim shadow-card hover:bg-mist"
           >
             <Printer className="h-3.5 w-3.5" />
             {viewMode === 'week' ? t('printWeek') : t('printMonth')}
@@ -1201,7 +1201,7 @@ export default function MealPlanView({
           {viewMode === 'week' && (
             <button
               onClick={shareWeekWhatsApp}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-card border border-cardBorder px-3 py-1.5 text-xs font-medium text-denim shadow-sm hover:bg-mist"
+              className="inline-flex items-center gap-1.5 rounded-full bg-card border border-cardBorder px-3 py-1.5 text-xs font-medium text-denim shadow-card hover:bg-mist"
             >
               <WhatsAppIcon size={14} />
               Share week
@@ -1212,7 +1212,7 @@ export default function MealPlanView({
               onClick={repeatWeekForward}
               disabled={repeatingWeek}
               title="Copy this week's meals to next week (won't overwrite anything already planned)"
-              className="rounded-lg bg-card border border-cardBorder px-3 py-1.5 text-xs font-medium text-denim shadow-sm hover:bg-mist disabled:opacity-40"
+              className="rounded-full bg-card border border-cardBorder px-3 py-1.5 text-xs font-medium text-denim shadow-card hover:bg-mist disabled:opacity-40"
             >
               {repeatingWeek ? '…' : 'Repeat next week →'}
             </button>
@@ -1221,7 +1221,7 @@ export default function MealPlanView({
             <button
               onClick={generateShoppingList}
               disabled={pushingToShopping}
-              className="rounded-lg bg-denim px-4 py-2 text-xs font-medium text-white hover:bg-denim/90 disabled:opacity-40"
+              className="rounded-full bg-denim px-4 py-2 text-xs font-medium text-white hover:bg-denim/90 disabled:opacity-40"
             >
               {pushingToShopping ? '…' : t('generateShoppingList')}
             </button>
@@ -1231,7 +1231,7 @@ export default function MealPlanView({
               onClick={() => extendMealPlan(4)}
               disabled={extending}
               title="Repeat the last planned week forward 4 more weeks, wherever the plan currently ends"
-              className="rounded-lg bg-card border border-cardBorder px-3 py-1.5 text-xs font-medium text-denim shadow-sm hover:bg-mist disabled:opacity-40"
+              className="rounded-full bg-card border border-cardBorder px-3 py-1.5 text-xs font-medium text-denim shadow-card hover:bg-mist disabled:opacity-40"
             >
               {extending ? '…' : 'Extend plan +4 weeks'}
             </button>
@@ -1615,7 +1615,7 @@ export default function MealPlanView({
           onClick={closeDayDrawer}
         >
           <div
-            className="bg-linen w-full max-w-sm h-full overflow-y-auto shadow-2xl"
+            className="bg-linen w-full max-w-sm h-full overflow-y-auto shadow-card"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 bg-linen border-b border-cardBorder px-5 py-4 flex items-start justify-between z-10">
@@ -1879,7 +1879,7 @@ export default function MealPlanView({
           onClick={() => setQuickEditDish(null)}
         >
           <div
-            className="bg-card rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden"
+            className="bg-card rounded-xl3 shadow-card w-full max-w-xs overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {quickEditDish.entry.recipes?.photo_url && (
@@ -1966,7 +1966,7 @@ export default function MealPlanView({
           onClick={() => setEditing(null)}
         >
           <div
-            className="bg-card w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
+            className="bg-card w-full rounded-t-[2rem] sm:rounded-xl3 p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="font-display text-xl text-denim mb-1">
