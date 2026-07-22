@@ -8,6 +8,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { Square, Triangle, Circle } from 'lucide-react';
+import Pin from '@/components/PinAccent';
 
 // Bold Direction (Home only) -- saturated fill instead of the app-wide
 // softer rust/dairy/sage, matching the approved mockup's high-contrast tags.
@@ -64,14 +65,14 @@ export default function ThisWeeksMealsList({
 
   return (
     <div>
-      <button onClick={() => setCollapsed((v) => !v)} className="w-full flex items-center gap-2 mb-3 text-left">
+      <div className="relative w-full flex items-center gap-2 mb-3 pr-6">
+        <Pin size="sm" collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
         <span className="text-xs font-bold uppercase tracking-wider text-denim">
           {t('mealsListCard.heading')}
         </span>
         <span className="text-xs text-dusk">({mealsByDay.reduce((n, d) => n + d.entries.length, 0)})</span>
         <span className="flex-1 border-t border-cardBorder" />
-        <span className="text-dusk text-sm">{collapsed ? '▸' : '▾'}</span>
-      </button>
+      </div>
 
       {!collapsed && (
         <div className="space-y-3">

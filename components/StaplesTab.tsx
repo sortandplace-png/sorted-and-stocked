@@ -362,12 +362,12 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
               const lowCount = groupStaples.filter((s) => s.is_low).length;
               const Icon = getStapleCategoryIcon(key);
               return (
-                <div key={key}>
-                  <button
-                    onClick={() => toggleGroup(key)}
-                    className="relative w-full min-h-[128px] flex flex-col items-center justify-center gap-1.5 rounded-xl2 bg-mist border border-brass/30 py-[14px] px-[18px] shadow-card hover:shadow-cardHover transition-shadow text-center"
-                  >
-                    <span className="absolute top-2 right-2 text-dusk text-xs">{collapsed ? '▸' : '▾'}</span>
+                <div
+                  key={key}
+                  className="relative bg-mist border border-brass/30 rounded-xl2 shadow-card hover:shadow-cardHover transition-shadow overflow-hidden"
+                >
+                  <Pin size="sm" collapsed={collapsed} onToggle={() => toggleGroup(key)} />
+                  <div className="min-h-[128px] flex flex-col items-center justify-center gap-1.5 py-[14px] px-[18px] text-center">
                     <Icon size={32} className="text-denim" aria-hidden="true" />
                     <span className="font-display text-lg text-denim">{key}</span>
                     <span className="text-xs text-dusk">
@@ -380,9 +380,11 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
                     >
                       {lowCount > 0 ? `${lowCount} below par` : 'All stocked'}
                     </span>
-                  </button>
+                  </div>
                   {!collapsed && (
-                    <div className="space-y-3 mt-3">{groupStaples.map(renderStapleCard)}</div>
+                    <div className="border-t border-brass/20 px-[18px] py-3 space-y-3">
+                      {groupStaples.map(renderStapleCard)}
+                    </div>
                   )}
                 </div>
               );

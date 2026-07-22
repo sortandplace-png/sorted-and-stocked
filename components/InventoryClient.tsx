@@ -1654,15 +1654,12 @@ export default function InventoryClient({
             const collapsed = collapsedLetters.has(letter);
             return (
               <div key={letter}>
-                <button
-                  onClick={() => toggleLetter(letter)}
-                  className="w-full flex items-center gap-2 mb-2 text-left"
-                >
+                <div className="relative w-full flex items-center gap-2 mb-2 pr-6">
+                  <Pin size="sm" collapsed={collapsed} onToggle={() => toggleLetter(letter)} />
                   <span className="font-display text-lg text-denim">{letter}</span>
                   <span className="text-xs text-dusk">({letterItems.length})</span>
                   <span className="flex-1 border-t border-cardBorder" />
-                  <span className="text-dusk text-sm">{collapsed ? '▸' : '▾'}</span>
-                </button>
+                </div>
                 {!collapsed && (
                   <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
                     {letterItems.map((item) => renderItemCard(item, true))}
@@ -1794,15 +1791,12 @@ export default function InventoryClient({
               const collapsed = collapsedLetters.has(letter);
               return (
                 <div key={letter}>
-                  <button
-                    onClick={() => toggleLetter(letter)}
-                    className="w-full flex items-center gap-2 mb-2 text-left"
-                  >
+                  <div className="relative w-full flex items-center gap-2 mb-2 pr-6">
+                    <Pin size="sm" collapsed={collapsed} onToggle={() => toggleLetter(letter)} />
                     <span className="font-display text-lg text-denim">{letter}</span>
                     <span className="text-xs text-dusk">({letterItems.length})</span>
                     <span className="flex-1 border-t border-cardBorder" />
-                    <span className="text-dusk text-sm">{collapsed ? '▸' : '▾'}</span>
-                  </button>
+                  </div>
                   {!collapsed && (
                     <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
                       {letterItems.map((item) => renderItemCard(item, false))}

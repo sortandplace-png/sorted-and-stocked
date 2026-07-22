@@ -982,16 +982,13 @@ export default function ShoppingListViewEnhanced({
           items at reduced opacity with strikethrough text (renderItemCard's
           isChecked styling), unchanged here. */}
       {completedItems.length > 0 && (
-        <div className="print:hidden bg-card rounded-2xl border border-cardBorder shadow-card p-4">
-          <button
-            onClick={() => setCompletedExpanded((v) => !v)}
-            className="w-full flex items-center gap-2 text-left"
-          >
+        <div className="relative print:hidden bg-card rounded-2xl border border-cardBorder shadow-card p-4">
+          <Pin size="sm" collapsed={!completedExpanded} onToggle={() => setCompletedExpanded((v) => !v)} />
+          <div className="w-full flex items-center gap-2 text-left">
             <span className="font-display text-lg text-dusk">Completed</span>
             <span className="text-xs text-dusk">({completedItems.length})</span>
             <span className="flex-1 border-t border-cardBorder" />
-            <span className="text-dusk text-sm">{completedExpanded ? '▾' : '▸'}</span>
-          </button>
+          </div>
           {completedExpanded && (
             <div className="space-y-2 mt-3">{aggregateItems(completedItems).map(renderItemCard)}</div>
           )}

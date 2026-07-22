@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Lock, Tag, Microscope, UtensilsCrossed, Timer, Users, RotateCcw, Hourglass, type LucideIcon } from 'lucide-react';
 import ToolModal, { type ToolModalSlug } from '@/components/ToolModal';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
+import Pin from '@/components/PinAccent';
 
 type Tool = { slug: string; icon: string; title: string; description: string; count?: number };
 type Subgroup = { key: string; label: string; lockIcon: boolean; tools: Tool[] };
@@ -121,15 +122,12 @@ export default function ToolsGroupList({ propertyId, groups }: { propertyId: str
           group.tools.length + visibleSubgroups.reduce((sum, sg) => sum + sg.tools.length, 0);
         return (
           <div key={group.key}>
-            <button
-              onClick={() => toggleGroup(group.key)}
-              className="w-full flex items-center gap-2 mb-2 text-left"
-            >
+            <div className="relative w-full flex items-center gap-2 mb-2 pr-6">
+              <Pin size="sm" collapsed={collapsed} onToggle={() => toggleGroup(group.key)} />
               <span className="text-xs font-medium uppercase tracking-wider text-brass">{group.label}</span>
               <span className="text-xs text-dusk">({totalCount})</span>
               <span className="flex-1 border-t border-cardBorder" />
-              <span className="text-dusk text-sm">{collapsed ? '▸' : '▾'}</span>
-            </button>
+            </div>
             {!collapsed && (
               <div className="space-y-4">
                 {group.tools.length > 0 && (
