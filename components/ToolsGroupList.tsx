@@ -3,7 +3,26 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Lock, Tag, Microscope, UtensilsCrossed, Timer, Users, RotateCcw, Hourglass, type LucideIcon } from 'lucide-react';
+import {
+  Lock,
+  Tag,
+  Microscope,
+  UtensilsCrossed,
+  Timer,
+  Users,
+  RotateCcw,
+  Hourglass,
+  MapPin,
+  ArrowLeftRight,
+  Copy,
+  Link2,
+  Calendar,
+  SquareCheck,
+  Store,
+  History,
+  Heart,
+  type LucideIcon,
+} from 'lucide-react';
 import ToolModal, { type ToolModalSlug } from '@/components/ToolModal';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import Pin from '@/components/PinAccent';
@@ -12,11 +31,25 @@ type Tool = { slug: string; icon: string; title: string; description: string; co
 type Subgroup = { key: string; label: string; lockIcon: boolean; tools: Tool[] };
 type Group = { key: string; label: string; tools: Tool[]; subgroups: Subgroup[] };
 
-// Scanners + Kitchen's top-level tools + Prep & Reset: the emoji-vs-icon
-// fix for these 7 (the rest of the page is still emoji, not yet in
-// scope). Keyed by slug rather than changing TOOLS' own `icon` field in
-// page.tsx, so a slug that's ever renamed/removed here harmlessly falls
-// back to its emoji instead of rendering nothing.
+// Scanners + Kitchen's top-level tools + Prep & Reset (SS-249's original
+// batch), Reference's pantry-zones/borrowed-items + Admin Cleanup's
+// duplicate-ingredients/needs-linking (SS-279 -- same slugs/icons as
+// InventoryClient.tsx's own Inventory Ops footer, kept in sync on
+// purpose), and Kitchen's Calendar subgroup + House's loose tools
+// (SS-280). The rest of the page is still emoji, not yet in scope. Keyed
+// by slug rather than changing TOOLS' own `icon` field in page.tsx, so a
+// slug that's ever renamed/removed here harmlessly falls back to its
+// emoji instead of rendering nothing.
+//
+// SS-280 icon choices, and the two departures from what was suggested:
+// halachic-calendar and yom-tov-year-view deliberately share Calendar
+// (asked for explicitly, and they're adjacent tiles in the same
+// subgroup, so sharing reads as "both calendar tools" rather than as a
+// mistake). takeout-directory uses Store instead of the suggested
+// UtensilsCrossed, and taste-memory uses Heart instead of the suggested
+// Users -- both suggested icons were already claimed above (recipe-
+// stealer, guest-scaler) for genuinely unrelated tools, so reusing them
+// here would read as a mistake, not a deliberate pairing.
 const TOOL_ICON_OVERRIDES: Record<string, LucideIcon> = {
   'price-scanner': Tag,
   'ingredient-scanner': Microscope,
@@ -25,6 +58,16 @@ const TOOL_ICON_OVERRIDES: Record<string, LucideIcon> = {
   'guest-scaler': Users,
   'reset-checklist': RotateCcw,
   'prep-timeline': Hourglass,
+  'pantry-zones': MapPin,
+  'borrowed-items': ArrowLeftRight,
+  'duplicate-ingredients': Copy,
+  'needs-linking': Link2,
+  'halachic-calendar': Calendar,
+  'yom-tov-year-view': Calendar,
+  tasks: SquareCheck,
+  'takeout-directory': Store,
+  'memory-timeline': History,
+  'taste-memory': Heart,
 };
 
 // Same modal treatment already proven for Kitchen Ops (opened from a

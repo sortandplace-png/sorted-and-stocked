@@ -29,7 +29,7 @@ import { isFoodCategory } from '@/lib/foodCategories';
 import { compressImageToBlob } from '@/lib/compress-image';
 import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
 import CameraCapture from '@/components/CameraCapture';
-import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle, Package, StickyNote, ArrowLeft, Pencil, QrCode as QrCodeIcon, ScanLine } from 'lucide-react';
+import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle, Package, StickyNote, ArrowLeft, Pencil, QrCode as QrCodeIcon, ScanLine, MapPin, ArrowLeftRight, Copy, Link2, type LucideIcon } from 'lucide-react';
 import QRCode from 'qrcode';
 import { SITE_URL } from '@/lib/site-url';
 
@@ -230,11 +230,15 @@ function isExpiringWithin30Days(expirationDate: string | null): boolean {
 // Matches the real Inventory Ops group + icons already in the Tools Hub
 // (app/properties/[id]/tools/page.tsx) — same 4 tools, same slugs/icons,
 // so this footer and the Tools Hub never drift apart from each other.
-const INVENTORY_OPS_LINKS = [
-  { slug: 'pantry-zones', icon: '🗺️', title: 'Pantry Zone Map' },
-  { slug: 'borrowed-items', icon: '🔄', title: 'Borrowed & Lent' },
-  { slug: 'duplicate-ingredients', icon: '🧩', title: 'Duplicate Ingredients' },
-  { slug: 'needs-linking', icon: '🔗', title: 'Needs Linking' },
+// SS-279: the Tools Hub's own TOOL_ICON_OVERRIDES (ToolsGroupList.tsx)
+// picked up the same 4 slugs in the same commit, so that invariant still
+// holds after this -- both were emoji before, both are these exact lucide
+// icons now.
+const INVENTORY_OPS_LINKS: { slug: string; icon: LucideIcon; title: string }[] = [
+  { slug: 'pantry-zones', icon: MapPin, title: 'Pantry Zone Map' },
+  { slug: 'borrowed-items', icon: ArrowLeftRight, title: 'Borrowed & Lent' },
+  { slug: 'duplicate-ingredients', icon: Copy, title: 'Duplicate Ingredients' },
+  { slug: 'needs-linking', icon: Link2, title: 'Needs Linking' },
 ];
 
 export default function InventoryClient({
@@ -1847,8 +1851,8 @@ export default function InventoryClient({
               href={`/properties/${propertyId}/tools/${tool.slug}`}
               className="flex flex-col items-center text-center gap-2 bg-card rounded-xl2 shadow-card px-3 py-4 hover:shadow-cardHover transition-shadow"
             >
-              <span className="w-11 h-11 shrink-0 flex items-center justify-center rounded-full bg-brass/15 text-lg" aria-hidden="true">
-                {tool.icon}
+              <span className="w-11 h-11 shrink-0 flex items-center justify-center" aria-hidden="true">
+                <tool.icon size={28} className="text-denim" strokeWidth={1.75} aria-hidden="true" />
               </span>
               <span className="text-xs font-bold text-denim">{tool.title}</span>
             </a>
