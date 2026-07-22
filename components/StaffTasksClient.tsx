@@ -29,6 +29,7 @@ import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import FieldLabel from '@/components/FieldLabel';
 import { CheckCircle2, ChevronDown, Circle, Clock, Library, ListChecks } from 'lucide-react';
+import Pin from '@/components/PinAccent';
 
 type Frequency = { id: string; code: string; label_en: string; label_es: string; interval_days: number | null };
 type Room = { id: string; name_en: string; name_es: string | null };
@@ -67,10 +68,15 @@ type Completion = { task_id: string; due_date: string; completed: boolean; passe
 
 type Status = 'done' | 'due' | 'not_due' | 'optional' | 'never_done';
 
+// SS-277: due/never_done reuse the exact Inventory low-stock badge tokens
+// (bg-[#FDF2F2]/border-[#F8C4C4]/text-[#9B2C2C]) rather than a new rose
+// variant -- both already shared one rust/10 treatment before this, and
+// moving only one of the two to the new tokens would have fragmented that
+// pairing instead of fixing it.
 const STATUS_STYLE: Record<Status, string> = {
   done: 'text-sage bg-sage/10',
-  due: 'text-rust bg-rust/10',
-  never_done: 'text-rust bg-rust/10',
+  due: 'bg-[#FDF2F2] border border-[#F8C4C4] text-[#9B2C2C]',
+  never_done: 'bg-[#FDF2F2] border border-[#F8C4C4] text-[#9B2C2C]',
   not_due: 'text-dusk bg-mist',
   optional: 'text-brass bg-mist',
 };
@@ -344,7 +350,13 @@ export default function StaffTasksClient({
   const content = (
     <>
       {canManage(role) && scope !== 'mine' && (
-        <div className="mb-6 rounded-2xl border border-cardBorder bg-card shadow-card overflow-hidden">
+        // SS-277: bespoke button+chevron shell kept deliberately, not
+        // swapped for the shared CollapsibleCard+CardHeader pattern -- that
+        // component always renders Pin as its collapse control with no way
+        // to opt out, and this card is explicitly chevron-only, no pin. The
+        // interaction itself (button + rotating ChevronDown) is unchanged,
+        // already correct; only the shell radius moved to the real token.
+        <div className="mb-6 rounded-xl3 border border-cardBorder bg-card shadow-card overflow-hidden">
           <button
             onClick={() => setShowLibrary((v) => !v)}
             className="w-full flex items-center gap-2 px-4 py-3 text-left"
@@ -435,7 +447,14 @@ export default function StaffTasksClient({
             const sop = sopText(task);
             const passFail = passFailText(task);
             return (
-              <li key={task.id} className="rounded-2xl border border-cardBorder bg-card shadow-card p-3.5">
+              <li
+                key={task.id}
+                className="relative rounded-xl2 border border-brass/30 bg-mist shadow-card hover:shadow-cardHover transition-shadow p-3.5"
+              >
+                {/* Every task card gets one, no exceptions -- these aren't
+                    collapse controls (no onToggle), same purely-decorative
+                    usage as the Convenient to Grab section on Shopping List. */}
+                <Pin size="sm" />
                 <div className="flex items-start gap-2">
                   <button
                     onClick={() => (status === 'done' ? null : setExpandedTaskId(expanded ? null : task.id))}
@@ -463,8 +482,8 @@ export default function StaffTasksClient({
                         </span>
                       )}
                       {freq && (
-                        <span className="text-[10px] text-dusk bg-mist px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <Clock size={10} strokeWidth={1.75} aria-hidden="true" />
+                        <span className="text-[10px] text-dusk bg-card border border-cardBorder px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Clock size={10} className="text-brass" strokeWidth={1.75} aria-hidden="true" />
                           {locale === 'es' ? freq.label_es : freq.label_en}
                         </span>
                       )}
@@ -484,7 +503,7 @@ export default function StaffTasksClient({
                         <select
                           value={(assignmentsByTask.get(task.id) ?? [])[0]?.member_id ?? ''}
                           onChange={(e) => assignMember(task.id, e.target.value)}
-                          className="text-xs border border-cardBorder rounded-full px-2 py-1 bg-mist text-dusk"
+                          className="text-xs border border-cardBorder rounded-full px-2 py-1 bg-card text-dusk"
                         >
                           <option value="">Unassigned</option>
                           {members.map((m) => (
@@ -540,13 +559,15 @@ export default function StaffTasksClient({
   if (scope === 'mine') return content;
 
   return (
-    <div className="max-w-md lg:max-w-3xl mx-auto p-4">
-      <h1 className="text-2xl font-display text-denim mb-1 flex items-center gap-2">
-        <ListChecks size={22} className="text-brass" strokeWidth={1.75} aria-hidden="true" />
-        Staff Task Center
-      </h1>
-      <p className="text-sm text-dusk mb-4">What needs doing, from the real task library.</p>
-      {content}
+    <div className="bg-[#F9F5EF] min-h-screen">
+      <div className="max-w-[720px] mx-auto p-4">
+        <h1 className="text-2xl font-display font-normal text-denim mb-1 flex items-center gap-2">
+          <ListChecks size={22} className="text-brass" strokeWidth={1.75} aria-hidden="true" />
+          Staff Task Center
+        </h1>
+        <p className="text-[11px] font-interDisplay font-normal text-dusk mb-4">What needs doing, from the real task library.</p>
+        {content}
+      </div>
     </div>
   );
 }
