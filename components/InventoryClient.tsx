@@ -1700,8 +1700,9 @@ export default function InventoryClient({
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               <button
                 onClick={() => setLocationFilter(FAVORITES)}
-                className="text-left bg-mist rounded-2xl shadow-card p-4 hover:bg-mist transition-colors"
+                className="relative text-left bg-mist rounded-xl2 shadow-card p-4 hover:bg-mist transition-colors"
               >
+                <Pin size="sm" />
                 <p className="font-display text-lg text-denim truncate">⭐ Favorites</p>
                 <p className="text-xs text-dusk mt-1">
                   {favoriteIds.size} item{favoriteIds.size === 1 ? '' : 's'}
@@ -1775,7 +1776,7 @@ export default function InventoryClient({
           ))}
           <button
             onClick={() => setShowNewRoom(true)}
-            className="text-left border-2 border-dashed border-cardBorder rounded-2xl p-4 text-dusk hover:bg-mist transition-colors w-full md:w-auto"
+            className="text-left border-2 border-dashed border-cardBorder rounded-xl2 p-4 text-dusk hover:bg-mist transition-colors w-full md:w-auto"
           >
             <p className="font-display text-lg">+ Add room</p>
           </button>
@@ -1874,7 +1875,7 @@ export default function InventoryClient({
             onClick={() => setViewingItem(null)}
           >
             <div
-              className="bg-card w-full rounded-t-[2rem] sm:rounded-3xl max-w-sm mx-auto max-h-[92vh] overflow-y-auto"
+              className="bg-card w-full rounded-t-[2rem] sm:rounded-xl3 max-w-sm mx-auto max-h-[92vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between px-5 pt-4">
@@ -2062,7 +2063,7 @@ export default function InventoryClient({
       {showNewRoom && (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4" onClick={() => setShowNewRoom(false)}>
           <div
-            className="bg-card w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
+            className="bg-card w-full rounded-t-[2rem] sm:rounded-xl3 p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="font-display text-xl text-denim mb-3">New room</h2>
@@ -2206,7 +2207,7 @@ function ItemFormSheet({
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4" onClick={onCancel}>
       <div
-        className="bg-card w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
+        className="bg-card w-full rounded-t-[2rem] sm:rounded-xl3 p-5 max-w-md mx-auto max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="font-display text-xl text-denim mb-3">{form.id ? 'Edit item' : 'New item'}</h2>
