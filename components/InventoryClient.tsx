@@ -648,6 +648,7 @@ export default function InventoryClient({
   }, []);
 
   function openNewItemForm() {
+    setError(null);
     // Respect whatever room/location is currently being viewed instead of
     // always defaulting to the first location in the list — but Favorites
     // is a pseudo-filter, not a real location, so it doesn't count here.
@@ -734,6 +735,7 @@ export default function InventoryClient({
   }, [viewingItem?.qr_code]);
 
   function openEditForm(item: InventoryItem) {
+    setError(null);
     setPendingPhotoFile(null);
     setPendingPhotoRemoved(false);
     setForm({
@@ -766,6 +768,7 @@ export default function InventoryClient({
   async function saveForm() {
     if (!form || !form.name.trim()) return;
     if (!form.name_es.trim()) {
+      setError('Spanish name is required — add one to save this item.');
       showToast('Spanish name is required.', { variant: 'error' });
       return;
     }
@@ -2006,6 +2009,7 @@ export default function InventoryClient({
           locations={locations}
           categorySuggestions={categorySuggestions}
           saving={saving}
+          error={error}
           onChange={setForm}
           onCancel={() => setForm(null)}
           onSave={saveForm}
@@ -2141,6 +2145,7 @@ function ItemFormSheet({
   locations,
   categorySuggestions,
   saving,
+  error,
   onChange,
   onCancel,
   onSave,
@@ -2155,6 +2160,7 @@ function ItemFormSheet({
   locations: StorageLocation[];
   categorySuggestions: string[];
   saving: boolean;
+  error: string | null;
   onChange: (form: ItemFormState) => void;
   onCancel: () => void;
   onSave: () => void;
@@ -2457,6 +2463,10 @@ function ItemFormSheet({
             />
           </div>
         </div>
+
+        {error && (
+          <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2 mb-3" role="alert">{error}</p>
+        )}
 
         <div className="flex gap-2 mt-4">
           <button
