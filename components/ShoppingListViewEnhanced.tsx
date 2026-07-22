@@ -894,12 +894,12 @@ export default function ShoppingListViewEnhanced({
           const collapsed = collapsedGroups.has(group.title);
           const Icon = getShoppingCategoryIcon(group.title);
           return (
-            <div key={group.title}>
-              <button
-                onClick={() => toggleGroup(group.title)}
-                className="relative w-full min-h-[128px] flex flex-col items-center justify-center gap-1.5 rounded-xl2 bg-mist border border-brass/30 py-[14px] px-[18px] shadow-card hover:shadow-cardHover transition-shadow text-center"
-              >
-                <span className="absolute top-2 right-2 text-dusk text-xs">{collapsed ? '▸' : '▾'}</span>
+            <div
+              key={group.title}
+              className="relative bg-mist border border-brass/30 rounded-xl2 shadow-card hover:shadow-cardHover transition-shadow overflow-hidden"
+            >
+              <Pin size="sm" collapsed={collapsed} onToggle={() => toggleGroup(group.title)} />
+              <div className="min-h-[128px] flex flex-col items-center justify-center gap-1.5 py-[14px] px-[18px] text-center">
                 {/* By Recipe only -- group.photoUrl is undefined in every
                     other grouping mode (category/aisle titles aren't
                     recipes and have no photo to show). Same photo-or-
@@ -920,8 +920,18 @@ export default function ShoppingListViewEnhanced({
                 <span className="text-xs text-dusk">
                   {group.items.length} {group.items.length === 1 ? 'item' : 'items'}
                 </span>
-              </button>
-              {!collapsed && <div className="space-y-2 mt-3">{group.items.map(renderItemCard)}</div>}
+              </div>
+              {/* Nested inside the same bordered/shadowed container as the
+                  tile above (not a separate floating block after it) --
+                  otherwise the expanded list reads as visually disconnected
+                  from the tile that opened it, even though it's already
+                  correctly grid-positioned directly beneath it (confirmed
+                  via computed geometry before this fix, not assumed). */}
+              {!collapsed && (
+                <div className="border-t border-brass/20 px-[18px] py-3 space-y-2">
+                  {group.items.map(renderItemCard)}
+                </div>
+              )}
             </div>
           );
         })}
