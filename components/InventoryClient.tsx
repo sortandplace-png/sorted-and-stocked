@@ -1471,38 +1471,38 @@ export default function InventoryClient({
           forcing the full dashboard tile height; these are compact
           stat/filter toggles, not content cards. */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="rounded-xl2 p-4 bg-card border border-cardBorder shadow-card">
-          <Package className="w-4 h-4 text-brass mb-1.5" strokeWidth={1.75} aria-hidden="true" />
-          <div className="text-xl font-display text-denim">{totalItemsCount}</div>
-          <div className="text-[11px] text-dusk">Total Items</div>
+        <div className="rounded-xl3 p-4 bg-card border border-cardBorder shadow-card text-center">
+          <Package size={18} className="text-brass mx-auto mb-1" strokeWidth={1.5} aria-hidden="true" />
+          <div className="text-2xl font-display text-denim">{totalItemsCount}</div>
+          <div className="text-xs text-dusk">Total Items</div>
         </div>
         <button
           type="button"
           onClick={() => setBelowParOnly((v) => !v)}
           aria-pressed={belowParOnly}
-          className={`text-left rounded-xl2 p-4 bg-card border shadow-card transition-colors ${
+          className={`text-center rounded-xl3 p-4 bg-card border shadow-card transition-colors ${
             belowParOnly ? 'border-rust' : 'border-cardBorder'
           }`}
         >
-          <AlertTriangle className={`w-4 h-4 mb-1.5 ${lowStockCount > 0 ? 'text-rust' : 'text-brass'}`} strokeWidth={1.75} aria-hidden="true" />
-          <div className={`text-xl font-display ${lowStockCount > 0 ? 'text-rust' : 'text-denim'}`}>
+          <AlertTriangle size={18} className={`mx-auto mb-1 ${lowStockCount > 0 ? 'text-rust' : 'text-brass'}`} strokeWidth={1.5} aria-hidden="true" />
+          <div className={`text-2xl font-display ${lowStockCount > 0 ? 'text-rust' : 'text-denim'}`}>
             {lowStockCount}
           </div>
-          <div className="text-[11px] text-dusk">Low Stock</div>
+          <div className="text-xs text-dusk">Low Stock</div>
         </button>
         <button
           type="button"
           onClick={() => setExpiringSoon30Only((v) => !v)}
           aria-pressed={expiringSoon30Only}
-          className={`text-left rounded-xl2 p-4 bg-card border shadow-card transition-colors ${
+          className={`text-center rounded-xl3 p-4 bg-card border shadow-card transition-colors ${
             expiringSoon30Only ? 'border-brass' : 'border-cardBorder'
           }`}
         >
-          <Clock className="w-4 h-4 mb-1.5 text-brass" strokeWidth={1.75} aria-hidden="true" />
-          <div className={`text-xl font-display ${expiringSoon30Count > 0 ? 'text-brass' : 'text-denim'}`}>
+          <Clock size={18} className="mx-auto mb-1 text-brass" strokeWidth={1.5} aria-hidden="true" />
+          <div className={`text-2xl font-display ${expiringSoon30Count > 0 ? 'text-brass' : 'text-denim'}`}>
             {expiringSoon30Count}
           </div>
-          <div className="text-[11px] text-dusk">Expiring Soon</div>
+          <div className="text-xs text-dusk">Expiring Soon</div>
         </button>
       </div>
 
