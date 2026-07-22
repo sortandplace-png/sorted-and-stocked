@@ -1242,9 +1242,10 @@ export default function InventoryClient({
     return (
       <div
         key={item.id}
-        className="flex items-center gap-3 bg-card rounded-2xl shadow-card px-4 py-3.5 cursor-pointer hover:shadow-cardHover transition-shadow"
+        className="relative flex items-center gap-3 bg-card rounded-xl2 shadow-card px-4 py-3.5 cursor-pointer hover:shadow-cardHover transition-shadow"
         onClick={() => openDetailView(item)}
       >
+        <Pin size="sm" />
         {hasThumb ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
