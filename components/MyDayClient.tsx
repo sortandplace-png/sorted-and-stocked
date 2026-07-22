@@ -42,7 +42,8 @@ export default function MyDayClient({
   const [showKitchenTimer, setShowKitchenTimer] = useState(false);
 
   return (
-    <div className="max-w-md mx-auto p-4">
+    <div className="bg-mist min-h-screen p-4 lg:p-6">
+    <div className="max-w-6xl mx-auto">
       <h1 className="text-2xl font-display text-denim mb-1">My Day</h1>
       <p className="text-sm text-dusk mb-4">
         {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
@@ -113,29 +114,44 @@ export default function MyDayClient({
         <KitchenOpsToolModal slug="kitchen-timer" propertyId={propertyId} onClose={() => setShowKitchenTimer(false)} />
       )}
 
-      {/* Recurring daily duty checklist (staff_duty_templates, grouped by
-          area) -- distinct from the one-off assigned Today's Tasks list
-          below it. Staff-only: owner/manager visiting this page directly
-          see everything else here unchanged, just not this section. */}
-      {isStaff && <StaffDutyChecklist areas={dutyAreas} hasRosterKey={hasRosterKey} todayStr={todayStr} />}
+      {/* Bento layout, same split Staff's own page uses for this identical
+          ShiftHandoverClient instance (StaffClient.tsx): left column is
+          today's actual work, right column is Handover. Stacks to one
+          column below lg -- no room for a real 2-up grid on a phone
+          screen, and the original single-column reading order (duty
+          checklist, tasks, handover) is still correct there. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          {/* Recurring daily duty checklist (staff_duty_templates, grouped
+              by area) -- distinct from the one-off assigned Today's Tasks
+              list below it. Staff-only: owner/manager visiting this page
+              directly see everything else here unchanged, just not this
+              section. */}
+          {isStaff && <StaffDutyChecklist areas={dutyAreas} hasRosterKey={hasRosterKey} todayStr={todayStr} />}
 
-      {/* Real task library (master_tasks/task_assignments/task_completions),
-          not the old freeform staff_tasks table -- scope="mine" filters to
-          what's assigned to the viewer and actually due, reusing the same
-          data layer and mark-done flow as the manager-facing Task Center
-          instead of a second, separately-maintained implementation. */}
-      <CollapsibleCard
-        cardId="myday-todays-tasks"
-        pinSize="sm"
-        className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden mb-6"
-        header={<CardHeader>Today's Tasks</CardHeader>}
-      >
-        <div className="p-4">
-          <StaffTasksClient propertyId={propertyId} scope="mine" />
+          {/* Real task library (master_tasks/task_assignments/
+              task_completions), not the old freeform staff_tasks table --
+              scope="mine" filters to what's assigned to the viewer and
+              actually due, reusing the same data layer and mark-done flow
+              as the manager-facing Task Center instead of a second,
+              separately-maintained implementation. */}
+          <CollapsibleCard
+            cardId="myday-todays-tasks"
+            pinSize="sm"
+            className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden"
+            header={<CardHeader>Today's Tasks</CardHeader>}
+          >
+            <div className="p-4">
+              <StaffTasksClient propertyId={propertyId} scope="mine" />
+            </div>
+          </CollapsibleCard>
         </div>
-      </CollapsibleCard>
 
-      <ShiftHandoverClient propertyId={propertyId} layout="split" />
+        <div>
+          <ShiftHandoverClient propertyId={propertyId} layout="split" />
+        </div>
+      </div>
+    </div>
     </div>
   );
 }
