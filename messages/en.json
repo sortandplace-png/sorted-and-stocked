@@ -101,7 +101,24 @@
     "home": "Home",
     "photoReview": "Photo Review",
     "procurement": "Procurement",
+    "help": "Help",
     "scanAriaLabel": "Scan item to inventory"
+  },
+  "help": {
+    "title": "Help Center",
+    "subtitle": "Answers to common questions",
+    "searchPlaceholder": "Search for a topic…",
+    "noResults": "No articles match your search.",
+    "categories": {
+      "Getting Started": "Getting Started",
+      "Inventory": "Inventory",
+      "Shopping": "Shopping",
+      "Recipes & Meals": "Recipes & Meals",
+      "Jewish Calendar": "Jewish Calendar",
+      "Staff & Permissions": "Staff & Permissions",
+      "Multi-Property": "Multi-Property",
+      "Troubleshooting": "Troubleshooting"
+    }
   },
   "common": {
     "print": "Print",
@@ -522,7 +539,8 @@
       "staff": "Staff",
       "settings": "Settings",
       "photoReview": "Photo Review",
-      "procurement": "Procurement"
+      "procurement": "Procurement",
+      "help": "Help"
     },
     "shabbosModeBanner": "Shabbos Mode • Editing disabled",
     "widgets": {

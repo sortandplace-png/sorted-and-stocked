@@ -101,7 +101,24 @@
     "home": "Inicio",
     "photoReview": "Revisión de Fotos",
     "procurement": "Abastecimiento",
+    "help": "Ayuda",
     "scanAriaLabel": "Escanear artículo al inventario"
+  },
+  "help": {
+    "title": "Centro de Ayuda",
+    "subtitle": "Respuestas a preguntas comunes",
+    "searchPlaceholder": "Buscar un tema…",
+    "noResults": "Ningún artículo coincide con tu búsqueda.",
+    "categories": {
+      "Getting Started": "Primeros Pasos",
+      "Inventory": "Inventario",
+      "Shopping": "Compras",
+      "Recipes & Meals": "Recetas y Comidas",
+      "Jewish Calendar": "Calendario Judío",
+      "Staff & Permissions": "Personal y Permisos",
+      "Multi-Property": "Múltiples Propiedades",
+      "Troubleshooting": "Solución de Problemas"
+    }
   },
   "common": {
     "print": "Imprimir",
@@ -522,7 +539,8 @@
       "staff": "Personal",
       "settings": "Configuración",
       "photoReview": "Revisión de Fotos",
-      "procurement": "Abastecimiento"
+      "procurement": "Abastecimiento",
+      "help": "Ayuda"
     },
     "shabbosModeBanner": "Modo Shabat • Edición desactivada",
     "widgets": {

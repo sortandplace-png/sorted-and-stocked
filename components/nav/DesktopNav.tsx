@@ -101,6 +101,10 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // the Invite Codes/Broadcast sections inside are what's actually
       // gated, per-role, by the page itself.
       { segment: 'settings', labelKey: 'settings' },
+      // Property-agnostic (see app/help/page.tsx) -- href override same as
+      // Procurement above, so this doesn't resolve to the default
+      // /properties/{id}/help pattern every other item here uses.
+      { segment: 'help', labelKey: 'help', href: '/help' },
     ],
   },
 ];

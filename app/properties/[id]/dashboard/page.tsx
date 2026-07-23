@@ -1232,6 +1232,11 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           <Link href={`/properties/${propertyId}/settings`} className="text-dusk hover:text-denim underline underline-offset-2">
             {t('mobileFooter.settings')}
           </Link>
+          {/* Property-agnostic (see app/help/page.tsx), ungated like
+              Settings -- every role, not just owner/manager. */}
+          <Link href="/help" className="text-dusk hover:text-denim underline underline-offset-2">
+            {t('mobileFooter.help')}
+          </Link>
         </div>
 
         {isShabbos && (
