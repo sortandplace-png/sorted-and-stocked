@@ -146,7 +146,14 @@ export default function ToolsGroupList({ propertyId, groups }: { propertyId: str
             {cardInner}
           </button>
         ) : (
-          <Link href={`/properties/${propertyId}/tools/${tool.slug}`} className={cardClass}>
+          <Link
+            href={
+              tool.slug === 'blog'
+                ? `/properties/${propertyId}/blog`
+                : `/properties/${propertyId}/tools/${tool.slug}`
+            }
+            className={cardClass}
+          >
             {cardInner}
           </Link>
         )}

@@ -31,15 +31,15 @@ export default async function BlogPage({ params }: { params: Promise<{ id: strin
     <div className="max-w-6xl mx-auto px-4 py-8">
       <Link
         href={`/properties/${propertyId}/dashboard`}
-        className="inline-flex items-center gap-2 text-charcoal/60 hover:text-charcoal underline underline-offset-2 mb-6"
+        className="inline-flex items-center gap-2 text-dusk hover:text-denim underline underline-offset-2 mb-6"
       >
         ← Back to Dashboard
       </Link>
       <div className="mb-12">
-        <h1 className="text-4xl font-serif text-charcoal mb-2" style={{ fontFamily: 'Playfair Display, serif' }}>
+        <h1 className="text-4xl font-serif text-denim mb-2" style={{ fontFamily: 'Playfair Display, serif' }}>
           Sorted & Stocked Blog
         </h1>
-        <p className="text-lg text-charcoal/70">
+        <p className="text-lg text-dusk">
           Tips, recipes, and household management insights
         </p>
       </div>

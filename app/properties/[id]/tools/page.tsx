@@ -171,6 +171,12 @@ const TOOLS = [
     title: 'Household Digest',
     description: "A preview of what's low and what's coming up this week.",
   },
+  {
+    slug: 'blog',
+    icon: '📖',
+    title: 'Blog & Articles',
+    description: 'Household management tips, recipes, and insights.',
+  },
 ];
 
 const TASTE_MEMORY_TOOL = {
@@ -207,7 +213,7 @@ const GROUPS: {
   {
     key: 'house',
     label: 'House',
-    slugs: ['tasks', 'takeout-directory', 'memory-timeline', 'taste-memory'],
+    slugs: ['tasks', 'takeout-directory', 'memory-timeline', 'taste-memory', 'blog'],
     subgroups: [
       // Location-based pair first (House Manual, Pantry Zone Map), then the
       // people/contact-based pair (Contacts & Vendors, Borrowed & Lent).

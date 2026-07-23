@@ -65,10 +65,10 @@ export default function BlogPostDetail({
     <article className="max-w-2xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-serif text-charcoal mb-2" style={{ fontFamily: 'Playfair Display, serif' }}>
+        <h1 className="text-4xl font-serif text-denim mb-2" style={{ fontFamily: 'Playfair Display, serif' }}>
           {title}
         </h1>
-        <p className="text-sm text-charcoal/60">{formattedDate}</p>
+        <p className="text-sm text-dusk">{formattedDate}</p>
       </div>
 
       {/* Header Image */}
@@ -83,10 +83,10 @@ export default function BlogPostDetail({
       )}
 
       {/* Share Actions */}
-      <div className="flex gap-3 mb-8 pb-8 border-b border-charcoal/10">
+      <div className="flex gap-3 mb-8 pb-8 border-b border-brass/20">
         <button
           onClick={handlePrint}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-charcoal/5 hover:bg-charcoal/10 text-charcoal transition"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-mist hover:bg-brass/10 text-denim transition border border-brass/20"
           title="Print this article"
         >
           <Printer size={18} />
@@ -94,7 +94,7 @@ export default function BlogPostDetail({
         </button>
         <button
           onClick={handleEmail}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-charcoal/5 hover:bg-charcoal/10 text-charcoal transition"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-mist hover:bg-brass/10 text-denim transition border border-brass/20"
           title="Email this article"
         >
           <Mail size={18} />
@@ -102,7 +102,7 @@ export default function BlogPostDetail({
         </button>
         <button
           onClick={handleWhatsApp}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-charcoal/5 hover:bg-charcoal/10 text-charcoal transition"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-mist hover:bg-brass/10 text-denim transition border border-brass/20"
           title="Share on WhatsApp"
         >
           <MessageCircle size={18} />
@@ -111,7 +111,7 @@ export default function BlogPostDetail({
       </div>
 
       {/* Content */}
-      <div className="prose prose-sm max-w-none mb-8 text-charcoal leading-relaxed">
+      <div className="prose prose-sm max-w-none mb-8 text-denim leading-relaxed">
         {/* Render markdown-like content or plain text for now */}
         {content.split('\n').map((paragraph, idx) => (
           paragraph.trim() && <p key={idx} className="mb-4">{paragraph}</p>
@@ -120,10 +120,10 @@ export default function BlogPostDetail({
 
       {/* CTA Button */}
       {ctaLabel && resolvedCtaUrl && (
-        <div className="mt-12 pt-8 border-t border-charcoal/10">
+        <div className="mt-12 pt-8 border-t border-brass/20">
           <Link
             href={resolvedCtaUrl}
-            className="inline-block px-6 py-3 bg-charcoal text-white rounded-lg hover:bg-charcoal/90 transition font-medium"
+            className="inline-block px-6 py-3 bg-denim text-white rounded-lg hover:bg-denim/90 transition font-medium"
           >
             {ctaLabel}
           </Link>
@@ -134,7 +134,7 @@ export default function BlogPostDetail({
       <div className="mt-12 pt-8">
         <Link
           href={`/properties/${propertyId}/blog`}
-          className="text-charcoal/60 hover:text-charcoal underline underline-offset-2"
+          className="text-dusk hover:text-denim underline underline-offset-2"
         >
           ← Back to Blog
         </Link>
