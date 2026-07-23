@@ -1,4 +1,5 @@
 // app/properties/[id]/blog/page.tsx
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import BlogPostsList from '@/components/BlogPostsList';
 
