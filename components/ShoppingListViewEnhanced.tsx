@@ -867,19 +867,13 @@ export default function ShoppingListViewEnhanced({
         )}
       </div>
 
-      {/* View Options -- tile, not pill (2026-07-20, RULE 2): was a row of
-          rounded-full capsules, the exact generic-chip shape FilterPill.tsx
-          already replaced elsewhere in the app. Same rounded-xl2/bg-mist/
-          border-brass tile language, sized for 3 view-mode buttons rather
-          than FilterPill itself -- these aren't a filter with a count,
-          just a 3-way display-mode switch, so no "(N)" line under the
-          label the way a real filter tile has one. */}
+      {/* Filter Tabs -- By Aisle and By Recipe only. Simplified from 4
+          generic view modes, focused on the two most useful filtering
+          dimensions for shopping. */}
       <div className="print:hidden flex gap-2">
         {([
-          ['staples-first', Repeat, 'Staples'] as const,
-          ['category', Store, 'By Aisle'] as const,
+          ['category', MapPin, 'By Aisle'] as const,
           ['by-recipe', BookOpen, 'By Recipe'] as const,
-          ['by-store', MapPin, 'By Store'] as const,
         ]).map(([option, Icon, label]) => (
           <button
             key={option}
@@ -889,10 +883,6 @@ export default function ShoppingListViewEnhanced({
             }`}
           >
             <Icon className={`w-4 h-4 ${groupBy === option ? 'text-white' : 'text-brass'}`} strokeWidth={1.75} aria-hidden="true" />
-            {/* Renamed per request -- confirmed this toggle and the
-                resulting "Staples (N)" group card below are the exact same
-                mechanism (is_staple_origin), not a collision with a
-                separate concept. */}
             <span className={`text-[11px] font-medium ${groupBy === option ? 'text-white' : 'text-denim'}`}>{label}</span>
           </button>
         ))}
