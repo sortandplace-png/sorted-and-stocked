@@ -2,6 +2,23 @@
 // SERVER-ONLY. ANTHROPIC_API_KEY must never reach the browser — only call
 // this from Route Handlers (app/api/**/route.ts), never from a 'use client'
 // component or anything bundled into client JS.
+//
+// requireApiKey() exists because of a real, previously-confusing failure
+// mode: if this env var is unset in whatever Vercel environment serves a
+// given request, `process.env.ANTHROPIC_API_KEY` is `undefined` -- and the
+// Fetch spec's Headers implementation coerces an undefined header value to
+// the literal string "undefined" rather than omitting it. Anthropic then
+// correctly reports "invalid x-api-key" for that literal string, which
+// reads exactly like a wrong/revoked real key, not a missing one. This
+// throws a much more direct, unambiguous message before ever making the
+// request, so a future missing-key case shows up in server logs as
+// "ANTHROPIC_API_KEY is not set in this environment", not a misleading
+// Anthropic-side 401.
+function requireApiKey(): string {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) throw new Error('ANTHROPIC_API_KEY is not set in this environment.');
+  return key;
+}
 
 type ImageBlock = {
   type: 'image';
@@ -21,11 +38,11 @@ export async function callClaudeWithText({
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY!,
+      'x-api-key': requireApiKey(),
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-5',
       max_tokens: 2000,
       system: systemPrompt,
       messages: [{ role: 'user', content: userText }],
@@ -66,7 +83,7 @@ export async function callClaudeWithImage({
   ];
 
   const body: Record<string, unknown> = {
-    model: 'claude-sonnet-4-6',
+    model: 'claude-sonnet-5',
     max_tokens: 2000,
     system: systemPrompt,
     messages: [{ role: 'user', content }],
@@ -80,7 +97,7 @@ export async function callClaudeWithImage({
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY!,
+      'x-api-key': requireApiKey(),
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify(body),

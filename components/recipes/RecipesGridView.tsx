@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
 import {
   Timer,
   Soup,
@@ -29,8 +30,10 @@ import {
   ChevronDown,
   Heart,
   MoreVertical,
+  Pencil,
   Copy,
   Trash2,
+  Search,
   type LucideIcon,
 } from 'lucide-react';
 import { kosherIcon } from '@/lib/icon-maps';
@@ -38,9 +41,9 @@ import { getRecipeIcon } from '@/lib/recipe-icons';
 import { COURSES, type Course } from '@/lib/course-constants';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { createClient } from '@/lib/supabase/client';
-import { checkRecipeDeletable } from '@/lib/recipe-delete-guard';
+import { checkRecipeDeletable, type RecipeDeleteCheck } from '@/lib/recipe-delete-guard';
 import NewRecipeModal from '@/components/NewRecipeModal';
-import FloatingKitchenTimerButton from '@/components/FloatingKitchenTimerButton';
+import FloatingMultiTimer from '@/components/kitchen/FloatingMultiTimer';
 import { useToast } from '@/components/Toast';
 import { FilterPill, FilterPillRow } from '@/components/recipes/FilterPill';
 import { formatMinutes } from '@/lib/format-time';
@@ -57,12 +60,13 @@ const KOSHER_PILL_COLORS: Record<string, string> = {
 
 function kosherPillClass(kosherType: string) {
   const base = kosherType.startsWith('Parve') ? 'Parve' : kosherType;
-  return KOSHER_PILL_COLORS[base] ?? 'bg-gold-light/30 text-charcoal border-gold-light/50';
+  return KOSHER_PILL_COLORS[base] ?? 'bg-mist text-denim border-cardBorder';
 }
 
 interface Recipe {
   id: string;
   name: string;
+  name_es?: string | null;
   photo_url: string | null;
   kosher_type: string | null;
   course: string | null;
@@ -88,6 +92,7 @@ function matchesOccasion(r: Recipe, occasion: Occasion): boolean {
 interface ExpiringSoonRecipe {
   recipe_id: string;
   recipe_name: string;
+  recipe_name_es?: string | null;
   photo_url: string | null;
   expiring_count: number;
   expiring_ingredient_names: string[];
@@ -212,16 +217,55 @@ export default function RecipesGridView({
 }) {
   const role = usePropertyRole();
   const t = useTranslations('recipesGrid');
+  const tCourse = useTranslations('course');
+  // SS-146: same try/catch-wrapped lookups RecipeDetailClient.tsx uses for
+  // the same two fields (SS-132) -- kosher_type casing is inconsistent in
+  // production (Dairy/meat/Meat/parve/Parve) and tags is free text, so
+  // neither is guaranteed to have a matching key; next-intl throws on a
+  // miss rather than returning undefined, hence the catch-and-fall-back-to-
+  // raw-value instead of a .has() precheck.
+  const tTags = useTranslations('recipeTags');
+  const tKosher = useTranslations('kosherType');
+  function tagLabel(tag: string): string {
+    try {
+      return tTags(tag);
+    } catch {
+      return tag;
+    }
+  }
+  function kosherTypeLabel(value: string): string {
+    const key = value.toLowerCase().startsWith('parve') ? 'parve' : value.toLowerCase();
+    try {
+      return tKosher(key);
+    } catch {
+      return value;
+    }
+  }
+  const locale = useLocale();
+  const displayName = (r: { name: string; name_es?: string | null }) =>
+    locale === 'es' && r.name_es ? r.name_es : r.name;
+  const displayExpiringName = (r: { recipe_name: string; recipe_name_es?: string | null }) =>
+    locale === 'es' && r.recipe_name_es ? r.recipe_name_es : r.recipe_name;
   const router = useRouter();
   const supabase = createClient();
   const showToast = useToast();
-  const [search, setSearch] = useState('');
+  // Session-persisted (not plain useState) so a phone lock/backgrounding
+  // mid-browse doesn't lose the applied filters -- see
+  // lib/use-session-persisted-state.ts. The staged* mobile-filter-sheet
+  // versions further down deliberately stay on plain useState: they're
+  // in-progress picks that haven't been applied yet, not a real filter
+  // state worth restoring.
+  const [search, setSearch] = useSessionPersistedState('recipes-filter-search', '');
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [showNewRecipe, setShowNewRecipe] = useState(false);
   const [collapsedLetters, setCollapsedLetters] = useState<Set<string>>(new Set());
-  const [courseFilter, setCourseFilter] = useState<string | null>(null);
-  const [kosherFilter, setKosherFilter] = useState<string | null>(null);
-  const [occasionFilter, setOccasionFilter] = useState<Occasion | null>(null);
-  const [prepFilter, setPrepFilter] = useState<PrepKey | null>(null);
+  const [courseFilter, setCourseFilter] = useSessionPersistedState<string | null>('recipes-filter-course', null);
+  const [kosherFilter, setKosherFilter] = useSessionPersistedState<string | null>('recipes-filter-kosher', null);
+  const [occasionFilter, setOccasionFilter] = useSessionPersistedState<Occasion | null>(
+    'recipes-filter-occasion',
+    null
+  );
+  const [prepFilter, setPrepFilter] = useSessionPersistedState<PrepKey | null>('recipes-filter-prep', null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [expiringSoon, setExpiringSoon] = useState<ExpiringSoonRecipe[]>([]);
@@ -230,7 +274,23 @@ export default function RecipesGridView({
   const [cardActionBusy, setCardActionBusy] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [checkingDeleteId, setCheckingDeleteId] = useState<string | null>(null);
-  const [deleteBlockMessage, setDeleteBlockMessage] = useState<string | null>(null);
+  const [deleteCheck, setDeleteCheck] = useState<{ recipeId: string; check: Extract<RecipeDeleteCheck, { deletable: false }> } | null>(null);
+  const [repointing, setRepointing] = useState(false);
+  const [repointBusy, setRepointBusy] = useState(false);
+  const [repointSearch, setRepointSearch] = useState('');
+  const [repointResults, setRepointResults] = useState<{ id: string; name: string; name_es: string | null }[]>([]);
+
+  // Pesach Mode (properties.feature_flags.pesach_mode, same flag toggled on
+  // the Inventory page) -- when on, default the Occasion filter to Pesach
+  // on load. Only sets the initial value, doesn't force it back if someone
+  // changes the filter afterward -- a default, not a lock.
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('properties').select('feature_flags').eq('id', propertyId).single();
+      const flags = (data?.feature_flags ?? {}) as Record<string, boolean>;
+      if (flags.pesach_mode) setOccasionFilter('pesach');
+    })();
+  }, [propertyId, supabase]);
 
   // Per-person favorites (recipe_favorites.user_id) — not shared across the
   // household, same convention as inventory_item_favorites.
@@ -302,7 +362,7 @@ export default function RecipesGridView({
       supabase.from('recipes').select('*').eq('id', recipeId).single(),
       supabase
         .from('recipe_ingredients')
-        .select('name, quantity, unit, category, section_label')
+        .select('name, quantity, unit, category, section_label, is_food')
         .eq('recipe_id', recipeId),
     ]);
 
@@ -347,6 +407,52 @@ export default function RecipesGridView({
     setCardActionBusy(null);
     showToast('Recipe duplicated.', { variant: 'success' });
     router.push(`/properties/${propertyId}/recipes/${newRecipe.id}`);
+  }
+
+  // Same "choose a replacement recipe to repoint them to" flow as the
+  // recipe detail page's own delete guard (RecipeDetailClient.tsx) --
+  // recipe-delete-guard.ts's message already promised this here too, and
+  // this card menu is a second, independent path to the exact same naive
+  // delete Racquel hit tonight, so it needs the same fix, not just the one
+  // she happened to notice on the detail page.
+  useEffect(() => {
+    if (!repointing || !deleteCheck) return;
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from('recipes')
+        .select('id, name, name_es')
+        .eq('property_id', propertyId)
+        .neq('id', deleteCheck.recipeId)
+        .ilike('name', `%${repointSearch.trim()}%`)
+        .order('name')
+        .limit(8);
+      setRepointResults(data ?? []);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [repointing, repointSearch, propertyId, deleteCheck, supabase]);
+
+  async function repointMealPlanEntries(replacementId: string) {
+    if (!deleteCheck) return;
+    setRepointBusy(true);
+    const { error } = await supabase
+      .from('meal_plan_entries')
+      .update({ recipe_id: replacementId })
+      .eq('recipe_id', deleteCheck.recipeId);
+    setRepointBusy(false);
+    if (error) {
+      showToast('Failed to repoint meal plan entries.', { variant: 'error' });
+      return;
+    }
+    showToast('Meal plan entries repointed.', { variant: 'success' });
+    setRepointing(false);
+    setRepointSearch('');
+    const recheck = await checkRecipeDeletable(supabase, deleteCheck.recipeId);
+    if (recheck.deletable) {
+      setConfirmDeleteId(deleteCheck.recipeId);
+      setDeleteCheck(null);
+    } else {
+      setDeleteCheck({ recipeId: deleteCheck.recipeId, check: recheck });
+    }
   }
 
   async function deleteRecipeFromCard(recipeId: string) {
@@ -476,7 +582,7 @@ export default function RecipesGridView({
     setStagedPrepFilter(null);
   }
 
-  const courseLabel = (key: string | null) => (key ? COURSES.find((c) => c.key === key)?.label ?? key : 'All');
+  const courseLabel = (key: string | null) => (key ? tCourse(key) : 'All');
   const occasionLabels: Record<Occasion, string> = { shabbos: 'Shabbos', yomtov: 'Yom Tov', pesach: 'Pesach', weekday: 'Weekday' };
   const prepLabel = (key: PrepKey | null) => (key ? PREP_FILTERS.find((p) => p.key === key)?.label ?? key : 'Any');
 
@@ -511,18 +617,18 @@ export default function RecipesGridView({
   }
 
   return (
-    <div className="max-w-md lg:max-w-6xl mx-auto p-4">
+    <div className="max-w-md lg:max-w-6xl mx-auto p-4 bg-mist">
       <div className="flex items-start justify-between mb-4 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-display font-bold text-charcoal">{t('title')}</h1>
-          <p className="text-sm text-charcoal/50 mt-0.5">
+          <h1 className="text-2xl font-display font-bold text-denim">{t('title')}</h1>
+          <p className="text-sm text-dusk mt-0.5">
             {recipes.length} recipe{recipes.length === 1 ? '' : 's'} in your collection
           </p>
         </div>
         <div className="flex gap-2">
           <a
             href={`/properties/${propertyId}/scan`}
-            className="w-11 h-11 flex items-center justify-center rounded-full bg-cream border border-charcoal/30 text-charcoal text-lg"
+            className="w-11 h-11 flex items-center justify-center rounded-full bg-linen border border-brass/30 text-denim text-lg"
             aria-label="Scan a label"
           >
             📷
@@ -530,7 +636,7 @@ export default function RecipesGridView({
           {canManage(role) && (
             <button
               onClick={() => setShowNewRecipe(true)}
-              className="text-sm font-medium bg-gold-dark text-white px-4 py-2 rounded-full hover:opacity-90 transition shadow-sm"
+              className="text-sm font-medium bg-denim text-white px-4 py-2 rounded-full hover:opacity-90 transition shadow-sm"
             >
               + {t('newRecipe')}
             </button>
@@ -538,12 +644,29 @@ export default function RecipesGridView({
         </div>
       </div>
 
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder={t('searchPlaceholder')}
-        className="w-full border border-gold-light/60 rounded-xl2 px-4 py-2.5 bg-white mb-3"
-      />
+      {/* Filtering is already live/reactive on every keystroke -- this button
+          isn't a new query mechanism, it's a visible affordance so the field
+          reads as a real search rather than a plain text box (the actual
+          ask: "the search needs an enter button"). Enter keeps working as
+          before; clicking the icon just refocuses the field, giving a real,
+          keyboard-accessible tap target instead of a decorative-only icon. */}
+      <div className="relative mb-3">
+        <input
+          ref={searchInputRef}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t('searchPlaceholder')}
+          className="w-full border border-cardBorder rounded-xl2 pl-10 pr-4 py-2.5 bg-card"
+        />
+        <button
+          type="button"
+          onClick={() => searchInputRef.current?.focus()}
+          aria-label={t('searchPlaceholder')}
+          className="absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center text-dusk hover:text-brass transition-colors"
+        >
+          <Search className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
+        </button>
+      </div>
 
       {hasActiveFilters && (
         <div className="flex justify-end mb-2">
@@ -555,7 +678,7 @@ export default function RecipesGridView({
               setPrepFilter(null);
               clearStagedFilters();
             }}
-            className="text-xs text-charcoal/40 hover:text-charcoal px-3 py-1.5 underline"
+            className="text-xs text-dusk hover:text-denim px-3 py-1.5 underline"
           >
             Clear filters
           </button>
@@ -569,7 +692,7 @@ export default function RecipesGridView({
               key={c.key}
               active={courseFilter === c.key}
               icon={COURSE_PILL_ICONS[c.key]}
-              label={c.label}
+              label={tCourse(c.key)}
               count={courseCounts[c.key] ?? 0}
               onClick={() => setCourseFilter(courseFilter === c.key ? null : c.key)}
             />
@@ -628,7 +751,7 @@ export default function RecipesGridView({
               onClick={() => setPrepFilter(prepFilter === p.key ? null : p.key)}
             />
           ))}
-          <span className="w-px h-6 bg-gold-light/60 shrink-0" aria-hidden="true" />
+          <span className="w-px min-h-[68px] bg-cardBorder shrink-0" aria-hidden="true" />
           <FilterPill
             active={!courseFilter}
             icon={LayoutGrid}
@@ -643,13 +766,13 @@ export default function RecipesGridView({
       {/* Mobile: staged filters, accordion sections, sticky Apply bar --
           nothing here touches the real filters until Apply is tapped. */}
       <div className="md:hidden mb-6">
-        <div className="border-b border-gold-light/40 pb-2">
+        <div className="border-b border-cardBorder pb-2">
           <button
             onClick={() => toggleMobileSection('course')}
             className="w-full min-h-11 flex items-center justify-between"
           >
-            <span className="text-xs font-medium uppercase tracking-wider text-charcoal/40">Course</span>
-            <span className="flex items-center gap-2 text-xs text-charcoal/60">
+            <span className="text-xs font-medium uppercase tracking-wider text-dusk">Course</span>
+            <span className="flex items-center gap-2 text-xs text-dusk">
               {!mobileOpen.course && courseLabel(stagedCourseFilter)}
               <ChevronDown className={`w-4 h-4 transition-transform ${mobileOpen.course ? 'rotate-180' : ''}`} strokeWidth={1.75} />
             </span>
@@ -668,7 +791,7 @@ export default function RecipesGridView({
                   key={c.key}
                   active={stagedCourseFilter === c.key}
                   icon={COURSE_PILL_ICONS[c.key]}
-                  label={c.label}
+                  label={tCourse(c.key)}
                   count={courseCounts[c.key] ?? 0}
                   onClick={() => setStagedCourseFilter(stagedCourseFilter === c.key ? null : c.key)}
                 />
@@ -677,13 +800,13 @@ export default function RecipesGridView({
           )}
         </div>
 
-        <div className="border-b border-gold-light/40 py-2">
+        <div className="border-b border-cardBorder py-2">
           <button
             onClick={() => toggleMobileSection('dietary')}
             className="w-full min-h-11 flex items-center justify-between"
           >
-            <span className="text-xs font-medium uppercase tracking-wider text-charcoal/40">Dietary</span>
-            <span className="flex items-center gap-2 text-xs text-charcoal/60">
+            <span className="text-xs font-medium uppercase tracking-wider text-dusk">Dietary</span>
+            <span className="flex items-center gap-2 text-xs text-dusk">
               {!mobileOpen.dietary && (stagedKosherFilter ?? 'Any')}
               <ChevronDown className={`w-4 h-4 transition-transform ${mobileOpen.dietary ? 'rotate-180' : ''}`} strokeWidth={1.75} />
             </span>
@@ -705,13 +828,13 @@ export default function RecipesGridView({
           )}
         </div>
 
-        <div className="border-b border-gold-light/40 py-2">
+        <div className="border-b border-cardBorder py-2">
           <button
             onClick={() => toggleMobileSection('occasion')}
             className="w-full min-h-11 flex items-center justify-between"
           >
-            <span className="text-xs font-medium uppercase tracking-wider text-charcoal/40">Occasion</span>
-            <span className="flex items-center gap-2 text-xs text-charcoal/60">
+            <span className="text-xs font-medium uppercase tracking-wider text-dusk">Occasion</span>
+            <span className="flex items-center gap-2 text-xs text-dusk">
               {!mobileOpen.occasion && (stagedOccasionFilter ? occasionLabels[stagedOccasionFilter] : 'Any')}
               <ChevronDown className={`w-4 h-4 transition-transform ${mobileOpen.occasion ? 'rotate-180' : ''}`} strokeWidth={1.75} />
             </span>
@@ -745,8 +868,8 @@ export default function RecipesGridView({
             onClick={() => toggleMobileSection('prep')}
             className="w-full min-h-11 flex items-center justify-between"
           >
-            <span className="text-xs font-medium uppercase tracking-wider text-charcoal/40">Prep</span>
-            <span className="flex items-center gap-2 text-xs text-charcoal/60">
+            <span className="text-xs font-medium uppercase tracking-wider text-dusk">Prep</span>
+            <span className="flex items-center gap-2 text-xs text-dusk">
               {!mobileOpen.prep && prepLabel(stagedPrepFilter)}
               <ChevronDown className={`w-4 h-4 transition-transform ${mobileOpen.prep ? 'rotate-180' : ''}`} strokeWidth={1.75} />
             </span>
@@ -767,15 +890,15 @@ export default function RecipesGridView({
           )}
         </div>
 
-        <div className="sticky bottom-16 inset-x-0 z-20 bg-cream/95 backdrop-blur border-t border-gold-light/40 -mx-4 px-4 pt-3 mt-3 flex items-center gap-3">
-          <button onClick={clearStagedFilters} className="min-h-11 px-3 text-xs text-charcoal/40 hover:text-charcoal underline shrink-0">
+        <div className="sticky bottom-16 inset-x-0 z-20 bg-linen/95 backdrop-blur border-t border-cardBorder -mx-4 px-4 pt-3 mt-3 flex items-center gap-3">
+          <button onClick={clearStagedFilters} className="min-h-11 px-3 text-xs text-dusk hover:text-denim underline shrink-0">
             Clear all
           </button>
           <button
             onClick={applyStagedFilters}
             disabled={!hasPendingChanges}
             className={`flex-1 min-h-11 rounded-full text-sm font-medium transition-colors ${
-              hasPendingChanges ? 'bg-gold text-charcoal' : 'bg-charcoal/10 text-charcoal/30 cursor-not-allowed'
+              hasPendingChanges ? 'bg-denim text-white' : 'bg-mist text-dusk cursor-not-allowed'
             }`}
           >
             Apply Filters ({stagedMatchCount})
@@ -792,14 +915,14 @@ export default function RecipesGridView({
               }`}
             >
               <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                <h2 className={`font-display text-charcoal flex items-center gap-1.5 ${hasActiveFilters ? 'text-sm' : 'text-lg'}`}>
+                <h2 className={`font-display text-denim flex items-center gap-1.5 ${hasActiveFilters ? 'text-sm' : 'text-lg'}`}>
                   <Timer className="w-4 h-4 text-rust" strokeWidth={1.75} /> Use it up soon
                 </h2>
                 {!hasActiveFilters && (
                   <select
                     value={expiringWindow}
                     onChange={(e) => setExpiringWindow(Number(e.target.value))}
-                    className="text-xs border border-gold-light/60 rounded-full px-2 py-1 bg-white text-charcoal/70"
+                    className="text-xs border border-cardBorder rounded-full px-2 py-1 bg-card text-dusk"
                   >
                     {EXPIRING_WINDOW_OPTIONS.map((d) => (
                       <option key={d} value={d}>
@@ -819,19 +942,19 @@ export default function RecipesGridView({
                     <Link
                       key={r.recipe_id}
                       href={`/properties/${propertyId}/recipes/${r.recipe_id}`}
-                      className={`shrink-0 w-28 flex items-center gap-1.5 rounded-lg border shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors p-1.5 ${
-                        pesachIds.has(r.recipe_id) ? 'bg-gold/[0.08] border-gold/40' : 'bg-white border-gold-light/40'
+                      className={`shrink-0 w-36 flex items-center gap-1.5 rounded-lg border shadow-card overflow-hidden hover:shadow-cardHover transition-shadow p-1.5 ${
+                        pesachIds.has(r.recipe_id) ? 'bg-brass/[0.08] border-brass/40' : 'bg-card border-cardBorder'
                       }`}
                     >
-                      <div className="w-8 h-8 rounded bg-cream flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded bg-linen flex items-center justify-center shrink-0">
                         {r.photo_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={r.photo_url} alt="" className="w-full h-full object-cover rounded" />
                         ) : (
-                          <span className="text-sm text-charcoal/20">🍽️</span>
+                          <span className="text-sm text-dusk">🍽️</span>
                         )}
                       </div>
-                      <p className="text-xs font-medium text-charcoal leading-snug truncate">{r.recipe_name}</p>
+                      <p className="text-xs font-medium text-denim leading-snug line-clamp-2">{displayExpiringName(r)}</p>
                     </Link>
                   ))}
                 </div>
@@ -841,20 +964,20 @@ export default function RecipesGridView({
                     <Link
                       key={r.recipe_id}
                       href={`/properties/${propertyId}/recipes/${r.recipe_id}`}
-                      className={`shrink-0 w-40 rounded-xl border shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors ${
-                        pesachIds.has(r.recipe_id) ? 'bg-gold/[0.08] border-gold/40' : 'bg-white border-gold-light/40'
+                      className={`shrink-0 w-40 rounded-xl border shadow-card overflow-hidden hover:shadow-cardHover transition-shadow ${
+                        pesachIds.has(r.recipe_id) ? 'bg-brass/[0.08] border-brass/40' : 'bg-card border-cardBorder'
                       }`}
                     >
-                      <div className="w-full h-20 bg-cream flex items-center justify-center">
+                      <div className="w-full h-20 bg-linen flex items-center justify-center">
                         {r.photo_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={r.photo_url} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-2xl text-charcoal/20">🍽️</span>
+                          <span className="text-2xl text-dusk">🍽️</span>
                         )}
                       </div>
                       <div className="p-2.5">
-                        <p className="text-sm font-medium text-charcoal leading-snug line-clamp-2">{r.recipe_name}</p>
+                        <p className="text-sm font-medium text-denim leading-snug line-clamp-2">{displayExpiringName(r)}</p>
                         <p
                           className="text-xs text-rust mt-1"
                           title={r.expiring_ingredient_names.join(', ')}
@@ -870,30 +993,35 @@ export default function RecipesGridView({
           )}
 
           {recentlyAdded.length > 0 && (
-            <div className={`bg-gold-light/10 border border-gold-light/40 rounded-2xl p-4 ${expiringSoon.length > 0 ? 'lg:col-span-1' : 'lg:col-span-3'}`}>
-              <h2 className="font-display text-lg text-charcoal flex items-center gap-1.5 mb-2">
-                <Clock className="w-4 h-4 text-gold-dark" strokeWidth={1.75} /> Recently Added
+            <div className={`bg-mist border border-cardBorder rounded-2xl p-4 ${expiringSoon.length > 0 ? 'lg:col-span-1' : 'lg:col-span-3'}`}>
+              <h2 className="font-display text-lg text-denim flex items-center gap-1.5 mb-2">
+                <Clock className="w-4 h-4 text-brass" strokeWidth={1.75} /> Recently Added
               </h2>
-              <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-visible pb-1">
+              {/* One row of 3 equal tiles on desktop (2026-07-20, RULE 2) --
+                  was lg:flex-col, three full-width horizontal mini-rows
+                  stacked on top of each other. Mobile keeps its own
+                  horizontal-scroll strip of small cards, already a
+                  side-by-side tile shape, untouched. */}
+              <div className="flex lg:grid lg:grid-cols-3 gap-3 overflow-x-auto lg:overflow-visible pb-1">
                 {recentlyAdded.map((r) => (
                   <Link
                     key={r.id}
                     href={`/properties/${propertyId}/recipes/${r.id}`}
-                    className={`shrink-0 lg:shrink lg:flex lg:items-center lg:gap-2 w-32 lg:w-full rounded-xl border shadow-sm shadow-charcoal/5 overflow-hidden hover:border-gold transition-colors ${
-                      r.is_pesach ? 'bg-gold/[0.08] border-gold/40' : 'bg-white border-gold-light/40'
+                    className={`shrink-0 lg:shrink w-32 lg:w-full rounded-xl border shadow-card overflow-hidden hover:shadow-cardHover transition-shadow ${
+                      r.is_pesach ? 'bg-brass/[0.08] border-brass/40' : 'bg-card border-cardBorder'
                     }`}
                   >
-                    <div className="w-full lg:w-12 h-20 lg:h-12 bg-cream flex items-center justify-center shrink-0">
+                    <div className="w-full h-20 lg:h-28 bg-linen flex items-center justify-center shrink-0">
                       {r.photo_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={r.photo_url} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-xl text-charcoal/20">🍽️</span>
+                        <span className="text-xl text-dusk">🍽️</span>
                       )}
                     </div>
-                    <div className="p-2 lg:py-1.5 lg:pl-0 min-w-0">
-                      <p className="text-xs font-medium text-charcoal leading-snug line-clamp-2 lg:truncate">{r.name}</p>
-                      <p className="text-[10px] text-charcoal/40 mt-0.5">
+                    <div className="p-2 min-w-0">
+                      <p className="text-xs font-medium text-denim leading-snug line-clamp-2">{r.name}</p>
+                      <p className="text-[10px] text-dusk mt-0.5">
                         {new Date(r.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       </p>
                     </div>
@@ -906,7 +1034,7 @@ export default function RecipesGridView({
       )}
 
       {filtered.length === 0 ? (
-        <p className="text-sm text-charcoal/40">{t('noResults')}</p>
+        <p className="text-sm text-dusk">{t('noResults')}</p>
       ) : (
         <div className="space-y-3">
           {groups.map(([letter, groupRecipes]) => {
@@ -916,11 +1044,31 @@ export default function RecipesGridView({
                 <button
                   onClick={() => toggleLetter(letter)}
                   className="w-full flex items-center gap-2 mb-2 text-left"
+                  aria-label={`${letter}, ${groupRecipes.length} recipes, ${collapsed ? 'collapsed' : 'expanded'}`}
+                  aria-expanded={!collapsed}
                 >
-                  <span className="font-display text-lg text-charcoal">{letter}</span>
-                  <span className="text-xs text-charcoal/40">({groupRecipes.length})</span>
-                  <span className="flex-1 border-t border-gold-light/40" />
-                  <span className="text-charcoal/40 text-sm">{collapsed ? '▸' : '▾'}</span>
+                  <span className="font-display text-lg text-denim">{letter}</span>
+                  <span className="text-xs text-dusk">({groupRecipes.length})</span>
+                  <span className="flex-1 border-t border-cardBorder" />
+                  {/* Same brass pin-dot visual language as everything else --
+                      not the shared PinAccent component itself, since that
+                      one's top/right offsets are tuned for an absolute
+                      corner-of-a-card placement, not an inline flex row like
+                      this one. Same gradient/shadow values, same collapsed-
+                      state ring convention, just rendered inline instead. The
+                      whole row stays the real tap target (this button), so
+                      the dot itself stays non-interactive -- a nested
+                      interactive control here would be invalid HTML. */}
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{
+                      background: 'radial-gradient(circle at 36% 30%, #F8E8B8 0%, #C6A46E 52%, #7A4E18 100%)',
+                      boxShadow: collapsed
+                        ? '0 1px 3px rgba(0,0,0,.26), inset 0 .5px .5px rgba(255,255,255,.3), 0 0 0 2px rgba(198,164,110,0.4)'
+                        : '0 1px 3px rgba(0,0,0,.26), inset 0 .5px .5px rgba(255,255,255,.3)',
+                    }}
+                    aria-hidden="true"
+                  />
                 </button>
                 {!collapsed && (
                   <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
@@ -928,20 +1076,25 @@ export default function RecipesGridView({
                       <Link
                         key={recipe.id}
                         href={`/properties/${propertyId}/recipes/${recipe.id}`}
-                        className={`block rounded-xl2 overflow-hidden border shadow-sm shadow-charcoal/5 hover:border-gold transition-colors ${
-                          recipe.is_pesach ? 'bg-gold/[0.08] border-gold/40' : 'bg-white border-gold-light/40'
+                        className={`block rounded-xl2 overflow-hidden border shadow-card hover:shadow-cardHover transition-shadow ${
+                          recipe.is_pesach ? 'bg-brass/[0.08] border-brass/40' : 'bg-card border-cardBorder'
                         }`}
                       >
-                        <div className="relative w-full aspect-[4/3] bg-cream">
+                        <div className="relative w-full aspect-[4/3] bg-linen">
+                          {/* Rule 3 narrowed: pin dot is a group-level
+                              collapse control (the letter headers above),
+                              not per-card decoration -- removed from here on
+                              Racquel's explicit call after seeing it live on
+                              every card in the grid. */}
                           {recipe.photo_url && isDirectImageUrl(recipe.photo_url) ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={recipe.photo_url}
-                              alt={recipe.name}
+                              alt={displayName(recipe)}
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-charcoal/20">
+                            <div className="w-full h-full flex items-center justify-center text-dusk">
                               {(() => {
                                 const Icon = getRecipeIcon(recipe.course);
                                 return <Icon className="w-8 h-8" strokeWidth={1.5} />;
@@ -951,12 +1104,12 @@ export default function RecipesGridView({
                           {currentUserId && (
                             <button
                               onClick={(e) => toggleFavorite(recipe.id, e)}
-                              className="absolute top-0 right-0 w-11 h-11 flex items-center justify-center"
+                              className="absolute bottom-0 right-0 w-11 h-11 flex items-center justify-center"
                               aria-label={favoriteIds.has(recipe.id) ? 'Remove from favorites' : 'Add to favorites'}
                             >
                               <span className="w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center">
                                 <Heart
-                                  className={favoriteIds.has(recipe.id) ? 'w-4 h-4 fill-gold text-gold' : 'w-4 h-4 text-charcoal/40'}
+                                  className={favoriteIds.has(recipe.id) ? 'w-4 h-4 fill-brass text-brass' : 'w-4 h-4 text-dusk'}
                                   strokeWidth={1.75}
                                 />
                               </span>
@@ -974,7 +1127,7 @@ export default function RecipesGridView({
                                 className="w-11 h-11 flex items-center justify-center"
                               >
                                 <span className="w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center">
-                                  <MoreVertical className="w-4 h-4 text-charcoal/60" strokeWidth={1.75} />
+                                  <MoreVertical className="w-4 h-4 text-dusk" strokeWidth={1.75} />
                                 </span>
                               </button>
                               {cardMenuOpenId === recipe.id && (
@@ -987,11 +1140,27 @@ export default function RecipesGridView({
                                       setCardMenuOpenId(null);
                                     }}
                                   />
-                                  <div className="absolute left-0 top-11 z-20 bg-white rounded-2xl shadow-lg shadow-charcoal/10 border border-gold-light/40 w-40 overflow-hidden">
+                                  <div className="absolute left-0 top-11 z-20 bg-card rounded-2xl shadow-cardHover border border-cardBorder w-40 overflow-hidden">
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setCardMenuOpenId(null);
+                                        // Opens the recipe's own detail page with its edit
+                                        // modal pre-triggered, rather than duplicating that
+                                        // modal's full initial-data-fetch here with a partial
+                                        // recipe object off the grid.
+                                        router.push(`/properties/${propertyId}/recipes/${recipe.id}?edit=1`);
+                                      }}
+                                      className="w-full min-h-11 flex items-center gap-2 px-3 text-sm text-denim hover:bg-mist transition border-b border-cardBorder"
+                                    >
+                                      <Pencil size={14} strokeWidth={1.75} />
+                                      Edit
+                                    </button>
                                     <button
                                       onClick={(e) => duplicateRecipeFromCard(recipe.id, e)}
                                       disabled={cardActionBusy === recipe.id}
-                                      className="w-full min-h-11 flex items-center gap-2 px-3 text-sm text-charcoal hover:bg-gold-light/10 transition disabled:opacity-40"
+                                      className="w-full min-h-11 flex items-center gap-2 px-3 text-sm text-denim hover:bg-mist transition disabled:opacity-40"
                                     >
                                       <Copy size={14} strokeWidth={1.75} />
                                       {cardActionBusy === recipe.id ? 'Duplicating…' : 'Duplicate'}
@@ -1005,13 +1174,13 @@ export default function RecipesGridView({
                                         const check = await checkRecipeDeletable(supabase, recipe.id);
                                         setCheckingDeleteId(null);
                                         if (!check.deletable) {
-                                          setDeleteBlockMessage(check.message);
+                                          setDeleteCheck({ recipeId: recipe.id, check });
                                         } else {
                                           setConfirmDeleteId(recipe.id);
                                         }
                                       }}
                                       disabled={checkingDeleteId === recipe.id}
-                                      className="w-full min-h-11 flex items-center gap-2 px-3 text-sm text-rust hover:bg-rust/5 transition border-t border-gold-light/40 disabled:opacity-40"
+                                      className="w-full min-h-11 flex items-center gap-2 px-3 text-sm text-rust hover:bg-rust/5 transition border-t border-cardBorder disabled:opacity-40"
                                     >
                                       <Trash2 size={14} strokeWidth={1.75} /> {checkingDeleteId === recipe.id ? 'Checking…' : 'Delete'}
                                     </button>
@@ -1022,28 +1191,28 @@ export default function RecipesGridView({
                           )}
                         </div>
                         <div className="p-3">
-                          <h2 className="font-display font-bold text-lg text-charcoal leading-snug mb-1">
-                            {recipe.name}
+                          <h2 className="font-display font-bold text-lg text-denim leading-snug mb-1">
+                            {displayName(recipe)}
                           </h2>
                           <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
                             {(() => {
                               const courseInfo = COURSES.find((c) => c.key === recipe.course);
                               return courseInfo ? (
-                                <span className="inline-block text-xs font-medium text-charcoal/70">
-                                  {courseInfo.icon} {courseInfo.label}
+                                <span className="inline-block text-xs font-medium text-dusk">
+                                  {courseInfo.icon} {tCourse(courseInfo.key)}
                                 </span>
                               ) : null;
                             })()}
                           </div>
                           <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
                             {recipe.kosher_type && (
-                              <span className={`inline-block text-xs font-medium border px-2.5 py-1 rounded-full ${kosherPillClass(recipe.kosher_type)}`}>
-                                {kosherIcon(recipe.kosher_type)} {recipe.kosher_type}
+                              <span className={`inline-block text-xs font-medium border px-2.5 py-1 rounded-lg ${kosherPillClass(recipe.kosher_type)}`}>
+                                {kosherIcon(recipe.kosher_type)} {kosherTypeLabel(recipe.kosher_type)}
                               </span>
                             )}
                             {recipe.approx_total_minutes && (
-                              <span className="text-xs font-medium text-charcoal/60 bg-cream border border-gold-light/40 px-2.5 py-1 rounded-full">
-                                ⏱ {formatMinutes(recipe.approx_total_minutes)}
+                              <span className="text-xs font-medium text-dusk bg-linen border border-cardBorder px-2.5 py-1 rounded-lg">
+                                ⏱ {formatMinutes(recipe.approx_total_minutes, locale as 'en' | 'es')}
                               </span>
                             )}
                           </div>
@@ -1054,11 +1223,11 @@ export default function RecipesGridView({
                                   key={tag}
                                   className={
                                     tag === 'NEW'
-                                      ? 'text-[10px] font-medium text-cream bg-gold px-2 py-0.5 rounded-full'
-                                      : 'text-[10px] font-medium text-gold-dark bg-gold/10 px-2 py-0.5 rounded-full'
+                                      ? 'text-[10px] font-medium text-white bg-denim px-2 py-0.5 rounded-lg'
+                                      : 'text-[10px] font-medium text-brass bg-mist px-2 py-0.5 rounded-lg'
                                   }
                                 >
-                                  {tag}
+                                  {tagLabel(tag)}
                                 </span>
                               ))}
                             </div>
@@ -1085,22 +1254,71 @@ export default function RecipesGridView({
         />
       )}
 
-      {deleteBlockMessage && (
+      {deleteCheck && (
         <div
           className="fixed inset-0 bg-black/40 flex items-end sm:items-center sm:justify-center z-50 sm:p-4"
-          onClick={() => setDeleteBlockMessage(null)}
+          onClick={() => {
+            setDeleteCheck(null);
+            setRepointing(false);
+            setRepointSearch('');
+          }}
         >
           <div
-            className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-sm mx-auto"
+            className="bg-card w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-sm mx-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="font-display text-xl text-charcoal mb-1">Can't delete this recipe</h2>
-            <p className="text-sm text-charcoal/60 mb-4">{deleteBlockMessage}</p>
+            <h2 className="font-display text-xl text-denim mb-1">Can't delete this recipe</h2>
+            <p className="text-sm text-dusk mb-4">{deleteCheck.check.message}</p>
+
+            {!repointing && deleteCheck.check.blockers.some((b) => b.table === 'meal_plan_entries') && (
+              <button
+                onClick={() => setRepointing(true)}
+                className="w-full py-2.5 mb-2 rounded-full bg-denim text-white"
+              >
+                Choose a replacement recipe
+              </button>
+            )}
+
+            {repointing && (
+              <div className="mb-3">
+                <input
+                  type="text"
+                  autoFocus
+                  value={repointSearch}
+                  onChange={(e) => setRepointSearch(e.target.value)}
+                  placeholder="Search recipes…"
+                  disabled={repointBusy}
+                  className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-2xl px-4 py-2.5 mb-2 bg-card disabled:opacity-50"
+                />
+                <ul className="max-h-48 overflow-y-auto space-y-1">
+                  {repointResults.map((r) => (
+                    <li key={r.id}>
+                      <button
+                        onClick={() => repointMealPlanEntries(r.id)}
+                        disabled={repointBusy}
+                        className="w-full text-left px-3 py-2 rounded-xl hover:bg-mist transition disabled:opacity-50"
+                      >
+                        <span className="text-sm text-denim">{r.name}</span>
+                        {r.name_es && <span className="text-xs text-dusk ml-1.5">· {r.name_es}</span>}
+                      </button>
+                    </li>
+                  ))}
+                  {repointResults.length === 0 && (
+                    <li className="text-xs text-dusk px-3 py-2">No matching recipes.</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
             <button
-              onClick={() => setDeleteBlockMessage(null)}
-              className="w-full py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal"
+              onClick={() => {
+                setDeleteCheck(null);
+                setRepointing(false);
+                setRepointSearch('');
+              }}
+              className="w-full py-2.5 rounded-full bg-linen border border-brass/30 text-denim"
             >
-              Got it
+              {repointing ? 'Cancel' : 'Got it'}
             </button>
           </div>
         </div>
@@ -1112,17 +1330,17 @@ export default function RecipesGridView({
           onClick={() => setConfirmDeleteId(null)}
         >
           <div
-            className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-sm mx-auto"
+            className="bg-card w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-sm mx-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="font-display text-xl text-charcoal mb-1">Delete this recipe?</h2>
-            <p className="text-sm text-charcoal/60 mb-4">
+            <h2 className="font-display text-xl text-denim mb-1">Delete this recipe?</h2>
+            <p className="text-sm text-dusk mb-4">
               This recipe and its ingredient list will be permanently deleted. This can't be undone.
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setConfirmDeleteId(null)}
-                className="flex-1 py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal"
+                className="flex-1 py-2.5 rounded-full bg-linen border border-brass/30 text-denim"
               >
                 Cancel
               </button>
@@ -1138,7 +1356,7 @@ export default function RecipesGridView({
         </div>
       )}
 
-      <FloatingKitchenTimerButton />
+      <FloatingMultiTimer />
     </div>
   );
 }

@@ -34,9 +34,11 @@ const INVITER_NAME = 'Racquel Schwartz';
 
 function emailShell(title, bodyHtml) {
   return `
-  <div style="font-family:Georgia,serif;background:#FAF7F2;padding:24px;max-width:600px;margin:0 auto;">
-    <h1 style="color:#2B2B2B;font-size:22px;">${title}</h1>
-    ${bodyHtml}
+  <div style="font-family:Georgia,serif;background:#E8EEF6;padding:24px;">
+    <div style="background:#FFFEFC;border:1px solid #E8DDD0;border-radius:16px;padding:24px;max-width:600px;margin:0 auto;">
+      <h1 style="color:#2E4A62;font-size:22px;">${title}</h1>
+      ${bodyHtml}
+    </div>
   </div>`;
 }
 
@@ -60,7 +62,7 @@ async function sendInviteEmail({ toEmail, inviterName, propertyName, role, actio
     )}</strong> en Sorted &amp; Stocked como <strong>${roleLabel}</strong>.</em>
     </p>
     <p style="margin:24px 0;">
-      <a href="${actionLink}" style="background:#8A6E42;color:#FAF7F2;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:600;">
+      <a href="${actionLink}" style="background:#2E4A62;color:#FFFFFF;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:600;">
         Accept &amp; set up account / Aceptar y configurar cuenta
       </a>
     </p>

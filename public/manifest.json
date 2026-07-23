@@ -5,9 +5,11 @@
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#FBF4EF",
-  "theme_color": "#6B3550",
+  "background_color": "#FAF7F2",
+  "theme_color": "#FAF7F2",
   "icons": [
+    { "src": "/icons/favicon-16.png", "sizes": "16x16", "type": "image/png" },
+    { "src": "/icons/favicon-32.png", "sizes": "32x32", "type": "image/png" },
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
     { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }

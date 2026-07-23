@@ -45,7 +45,7 @@ export default function OfflineSyncProvider({ children }: { children: React.Reac
   return (
     <>
       {!isOnline && (
-        <div className="bg-amber-500 text-white text-xs text-center py-1 sticky top-0 z-50">
+        <div className="bg-denim text-white text-xs text-center py-1 sticky top-0 z-50">
           Offline — changes will sync when connection returns
         </div>
       )}

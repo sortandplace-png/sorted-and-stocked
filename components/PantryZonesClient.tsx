@@ -111,26 +111,26 @@ export default function PantryZonesClient({ propertyId }: { propertyId: string }
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Pantry Zone Map</h1>
-      <p className="text-sm text-charcoal/50 mb-4">Where things live within each storage location.</p>
+      <h1 className="text-2xl font-display text-denim mb-1">Pantry Zone Map</h1>
+      <p className="text-sm text-dusk mb-4">Where things live within each storage location.</p>
 
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search zones…"
-        className="w-full border border-gold-light/60 rounded-full px-4 py-2.5 bg-white mb-4 text-sm"
+        className="w-full border border-cardBorder rounded-full px-4 py-2.5 bg-card mb-4 text-sm"
       />
 
       {canManage(role) && (
-        <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-2">
-          <h2 className="font-display text-lg text-charcoal mb-1">Add a zone</h2>
+        <div className="bg-card rounded-2xl shadow-card p-4 mb-6 space-y-2">
+          <h2 className="font-display text-lg text-denim mb-1">Add a zone</h2>
           <div>
             <FieldLabel>Zone name</FieldLabel>
             <input
               value={zoneName}
               onChange={(e) => setZoneName(e.target.value)}
               placeholder="e.g. Top shelf, left side"
-              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+              className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
             />
           </div>
           <div>
@@ -138,7 +138,7 @@ export default function PantryZonesClient({ propertyId }: { propertyId: string }
             <select
               value={locationId}
               onChange={(e) => setLocationId(e.target.value)}
-              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm bg-white"
+              className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm bg-card"
             >
               {locations.length === 0 && <option value="">No locations yet</option>}
               {flattenLocationTree(locations).map((l) => (
@@ -157,13 +157,13 @@ export default function PantryZonesClient({ propertyId }: { propertyId: string }
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What's kept here (optional)"
               rows={2}
-              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm"
+              className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
             />
           </div>
           <button
             onClick={addZone}
             disabled={saving || !zoneName.trim() || !locationId}
-            className="w-full py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
+            className="w-full py-2.5 rounded-full bg-denim text-white font-medium disabled:opacity-40"
           >
             {saving ? 'Saving…' : 'Add zone'}
           </button>
@@ -171,7 +171,7 @@ export default function PantryZonesClient({ propertyId }: { propertyId: string }
       )}
 
       {Object.keys(grouped).length === 0 && (
-        <p className="text-sm text-charcoal/40 text-center py-8">
+        <p className="text-sm text-dusk text-center py-8">
           {q
             ? 'No zones match your search.'
             : canManage(role)
@@ -183,23 +183,23 @@ export default function PantryZonesClient({ propertyId }: { propertyId: string }
       <div className="space-y-6">
         {Object.entries(grouped).map(([loc, locZones]) => (
           <div key={loc}>
-            <h3 className="text-xs font-medium uppercase tracking-wider text-gold-dark mb-2">{loc}</h3>
+            <h3 className="text-xs font-medium uppercase tracking-wider text-brass mb-2">{loc}</h3>
             <ul className="space-y-2">
               {locZones.map((z) => (
-                <li key={z.id} className="bg-white rounded-xl shadow-sm shadow-charcoal/5 p-3">
+                <li key={z.id} className="bg-card rounded-xl shadow-card p-3">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-medium text-sm text-charcoal">{z.zone_name}</p>
+                    <p className="font-medium text-sm text-denim">{z.zone_name}</p>
                     {canManage(role) && (
                       <button
                         onClick={() => removeZone(z.id)}
-                        className="text-xs text-charcoal/30 hover:text-rust shrink-0"
+                        className="text-xs text-dusk hover:text-rust shrink-0"
                         aria-label="Delete zone"
                       >
                         ✕
                       </button>
                     )}
                   </div>
-                  {z.description && <p className="text-sm text-charcoal/60 mt-1">{z.description}</p>}
+                  {z.description && <p className="text-sm text-dusk mt-1">{z.description}</p>}
                 </li>
               ))}
             </ul>

@@ -1,0 +1,38 @@
+{
+  "totalCandidates": 72,
+  "batches": [
+    {
+      "batchNumber": 1,
+      "reviewedAt": "2026-07-17T18:26:00-04:00",
+      "written": [
+        { "id": "8240a2b8-26ca-4b40-a114-96aad72433c4", "name": "L'Oreal Hair Product" },
+        { "id": "0f89b8c8-d553-403e-8337-6595f8ba8ef5", "name": "Nail Clippers" },
+        { "id": "15c4eb05-d66e-4078-af21-c5ff6e868fb5", "name": "Sunscreen" },
+        { "id": "40063045-298a-4972-a283-db55b6967799", "name": "Cornstarch" },
+        { "id": "65c138d8-b6d7-485e-abf4-7d3eadecd59d", "name": "Lemon Juice" },
+        { "id": "5fb97801-c570-4d6b-9722-4b02bafde28d", "name": "Ground Turkey (White Meat)" },
+        { "id": "ff1c025c-9487-4ecb-a99a-b39ab125b81d", "name": "Pearl Barley" },
+        { "id": "d6d2bf86-de03-4539-9307-bc7c0e3a127b", "name": "White Pepper" },
+        { "id": "7c69030e-5a39-47bf-bc91-10fd542027c4", "name": "Shoulder Steak" },
+        { "id": "851e9cda-5598-4008-bbd0-19a6a389dc58", "name": "Spare Ribs" },
+        { "id": "00d75449-3fd6-4d99-b9cb-3863734253a7", "name": "Red Wine Vinegar" },
+        { "id": "3918f675-4370-474b-ad2b-b38d76b993f9", "name": "Multivitamins" },
+        { "id": "52ec8bb0-1108-4e44-ad07-d7defb14f8f7", "name": "Multivitamins" },
+        { "id": "1dad4bfd-d051-4427-b5dc-8b487e12d492", "name": "Multivitamins" },
+        { "id": "e95bfc61-f8d1-49c1-8554-0fc671915b77", "name": "Chocolate Sandwich Cookies" },
+        { "id": "fb663288-1184-45ae-9487-e783ed022713", "name": "Coconut Milk (Unsweetened, Organic)" },
+        { "id": "a3fa9842-b876-4a85-a9d6-92a0eb1f3fd3", "name": "Fettuccine" },
+        { "id": "2ad69e97-6b2a-48f4-9a64-c0a975e65f11", "name": "Coriander Seeds" },
+        { "id": "e696e977-55c2-4803-bdbc-36dbb0e3bbe3", "name": "Sunscreen" },
+        { "id": "37be0edf-ad6f-4522-be88-e0c23e2d0465", "name": "Sunscreen" },
+        { "id": "7a7b2b06-ab15-4480-9d4e-903819e1db43", "name": "Sunscreen" },
+        { "id": "e598f363-b014-41c2-a746-f131441efcc0", "name": "Body Lotion" }
+      ],
+      "skipped": [
+        { "id": "9d230946-5aea-4c20-adde-629eb046d0b4", "name": "Chicken Stock", "reason": "All 3 candidates are bouillon cubes (dehydrated), not liquid stock -- different product form, no genuine match found." },
+        { "id": "7780c3c8-8303-40ad-bfa1-98c5f228927a", "name": "Half and Half", "reason": "All 3 candidates are false 'half' substring matches (Ben & Jerry's Half Baked ice cream, Half-Coated cookies, Half Ciabattas bread) -- this is the exact item that produced a real wrong-match error earlier this session, confirmed again no genuine half-and-half dairy product exists in this candidate set." },
+        { "id": "2b1260b2-0408-426c-a165-7564bb730d30", "name": "Thyme", "reason": "Candidates are Kellogg's corn flakes (wrong, likely a data-quality mismatch in OFF), Lay's chips (wrong), and a thyme tea/infusion (closer, but a brewed tea product not the dried spice jar -- different product form). No genuine match for dried thyme spice found." }
+      ]
+    }
+  ]
+}

@@ -46,7 +46,7 @@ export default function AnalyticsDashboard({ propertyId }: { propertyId: string 
         {
           label: 'Active Inventory Items',
           value: inventoryData?.length || 0,
-          icon: <ShoppingCart className="h-5 w-5 text-charcoal" />
+          icon: <ShoppingCart className="h-5 w-5 text-denim" />
         },
         {
           label: 'Items Below Minimum',
@@ -57,7 +57,7 @@ export default function AnalyticsDashboard({ propertyId }: { propertyId: string 
         {
           label: 'Replenishment Budget',
           value: spending.reduce((sum, item) => sum + item.amount, 0).toFixed(2),
-          icon: <BarChart3 className="h-5 w-5 text-gold-dark" />
+          icon: <BarChart3 className="h-5 w-5 text-brass" />
         }
       ];
 
@@ -69,7 +69,7 @@ export default function AnalyticsDashboard({ propertyId }: { propertyId: string 
   }, [propertyId]);
 
   if (loading) {
-    return <div className="text-center py-12 text-charcoal/50">Loading analytics...</div>;
+    return <div className="text-center py-12 text-dusk">Loading analytics...</div>;
   }
 
   const totalSpending = spending.reduce((sum, item) => sum + item.amount, 0);
@@ -77,8 +77,8 @@ export default function AnalyticsDashboard({ propertyId }: { propertyId: string 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-6">
-        <BarChart3 className="h-6 w-6 text-charcoal" />
-        <h2 className="text-2xl font-display text-charcoal">Operations Analytics</h2>
+        <BarChart3 className="h-6 w-6 text-denim" />
+        <h2 className="text-2xl font-display text-denim">Operations Analytics</h2>
       </div>
 
       {/* Key Metrics Grid */}
@@ -86,17 +86,17 @@ export default function AnalyticsDashboard({ propertyId }: { propertyId: string 
         {metrics.map((metric, idx) => (
           <div
             key={idx}
-            className="bg-white rounded-2xl p-6 border border-gold-light/20 shadow-sm"
+            className="bg-white rounded-2xl p-6 border border-cardBorder shadow-sm"
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm text-charcoal/60 mb-2">{metric.label}</p>
-                <p className="text-3xl font-bold text-charcoal">{metric.value}</p>
+                <p className="text-sm text-dusk mb-2">{metric.label}</p>
+                <p className="text-3xl font-bold text-denim">{metric.value}</p>
                 {metric.trend !== undefined && metric.trend < 0 && (
                   <p className="text-xs text-rust mt-2">⚠️ Action needed</p>
                 )}
               </div>
-              <div className="text-charcoal opacity-50">{metric.icon}</div>
+              <div className="text-denim opacity-50">{metric.icon}</div>
             </div>
           </div>
         ))}
@@ -104,8 +104,8 @@ export default function AnalyticsDashboard({ propertyId }: { propertyId: string 
 
       {/* Spending by Category */}
       {spending.length > 0 && (
-        <div className="bg-white rounded-2xl p-6 border border-gold-light/20 shadow-sm">
-          <h3 className="font-semibold text-charcoal mb-4">Projected Spending by Category</h3>
+        <div className="bg-white rounded-2xl p-6 border border-cardBorder shadow-sm">
+          <h3 className="font-semibold text-denim mb-4">Projected Spending by Category</h3>
 
           <div className="space-y-3">
             {spending.map((item) => {
@@ -113,12 +113,12 @@ export default function AnalyticsDashboard({ propertyId }: { propertyId: string 
               return (
                 <div key={item.category}>
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-medium text-charcoal">{item.category}</p>
-                    <p className="text-sm font-bold text-charcoal">${item.amount.toFixed(2)}</p>
+                    <p className="text-sm font-medium text-denim">{item.category}</p>
+                    <p className="text-sm font-bold text-denim">${item.amount.toFixed(2)}</p>
                   </div>
-                  <div className="w-full bg-gold-light/20 h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-linen h-2 rounded-full overflow-hidden">
                     <div
-                      className="bg-charcoal h-full transition-all duration-300"
+                      className="bg-denim h-full transition-all duration-300"
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
@@ -127,9 +127,9 @@ export default function AnalyticsDashboard({ propertyId }: { propertyId: string 
             })}
           </div>
 
-          <div className="mt-4 pt-4 border-t border-gold-light/20">
-            <p className="text-sm text-charcoal/60">
-              Total Projected Cost: <span className="font-bold text-charcoal">${totalSpending.toFixed(2)}</span>
+          <div className="mt-4 pt-4 border-t border-cardBorder">
+            <p className="text-sm text-dusk">
+              Total Projected Cost: <span className="font-bold text-denim">${totalSpending.toFixed(2)}</span>
             </p>
           </div>
         </div>

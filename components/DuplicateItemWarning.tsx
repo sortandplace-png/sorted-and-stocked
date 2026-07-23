@@ -40,25 +40,25 @@ export default function DuplicateItemWarning({
         className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="font-display text-xl text-charcoal mb-1">
+        <h2 className="font-display text-xl text-denim mb-1">
           {topIsOpenAndInStock ? 'Finish the opened one first?' : 'Already have this?'}
         </h2>
-        <p className="text-sm text-charcoal/60 mb-3">
+        <p className="text-sm text-dusk mb-3">
           {topIsOpenAndInStock ? (
             <>
-              You already have an opened <span className="font-medium text-charcoal">{top.name}</span>
+              You already have an opened <span className="font-medium text-denim">{top.name}</span>
               {top.location_name ? ` in ${top.location_name}` : ''} — worth using that up before adding a new one.
             </>
           ) : (
             <>
-              You may already have <span className="font-medium text-charcoal">{top.name}</span>
+              You may already have <span className="font-medium text-denim">{top.name}</span>
               {top.location_name ? ` in ${top.location_name}` : ''}.
             </>
           )}
         </p>
 
         {matches.length > 1 && (
-          <ul className="space-y-1 mb-3 text-xs text-charcoal/50">
+          <ul className="space-y-1 mb-3 text-xs text-dusk">
             {matches.slice(1).map((m) => (
               <li key={m.id}>
                 Also similar: {m.name}
@@ -71,17 +71,17 @@ export default function DuplicateItemWarning({
         <div className="space-y-2">
           <button
             onClick={() => onUpdateExisting(top.id)}
-            className="w-full py-2.5 rounded-full bg-charcoal text-cream font-medium"
+            className="w-full py-2.5 rounded-full bg-denim text-white font-medium"
           >
             Update existing item instead
           </button>
           <button
             onClick={onAddAnyway}
-            className="w-full py-2.5 rounded-full border border-gold-light/60 text-charcoal"
+            className="w-full py-2.5 rounded-full border border-cardBorder text-denim"
           >
             Add &quot;{enteredName}&quot; anyway
           </button>
-          <button onClick={onDismiss} className="w-full py-2 text-sm text-charcoal/40">
+          <button onClick={onDismiss} className="w-full py-2 text-sm text-dusk">
             Cancel
           </button>
         </div>

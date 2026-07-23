@@ -24,8 +24,8 @@ function HouseGlyph({ className }: { className?: string }) {
 // component, so nothing ends up duplicated.
 export function LogoMark({ className = 'w-9 h-9' }: { className?: string }) {
   return (
-    <div className={`${className} rounded-full bg-cream border border-gold-light flex items-center justify-center shrink-0 overflow-hidden`}>
-      <HouseGlyph className="w-1/2 h-1/2 text-gold-dark" />
+    <div className={`${className} rounded-full bg-linen border border-cardBorder flex items-center justify-center shrink-0 overflow-hidden`}>
+      <HouseGlyph className="w-1/2 h-1/2 text-brass" />
     </div>
   );
 }

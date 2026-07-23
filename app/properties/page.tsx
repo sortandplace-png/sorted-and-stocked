@@ -2,8 +2,11 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { Plus } from 'lucide-react';
 import LogoutButton from '@/components/LogoutButton';
 import { LogoMark } from '@/components/Logo';
+import Footer from '@/components/Footer';
+import PropertiesPickerList, { type HouseholdGroup } from '@/components/PropertiesPickerList';
 
 export default async function PropertiesPage() {
   const supabase = await createClient();
@@ -18,47 +21,64 @@ export default async function PropertiesPage() {
 
   const { data: memberships, error } = await supabase
     .from('property_members')
-    .select('role, properties(id, name)')
+    .select('role, properties(id, name, household_id, households(name))')
     .eq('user_id', user.id);
 
   // Single-property households shouldn't have to pick — skip straight in.
+  // Dashboard, not Inventory -- the universal post-login landing spot,
+  // except staff, who land on their dedicated My Day page instead.
   if (memberships && memberships.length === 1 && memberships[0].properties) {
-    redirect(`/properties/${(memberships[0].properties as any).id}/inventory`);
+    const propertyId = (memberships[0].properties as any).id;
+    const destination = memberships[0].role === 'staff' ? 'my-day' : 'dashboard';
+    redirect(`/properties/${propertyId}/${destination}`);
   }
 
+  // Grouped by household so multi-property households show one box that
+  // expands, instead of every property listed flat -- keyed by household_id
+  // where one exists, falling back to the property's own id (its own
+  // singleton group) for the rare property not yet assigned to a household,
+  // so this never crashes on missing data, just degrades to a flat entry.
+  const groupsByKey = new Map<string, HouseholdGroup>();
+  for (const m of memberships ?? []) {
+    const property = m.properties as unknown as {
+      id: string;
+      name: string;
+      household_id: string | null;
+      households: { name: string } | null;
+    } | null;
+    if (!property) continue;
+    const key = property.household_id ?? `property:${property.id}`;
+    const entry = { id: property.id, name: property.name, role: m.role };
+    const existing = groupsByKey.get(key);
+    if (existing) {
+      existing.properties.push(entry);
+    } else {
+      groupsByKey.set(key, {
+        key,
+        householdName: property.households?.name ?? null,
+        properties: [entry],
+      });
+    }
+  }
+  const groups = [...groupsByKey.values()];
+
   return (
-    <div className="min-h-screen bg-cream px-6 pt-12">
+    <div className="min-h-screen bg-mist px-6 pt-12">
       <div className="max-w-sm mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
             <LogoMark className="w-8 h-8" />
-            <h1 className="font-display text-2xl text-charcoal">Your properties</h1>
+            <h1 className="font-display text-2xl text-denim leading-tight">Your properties</h1>
           </div>
           <LogoutButton variant="light" />
         </div>
 
         {error && <p className="text-sm text-rust mb-4">{error.message}</p>}
 
-        {memberships && memberships.length > 0 ? (
-          <ul className="space-y-2 mb-6">
-            {memberships.map((m) => {
-              const property = m.properties as unknown as { id: string; name: string } | null;
-              if (!property) return null;
-              return (
-                <li key={property.id}>
-                  <Link
-                    href={`/properties/${property.id}/inventory`}
-                    className="flex items-center justify-between bg-white rounded-2xl shadow-sm shadow-charcoal/5 px-4 py-3 hover:bg-gold-light/15 transition-colors"
-                  >
-                    <span className="text-charcoal">{property.name}</span>
-                    <span className="text-xs text-charcoal/50 capitalize">{m.role}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+        {groups.length > 0 ? (
+          <PropertiesPickerList groups={groups} />
         ) : (
-          <p className="text-sm text-charcoal/40 mb-6">
+          <p className="text-sm text-dusk mb-6">
             You're not part of any property yet.
           </p>
         )}
@@ -66,18 +86,25 @@ export default async function PropertiesPage() {
         {memberships && memberships.length > 1 && (
           <Link
             href="/procurement"
-            className="block text-center py-2.5 rounded-full bg-gold-light/40 text-charcoal text-sm font-medium mb-2"
+            className="block text-center py-2.5 rounded-full bg-denim text-white text-sm font-medium mb-2"
           >
-            🛒 Shop for multiple properties at once
+            Shop for multiple properties at once
           </Link>
         )}
 
+        {/* Same /sitemap tile language the property tiles above use
+            (bg-mist, border-brass/30, rounded-xl2, shadow-card) instead of
+            a plain outlined pill -- was the one element on this page still
+            reading as text-on-a-rectangle rather than a real tile. */}
         <Link
           href="/properties/new"
-          className="block text-center py-2.5 rounded-full border border-charcoal/30 text-charcoal text-sm font-medium"
+          className="flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 shadow-card hover:shadow-cardHover transition-shadow text-center min-h-[80px] py-[10px] px-[14px] mb-2"
         >
-          + Add a property
+          <Plus size={20} className="text-denim" aria-hidden="true" />
+          <span className="font-display font-normal text-[14px] text-denim">Add a property</span>
         </Link>
+
+        <Footer />
       </div>
     </div>
   );

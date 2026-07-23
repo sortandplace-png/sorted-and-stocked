@@ -61,33 +61,33 @@ export default function AddToMealPlanButton({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="text-sm font-medium border border-gold-light/60 text-charcoal/60 px-4 py-2 rounded-full hover:bg-gold-light/10 transition flex items-center gap-1.5"
+        className="text-sm font-medium border border-cardBorder text-dusk px-4 py-2 rounded-full hover:bg-linen transition flex items-center gap-1.5"
       >
         <CalendarPlus size={14} strokeWidth={1.75} /> Add to Meal Plan
       </button>
 
       {open && (
         <div
-          className="fixed inset-0 bg-charcoal/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+          className="fixed inset-0 bg-denim/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
           onClick={() => setOpen(false)}
         >
           <div
             className="bg-white rounded-t-3xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm p-5"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="font-display text-lg text-charcoal mb-3">Add to Meal Plan</h2>
-            <label className="text-xs text-charcoal/50 block mb-1">Date</label>
+            <h2 className="font-display text-lg text-denim mb-3">Add to Meal Plan</h2>
+            <label className="text-xs text-dusk block mb-1">Date</label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm mb-3"
+              className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm mb-3"
             />
-            <label className="text-xs text-charcoal/50 block mb-1">Course</label>
+            <label className="text-xs text-dusk block mb-1">Course</label>
             <select
               value={course}
               onChange={(e) => setCourse(e.target.value as Course)}
-              className="w-full border border-gold-light/60 rounded-xl px-3 py-2 text-sm bg-white mb-4"
+              className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm bg-white mb-4"
             >
               {COURSES.map((c) => (
                 <option key={c.key} value={c.key}>
@@ -95,20 +95,20 @@ export default function AddToMealPlanButton({
                 </option>
               ))}
             </select>
-            <p className="text-xs text-charcoal/40 mb-3">
+            <p className="text-xs text-dusk mb-3">
               Replaces whatever's already planned for that day and course.
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setOpen(false)}
-                className="flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm"
+                className="flex-1 py-2 rounded-full bg-linen border border-denim/20 text-denim text-sm"
               >
                 Cancel
               </button>
               <button
                 onClick={add}
                 disabled={saving}
-                className="flex-1 py-2 rounded-full bg-charcoal text-cream text-sm font-medium disabled:opacity-40"
+                className="flex-1 py-2 rounded-full bg-denim text-white text-sm font-medium disabled:opacity-40"
               >
                 {saving ? 'Adding…' : 'Add'}
               </button>

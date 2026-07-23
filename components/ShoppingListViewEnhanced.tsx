@@ -8,13 +8,101 @@ import {
   fetchEnhancedShoppingList,
   fetchItemSources,
   updateShoppingItemStatus,
+  updatePurchaseQty,
   removeShoppingItem,
   type ShoppingItemSource,
 } from '@/lib/api/shoppingList';
-import { ExternalLink, Trash2, CheckCircle2, Circle, MessageCircle, Printer, Sparkles, MoreVertical, ShoppingCart } from 'lucide-react';
+import {
+  Trash2,
+  CheckCircle2,
+  Circle,
+  Printer,
+  Sparkles,
+  MoreVertical,
+  ShoppingCart,
+  AlertTriangle,
+  Repeat,
+  Store,
+  BookOpen,
+  MapPin,
+  Baby,
+  Cookie,
+  Bath,
+  Coffee,
+  SprayCan,
+  Plug,
+  PartyPopper,
+  ChefHat,
+  WashingMachine,
+  Pill,
+  Briefcase,
+  Package,
+  FileText,
+  PawPrint,
+  Refrigerator,
+  Popcorn,
+  Archive,
+  Wrench,
+  Snowflake,
+  type LucideIcon,
+} from 'lucide-react';
+import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { useToast } from '@/components/Toast';
 import { createClient } from '@/lib/supabase/client';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
+import { getPreferredSource, type ReorderSource } from '@/lib/reorder-sources';
+import OrderLink from '@/components/OrderLink';
+import PhotoOrFallback from '@/components/PhotoOrFallback';
+import Pin from '@/components/PinAccent';
+
+// Real inventory_items.category values (lib/icon-maps.ts's own comment:
+// "Matches the real category names in the live categories table, 19 as of
+// July 2026") -- a different taxonomy than StaplesTab's staple_category,
+// confirmed by reading get_staples_with_inventory's actual SQL definition
+// before assuming the two files could share one icon map. "Staples" here
+// is this file's own special first-bucket title (not a real category row),
+// reusing the same Repeat icon its groupBy toggle already uses for it.
+const SHOPPING_CATEGORY_ICONS: Record<string, LucideIcon> = {
+  Staples: Repeat,
+  Baby: Baby,
+  Baking: Cookie,
+  Bathroom: Bath,
+  Beverages: Coffee,
+  Cleaning: SprayCan,
+  Electronics: Plug,
+  Freezer: Snowflake,
+  Holiday: PartyPopper,
+  Kitchen: ChefHat,
+  Laundry: WashingMachine,
+  Medicine: Pill,
+  Office: Briefcase,
+  Pantry: Package,
+  'Paper Goods': FileText,
+  'Pet Supplies': PawPrint,
+  Refrigerator: Refrigerator,
+  Snacks: Popcorn,
+  Storage: Archive,
+  Tools: Wrench,
+};
+function getShoppingCategoryIcon(title: string): LucideIcon {
+  return SHOPPING_CATEGORY_ICONS[title] ?? Package;
+}
+
+// SS-284: By Store mode groups by retailer_name (see bucketByMode below),
+// which never matches a SHOPPING_CATEGORY_ICONS key -- every store fell
+// through to the generic Package icon. These 7 keys are verified exact
+// matches against live reorder_sources.retailer_name values (checked
+// 2026-07-22), not guessed casing. "Other" and any unmapped retailer
+// correctly keep using the generic Icon fallback below, unchanged.
+const STORE_ICON_SRC: Record<string, string> = {
+  Amazon: '/store-icons/amazon.png',
+  Costco: '/store-icons/costco.png',
+  'Gourmet Glatt': '/store-icons/gourmet-glatt.png',
+  Instacart: '/store-icons/instacart.png',
+  'Kosher West': '/store-icons/kosher-west.png',
+  Target: '/store-icons/target.png',
+  Walmart: '/store-icons/walmart.png',
+};
 
 type ShoppingListItem = {
   item_id: string;
@@ -22,12 +110,14 @@ type ShoppingListItem = {
   name_es: string | null;
   category: string;
   qty_needed: number;
+  purchase_qty: number | null;
   unit_estimate: string | null;
   status: 'pending' | 'purchased' | 'archived';
   // Rich inventory fields (null if not linked)
   inventory_item_id: string | null;
   photo_url: string | null;
   reorder_link: string | null;
+  reorder_sources: ReorderSource[] | null;
   current_stock: number | null;
   location_name: string | null;
   supplier: string | null;
@@ -35,6 +125,7 @@ type ShoppingListItem = {
   // UI flags
   is_rich_item: boolean;
   is_staple_origin: boolean;
+  pesach_status: 'kosher_for_pesach' | 'not_kosher_for_pesach' | 'needs_review' | null;
 };
 
 // Same kashrut color tokens used elsewhere this session (Month view dots,
@@ -46,7 +137,7 @@ const KOSHER_PILL_STYLE: Record<string, string> = {
   Parve: 'bg-sage/15 text-sage',
 };
 
-type GroupBy = 'staples-first' | 'category' | 'by-recipe';
+type GroupBy = 'staples-first' | 'category' | 'by-recipe' | 'by-store';
 
 // Present only on display rows produced by aggregateDuplicates — carries
 // the real underlying row ids so toggling/deleting an aggregated row still
@@ -56,9 +147,11 @@ type DisplayItem = ShoppingListItem & { _mergedIds?: string[] };
 export default function ShoppingListViewEnhanced({
   propertyId,
   shoppingListId,
+  pesachModeEnabled = false,
 }: {
   propertyId: string;
   shoppingListId: string;
+  pesachModeEnabled?: boolean;
 }) {
   const [items, setItems] = useState<ShoppingListItem[]>([]);
   const [sources, setSources] = useState<Record<string, ShoppingItemSource[]>>({});
@@ -80,10 +173,18 @@ export default function ShoppingListViewEnhanced({
   // items -- matches a real shopping trip, where you don't want a crossed-
   // off item still competing for attention next to what's left to buy.
   const [completedExpanded, setCompletedExpanded] = useState(false);
-  // Same broken-link concern as InventoryClient — photo_url existing isn't
-  // the same as the image actually loading.
-  const [brokenPhotoIds, setBrokenPhotoIds] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
+  // "Convenient to grab" tier -- items between min_qty and a slightly
+  // higher comfortable level (1.5x min_qty, rounded up), distinct from
+  // the real shopping_list_items rows above: those only ever get added
+  // once an item is genuinely below min_qty (handle_low_stock trigger),
+  // so this tier was never going to show up on the real list on its own.
+  // Read-only advisory, not written anywhere -- default off so the list
+  // stays tight unless someone opts into the wider view.
+  const [showNiceToHave, setShowNiceToHave] = useState(false);
+  const [niceToHaveItems, setNiceToHaveItems] = useState<
+    { id: string; name: string; name_es: string | null; category: string | null; current_qty: number; min_qty: number; unit: string; photo_url: string | null }[]
+  >([]);
   // Guards against overlapping toggle requests when a checkbox is tapped
   // again before the previous request for the same item(s) has resolved.
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
@@ -116,6 +217,24 @@ export default function ShoppingListViewEnhanced({
     loadItems();
   }, [shoppingListId]);
 
+  // Fetched lazily -- only once the toggle is actually turned on, so
+  // opting into the wider view doesn't cost every visit a query for a
+  // section most people leave off. min_qty > 0 excludes items with no
+  // real par level set (a comfortable ceiling of 0 is meaningless there).
+  useEffect(() => {
+    if (!showNiceToHave) return;
+    supabase
+      .from('inventory_items')
+      .select('id, name, name_es, category, current_qty, min_qty, unit, photo_url')
+      .eq('property_id', propertyId)
+      .gt('min_qty', 0)
+      .then(({ data }) => {
+        const comfortable = (row: { current_qty: number; min_qty: number }) =>
+          row.current_qty >= row.min_qty && row.current_qty < Math.ceil(row.min_qty * 1.5);
+        setNiceToHaveItems((data ?? []).filter(comfortable).sort((a, b) => a.name.localeCompare(b.name)));
+      });
+  }, [showNiceToHave, propertyId, supabase]);
+
   // Seeds "everything collapsed" once when the list first has data, and
   // again whenever the grouping mode changes (a fresh set of group titles
   // the user hasn't interacted with yet) — but not on every items change,
@@ -128,6 +247,22 @@ export default function ShoppingListViewEnhanced({
     setCollapsedGroups(new Set(titles));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupBy, items.length > 0]);
+
+  const savePurchaseQty = async (itemId: string, raw: string) => {
+    const trimmed = raw.trim();
+    const value = trimmed === '' ? null : Number(trimmed);
+    if (value !== null && (Number.isNaN(value) || value < 0)) return;
+    const prev = items.find((i) => i.item_id === itemId)?.purchase_qty ?? null;
+    if (value === prev) return;
+    setItems((p) => p.map((i) => (i.item_id === itemId ? { ...i, purchase_qty: value } : i)));
+    try {
+      await updatePurchaseQty(itemId, value);
+    } catch (error) {
+      console.error('Error updating purchase quantity:', error);
+      setItems((p) => p.map((i) => (i.item_id === itemId ? { ...i, purchase_qty: prev } : i)));
+      showToast('Failed to update purchase quantity.', { variant: 'error' });
+    }
+  };
 
   const toggleStatus = async (itemId: string, currentStatus: string) => {
     const newStatus = (currentStatus === 'purchased' ? 'pending' : 'purchased') as 'pending' | 'purchased';
@@ -305,23 +440,23 @@ export default function ShoppingListViewEnhanced({
     const itemId = item.item_id;
     return (
       <div className="relative flex items-center gap-1 mt-1">
-        <span className="rounded-full bg-gold-light/20 px-2 py-0.5 text-[10px] text-charcoal">
+        <span className="rounded-full bg-mist px-2 py-0.5 text-[10px] text-denim">
           {sourceTitle(first)}
         </span>
         {rest.length > 0 && (
           <button
             onClick={() => setExpandedPills((e) => ({ ...e, [itemId]: !e[itemId] }))}
-            className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-medium text-gold-dark"
+            className="rounded-full bg-mist px-2 py-0.5 text-[10px] font-medium text-brass"
           >
             +{rest.length} more
           </button>
         )}
         {expandedPills[itemId] && rest.length > 0 && (
-          <div className="absolute left-0 top-6 z-10 w-56 rounded-lg border border-gold-light/40 bg-white p-2 shadow-lg">
+          <div className="absolute left-0 top-6 z-10 w-56 rounded-lg border border-cardBorder bg-card p-2 shadow-cardHover">
             {itemSources.map((s, i) => (
               <div key={s.recipe_id + '_' + i} className="flex justify-between py-0.5 text-xs">
                 <span>{sourceTitle(s)}</span>
-                <span className="text-charcoal/50">
+                <span className="text-dusk">
                   {s.quantity ?? ''} {s.unit ?? ''}
                 </span>
               </div>
@@ -351,6 +486,18 @@ export default function ShoppingListViewEnhanced({
     return locale === 'es' && item.name_es ? item.name_es : item.name;
   }
 
+  // Pesach Mode: flag inline rather than silently including -- true only
+  // when a real Pesach-tagged recipe pulled this item in AND the linked
+  // inventory item isn't cleared (not_kosher_for_pesach or still
+  // needs_review). An item with no inventory link at all (pesach_status
+  // null) has nothing to flag against.
+  function pesachFlag(item: DisplayItem): boolean {
+    if (!pesachModeEnabled || !item.pesach_status || item.pesach_status === 'kosher_for_pesach') return false;
+    const ids = item._mergedIds ?? [item.item_id];
+    const itemSources = ids.flatMap((id) => sources[id] ?? []);
+    return itemSources.some((s) => s.is_pesach);
+  }
+
   function secondaryName(item: DisplayItem) {
     return locale === 'es' ? item.name : item.name_es;
   }
@@ -372,7 +519,10 @@ export default function ShoppingListViewEnhanced({
   // active groupBy mode's real groups. Shared by both buckets below so
   // checked items land in the *same* named group as their pending
   // counterparts instead of one global "Completed" pile.
-  function bucketByMode(rawItems: DisplayItem[], mode: GroupBy = groupBy): { title: string; items: DisplayItem[] }[] {
+  function bucketByMode(
+    rawItems: DisplayItem[],
+    mode: GroupBy = groupBy
+  ): { title: string; photoUrl?: string | null; items: DisplayItem[] }[] {
     // Aggregating collapses same-name rows from different recipes into one
     // display row, which would make "By Recipe" grouping lose its meaning
     // (a merged row can't cleanly belong to a single recipe group) — so
@@ -411,19 +561,41 @@ export default function ShoppingListViewEnhanced({
       return staples.length > 0 ? [{ title: 'Staples', items: staples }, ...categoryGroups] : categoryGroups;
     }
     if (mode === 'by-recipe') {
-      const groupsMap: Record<string, { title: string; items: DisplayItem[] }> = {};
+      const groupsMap: Record<string, { title: string; photoUrl: string | null; items: DisplayItem[] }> = {};
       for (const item of bucketItems) {
         const itemSources = sources[item.item_id];
         const primary = itemSources?.[0];
         const key = primary?.recipe_id ?? 'unassigned';
         const title = primary ? sourceTitle(primary) : 'Other';
-        (groupsMap[key] ??= { title, items: [] }).items.push(item);
+        (groupsMap[key] ??= { title, photoUrl: primary?.recipe_photo_url ?? null, items: [] }).items.push(item);
       }
       return Object.values(groupsMap).sort((a, b) => {
         if (a.title === 'Other') return 1;
         if (b.title === 'Other') return -1;
         return a.title.localeCompare(b.title);
       });
+    }
+    if (mode === 'by-store') {
+      // Groups by each item's own preferred reorder source (the same
+      // is_preferred pick OrderLink/ReorderSourcePicker already use
+      // elsewhere) -- an item with no reorder_sources at all falls into
+      // "Other" rather than disappearing, same convention as the other
+      // modes' uncategorized bucket.
+      const byStore = bucketItems.reduce(
+        (acc, item) => {
+          const store = getPreferredSource(item.reorder_sources)?.retailer_name || 'Other';
+          (acc[store] ??= []).push(item);
+          return acc;
+        },
+        {} as Record<string, DisplayItem[]>
+      );
+      return Object.entries(byStore)
+        .map(([title, items]) => ({ title, items }))
+        .sort((a, b) => {
+          if (a.title === 'Other') return 1;
+          if (b.title === 'Other') return -1;
+          return a.title.localeCompare(b.title);
+        });
     }
     const byCategory = bucketItems.reduce(
       (acc, item) => {
@@ -447,7 +619,7 @@ export default function ShoppingListViewEnhanced({
   // checked-off items move out entirely into the one global Completed
   // section at the page bottom (see the render below), so a crossed-off
   // item stops competing for attention next to what's still left to buy.
-  const groupItems = (): { title: string; items: DisplayItem[] }[] => {
+  const groupItems = (): { title: string; photoUrl?: string | null; items: DisplayItem[] }[] => {
     const pendingRaw = items.filter((i) => i.status !== 'purchased');
     return bucketByMode(pendingRaw);
   };
@@ -462,7 +634,7 @@ export default function ShoppingListViewEnhanced({
     return (
       <div
         key={item.item_id}
-        className={`rounded-lg border bg-white border-gold-light/20 hover:border-gold-light/40 transition-colors ${
+        className={`rounded-lg border bg-card border-cardBorder hover:border-brass/30 transition-colors ${
           density === 'compact' ? 'p-2' : 'p-3'
         } ${isChecked ? 'opacity-60' : ''}`}
       >
@@ -471,103 +643,127 @@ export default function ShoppingListViewEnhanced({
           <button
             onClick={() => toggleStatusForDisplayItem(item)}
             disabled={isItemProcessing(item)}
-            className={`print:hidden flex-shrink-0 mt-0.5 text-charcoal hover:text-sage transition-colors ${
+            className={`print:hidden flex-shrink-0 mt-0.5 text-denim hover:text-sage transition-colors ${
               isItemProcessing(item) ? 'opacity-40 cursor-wait' : ''
             }`}
           >
             {isChecked ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
           </button>
 
-          {item.photo_url && !brokenPhotoIds.has(item.item_id) ? (
-            <img
-              src={item.photo_url}
-              alt={item.name}
-              className="h-14 w-14 rounded object-cover flex-shrink-0 bg-gold-light/10"
-              onError={() => setBrokenPhotoIds((prev) => new Set(prev).add(item.item_id))}
-            />
-          ) : (
-            <div className="h-14 w-14 rounded bg-gold-light/10 flex items-center justify-center text-[10px] text-charcoal/40 flex-shrink-0">
-              No photo
-            </div>
-          )}
+          <PhotoOrFallback src={item.photo_url} alt={item.name} sizeClass="h-14 w-14" rounded="rounded" />
 
           <div className="flex-1 min-w-0">
-            {/* Name, bilingual EN/ES stacked */}
-            <h4 className={`font-medium text-sm ${isChecked ? 'line-through text-charcoal/50' : 'text-charcoal'}`}>
-              {displayName(item)}
-              {mergedCount > 1 && <span className="text-charcoal/40 font-normal"> ×{mergedCount}</span>}
-            </h4>
+            {/* Name + qty + cart on one real row, matching Low Stock
+                Alerts' own pattern exactly (DashboardWidgets.tsx's
+                LowStockAlertsCard): name truncates in its own flex-1
+                min-w-0 element, qty is a separate shrink-0 sibling so it
+                can never get squeezed out or pushed to a second line by a
+                long name -- previously qty lived inside the same truncating
+                h4 as the name, competing for the same single-line text run.
+                Cart replaces the old "Reorder" text link that used to sit
+                much further down, past supplier/stock/location -- same
+                OrderLink component used site-wide now (dashboard tiles,
+                Inventory), always clickable (falls back to an Amazon
+                search when there's no configured source, never blank).
+                Delete moves up here too rather than staying on its own
+                bottom row. */}
+            <div className="flex items-center gap-2">
+              <h4 className={`min-w-0 flex-1 truncate font-medium text-sm ${isChecked ? 'line-through text-dusk' : 'text-denim'}`}>
+                {displayName(item)}
+                {mergedCount > 1 && <span className="text-dusk font-normal"> ×{mergedCount}</span>}
+              </h4>
+              {qty && (
+                <span className={`shrink-0 text-xs font-normal ${isChecked ? 'line-through text-dusk' : 'text-dusk'}`}>
+                  {Math.round(qty.qty * 100) / 100} {qty.unit}
+                </span>
+              )}
+              <span className="print:hidden shrink-0">
+                <OrderLink itemName={item.name} sources={item.reorder_sources} fallbackLink={item.reorder_link} />
+              </span>
+              <button
+                onClick={() => deleteDisplayItem(item)}
+                className="print:hidden shrink-0 text-dusk hover:text-rust transition-colors"
+                aria-label={`Remove ${displayName(item)}`}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
             {secondary && (
-              <p className={`text-xs italic ${isChecked ? 'line-through text-charcoal/30' : 'text-charcoal/50'}`}>
+              <p className={`text-xs italic ${isChecked ? 'line-through text-dusk' : 'text-dusk'}`}>
                 {secondary}
               </p>
             )}
 
-            {/* Quantity + kosher-type pills */}
-            {(qty || (item.kosher_type && kosherStyle)) && (
+            {/* Kosher-type pill on its own, now that qty moved up to the
+                name row. */}
+            {item.kosher_type && kosherStyle && (
               <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                {qty && (
-                  <span className="rounded-full bg-gold/15 text-gold-dark px-2 py-0.5 text-[10px] font-medium">
-                    {Math.round(qty.qty * 100) / 100} {qty.unit}
-                  </span>
-                )}
-                {item.kosher_type && kosherStyle && (
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${kosherStyle}`}>
-                    {item.kosher_type}
-                  </span>
-                )}
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${kosherStyle}`}>
+                  {item.kosher_type}
+                </span>
               </div>
+            )}
+
+            {/* Purchase quantity: "how many units to buy", distinct from
+                qty_needed (the recipe-derived amount shown in the pill
+                above). Only shown on non-merged rows -- a merged row
+                represents multiple real underlying rows combined for
+                display, and there's no single correct real row to write a
+                typed value to (same reason "By Recipe" grouping disables
+                aggregation entirely). */}
+            {mergedCount === 1 && (
+              <div className="print:hidden flex items-center gap-1.5 mt-1.5">
+                <label htmlFor={`purchase-qty-${item.item_id}`} className="text-[10px] text-dusk">
+                  {t('purchaseQtyLabel')}
+                </label>
+                <input
+                  id={`purchase-qty-${item.item_id}`}
+                  type="number"
+                  min={0}
+                  step="any"
+                  inputMode="decimal"
+                  defaultValue={item.purchase_qty ?? ''}
+                  key={`${item.item_id}-${item.purchase_qty ?? ''}`}
+                  placeholder={t('purchaseQtyPlaceholder')}
+                  onBlur={(e) => savePurchaseQty(item.item_id, e.target.value)}
+                  className="w-16 rounded-md border border-cardBorder px-1.5 py-0.5 text-[11px] text-denim focus:outline-none focus:ring-1 focus:ring-brass"
+                />
+              </div>
+            )}
+            {item.purchase_qty !== null && (
+              <p className="hidden print:block text-[10px] text-dusk">
+                {t('purchaseQtyLabel')}: {item.purchase_qty}
+              </p>
             )}
 
             {recipePills(item)}
 
+            {pesachFlag(item) && (
+              <div className="flex items-center gap-1.5 mt-1.5 text-xs text-rust bg-rust/10 px-2.5 py-1 rounded-full w-fit">
+                <AlertTriangle className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden="true" />
+                {item.pesach_status === 'needs_review' ? 'Pesach status not yet reviewed' : 'Not cleared for Pesach'}
+              </div>
+            )}
+
             {item.is_rich_item ? (
-              <>
-                <div className="flex items-center gap-2 mt-2 text-xs text-charcoal/60 flex-wrap">
-                  {item.supplier && (
-                    <span className="bg-gold-light/20 px-2 py-0.5 rounded-full">{item.supplier}</span>
-                  )}
-                  {item.current_stock !== null && (
-                    <span className="bg-gold-light/20 px-2 py-0.5 rounded-full">
-                      In stock: {item.current_stock}
-                    </span>
-                  )}
-                  {item.location_name && (
-                    <span className="bg-gold-light/20 px-2 py-0.5 rounded-full text-charcoal/70">
-                      📍 {item.location_name}
-                    </span>
-                  )}
-                </div>
-                <div className="print:hidden flex items-center gap-2 mt-2">
-                  {item.reorder_link ? (
-                    <a
-                      href={item.reorder_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-gold-dark hover:text-charcoal transition-colors font-medium"
-                    >
-                      Reorder <ExternalLink className="h-3 w-3" />
-                    </a>
-                  ) : (
-                    <span className="text-xs text-charcoal/30">No reorder link</span>
-                  )}
-                  <button
-                    onClick={() => deleteDisplayItem(item)}
-                    className="ml-auto text-charcoal/40 hover:text-rust transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </>
+              <div className="flex items-center gap-2 mt-2 text-xs text-dusk flex-wrap">
+                {item.supplier && (
+                  <span className="bg-mist px-2 py-0.5 rounded-full">{item.supplier}</span>
+                )}
+                {item.current_stock !== null && (
+                  <span className="bg-mist px-2 py-0.5 rounded-full">
+                    In stock: {item.current_stock}
+                  </span>
+                )}
+                {item.location_name && (
+                  <span className="bg-mist px-2 py-0.5 rounded-full text-dusk">
+                    📍 {item.location_name}
+                  </span>
+                )}
+              </div>
             ) : (
-              <div className="print:hidden flex items-center gap-2 mt-2">
-                <span className="text-xs text-charcoal/40">{item.category}</span>
-                <button
-                  onClick={() => deleteDisplayItem(item)}
-                  className="ml-auto text-charcoal/40 hover:text-rust transition-colors"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-xs text-dusk">{item.category}</span>
               </div>
             )}
           </div>
@@ -577,7 +773,7 @@ export default function ShoppingListViewEnhanced({
   }
 
   if (loading) {
-    return <div className="text-center py-12 text-charcoal/50">Loading shopping list...</div>;
+    return <div className="text-center py-12 text-dusk">Loading shopping list...</div>;
   }
 
   const groups = groupItems();
@@ -587,28 +783,47 @@ export default function ShoppingListViewEnhanced({
     <div className="space-y-4">
       <style>{`@media print { .print\\:hidden { display: none !important; } }`}</style>
 
-      {/* More options */}
-      <div className="print:hidden relative flex items-center justify-end">
+      {/* Share promoted out to the toolbar itself (SS-148 follow-up) --
+          previously only reachable via More options, two taps deep. Kept
+          out of the dropdown below entirely now that it lives here, rather
+          than leaving two paths to the same action. */}
+      <div className="print:hidden relative flex items-center justify-end gap-1">
+        <button
+          onClick={shareWhatsApp}
+          className="flex items-center gap-1.5 text-sm font-medium text-denim hover:text-brass px-2 py-1 rounded-full transition-colors"
+        >
+          <WhatsAppIcon size={16} />
+          Share
+        </button>
         <button
           onClick={() => setShowMoreMenu((v) => !v)}
           aria-label="More options"
           title="More options"
-          className="text-charcoal/60 hover:text-charcoal p-1"
+          className="text-dusk hover:text-denim p-1"
         >
           <MoreVertical className="h-4 w-4" />
         </button>
         {showMoreMenu && (
           <div
-            className="absolute right-0 top-8 z-20 w-64 rounded-2xl border border-gold-light/40 bg-white shadow-lg p-3 space-y-3"
+            className="absolute right-0 top-8 z-20 w-64 rounded-2xl border border-cardBorder bg-card shadow-cardHover p-3 space-y-3"
             onMouseLeave={() => setShowMoreMenu(false)}
           >
-            <label className="flex items-center justify-between text-sm text-charcoal">
+            <label className="flex items-center justify-between text-sm text-denim">
               <span>Aggregate duplicates</span>
               <input
                 type="checkbox"
                 checked={aggregateDuplicates}
                 onChange={(e) => setAggregateDuplicates(e.target.checked)}
-                className="h-4 w-4 accent-gold-dark rounded"
+                className="h-4 w-4 accent-brass rounded"
+              />
+            </label>
+            <label className="flex items-center justify-between text-sm text-denim">
+              <span>Show "convenient to grab" items</span>
+              <input
+                type="checkbox"
+                checked={showNiceToHave}
+                onChange={(e) => setShowNiceToHave(e.target.checked)}
+                className="h-4 w-4 accent-brass rounded"
               />
             </label>
             <button
@@ -621,15 +836,15 @@ export default function ShoppingListViewEnhanced({
             >
               Clear checked ({completedItems.length})
             </button>
-            <div className="border-t border-gold-light/30 pt-3">
-              <p className="text-xs text-charcoal/40 mb-1.5">Density</p>
-              <div className="inline-flex rounded-full border border-gold-light/60 p-0.5 text-xs">
+            <div className="border-t border-cardBorder pt-3">
+              <p className="text-xs text-dusk mb-1.5">Density</p>
+              <div className="inline-flex rounded-full border border-cardBorder bg-card p-0.5 text-xs">
                 {(['comfortable', 'compact'] as const).map((d) => (
                   <button
                     key={d}
                     onClick={() => setDensity(d)}
                     className={`rounded-full px-3 py-1 capitalize ${
-                      density === d ? 'bg-gold-dark text-white' : 'text-charcoal/60'
+                      density === d ? 'bg-denim text-white' : 'text-dusk'
                     }`}
                   >
                     {d}
@@ -637,22 +852,13 @@ export default function ShoppingListViewEnhanced({
                 ))}
               </div>
             </div>
-            <div className="border-t border-gold-light/30 pt-3 flex items-center gap-4">
-              <button
-                onClick={() => {
-                  shareWhatsApp();
-                  setShowMoreMenu(false);
-                }}
-                className="flex items-center gap-1.5 text-sm text-charcoal/70 hover:text-charcoal"
-              >
-                <MessageCircle className="h-4 w-4" /> Share
-              </button>
+            <div className="border-t border-cardBorder pt-3">
               <button
                 onClick={() => {
                   window.print();
                   setShowMoreMenu(false);
                 }}
-                className="flex items-center gap-1.5 text-sm text-charcoal/70 hover:text-charcoal"
+                className="flex items-center gap-1.5 text-sm text-dusk hover:text-denim"
               >
                 <Printer className="h-4 w-4" /> Print
               </button>
@@ -661,19 +867,33 @@ export default function ShoppingListViewEnhanced({
         )}
       </div>
 
-      {/* View Options */}
-      <div className="print:hidden flex gap-2 flex-wrap">
-        {(['staples-first', 'category', 'by-recipe'] as const).map(option => (
+      {/* View Options -- tile, not pill (2026-07-20, RULE 2): was a row of
+          rounded-full capsules, the exact generic-chip shape FilterPill.tsx
+          already replaced elsewhere in the app. Same rounded-xl2/bg-mist/
+          border-brass tile language, sized for 3 view-mode buttons rather
+          than FilterPill itself -- these aren't a filter with a count,
+          just a 3-way display-mode switch, so no "(N)" line under the
+          label the way a real filter tile has one. */}
+      <div className="print:hidden flex gap-2">
+        {([
+          ['staples-first', Repeat, 'Staples'] as const,
+          ['category', Store, 'By Aisle'] as const,
+          ['by-recipe', BookOpen, 'By Recipe'] as const,
+          ['by-store', MapPin, 'By Store'] as const,
+        ]).map(([option, Icon, label]) => (
           <button
             key={option}
             onClick={() => setGroupBy(option)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              groupBy === option
-                ? 'bg-gold text-charcoal'
-                : 'bg-white border border-gold-light/50 text-charcoal/70 hover:bg-gold-light/10'
+            className={`flex-1 flex flex-col items-center justify-center gap-1 rounded-xl2 border px-2 py-2.5 shadow-card transition-colors ${
+              groupBy === option ? 'bg-denim border-denim' : 'bg-mist border-brass/30 hover:bg-card'
             }`}
           >
-            {option === 'staples-first' ? 'Staples First' : option === 'category' ? 'By Aisle' : 'By Recipe'}
+            <Icon className={`w-4 h-4 ${groupBy === option ? 'text-white' : 'text-brass'}`} strokeWidth={1.75} aria-hidden="true" />
+            {/* Renamed per request -- confirmed this toggle and the
+                resulting "Staples (N)" group card below are the exact same
+                mechanism (is_staple_origin), not a collision with a
+                separate concept. */}
+            <span className={`text-[11px] font-medium ${groupBy === option ? 'text-white' : 'text-denim'}`}>{label}</span>
           </button>
         ))}
       </div>
@@ -684,45 +904,110 @@ export default function ShoppingListViewEnhanced({
           treatment so both tabs feel like the same app rather than two
           different styles. Checked-off items don't appear here at all --
           they move to the single Completed section below. */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-start">
         {groups.map(group => {
           if (group.items.length === 0) return null;
           const collapsed = collapsedGroups.has(group.title);
+          const Icon = getShoppingCategoryIcon(group.title);
           return (
             <div
               key={group.title}
-              className="bg-white rounded-2xl border border-gold-light/40 shadow-sm shadow-charcoal/5 p-4"
+              className="relative bg-mist border border-brass/30 rounded-xl2 shadow-card hover:shadow-cardHover transition-shadow overflow-hidden"
             >
-              <button
-                onClick={() => toggleGroup(group.title)}
-                className="w-full flex items-center gap-2 mb-3 text-left"
-              >
-                <span className="font-display text-lg text-charcoal">{group.title}</span>
-                <span className="text-xs text-charcoal/40">({group.items.length})</span>
-                <span className="flex-1 border-t border-gold-light/40" />
-                <span className="text-charcoal/40 text-sm">{collapsed ? '▸' : '▾'}</span>
-              </button>
-              {!collapsed && <div className="space-y-2">{group.items.map(renderItemCard)}</div>}
+              <Pin size="sm" collapsed={collapsed} onToggle={() => toggleGroup(group.title)} />
+              <div className="min-h-[128px] flex flex-col items-center justify-center gap-1.5 py-[14px] px-[18px] text-center">
+                {/* By Recipe only -- group.photoUrl is undefined in every
+                    other grouping mode (category/aisle titles aren't
+                    recipes and have no photo to show). Same photo-or-
+                    fallback treatment as item cards elsewhere in this file. */}
+                {group.photoUrl !== undefined ? (
+                  <span className="w-9 h-9 rounded-md overflow-hidden bg-card shrink-0 flex items-center justify-center">
+                    {group.photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={group.photoUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-lg" aria-hidden="true">🍽️</span>
+                    )}
+                  </span>
+                ) : groupBy === 'by-store' && STORE_ICON_SRC[group.title] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={STORE_ICON_SRC[group.title]} alt="" className="w-9 h-9 object-contain" />
+                ) : (
+                  <Icon size={32} className="text-denim" aria-hidden="true" />
+                )}
+                <span className="font-display text-lg text-denim">{group.title}</span>
+                <span className="text-xs text-dusk">
+                  {group.items.length} {group.items.length === 1 ? 'item' : 'items'}
+                </span>
+              </div>
+              {/* Nested inside the same bordered/shadowed container as the
+                  tile above (not a separate floating block after it) --
+                  otherwise the expanded list reads as visually disconnected
+                  from the tile that opened it, even though it's already
+                  correctly grid-positioned directly beneath it (confirmed
+                  via computed geometry before this fix, not assumed). */}
+              {!collapsed && (
+                <div className="border-t border-brass/20 px-[18px] py-3 space-y-2">
+                  {group.items.map(renderItemCard)}
+                </div>
+              )}
             </div>
           );
         })}
       </div>
+
+      {/* Convenient to grab -- read-only advisory, not real shopping_list_items
+          rows (nothing here is checkable/purchasable/deletable the way the
+          groups above are). Sits between the real list and Completed:
+          secondary to what's actually needed, but still worth seeing before
+          the fully-done section at the very bottom. */}
+      {showNiceToHave && (
+        <div className="relative print:hidden bg-card rounded-2xl border border-cardBorder shadow-card p-4">
+          <Pin size="sm" />
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-display text-lg text-dusk">Convenient to grab</span>
+            <span className="text-xs text-dusk">({niceToHaveItems.length})</span>
+          </div>
+          <p className="text-xs text-dusk mb-3">
+            Not low yet, but close -- worth grabbing if you're already buying nearby stuff.
+          </p>
+          {niceToHaveItems.length === 0 ? (
+            <p className="text-sm text-dusk">Nothing sitting in that range right now.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {niceToHaveItems.map((item) => (
+                <li key={item.id} className="flex items-center gap-3">
+                  {item.photo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.photo_url} alt="" className="h-10 w-10 rounded object-cover flex-shrink-0 bg-mist" />
+                  ) : (
+                    <div className="h-10 w-10 rounded bg-mist flex-shrink-0" />
+                  )}
+                  <span className="flex-1 min-w-0 truncate text-sm text-dusk">
+                    {locale === 'es' && item.name_es ? item.name_es : item.name}
+                  </span>
+                  <span className="shrink-0 text-xs text-dusk">
+                    {item.current_qty} / {item.min_qty} {item.unit}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {/* Completed -- every checked-off item, regardless of group, in one
           collapsed section at the bottom. Cards already render checked
           items at reduced opacity with strikethrough text (renderItemCard's
           isChecked styling), unchanged here. */}
       {completedItems.length > 0 && (
-        <div className="print:hidden bg-white rounded-2xl border border-gold-light/40 shadow-sm shadow-charcoal/5 p-4">
-          <button
-            onClick={() => setCompletedExpanded((v) => !v)}
-            className="w-full flex items-center gap-2 text-left"
-          >
-            <span className="font-display text-lg text-charcoal/60">Completed</span>
-            <span className="text-xs text-charcoal/40">({completedItems.length})</span>
-            <span className="flex-1 border-t border-gold-light/40" />
-            <span className="text-charcoal/40 text-sm">{completedExpanded ? '▾' : '▸'}</span>
-          </button>
+        <div className="relative print:hidden bg-card rounded-2xl border border-cardBorder shadow-card p-4">
+          <Pin size="sm" collapsed={!completedExpanded} onToggle={() => setCompletedExpanded((v) => !v)} />
+          <div className="w-full flex items-center gap-2 text-left">
+            <span className="font-display text-lg text-dusk">Completed</span>
+            <span className="text-xs text-dusk">({completedItems.length})</span>
+            <span className="flex-1 border-t border-cardBorder" />
+          </div>
           {completedExpanded && (
             <div className="space-y-2 mt-3">{aggregateItems(completedItems).map(renderItemCard)}</div>
           )}
@@ -731,15 +1016,15 @@ export default function ShoppingListViewEnhanced({
 
       {items.length === 0 && (
         <div className="text-center py-12 px-4">
-          <div className="mx-auto mb-3 w-14 h-14 rounded-full bg-gold-light/25 flex items-center justify-center">
-            <ShoppingCart className="h-6 w-6 text-gold-dark" strokeWidth={1.75} aria-hidden="true" />
+          <div className="mx-auto mb-3 w-14 h-14 rounded-full bg-mist flex items-center justify-center">
+            <ShoppingCart className="h-6 w-6 text-brass" strokeWidth={1.75} aria-hidden="true" />
           </div>
-          <p className="text-sm text-charcoal/60 mb-1">{t('emptyTitle')}</p>
-          <p className="text-xs text-charcoal/40 mb-4">{t('emptySubtitle')}</p>
+          <p className="text-sm text-dusk mb-1">{t('emptyTitle')}</p>
+          <p className="text-xs text-dusk mb-4">{t('emptySubtitle')}</p>
           <button
             onClick={handleGenerateFromWeek}
             disabled={generating}
-            className="inline-flex items-center gap-1.5 bg-gold-dark text-white px-5 py-2.5 rounded-full text-sm font-medium hover:opacity-90 transition disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 bg-denim text-white px-5 py-2.5 rounded-full text-sm font-medium hover:opacity-90 transition disabled:opacity-40"
           >
             <Sparkles className="h-4 w-4" />
             {generating ? t('generating') : t('generateFromWeek')}
@@ -747,7 +1032,7 @@ export default function ShoppingListViewEnhanced({
         </div>
       )}
 
-      <div className="text-xs text-charcoal/40 pt-2 border-t border-gold-light/20">
+      <div className="text-xs text-dusk pt-2 border-t border-cardBorder">
         {items.length} items total
       </div>
     </div>

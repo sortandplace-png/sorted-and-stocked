@@ -42,7 +42,7 @@ export default function PropertySwitcher({
   // Nothing to switch to — render the plain label as before rather than a
   // dropdown with a single dead-end option.
   if (properties.length <= 1) {
-    return <span className="block text-[11px] text-charcoal/60 truncate">{currentPropertyName}</span>;
+    return <span className="block text-[11px] text-white/70 truncate">{currentPropertyName}</span>;
   }
 
   function switchTo(propertyId: string) {
@@ -62,7 +62,7 @@ export default function PropertySwitcher({
         }}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="flex items-center gap-1 text-[11px] font-medium text-charcoal/70 hover:text-charcoal transition-colors -ml-0.5 pl-0.5 pr-1.5 py-0.5 rounded-full hover:bg-gold-light/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal"
+        className="flex items-center gap-1 text-[11px] font-medium text-white/70 hover:text-white transition-colors -ml-0.5 pl-0.5 pr-1.5 py-0.5 rounded-full hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
       >
         <span className="truncate max-w-[9rem]">{currentPropertyName}</span>
         <ChevronDown size={12} strokeWidth={2} className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
@@ -71,7 +71,7 @@ export default function PropertySwitcher({
       {open && (
         <div
           role="menu"
-          className="absolute left-0 top-full mt-1 min-w-[12rem] bg-cream border border-gold-light/40 rounded-2xl shadow-md shadow-charcoal/10 py-1.5 z-50"
+          className="absolute left-0 top-full mt-1 min-w-[12rem] bg-card border border-cardBorder rounded-2xl shadow-md shadow-black/10 py-1.5 z-50"
         >
           {properties.map((p) => {
             const active = p.id === currentPropertyId;
@@ -83,12 +83,12 @@ export default function PropertySwitcher({
                 onClick={() => switchTo(p.id)}
                 className={`w-full flex items-center justify-between gap-2 px-4 py-2 text-sm text-left whitespace-nowrap transition-colors border-l-2 ${
                   active
-                    ? 'text-charcoal font-semibold bg-gold-light/20 border-gold-active'
-                    : 'text-charcoal/70 hover:bg-gold-light/10 border-transparent'
+                    ? 'text-denim font-semibold bg-mist border-brass'
+                    : 'text-dusk hover:bg-mist/50 border-transparent'
                 }`}
               >
                 <span className="font-display truncate">{p.name}</span>
-                {active && <Check size={14} strokeWidth={2} className="text-gold-dark shrink-0" aria-hidden="true" />}
+                {active && <Check size={14} strokeWidth={2} className="text-brass shrink-0" aria-hidden="true" />}
               </button>
             );
           })}

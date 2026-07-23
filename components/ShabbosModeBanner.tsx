@@ -17,17 +17,17 @@ export function ShabbosModeBanner({
   if (!isActive) return null;
 
   return (
-    <div className="bg-amber-700 text-amber-50 p-4 font-sans shadow-lg border-b-4 border-amber-900 no-print">
+    <div className="bg-denim text-white p-4 font-sans shadow-lg border-b-4 border-brass no-print">
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-amber-900/40 rounded-lg animate-pulse">
-            <Lock className="h-5 w-5 text-amber-200" />
+          <div className="p-2 bg-brass/20 rounded-lg animate-pulse">
+            <Lock className="h-5 w-5 text-brass" />
           </div>
           <div>
             <h3 className="font-bold text-base tracking-tight">
               🕯️ Shabbos Mode Active — {propertyName}
             </h3>
-            <p className="text-sm text-amber-100 mt-0.5">
+            <p className="text-sm text-white/80 mt-0.5">
               Database is locked for the weekend. All changes are disabled until Sunday morning.
             </p>
           </div>
@@ -36,7 +36,7 @@ export function ShabbosModeBanner({
         <div className="flex items-center gap-2">
           <button
             onClick={onPrintList}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white text-amber-900 hover:bg-amber-50 font-bold rounded-lg text-sm uppercase tracking-widest transition-colors shadow-md no-print"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white text-denim hover:bg-mist font-bold rounded-lg text-sm uppercase tracking-widest transition-colors shadow-md no-print"
           >
             <Printer className="h-4 w-4" />
             Print List
@@ -45,7 +45,7 @@ export function ShabbosModeBanner({
       </div>
 
       {/* Static Preview Info */}
-      <div className="mt-3 text-xs text-amber-100 text-center">
+      <div className="mt-3 text-xs text-white/80 text-center">
         This shopping list has been frozen. No modifications allowed until Saturday night.
       </div>
     </div>

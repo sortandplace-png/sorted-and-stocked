@@ -4,6 +4,7 @@
 import { useRef, useState } from 'react';
 import { compressImageToDataUrl } from '@/lib/compress-image';
 import { useToast } from '@/components/Toast';
+import CameraCapture from '@/components/CameraCapture';
 
 type ScannerResult = {
   productName: string | null;
@@ -27,7 +28,8 @@ export default function IngredientScannerClient({ propertyId }: { propertyId: st
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScannerResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const showToast = useToast();
 
   async function runAnalysis(payload: Record<string, unknown>) {
@@ -54,13 +56,22 @@ export default function IngredientScannerClient({ propertyId }: { propertyId: st
     }
   }
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  async function processFile(file: File) {
     if (preview) URL.revokeObjectURL(preview);
     setPreview(URL.createObjectURL(file));
     const { data, mediaType } = await fileToBase64(file);
     runAnalysis({ imageBase64: data, mediaType });
+  }
+
+  function handleGalleryFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    processFile(file);
+  }
+
+  function handleCameraFile(file: File) {
+    setShowCamera(false);
+    processFile(file);
   }
 
   function handleTextSubmit() {
@@ -74,15 +85,15 @@ export default function IngredientScannerClient({ propertyId }: { propertyId: st
     setTextInput('');
     setResult(null);
     setError(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (galleryInputRef.current) galleryInputRef.current.value = '';
   }
 
   const hasInput = !!preview || !!result;
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Ingredient Scanner</h1>
-      <p className="text-sm text-charcoal/50 mb-4">Photograph or type in a label for a plain-language, evidence-based read.</p>
+      <h1 className="text-2xl font-display text-denim mb-1">Ingredient Scanner</h1>
+      <p className="text-sm text-dusk mb-4">Photograph or type in a label for a plain-language, evidence-based read.</p>
 
       {!hasInput && (
         <>
@@ -91,8 +102,8 @@ export default function IngredientScannerClient({ propertyId }: { propertyId: st
               onClick={() => setMode('photo')}
               className={
                 mode === 'photo'
-                  ? 'flex-1 py-2 rounded-full bg-charcoal text-cream text-sm'
-                  : 'flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm'
+                  ? 'flex-1 py-2 rounded-full bg-denim text-white text-sm'
+                  : 'flex-1 py-2 rounded-full bg-linen border border-denim/20 text-denim text-sm'
               }
             >
               📷 Photo
@@ -101,8 +112,8 @@ export default function IngredientScannerClient({ propertyId }: { propertyId: st
               onClick={() => setMode('text')}
               className={
                 mode === 'text'
-                  ? 'flex-1 py-2 rounded-full bg-charcoal text-cream text-sm'
-                  : 'flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm'
+                  ? 'flex-1 py-2 rounded-full bg-denim text-white text-sm'
+                  : 'flex-1 py-2 rounded-full bg-linen border border-denim/20 text-denim text-sm'
               }
             >
               ⌨️ Type it in
@@ -110,18 +121,36 @@ export default function IngredientScannerClient({ propertyId }: { propertyId: st
           </div>
 
           {mode === 'photo' ? (
-            <label className="block border-2 border-dashed border-gold-light rounded-2xl py-10 text-center cursor-pointer bg-white/50">
+            // Real camera access (CameraCapture, getUserMedia), not a
+            // file-input hint -- confirmed live that even an isolated
+            // input with capture="environment" still opened the gallery
+            // picker instead of the camera on a real device.
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setShowCamera(true)}
+                className="border-2 border-dashed border-cardBorder rounded-2xl py-10 text-center bg-white/50"
+              >
+                <span className="text-4xl block mb-2">📷</span>
+                <span className="text-sm text-denim font-medium">Take a photo of a label</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => galleryInputRef.current?.click()}
+                className="border-2 border-dashed border-cardBorder rounded-2xl py-10 text-center bg-white/50"
+              >
+                <span className="text-4xl block mb-2">🖼️</span>
+                <span className="text-sm text-denim font-medium">Choose from library</span>
+              </button>
               <input
-                ref={fileInputRef}
+                ref={galleryInputRef}
                 type="file"
                 accept="image/*"
-                capture="environment"
-                onChange={handleFile}
+                onChange={handleGalleryFile}
                 className="hidden"
               />
-              <span className="text-4xl block mb-2">📷</span>
-              <span className="text-sm text-charcoal font-medium">Take or upload a photo of a label</span>
-            </label>
+              <CameraCapture open={showCamera} onCapture={handleCameraFile} onClose={() => setShowCamera(false)} />
+            </div>
           ) : (
             <div>
               <textarea
@@ -129,12 +158,12 @@ export default function IngredientScannerClient({ propertyId }: { propertyId: st
                 onChange={(e) => setTextInput(e.target.value)}
                 placeholder="e.g. Water, Sugar, Citric Acid, Sodium Benzoate..."
                 rows={3}
-                className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-3 bg-white"
+                className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-2xl px-4 py-3 bg-white"
               />
               <button
                 onClick={handleTextSubmit}
                 disabled={!textInput.trim()}
-                className="w-full mt-3 py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
+                className="w-full mt-3 py-2.5 rounded-full bg-denim text-white font-medium disabled:opacity-40"
               >
                 Analyze
               </button>
@@ -150,7 +179,7 @@ export default function IngredientScannerClient({ propertyId }: { propertyId: st
 
       {loading && (
         <div className="text-center py-8">
-          <p className="text-sm text-charcoal/60 animate-pulse font-display italic">Analyzing…</p>
+          <p className="text-sm text-dusk animate-pulse font-display italic">Analyzing…</p>
         </div>
       )}
 
@@ -161,12 +190,12 @@ export default function IngredientScannerClient({ propertyId }: { propertyId: st
       {result && (
         <div className="space-y-3">
           {result.productName && (
-            <h2 className="font-display text-lg text-charcoal">{result.productName}</h2>
+            <h2 className="font-display text-lg text-denim">{result.productName}</h2>
           )}
 
           {result.allergens.length > 0 && (
             <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
-              <p className="text-xs font-medium uppercase tracking-wider text-gold-dark mb-2">Allergens</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-brass mb-2">Allergens</p>
               <div className="flex flex-wrap gap-1.5">
                 {result.allergens.map((a) => (
                   <span key={a} className="text-xs font-medium bg-rust/10 text-rust px-2.5 py-1 rounded-full">
@@ -185,11 +214,11 @@ export default function IngredientScannerClient({ propertyId }: { propertyId: st
               <p className="text-xs font-bold uppercase tracking-wider text-rust mb-1.5">
                 ⚠️ AI estimate, not a hechsher — verify the actual package
               </p>
-              <p className="text-sm text-charcoal">{result.kosherGuess}</p>
+              <p className="text-sm text-denim">{result.kosherGuess}</p>
             </div>
           )}
 
-          <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-5 whitespace-pre-wrap text-sm leading-relaxed text-charcoal">
+          <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-5 whitespace-pre-wrap text-sm leading-relaxed text-denim">
             {result.analysis}
           </div>
         </div>
@@ -198,7 +227,7 @@ export default function IngredientScannerClient({ propertyId }: { propertyId: st
       {(preview || result) && !loading && (
         <button
           onClick={reset}
-          className="w-full mt-4 py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm font-medium"
+          className="w-full mt-4 py-2.5 rounded-full bg-linen border border-denim/20 text-denim text-sm font-medium"
         >
           Try another
         </button>

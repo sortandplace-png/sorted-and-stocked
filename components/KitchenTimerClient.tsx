@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 
-type Timer = {
+export type Timer = {
   id: string;
   name: string;
   secondsLeft: number;
@@ -40,19 +40,27 @@ function playAlarm() {
 }
 
 // Supports multiple simultaneous named timers (e.g. "Rice" + "Chicken"
-// running at once) — reused as-is on both its original standalone page
-// (/tools/kitchen-timer) and the new floating popup on the Recipes page,
-// rather than building a second, separate timer component.
+// running at once) — reused as-is on its original standalone page
+// (/tools/kitchen-timer) and the SS-034 floating widget
+// (components/kitchen/FloatingMultiTimer.tsx) on the Recipes page, rather
+// than building a second, separate timer component.
 // initialName/initialMinutes let a caller (e.g. opening the timer from a
 // specific recipe) pre-fill the add-timer form with that recipe's own
 // approx_total_minutes -- still just a starting point in the form, not an
 // auto-started timer, since the user may want to adjust before starting.
+// onTimersChange is optional and purely a listener -- timers state stays
+// fully owned here, this never becomes a controlled component. Added so
+// FloatingMultiTimer can show a live "nearest timer" countdown on its
+// collapsed button without duplicating this component's own countdown
+// logic in a second place.
 export default function KitchenTimerClient({
   initialName,
   initialMinutes,
+  onTimersChange,
 }: {
   initialName?: string;
   initialMinutes?: number | null;
+  onTimersChange?: (timers: Timer[]) => void;
 } = {}) {
   const [timers, setTimers] = useState<Timer[]>([]);
   const [newName, setNewName] = useState(initialName ?? '');
@@ -60,6 +68,11 @@ export default function KitchenTimerClient({
     initialMinutes != null ? String(initialMinutes) : '5'
   );
   const tickRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    onTimersChange?.(timers);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timers]);
 
   useEffect(() => {
     const hasActive = timers.some((t) => t.isActive && t.secondsLeft > 0);
@@ -113,9 +126,9 @@ export default function KitchenTimerClient({
   }
 
   return (
-    <div className="bg-white border border-gold-light/40 rounded-2xl p-5 shadow-xl max-w-sm mx-auto text-charcoal">
+    <div className="bg-card border border-cardBorder rounded-2xl p-5 shadow-card max-w-sm mx-auto text-denim">
       <div className="text-center mb-4">
-        <span className="text-xs uppercase tracking-widest text-charcoal/50 font-semibold">Kitchen Companion</span>
+        <span className="text-xs uppercase tracking-widest text-dusk font-semibold">Kitchen Companion</span>
       </div>
 
       <div className="flex gap-2 mb-4">
@@ -123,7 +136,7 @@ export default function KitchenTimerClient({
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           placeholder="Name (e.g. Rice)"
-          className="flex-1 min-w-0 bg-cream/40 border border-gold-light/60 rounded-xl px-3 py-2 text-sm text-charcoal placeholder:text-charcoal/30 focus:outline-none focus:ring-2 focus:ring-gold/40"
+          className="flex-1 min-w-0 bg-mist border border-cardBorder rounded-xl px-3 py-2 text-sm text-denim placeholder:text-dusk focus:outline-none focus:ring-2 focus:ring-brass/40"
         />
         <input
           value={newMinutes}
@@ -132,26 +145,26 @@ export default function KitchenTimerClient({
           min="0.5"
           step="0.5"
           placeholder="Min"
-          className="w-16 bg-cream/40 border border-gold-light/60 rounded-xl px-2 py-2 text-sm text-charcoal text-center focus:outline-none focus:ring-2 focus:ring-gold/40"
+          className="w-16 bg-mist border border-cardBorder rounded-xl px-2 py-2 text-sm text-denim text-center focus:outline-none focus:ring-2 focus:ring-brass/40"
         />
         <button
           onClick={addTimer}
-          className="min-h-11 px-4 rounded-xl bg-gold-dark text-white font-medium text-sm shrink-0 hover:opacity-90 transition"
+          className="min-h-11 px-4 rounded-xl bg-denim text-white font-medium text-sm shrink-0 hover:opacity-90 transition"
         >
           Add
         </button>
       </div>
 
       {timers.length === 0 && (
-        <p className="text-center text-sm text-charcoal/40 py-4">No timers running. Add one above.</p>
+        <p className="text-center text-sm text-dusk py-4">No timers running. Add one above.</p>
       )}
 
       <div className="space-y-2">
         {timers.map((t) => (
-          <div key={t.id} className="flex items-center gap-3 bg-cream/60 rounded-xl px-3 py-2.5">
+          <div key={t.id} className="flex items-center gap-3 bg-mist rounded-xl px-3 py-2.5">
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate text-charcoal">{t.name}</p>
-              <p className={`text-2xl font-mono font-bold tracking-tight ${t.secondsLeft === 0 ? 'text-rust' : 'text-gold-dark'}`}>
+              <p className="text-sm font-medium truncate text-denim">{t.name}</p>
+              <p className={`text-2xl font-mono font-bold tracking-tight ${t.secondsLeft === 0 ? 'text-rust' : 'text-brass'}`}>
                 {formatTime(t.secondsLeft)}
               </p>
             </div>
@@ -160,9 +173,9 @@ export default function KitchenTimerClient({
               disabled={t.secondsLeft === 0}
               className={`min-h-11 min-w-[4.5rem] px-3 rounded-xl font-semibold text-sm transition active:scale-95 ${
                 t.secondsLeft === 0
-                  ? 'bg-gold-light/20 text-charcoal/30 cursor-not-allowed border border-gold-light/40'
+                  ? 'bg-card text-dusk cursor-not-allowed border border-cardBorder'
                   : t.isActive
-                  ? 'bg-gold text-charcoal hover:bg-gold-light'
+                  ? 'bg-mist text-denim border border-brass/40 hover:bg-card'
                   : 'bg-sage text-white hover:opacity-90'
               }`}
             >

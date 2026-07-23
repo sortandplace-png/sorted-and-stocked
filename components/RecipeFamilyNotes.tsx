@@ -56,7 +56,7 @@ function renderInline(text: string, keyPrefix: string): React.ReactNode {
       const url = match[7];
       if (/^https?:\/\//i.test(url)) {
         parts.push(
-          <a key={`${keyPrefix}-${i++}`} href={url} target="_blank" rel="noreferrer" className="text-gold-dark underline">
+          <a key={`${keyPrefix}-${i++}`} href={url} target="_blank" rel="noreferrer" className="text-brass underline">
             {match[6]}
           </a>
         );
@@ -135,20 +135,20 @@ export default function RecipeFamilyNotes({
 
   return (
     <div className="bg-white rounded-xl2 shadow-sm shadow-charcoal/5 p-5 print:hidden">
-      <h3 className="font-display text-lg text-charcoal mb-1">{t('title')}</h3>
-      <p className="text-xs text-charcoal/50 mb-3">{t('description')}</p>
+      <h3 className="font-display text-lg text-denim mb-1">{t('title')}</h3>
+      <p className="text-xs text-dusk mb-3">{t('description')}</p>
 
-      <div className="flex items-center gap-1 mb-1.5 border border-gold-light/50 rounded-t-xl px-2 py-1 bg-cream/40">
-        <button type="button" onClick={() => wrapSelection('**')} title={t('bold')} className="p-1.5 rounded hover:bg-gold-light/30">
+      <div className="flex items-center gap-1 mb-1.5 border border-cardBorder rounded-t-xl px-2 py-1 bg-linen">
+        <button type="button" onClick={() => wrapSelection('**')} title={t('bold')} className="p-1.5 rounded hover:bg-linen">
           <Bold size={14} />
         </button>
-        <button type="button" onClick={() => wrapSelection('*')} title={t('italic')} className="p-1.5 rounded hover:bg-gold-light/30">
+        <button type="button" onClick={() => wrapSelection('*')} title={t('italic')} className="p-1.5 rounded hover:bg-linen">
           <Italic size={14} />
         </button>
-        <button type="button" onClick={insertListItem} title={t('list')} className="p-1.5 rounded hover:bg-gold-light/30">
+        <button type="button" onClick={insertListItem} title={t('list')} className="p-1.5 rounded hover:bg-linen">
           <List size={14} />
         </button>
-        <button type="button" onClick={insertLink} title={t('link')} className="p-1.5 rounded hover:bg-gold-light/30">
+        <button type="button" onClick={insertLink} title={t('link')} className="p-1.5 rounded hover:bg-linen">
           <LinkIcon size={14} />
         </button>
       </div>
@@ -159,23 +159,23 @@ export default function RecipeFamilyNotes({
         disabled={isPending}
         rows={3}
         placeholder={t('placeholder')}
-        className="w-full border border-gold-light/60 border-t-0 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-b-xl p-3 text-sm text-charcoal disabled:opacity-60 resize-y"
+        className="w-full border border-cardBorder border-t-0 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-b-xl p-3 text-sm text-denim disabled:opacity-60 resize-y"
       />
 
       {draft.trim() && (
-        <div className="mt-2 text-xs text-charcoal/70 bg-cream px-3 py-2 rounded-lg">{renderNoteMarkdown(draft)}</div>
+        <div className="mt-2 text-xs text-dusk bg-linen px-3 py-2 rounded-lg">{renderNoteMarkdown(draft)}</div>
       )}
 
       <div className="flex justify-end gap-2 mt-2">
         {isDirty && !isPending && (
-          <button onClick={() => setDraft(saved)} className="text-sm text-charcoal/50 hover:text-charcoal px-3 py-1.5">
+          <button onClick={() => setDraft(saved)} className="text-sm text-dusk hover:text-denim px-3 py-1.5">
             {tc('revert')}
           </button>
         )}
         <button
           onClick={handleSave}
           disabled={!isDirty || isPending}
-          className="text-sm font-medium bg-gold-dark text-white px-4 py-1.5 rounded-full disabled:opacity-40"
+          className="text-sm font-medium bg-denim text-white px-4 py-1.5 rounded-full disabled:opacity-40"
         >
           {isPending ? tc('saving') : tc('save')}
         </button>

@@ -2,7 +2,11 @@
 import { createServerClient, type SetAllCookies } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/login', '/auth/callback', '/forgot-password'];
+// /auth/confirm and /reset-password: someone clicking an invite link is by
+// definition not signed in yet, and the session it establishes is set
+// client-side (via the Supabase SDK reading the URL) a moment after the
+// initial navigation -- both need to be reachable before that lands.
+const PUBLIC_PATHS = ['/login', '/auth/callback', '/auth/confirm', '/forgot-password', '/reset-password', '/signup', '/welcome', '/entry', '/privacy.html', '/terms.html', '/cookie-policy.html', '/blog'];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -40,12 +44,19 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isPublicPath = PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
+  // Root ("/") is public too, as of app/page.tsx becoming the marketing
+  // landing page (2026-07-21) -- but checked with an EXACT match, never
+  // folded into PUBLIC_PATHS's startsWith() list above. Every path starts
+  // with "/", so adding it there would make isPublicPath true for the
+  // entire app and disable auth everywhere, not just at root.
+  const isRoot = request.nextUrl.pathname === '/';
+  const isPublicPath = isRoot || PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
 
   if (!user && !isPublicPath) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
-    return NextResponse.redirect(loginUrl);
+    // No ?redirectTo= -- login always lands on /properties (Dashboard, or
+    // the household picker), never back on whatever deep link triggered
+    // the bounce. See app/login/page.tsx.
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   return response;

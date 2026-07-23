@@ -18,7 +18,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { config } from 'dotenv';
 
-config({ path: 'C:/dev/sorted-and-stocked-files/.env.local' });
+config({ path: '.env.local' });
 
 const limit = Number(process.argv[2] ?? 12);
 const priorityNames = (process.argv[3] ?? '')

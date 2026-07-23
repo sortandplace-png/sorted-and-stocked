@@ -65,8 +65,8 @@ export default function SubstitutionEditor({
 
   return (
     <div className="bg-white rounded-xl2 shadow-sm shadow-charcoal/5 p-5">
-      <h3 className="font-display text-lg text-charcoal mb-1">{t('title')}</h3>
-      <p className="text-xs text-charcoal/50 mb-2">{t('description')}</p>
+      <h3 className="font-display text-lg text-denim mb-1">{t('title')}</h3>
+      <p className="text-xs text-dusk mb-2">{t('description')}</p>
 
       <form onSubmit={handleSave} className="space-y-2">
         <div className="relative">
@@ -76,15 +76,15 @@ export default function SubstitutionEditor({
             disabled={isPending}
             rows={5}
             placeholder={t('placeholder')}
-            className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-xl p-3 text-sm text-charcoal disabled:opacity-60 resize-y"
+            className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl p-3 text-sm text-denim disabled:opacity-60 resize-y"
           />
-          <div className="absolute bottom-2 right-3 text-[10px] text-charcoal/30">
+          <div className="absolute bottom-2 right-3 text-[10px] text-dusk">
             {notes.length} / {CHARACTER_LIMIT}
           </div>
         </div>
 
         {(lastUpdatedAt || lastUpdatedBy) && (
-          <div className="text-[11px] text-charcoal/40 flex justify-between items-center bg-cream px-3 py-1.5 rounded-lg">
+          <div className="text-[11px] text-dusk flex justify-between items-center bg-linen px-3 py-1.5 rounded-lg">
             <span>{t('lastModified', { date: lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleDateString() : 'N/A' })}</span>
             <span>{t('by', { name: lastUpdatedBy || 'System' })}</span>
           </div>
@@ -109,7 +109,7 @@ export default function SubstitutionEditor({
               <button
                 type="button"
                 onClick={() => setNotes(initialNotes)}
-                className="text-sm text-charcoal/50 hover:text-charcoal px-3 py-1.5"
+                className="text-sm text-dusk hover:text-denim px-3 py-1.5"
               >
                 {tc('revert')}
               </button>
@@ -117,7 +117,7 @@ export default function SubstitutionEditor({
             <button
               type="submit"
               disabled={!isDirty || isPending}
-              className="text-sm font-medium bg-gold-dark text-white px-4 py-1.5 rounded-full disabled:opacity-40"
+              className="text-sm font-medium bg-denim text-white px-4 py-1.5 rounded-full disabled:opacity-40"
             >
               {isPending ? tc('saving') : tc('save')}
             </button>

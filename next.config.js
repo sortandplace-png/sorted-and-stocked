@@ -10,20 +10,35 @@ const withPWA = require('next-pwa')({
   disable: process.env.NODE_ENV === 'development',
   runtimeCaching: [
     // Static assets: cache-first, instant load even with zero signal.
+    // Same-origin only -- an unscoped regex here also matched cross-origin
+    // Supabase Storage photo URLs (dashboard-photos/*.jpeg), and CacheFirst
+    // never revalidates, so any device that had already hit one of those
+    // URLs (even before the real photo existed) kept serving that cached
+    // response forever, regardless of how many times the app redeployed.
     {
-      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|woff2?)$/i,
+      urlPattern: ({ url }) => url.origin === self.location.origin && /\.(?:png|jpg|jpeg|svg|gif|webp|ico|woff2?)$/i.test(url.pathname),
       handler: 'CacheFirst',
       options: {
         cacheName: 'static-assets',
         expiration: { maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 },
       },
     },
-    // App shell / pages: stale-while-revalidate so navigation works offline
-    // and updates silently in the background when signal returns.
+    // App shell / pages: network-first, falling back to cache only when
+    // actually offline. StaleWhileRevalidate was here before, but Workbox's
+    // Cache Storage keys purely by request URL with no session/cookie
+    // awareness — for these per-account server-rendered pages (e.g.
+    // /properties), that meant a page cached for one logged-in account
+    // could get served to a different account on the same device before
+    // the background revalidation caught up. Network-first still supports
+    // offline navigation in a dead-zone pantry, it just never prefers a
+    // stale cross-account response while online.
     {
       urlPattern: ({ request }) => request.mode === 'navigate',
-      handler: 'StaleWhileRevalidate',
-      options: { cacheName: 'pages' },
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'pages',
+        networkTimeoutSeconds: 3,
+      },
     },
     // Supabase REST reads: network-first with a short timeout, falling back
     // to the last cached response when offline (e.g. viewing inventory in

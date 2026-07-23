@@ -30,8 +30,14 @@ const TOOLS = [
   {
     slug: 'knowledge-base',
     icon: '📚',
-    title: 'Household Knowledge Base',
+    title: 'House Manual',
     description: 'The answers staff and family keep asking for.',
+  },
+  {
+    slug: 'tasks',
+    icon: '✅',
+    title: 'Staff Task Center',
+    description: 'What needs doing, and by whom.',
   },
   {
     slug: 'contacts',
@@ -88,6 +94,12 @@ const TOOLS = [
     description: 'Bulk-upload house photos and match each to a real room.',
   },
   {
+    slug: 'photo-worklist',
+    icon: '📷',
+    title: 'Photo Worklist',
+    description: "Items a web search couldn't confirm — photograph what's actually on the shelf.",
+  },
+  {
     slug: 'takeout-directory',
     icon: '🥡',
     title: 'Local Takeout Directory',
@@ -112,10 +124,52 @@ const TOOLS = [
     description: 'A running record of photos, milestones, and moments.',
   },
   {
-    slug: 'blog',
-    icon: '📖',
-    title: 'Blog & Articles',
-    description: 'Household management tips, recipes, and insights.',
+    slug: 'yom-tov-year-view',
+    icon: '🗓️',
+    title: 'Yom Tov Year View',
+    description: 'Every Yom Tov date on the calendar, at a glance.',
+  },
+  {
+    slug: 'capture-photo',
+    icon: '📸',
+    title: 'Capture Photo',
+    description: 'Snap a photo — match it to a room or item later.',
+  },
+  {
+    slug: 'identify-item',
+    icon: '🆕',
+    title: 'Identify New Item',
+    description: "Photograph something new — AI suggests a name, you confirm before it's added.",
+  },
+  {
+    slug: 'link-captured-photos',
+    icon: '🔗',
+    title: 'Link Captured Photos',
+    description: 'Match photos staff took to a real inventory item or room.',
+  },
+  {
+    slug: 'hechsher-verification',
+    icon: '✅',
+    title: 'Hechsher Verification',
+    description: 'Confirm hechsher against OU/OK for every item missing one.',
+  },
+  {
+    slug: 'kosher-type-tagging',
+    icon: '🏷️',
+    title: 'Kosher Type Tagging',
+    description: 'Bulk-tag Meat/Dairy/Parve by category for items missing one.',
+  },
+  {
+    slug: 'translation-worklist',
+    icon: '🌐',
+    title: 'Translation Worklist',
+    description: 'Recipes, ingredients, and items still missing a Spanish name.',
+  },
+  {
+    slug: 'digest',
+    icon: '📰',
+    title: 'Household Digest',
+    description: "A preview of what's low and what's coming up this week.",
   },
 ];
 
@@ -126,22 +180,46 @@ const TASTE_MEMORY_TOOL = {
   description: 'Likes, dislikes, allergies, and sensitivities — kept with the person.',
 };
 
-// Grouped per the approved Tools Hub redesign. The design brief named ~13
-// of the real 17 tools explicitly; the rest (halachic-calendar,
-// prep-timeline, memory-timeline, taste-memory) are placed into whichever
-// of the 4 named groups fits them best rather than left ungrouped.
-// 'tasks' (Staff Task Center) removed from here -- real duplicate entry
-// point, same pattern as the Handover fix. The dedicated Staff nav group
-// (DesktopNav.tsx) is now the one real way in, not a second generic-grid
-// tile pointing at the same /tools/tasks page.
-const GROUPS: { key: string; label: string; slugs: string[] }[] = [
+// Grouped per the finalized nav restructure spec (2026-07-14): Kitchen and
+// House each keep their existing loose items and gain named subgroups so
+// the previously-unplaced pages (Prep Timeline, Yom Tov Year View, Pantry
+// Zone Map, Borrowed & Lent, Duplicate Ingredients, Needs Linking, Room
+// Photo Review, Bulk Photo Upload) all get a real home. Inventory Ops fully
+// dissolves into House's three new subgroups — every one of its items moved,
+// none left loose. Halachic Calendar moved out of Household into Kitchen's
+// new Calendar subgroup, next to the new Yom Tov Year View entry.
+const GROUPS: {
+  key: string;
+  label: string;
+  slugs: string[];
+  subgroups?: { key: string; label: string; slugs: string[]; lockIcon?: boolean }[];
+}[] = [
   { key: 'scanners', label: 'Scanners', slugs: ['price-scanner', 'ingredient-scanner', 'recipe-stealer'] },
-  { key: 'kitchen-ops', label: 'Kitchen Ops', slugs: ['kitchen-timer', 'guest-scaler', 'reset-checklist', 'prep-timeline'] },
-  { key: 'inventory-ops', label: 'Inventory Ops', slugs: ['pantry-zones', 'borrowed-items', 'duplicate-ingredients', 'needs-linking', 'photo-review', 'capture-inbox'] },
   {
-    key: 'household',
-    label: 'Household',
-    slugs: ['knowledge-base', 'contacts', 'takeout-directory', 'halachic-calendar', 'memory-timeline', 'taste-memory', 'blog'],
+    key: 'kitchen',
+    label: 'Kitchen',
+    slugs: ['kitchen-timer', 'guest-scaler'],
+    subgroups: [
+      { key: 'prep-reset', label: 'Prep & Reset', slugs: ['prep-timeline', 'reset-checklist'] },
+      { key: 'calendar', label: 'Calendar', slugs: ['halachic-calendar', 'yom-tov-year-view'] },
+    ],
+  },
+  {
+    key: 'house',
+    label: 'House',
+    slugs: ['tasks', 'takeout-directory', 'memory-timeline', 'taste-memory'],
+    subgroups: [
+      // Location-based pair first (House Manual, Pantry Zone Map), then the
+      // people/contact-based pair (Contacts & Vendors, Borrowed & Lent).
+      { key: 'reference', label: 'Reference', slugs: ['knowledge-base', 'pantry-zones', 'contacts', 'borrowed-items', 'digest'] },
+      { key: 'capture-tools', label: 'Capture Tools', slugs: ['capture-inbox', 'capture-photo', 'identify-item', 'photo-review', 'photo-worklist'] },
+      {
+        key: 'admin-cleanup',
+        label: 'Admin Cleanup',
+        slugs: ['duplicate-ingredients', 'needs-linking', 'link-captured-photos', 'hechsher-verification', 'kosher-type-tagging', 'translation-worklist'],
+        lockIcon: true,
+      },
+    ],
   },
 ];
 
@@ -155,18 +233,33 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
     .single();
   const flags = (property?.feature_flags ?? {}) as Record<string, boolean>;
 
-  const tools = flags.guest_taste_memory ? [...TOOLS, TASTE_MEMORY_TOOL] : TOOLS;
+  const { count: knowledgeCount } = await supabase
+    .from('household_knowledge')
+    .select('id', { count: 'exact', head: true })
+    .eq('property_id', id);
+
+  const tools = (flags.guest_taste_memory ? [...TOOLS, TASTE_MEMORY_TOOL] : TOOLS).map((t) =>
+    t.slug === 'knowledge-base' ? { ...t, count: knowledgeCount ?? 0 } : t
+  );
   const bySlug = new Map(tools.map((t) => [t.slug, t]));
 
   const groups = GROUPS.map((group) => ({
     key: group.key,
     label: group.label,
     tools: group.slugs.map((slug) => bySlug.get(slug)).filter((t): t is (typeof TOOLS)[number] => !!t),
-  })).filter((group) => group.tools.length > 0);
+    subgroups: (group.subgroups ?? [])
+      .map((sg) => ({
+        key: sg.key,
+        label: sg.label,
+        lockIcon: !!sg.lockIcon,
+        tools: sg.slugs.map((slug) => bySlug.get(slug)).filter((t): t is (typeof TOOLS)[number] => !!t),
+      }))
+      .filter((sg) => sg.tools.length > 0),
+  })).filter((group) => group.tools.length > 0 || group.subgroups.length > 0);
 
   return (
     <div className="max-w-md lg:max-w-4xl mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-4">Tools</h1>
+      <h1 className="text-2xl font-display text-denim mb-4">Tools</h1>
       <ToolsGroupList propertyId={id} groups={groups} />
     </div>
   );

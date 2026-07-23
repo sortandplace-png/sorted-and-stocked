@@ -1,4 +1,84 @@
 {
+  "search": {
+    "triggerLabel": "Buscar",
+    "placeholder": "Buscar recetas, inventario, contactos y más…",
+    "searching": "Buscando…",
+    "noResults": "Sin resultados.",
+    "kindRecipe": "Receta",
+    "kindInventory": "Inventario",
+    "kindLocation": "Ubicación",
+    "kindKnowledge": "Manual del Hogar",
+    "kindContact": "Contacto",
+    "kindPreference": "Gustos y Preferencias",
+    "navigate": "navegar",
+    "open": "abrir",
+    "close": "cerrar"
+  },
+  "auth": {
+    "contact": "Contacto",
+    "wordmark": {
+      "broughtToYouBy": "presentado por"
+    },
+    "welcome": {
+      "message": "Bienvenido a casa.",
+      "signIn": "Iniciar sesión",
+      "createAccount": "Crear una cuenta",
+      "poweredBy": "Una app del hogar de Sort + Place"
+    },
+    "signIn": {
+      "heading": "Bienvenido de nuevo",
+      "subtitle": "Accede a tu hogar",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "tu@ejemplo.com",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "Tu contraseña",
+      "rememberMe": "Recordarme",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "submit": "Iniciar sesión",
+      "submitting": "Iniciando sesión…",
+      "or": "o",
+      "googleSignIn": "Iniciar sesión con Google",
+      "googleSigningIn": "Iniciando sesión…",
+      "newHere": "¿Primera vez aquí?",
+      "createAnAccount": "Crear una cuenta"
+    },
+    "signUp": {
+      "heading": "Crea tu cuenta",
+      "subtitle": "Configura tu hogar en minutos",
+      "codeLabel": "Código de registro",
+      "codePlaceholder": "El código que te dieron",
+      "householdLabel": "Nombre del hogar",
+      "householdPlaceholder": "ej. Residencia Smith",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "tu@ejemplo.com",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "Al menos 8 caracteres",
+      "confirmPasswordLabel": "Confirmar contraseña",
+      "confirmPasswordPlaceholder": "Repite tu contraseña",
+      "passwordMismatch": "Las contraseñas no coinciden.",
+      "genericError": "Algo salió mal.",
+      "submit": "Crear cuenta",
+      "submitting": "Creando cuenta…",
+      "or": "o",
+      "googleSignUp": "Registrarse con Google",
+      "googleSigningUp": "Registrando…",
+      "alreadyHaveAccount": "¿Ya tienes una cuenta?",
+      "signInLink": "Inicia sesión"
+    },
+    "forgotPassword": {
+      "heading": "Recuperar contraseña",
+      "subtitle": "Escribe tu correo y te enviaremos un enlace.",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "tu@ejemplo.com",
+      "submit": "Enviar enlace",
+      "submitting": "Enviando…",
+      "checkInbox": "Revisa tu correo",
+      "inboxMessage": "Si existe una cuenta para {email}, recibirás un enlace para restablecer tu contraseña en unos minutos.",
+      "backToSignInBtn": "Volver al inicio de sesión",
+      "tryDifferent": "Probar con otro correo",
+      "backToSignInLink": "Volver al inicio de sesión"
+    }
+  },
   "nav": {
     "dashboard": "Panel",
     "inventory": "Inventario",
@@ -10,11 +90,35 @@
     "tools": "Herramientas",
     "labels": "Etiquetas",
     "handover": "Traspaso de turno",
+    "staffTasks": "Centro de Tareas",
+    "myDay": "Mi Día",
+    "team": "Equipo",
+    "shoppingRules": "Reglas de Compras",
+    "settings": "Configuración",
     "plan": "Planificar",
     "shop": "Comprar",
     "more": "Más",
     "home": "Inicio",
+    "photoReview": "Revisión de Fotos",
+    "procurement": "Abastecimiento",
+    "help": "Ayuda",
     "scanAriaLabel": "Escanear artículo al inventario"
+  },
+  "help": {
+    "title": "Centro de Ayuda",
+    "subtitle": "Respuestas a preguntas comunes",
+    "searchPlaceholder": "Buscar un tema…",
+    "noResults": "Ningún artículo coincide con tu búsqueda.",
+    "categories": {
+      "Getting Started": "Primeros Pasos",
+      "Inventory": "Inventario",
+      "Shopping": "Compras",
+      "Recipes & Meals": "Recetas y Comidas",
+      "Jewish Calendar": "Calendario Judío",
+      "Staff & Permissions": "Personal y Permisos",
+      "Multi-Property": "Múltiples Propiedades",
+      "Troubleshooting": "Solución de Problemas"
+    }
   },
   "common": {
     "print": "Imprimir",
@@ -25,8 +129,6 @@
     "save": "Guardar",
     "saving": "Guardando…",
     "revert": "Deshacer",
-    "search": "Buscar",
-    "searchShortcut": "Buscar (Cmd+K)",
     "signOut": "Cerrar sesión",
     "unknown": "alguien"
   },
@@ -164,7 +266,7 @@
     "generatedCount": "Se agregaron {count} ingrediente(s) a la lista.",
     "noLinkedRecipesThisWeek": "No hay recetas vinculadas planificadas esta semana — nada que agregar.",
     "recipeIngredientsTab": "Ingredientes de Recetas",
-    "householdStaplesTab": "Básicos del Hogar",
+    "householdStaplesTab": "Suministros del Hogar y No Alimentos",
     "addItemPlaceholder": "Agregar un artículo…",
     "addItemButton": "Agregar",
     "refreshing": "Actualizando…",
@@ -174,7 +276,9 @@
     "loadingStaples": "Cargando básicos…",
     "failedToAdd": "Error al agregar el artículo.",
     "revertedToast": "Error al actualizar — revertido.",
-    "queuedToast": "Guardado — se sincronizará cuando vuelva la conexión."
+    "queuedToast": "Guardado — se sincronizará cuando vuelva la conexión.",
+    "purchaseQtyLabel": "Comprar",
+    "purchaseQtyPlaceholder": "Cant."
   },
   "labels": {
     "title": "Imprimir Etiquetas",
@@ -184,5 +288,363 @@
   },
   "scan": {
     "reorder": "Volver a pedir"
+  },
+  "reorderSources": {
+    "heading": "Fuentes de Reorden",
+    "empty": "Aún no hay enlaces de reorden.",
+    "retailerPlaceholder": "Nombre del comercio",
+    "urlPlaceholder": "URL",
+    "addButton": "+ Agregar una fuente",
+    "add": "Agregar",
+    "adding": "Agregando…",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "preferredTitle": "Fuente preferida",
+    "makePreferredTitle": "Marcar como preferida",
+    "addedToast": "{retailer} agregado.",
+    "updatedToast": "Fuente actualizada.",
+    "removedToast": "{retailer} eliminado.",
+    "undo": "Deshacer",
+    "queuedToast": "Guardado — se sincronizará al reconectar.",
+    "addFailedToast": "No se pudo agregar la fuente.",
+    "saveFailedToast": "No se pudo guardar.",
+    "setPreferredFailedToast": "No se pudo marcar la fuente preferida.",
+    "deleteFailedToast": "No se pudo eliminar la fuente — se ha restaurado."
+  },
+  "quickPhotoCapture": {
+    "title": "Foto Rápida",
+    "subtitle": "Toma una foto y luego dinos qué es y cuánto hay — se guarda directamente en el inventario, sin cola de revisión.",
+    "attachToItemPrompt": "¿Qué es esto?",
+    "nameLabel": "Nombre del artículo",
+    "namePlaceholder": "ej. Aceite de Oliva",
+    "nameEsLabel": "Nombre en español",
+    "nameEsPlaceholder": "ej. Aceite de Oliva",
+    "nameEsRequired": "El nombre en español es obligatorio.",
+    "quantityLabel": "Cantidad",
+    "searchPlaceholder": "Buscar en inventario…",
+    "searching": "Buscando…",
+    "noResults": "Sin artículos coincidentes.",
+    "missingPhoto": "Aún sin foto",
+    "retake": "Repetir",
+    "takePhotoButton": "Toca para tomar una foto",
+    "choosePhotoButton": "Elegir de la galería",
+    "submitButton": "Guardar en inventario",
+    "uploading": "Guardando…",
+    "addedToast": "Se agregó {item}.",
+    "updatedToast": "Se actualizó {item} a {quantity}.",
+    "landedInLocation": "Guardado en {location}.",
+    "noLocationPrompt": "No se encontró una ubicación — configúrala en la página del artículo.",
+    "failedToast": "No se pudo guardar.",
+    "sessionCount": "{count, plural, one {# artículo agregado en esta sesión} other {# artículos agregados en esta sesión}}"
+  },
+  "translationWorklist": {
+    "title": "Lista de Traducciones Pendientes",
+    "subtitle": "Estas recetas, ingredientes y artículos todavía no tienen un nombre en español.",
+    "managersOnly": "Esta lista es solo para gerentes.",
+    "allDone": "No queda nada en esta lista.",
+    "placeholder": "Nombre en español",
+    "saveButton": "Guardar",
+    "saving": "Guardando…",
+    "savedToast": "Se guardó {item}.",
+    "failedToast": "No se pudo guardar.",
+    "sessionCount": "{count, plural, one {# nombre agregado en esta sesión} other {# nombres agregados en esta sesión}}"
+  },
+  "photoWorklist": {
+    "title": "Lista de Fotos Pendientes",
+    "subtitle": "Estos artículos necesitan una foto real de lo que hay en el estante — una búsqueda web no pudo confirmar cuál es el correcto.",
+    "allDone": "No queda nada en esta lista.",
+    "takePhotoButton": "Tomar foto",
+    "uploading": "Guardando…",
+    "savedToast": "Foto guardada para {item}.",
+    "failedToast": "No se pudo guardar la foto.",
+    "sessionCount": "{count, plural, one {# foto agregada en esta sesión} other {# fotos agregadas en esta sesión}}"
+  },
+  "staffOnboarding": {
+    "next": "Siguiente",
+    "back": "Atrás",
+    "skip": "Omitir",
+    "finish": "Llevarme a Inicio",
+    "screen1Headline": "Bienvenido a Sorted & Stocked",
+    "screen1Sub": "Se le ha agregado como Personal para {propertyName}. Serán cuatro pantallas rápidas — y estará listo.",
+    "screen2Eyebrow": "Antes de Todo",
+    "screen2Headline": "Conozca las etiquetas",
+    "screen2Sub": "Cada receta y artículo de inventario está etiquetado. Verifíquelo antes de combinar cualquier cosa.",
+    "screen2Fleishig": "Carne",
+    "screen2Milchig": "Lácteo",
+    "screen2Parve": "Ninguno — seguro con cualquiera",
+    "screen2Example": "Ejemplo",
+    "screen3Eyebrow": "Dónde Están las Cosas",
+    "screen3Headline": "Recorrido rápido",
+    "screen3Sub": "Estos cuatro están en Inicio. Los usará a diario.",
+    "screen4Eyebrow": "Ya Está Listo",
+    "screen4Headline": "Es Personal en {propertyName}",
+    "screen4Check1Title": "Revise el Traspaso de Turno",
+    "screen4Check1Body": "Vea las notas dejadas por quien trabajó antes que usted.",
+    "screen4Check2Title": "Consulte el Centro de Tareas",
+    "screen4Check2Body": "Sus tareas asignadas están aquí.",
+    "screen4Check3Title": "Pregunte si algo no está claro",
+    "screen4Check3Body": "Especialmente las etiquetas de kashrut — siempre confirme, nunca adivine."
+  },
+  "shiftHandover": {
+    "whatsDone": "Lo Que Está Hecho:",
+    "inProgress": "En Progreso:",
+    "headsUp": "Atención:"
+  },
+  "myDay": {
+    "staffNoteHeading": "Nota de hoy para el personal",
+    "captureTile": "Capturar",
+    "captureSubtitle": "Tomar una foto",
+    "shoppingTile": "Lista de Compras",
+    "shoppingSubtitle": "Ver la lista",
+    "timerTile": "Temporizador",
+    "timerSubtitle": "Poner un temporizador",
+    "duties": {
+      "heading": "Tareas de Hoy",
+      "noRoster": "Aún no se ha asignado una lista de tareas — pídale a su gerente que configure una.",
+      "nothingNow": "No hay nada programado para este momento del día.",
+      "failedToUpdate": "Error al actualizar. Inténtelo de nuevo."
+    }
+  },
+  "dashboard": {
+    "shabbosModeActive": "Modo Shabat Activo",
+    "todayHeader": "Hoy",
+    "candle": {
+      "label": "Encendido de Velas",
+      "labelNearYou": "Encendido de velas cerca de usted",
+      "switchToHousehold": "Volver a la ubicación del hogar",
+      "useMyLocation": "Usar mi ubicación actual para el encendido de velas",
+      "useMyLocationTitle": "Usar mi ubicación actual"
+    },
+    "pantryPillLabel": "Despensa",
+    "mealPlanPillLabel": "Esta Semana",
+    "pantryCard": {
+      "subtext": "Explora todo el inventario de la despensa"
+    },
+    "mealPlanCard": {
+      "subtext": "Consulta lo planificado esta semana"
+    },
+    "item": "artículo",
+    "items": "artículos",
+    "meal": "comida",
+    "meals": "comidas",
+    "recipe": "receta",
+    "recipes": "recetas",
+    "quickActions": {
+      "planMeal": "Plan de Comidas",
+      "planMealSubtitle": "Planificar esta semana",
+      "recipesTile": "Recetas",
+      "addRecipe": "Agregar Receta",
+      "addRecipeSubtitle": "Nuevo plato",
+      "shoppingList": "Lista de Compras",
+      "shoppingListSubtitle": "Ver y editar",
+      "inventory": "Inventario",
+      "inventorySubtitle": "Ver existencias"
+    },
+    "readiness": {
+      "noTasksToday": "No hay tareas pendientes hoy.",
+      "task": "tarea",
+      "tasks": "tareas",
+      "done": "hechas,",
+      "leftToday": "pendientes hoy.",
+      "candleLighting": "Encendido de velas",
+      "lastHandover": "Último traspaso",
+      "noHandoverNotes": "Aún no hay notas de traspaso.",
+      "viewBrief": "Ver Resumen"
+    },
+    "quickCapture": {
+      "headerLabel": "Agregar Rápido",
+      "takePhoto": "Tomar una Foto",
+      "scanQr": "Escanear un QR",
+      "addProduct": "Agregar Producto",
+      "myDayLink": "Ir a Mi Día — tus tareas, deberes y notas de entrega"
+    },
+    "roshChodesh": {
+      "today": "Hoy es Rosh Chodesh {month}.",
+      "upcoming": "Rosh Chodesh {month} en {days, plural, one {# día} other {# días}}."
+    },
+    "stats": {
+      "totalInventory": "Inventario Total",
+      "activeRecipes": "Recetas Activas",
+      "mealsPlanned": "Comidas Planificadas"
+    },
+    "prepReminders": {
+      "heading": "Recordatorios de preparación",
+      "startPrepToday": "comenzar preparación hoy, necesario para",
+      "startPrepBy": "comenzar preparación antes del",
+      "neededFor": "necesario para"
+    },
+    "halachic": {
+      "erevYomTov": "Víspera de Yom Tov",
+      "erevShabbos": "Víspera de Shabat",
+      "hadlakasNeiros": "Hadlakas Neiros"
+    },
+    "eruvTavshilin": {
+      "heading": "Recordatorio de Eruv Tavshilín",
+      "makeOn": "Haga el Eruv Tavshilín el",
+      "before": "antes de que",
+      "begins": "comience."
+    },
+    "resetBanner": {
+      "postShabbos": "Reinicio post-Shabat",
+      "erevShabbosPrep": "Preparación de víspera de Shabat",
+      "notStarted": "aún no se ha comenzado — toque para abrir la lista de verificación."
+    },
+    "chametz": {
+      "day": "día",
+      "days": "días",
+      "untilPesach": "hasta Pesaj — use su chametz",
+      "item": "artículo",
+      "items": "artículos",
+      "markedNotForPesach": "marcados como no aptos para Pesaj, los que vencen antes primero:",
+      "moreCount": "+{count} más",
+      "tapToOpenInventory": "toque para abrir Inventario."
+    },
+    "motzeiShabbos": {
+      "heading": "Motzei Shabat — ¿cena fácil?",
+      "pizza": "Pizza",
+      "pasta": "Pasta",
+      "salad": "Ensalada"
+    },
+    "thisWeeksMealsCard": {
+      "heading": "Comidas de Esta Semana",
+      "viewFullPlan": "Ver plan completo →",
+      "plannedThisWeek": "planificadas esta semana",
+      "kashrutLegendAria": "Leyenda de colores de kashrut"
+    },
+    "shoppingListCard": {
+      "heading": "Lista de Compras",
+      "markPurchasedAria": "Marcar {item} como comprado",
+      "order": "Pedir ↗",
+      "emptyMessage": "Aún no hay artículos — genérela a partir de las comidas de esta semana.",
+      "goToShoppingList": "Ir a la Lista de Compras",
+      "categoryProduce": "Verduras",
+      "categoryMeat": "Carne",
+      "categoryDairy": "Lácteo",
+      "categoryPantry": "Despensa",
+      "categoryBakery": "Panadería",
+      "categoryFrozen": "Congelados"
+    },
+    "inventoryCard": {
+      "heading": "Artículos de Inventario",
+      "qty": "Cant.:",
+      "low": "BAJO",
+      "empty": "Aún no hay artículos",
+      "addItem": "+ Agregar Artículo"
+    },
+    "mobileFooter": {
+      "tools": "Herramientas",
+      "staff": "Personal",
+      "settings": "Configuración",
+      "photoReview": "Revisión de Fotos",
+      "procurement": "Abastecimiento",
+      "help": "Ayuda"
+    },
+    "shabbosModeBanner": "Modo Shabat • Edición desactivada",
+    "widgets": {
+      "sectionTitle": "De un Vistazo",
+      "editWidgets": "Editar widgets",
+      "done": "Listo",
+      "moveUpAria": "Mover {label} hacia arriba",
+      "moveDownAria": "Mover {label} hacia abajo",
+      "saveFailedToast": "Error al guardar la disposición de los widgets.",
+      "hideAria": "Ocultar {label}",
+      "showAria": "Mostrar {label}",
+      "allHidden": "Todos los widgets están ocultos — toque Editar widgets para mostrar uno.",
+      "labelTodaysMealPlan": "Plan de Comidas de Hoy",
+      "labelPrepAhead": "Asistente de Preparación Anticipada",
+      "labelLowStockAlerts": "Alertas de Bajo Inventario",
+      "shoppingListLabel": "Lista de Compras",
+      "viewList": "Ver lista →",
+      "nothingPlannedToday": "Nada planificado para hoy.",
+      "viewFullPlan": "Ver plan completo →",
+      "allStocked": "Todo está bien abastecido.",
+      "nothingOnList": "Nada en la lista por ahora.",
+      "moreCount": "+{count} más",
+      "viewInventory": "Ver inventario →",
+      "addItem": "+ Agregar artículo"
+    },
+    "prepAhead": {
+      "off": "El Asistente de Preparación Anticipada está desactivado.",
+      "turnOn": "Activar",
+      "turnOff": "Desactivar",
+      "title": "Asistente de Preparación Anticipada",
+      "nothingUpcoming": "Nada apto para congelador necesita prepararse con anticipación en los próximos días.",
+      "viewAll": "Ver todo ({count}) →",
+      "freezerFriendlyScheduled": "apto para congelador, programado para",
+      "day": "día",
+      "days": "días",
+      "startPrep": "comenzar preparación",
+      "ahead": "de anticipación",
+      "pullOutAhead": "sáquelo con anticipación",
+      "failedToUpdate": "Error al actualizar la configuración del Asistente de Preparación Anticipada.",
+      "turnedOn": "Asistente de Preparación Anticipada activado.",
+      "turnedOff": "Asistente de Preparación Anticipada desactivado."
+    },
+    "mealsListCard": {
+      "heading": "Comidas de esta semana",
+      "nothingPlanned": "Nada planeado todavía esta semana."
+    }
+  },
+  "kosherType": {
+    "meat": "Carne",
+    "dairy": "Lácteo",
+    "parve": "Parve"
+  },
+  "recipeDetail": {
+    "ownerView": "Vista de propietario",
+    "staffCookView": "Vista de cocina para personal",
+    "provenancePlaceholder": "Marcador de posición / Autocompletado",
+    "provenanceAiResearched": "Investigado por IA",
+    "provenanceExternalUnverified": "Fuente Externa — Sin Verificar",
+    "provenanceFamily": "Receta Familiar Real",
+    "provenanceUnknown": "Desconocido",
+    "provenanceAmbiguous": "Ambiguo",
+    "kitchenOps": "Operaciones de Cocina",
+    "pairsWellWith": "Combina bien con",
+    "kitchenOpsTools": {
+      "kitchenTimer": "Temporizador de Cocina",
+      "scaleServings": "Ajustar Porciones",
+      "resetForNext": "Preparar para el Siguiente",
+      "prepTimeline": "Cronograma de Preparación"
+    }
+  },
+  "recipeTags": {
+    "9x13": "9x13",
+    "american": "Americana",
+    "ashkenazi": "Asquenazí",
+    "asian": "Asiática",
+    "basics": "Básicos",
+    "chanukah": "Janucá",
+    "dairy": "Lácteo",
+    "freezer-friendly": "Apto para Congelar",
+    "gebrokts": "Guebrokts",
+    "grill": "Parrilla",
+    "italian": "Italiana",
+    "jewish-classic": "Clásico Judío",
+    "kids platter": "Plato Infantil",
+    "kids-friendly": "Apto para Niños",
+    "kids-platter": "Plato Infantil",
+    "mediterranean": "Mediterránea",
+    "mexican": "Mexicana",
+    "NEW": "NUEVO",
+    "needs-quantity-confirmation": "Necesita Confirmar Cantidad",
+    "no-cook": "Sin Cocción",
+    "one-pan": "Una Sola Sartén",
+    "one-pot": "Una Sola Olla",
+    "oven": "Horno",
+    "pesach": "Pesaj",
+    "quick and easy": "Rápido y Fácil",
+    "quick-easy": "Rápido y Fácil",
+    "rosh-hashana": "Rosh Hashaná",
+    "sephardi": "Sefardí",
+    "shavuot": "Shavuot",
+    "slow-cooker": "Olla de Cocción Lenta",
+    "stove-top": "Estufa",
+    "sukkot": "Sucot",
+    "tu-bishvat": "Tu BiShvat",
+    "yom-kippur": "Yom Kipur"
   }
 }

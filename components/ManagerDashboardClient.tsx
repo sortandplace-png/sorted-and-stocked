@@ -119,9 +119,9 @@ export default function ManagerDashboardClient({ properties }: { properties: { i
   }
 
   return (
-    <div className="min-h-screen bg-cream text-charcoal p-6 max-w-5xl mx-auto">
+    <div className="min-h-screen bg-linen text-denim p-6 max-w-5xl mx-auto">
       <h1 className="font-display text-2xl mb-1">Manager Platform</h1>
-      <p className="text-xs text-charcoal/50 mb-6">
+      <p className="text-xs text-dusk mb-6">
         Phase 1 -- not active until 074_manager_platform_phase1.sql is applied. Everything below is a preview of the
         UI, not live data.
       </p>
@@ -132,7 +132,7 @@ export default function ManagerDashboardClient({ properties }: { properties: { i
             key={t}
             onClick={() => setTab(t)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              tab === t ? 'bg-gold text-charcoal' : 'bg-white border border-gold-light/50 text-charcoal/70'
+              tab === t ? 'bg-gold text-denim' : 'bg-white border border-cardBorder text-dusk'
             }`}
           >
             {t === 'inventory' ? 'Inventory (all clients)' : t === 'recipes' ? 'Recipes (all clients)' : t === 'library' ? 'Shared Library' : 'Onboard New Client'}
@@ -145,7 +145,7 @@ export default function ManagerDashboardClient({ properties }: { properties: { i
           <select
             value={propertyFilter}
             onChange={(e) => setPropertyFilter(e.target.value)}
-            className="border border-gold-light/60 rounded-full px-3 py-1.5 text-sm bg-white"
+            className="border border-cardBorder rounded-full px-3 py-1.5 text-sm bg-white"
           >
             <option value="">All clients</option>
             {properties.map((p) => (
@@ -159,42 +159,42 @@ export default function ManagerDashboardClient({ properties }: { properties: { i
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, e.g. Crest"
-              className="border border-gold-light/60 rounded-full px-3 py-1.5 text-sm bg-white w-56"
+              className="border border-cardBorder rounded-full px-3 py-1.5 text-sm bg-white w-56"
             />
-            <button type="submit" className="px-3 py-1.5 rounded-full text-sm bg-charcoal text-cream">
+            <button type="submit" className="px-3 py-1.5 rounded-full text-sm bg-denim text-white">
               Search
             </button>
           </form>
         </div>
       )}
 
-      {loading && <p className="text-sm text-charcoal/50">Loading...</p>}
+      {loading && <p className="text-sm text-dusk">Loading...</p>}
 
       {!loading && tab === 'inventory' && (
         <div className="space-y-2">
           {inventoryRows.map((row) => (
             <div
               key={row.captured_id}
-              className="flex items-center justify-between gap-3 bg-white rounded-xl border border-gold-light/30 px-4 py-2.5"
+              className="flex items-center justify-between gap-3 bg-white rounded-xl border border-cardBorder px-4 py-2.5"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">
                   {row.name}
                   {row.source_deleted_at && <span className="text-rust text-xs ml-2">(removed by client)</span>}
                 </p>
-                <p className="text-xs text-charcoal/50">
+                <p className="text-xs text-dusk">
                   {row.property_name} · {row.category ?? 'Uncategorized'}
                 </p>
               </div>
               <button
                 onClick={() => handleApproveInventory(row.captured_id)}
-                className="shrink-0 text-xs font-medium text-gold-dark hover:text-charcoal"
+                className="shrink-0 text-xs font-medium text-brass hover:text-denim"
               >
                 Approve to library
               </button>
             </div>
           ))}
-          {inventoryRows.length === 0 && <p className="text-sm text-charcoal/40">No items match.</p>}
+          {inventoryRows.length === 0 && <p className="text-sm text-dusk">No items match.</p>}
         </div>
       )}
 
@@ -203,26 +203,26 @@ export default function ManagerDashboardClient({ properties }: { properties: { i
           {recipeRows.map((row) => (
             <div
               key={row.captured_id}
-              className="flex items-center justify-between gap-3 bg-white rounded-xl border border-gold-light/30 px-4 py-2.5"
+              className="flex items-center justify-between gap-3 bg-white rounded-xl border border-cardBorder px-4 py-2.5"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">
                   {row.name}
                   {row.source_deleted_at && <span className="text-rust text-xs ml-2">(removed by client)</span>}
                 </p>
-                <p className="text-xs text-charcoal/50">
+                <p className="text-xs text-dusk">
                   {row.property_name} · {row.course ?? 'Uncategorized'}
                 </p>
               </div>
               <button
                 onClick={() => handleApproveRecipe(row.captured_id)}
-                className="shrink-0 text-xs font-medium text-gold-dark hover:text-charcoal"
+                className="shrink-0 text-xs font-medium text-brass hover:text-denim"
               >
                 Approve to library
               </button>
             </div>
           ))}
-          {recipeRows.length === 0 && <p className="text-sm text-charcoal/40">No recipes match.</p>}
+          {recipeRows.length === 0 && <p className="text-sm text-dusk">No recipes match.</p>}
         </div>
       )}
 
@@ -234,7 +234,7 @@ export default function ManagerDashboardClient({ properties }: { properties: { i
               {libraryInventory.map((item) => (
                 <div
                   key={item.id}
-                  className={`flex items-center justify-between gap-3 bg-white rounded-xl border border-gold-light/30 px-4 py-2.5 ${
+                  className={`flex items-center justify-between gap-3 bg-white rounded-xl border border-cardBorder px-4 py-2.5 ${
                     !item.active ? 'opacity-50' : ''
                   }`}
                 >
@@ -242,7 +242,7 @@ export default function ManagerDashboardClient({ properties }: { properties: { i
                   {item.active && (
                     <button
                       onClick={() => handleRetireInventory(item.id)}
-                      className="text-xs text-charcoal/50 hover:text-rust"
+                      className="text-xs text-dusk hover:text-rust"
                     >
                       Retire
                     </button>
@@ -257,13 +257,13 @@ export default function ManagerDashboardClient({ properties }: { properties: { i
               {libraryRecipes.map((r) => (
                 <div
                   key={r.id}
-                  className={`flex items-center justify-between gap-3 bg-white rounded-xl border border-gold-light/30 px-4 py-2.5 ${
+                  className={`flex items-center justify-between gap-3 bg-white rounded-xl border border-cardBorder px-4 py-2.5 ${
                     !r.active ? 'opacity-50' : ''
                   }`}
                 >
                   <p className="text-sm">{r.name}</p>
                   {r.active && (
-                    <button onClick={() => handleRetireRecipe(r.id)} className="text-xs text-charcoal/50 hover:text-rust">
+                    <button onClick={() => handleRetireRecipe(r.id)} className="text-xs text-dusk hover:text-rust">
                       Retire
                     </button>
                   )}
@@ -275,15 +275,15 @@ export default function ManagerDashboardClient({ properties }: { properties: { i
       )}
 
       {tab === 'onboard' && (
-        <div className="bg-white rounded-xl border border-gold-light/30 p-4 max-w-md space-y-3">
-          <p className="text-sm text-charcoal/70">
+        <div className="bg-white rounded-xl border border-cardBorder p-4 max-w-md space-y-3">
+          <p className="text-sm text-dusk">
             Copies every active shared-library item into the selected property, one time. Editing the library
             afterward never touches properties already onboarded.
           </p>
           <select
             value={onboardTarget}
             onChange={(e) => setOnboardTarget(e.target.value)}
-            className="w-full border border-gold-light/60 rounded-full px-3 py-1.5 text-sm bg-white"
+            className="w-full border border-cardBorder rounded-full px-3 py-1.5 text-sm bg-white"
           >
             <option value="">Choose a property...</option>
             {properties.map((p) => (
@@ -295,7 +295,7 @@ export default function ManagerDashboardClient({ properties }: { properties: { i
           <button
             onClick={handleOnboard}
             disabled={!onboardTarget}
-            className="w-full bg-gold-dark text-white rounded-full px-4 py-2 text-sm font-medium disabled:opacity-40"
+            className="w-full bg-denim text-white rounded-full px-4 py-2 text-sm font-medium disabled:opacity-40"
           >
             Copy library into this property
           </button>

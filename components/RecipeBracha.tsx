@@ -83,8 +83,8 @@ export default function RecipeBracha({
 
   return (
     <div className="bg-white rounded-xl2 shadow-sm shadow-charcoal/5 p-5 print:hidden">
-      <h3 className="font-display text-lg text-charcoal mb-1">{t('title')}</h3>
-      <p className="text-xs text-charcoal/50 mb-2">{t('description')}</p>
+      <h3 className="font-display text-lg text-denim mb-1">{t('title')}</h3>
+      <p className="text-xs text-dusk mb-2">{t('description')}</p>
 
       <BrachaCategorySelect
         categories={categories}
@@ -97,21 +97,21 @@ export default function RecipeBracha({
       <button
         type="button"
         onClick={() => setShowHelp((v) => !v)}
-        className="mt-1.5 text-xs text-charcoal/40 underline"
+        className="mt-1.5 text-xs text-dusk underline"
       >
         {t('notSureLink')}
       </button>
       {showHelp && (
-        <p className="mt-1 text-xs text-charcoal/60 bg-cream px-3 py-2 rounded-lg">{t('notSureHelp')}</p>
+        <p className="mt-1 text-xs text-dusk bg-linen px-3 py-2 rounded-lg">{t('notSureHelp')}</p>
       )}
 
       {selectedRow && (
-        <div className="mt-2 text-xs text-charcoal/60 bg-cream px-3 py-2 rounded-lg space-y-0.5">
+        <div className="mt-2 text-xs text-dusk bg-linen px-3 py-2 rounded-lg space-y-0.5">
           <div>
-            <span className="font-medium text-charcoal">{t('before')}</span> {selectedRow.bracha_rishona}
+            <span className="font-medium text-denim">{t('before')}</span> {selectedRow.bracha_rishona}
           </div>
           <div>
-            <span className="font-medium text-charcoal">{t('after')}</span> {selectedRow.bracha_achrona}
+            <span className="font-medium text-denim">{t('after')}</span> {selectedRow.bracha_achrona}
           </div>
           {selectedRow.note && <div className="italic pt-1">{selectedRow.note}</div>}
         </div>
@@ -124,9 +124,9 @@ export default function RecipeBracha({
               ⚠️ {t('needsSourcing')}
             </div>
           ) : achrona ? (
-            <div className="bg-sage/10 text-charcoal px-3 py-2 -mx-3 -my-2 rounded-lg">
+            <div className="bg-sage/10 text-denim px-3 py-2 -mx-3 -my-2 rounded-lg">
               <span className="font-medium">{t('achronaLabel')}</span> {achrona}
-              {achronaNote && <div className="italic text-charcoal/60 pt-1">{achronaNote}</div>}
+              {achronaNote && <div className="italic text-dusk pt-1">{achronaNote}</div>}
             </div>
           ) : null}
         </div>
@@ -136,7 +136,7 @@ export default function RecipeBracha({
         {isDirty && !isPending && (
           <button
             onClick={() => setSelected(saved)}
-            className="text-sm text-charcoal/50 hover:text-charcoal px-3 py-1.5"
+            className="text-sm text-dusk hover:text-denim px-3 py-1.5"
           >
             {tc('revert')}
           </button>
@@ -144,7 +144,7 @@ export default function RecipeBracha({
         <button
           onClick={handleSave}
           disabled={!isDirty || isPending}
-          className="text-sm font-medium bg-gold-dark text-white px-4 py-1.5 rounded-full disabled:opacity-40"
+          className="text-sm font-medium bg-denim text-white px-4 py-1.5 rounded-full disabled:opacity-40"
         >
           {isPending ? tc('saving') : tc('save')}
         </button>

@@ -86,8 +86,8 @@ export default function HeaderAvatarUpload({
             className="bg-white w-full rounded-t-[2rem] sm:rounded-3xl p-5 max-w-md mx-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="font-display text-xl text-charcoal mb-1">Your photo</h2>
-            <p className="text-sm text-charcoal/50 mb-3">
+            <h2 className="font-display text-xl text-denim mb-1">Your photo</h2>
+            <p className="text-sm text-dusk mb-3">
               Shown next to your name in the header and anywhere else you're credited.
             </p>
 
@@ -105,27 +105,27 @@ export default function HeaderAvatarUpload({
             ) : photoUrl ? (
               <div className="flex flex-col items-center gap-2 mb-3">
                 <Avatar fullName={fullName} email={email} photoUrl={photoUrl} size="lg" className="w-32 h-32 text-3xl" />
-                <button onClick={() => fileInputRef.current?.click()} className="text-sm text-gold-dark font-medium">
+                <button onClick={() => fileInputRef.current?.click()} className="text-sm text-brass font-medium">
                   Change photo
                 </button>
               </div>
             ) : (
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full py-8 rounded-2xl border-2 border-dashed border-gold-light text-charcoal/60 text-sm hover:bg-gold-light/10 transition-colors mb-3"
+                className="w-full py-8 rounded-2xl border-2 border-dashed border-cardBorder text-dusk text-sm hover:bg-linen transition-colors mb-3"
               >
                 📸 Tap to add a photo
               </button>
             )}
 
             <div className="flex gap-2">
-              <button onClick={closeModal} className="flex-1 py-2.5 rounded-full bg-cream border border-charcoal/30 text-charcoal">
+              <button onClick={closeModal} className="flex-1 py-2.5 rounded-full bg-linen border border-denim/20 text-denim">
                 Cancel
               </button>
               <button
                 onClick={savePhoto}
                 disabled={!file || saving}
-                className="flex-1 py-2.5 rounded-full bg-charcoal text-cream disabled:opacity-40"
+                className="flex-1 py-2.5 rounded-full bg-denim text-white disabled:opacity-40"
               >
                 {saving ? 'Saving…' : 'Save photo'}
               </button>

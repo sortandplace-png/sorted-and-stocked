@@ -16,7 +16,7 @@ export default async function RecipesPage({
   // it's visible from.
   const { data: recipes } = await supabase
     .from('recipes')
-    .select('id, name, photo_url, kosher_type, course, tags, is_pesach, is_yom_tov, is_shabbos_only, approx_total_minutes, created_at, recipe_property_links!inner(property_id)')
+    .select('id, name, name_es, photo_url, kosher_type, course, tags, is_pesach, is_yom_tov, is_shabbos_only, approx_total_minutes, created_at, recipe_property_links!inner(property_id)')
     .eq('recipe_property_links.property_id', id)
     .order('name');
 

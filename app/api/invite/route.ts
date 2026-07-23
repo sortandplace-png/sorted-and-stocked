@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { emailShell, escapeHtml } from '@/lib/email-template';
+import { getEmailLinkOrigin } from '@/lib/site-url';
 
 const RESEND_FROM = 'Sorted & Stocked <invites@sortandplace.com>';
 
@@ -19,20 +20,26 @@ async function sendInviteEmail(opts: {
     return { sent: false, reason: 'RESEND_API_KEY not configured' as const };
   }
 
-  const roleLabel = opts.role === 'manager' ? 'manager / gerente' : 'staff / personal';
+  // Two separate label strings, not one combined "staff / personal" --
+  // that combined string was previously reused verbatim in BOTH the
+  // English and Spanish lines, so each line showed both languages at
+  // once instead of just its own.
+  const roleLabelEn = opts.role === 'manager' ? 'manager' : 'staff';
+  const roleLabelEs = opts.role === 'manager' ? 'gerente' : 'personal';
   const html = emailShell(
     'You’ve been invited / Has sido invitado',
     `
     <p style="color:#2B2B2B;font-size:15px;">
       ${escapeHtml(opts.inviterName)} invited you to join <strong>${escapeHtml(opts.propertyName)}</strong>
-      on Sorted &amp; Stocked as <strong>${roleLabel}</strong>.<br/>
+      on Sorted &amp; Stocked as <strong>${roleLabelEn}</strong>.<br/>
       <em>${escapeHtml(opts.inviterName)} te invitó a unirte a <strong>${escapeHtml(
       opts.propertyName
-    )}</strong> en Sorted &amp; Stocked como <strong>${roleLabel}</strong>.</em>
+    )}</strong> en Sorted &amp; Stocked como <strong>${roleLabelEs}</strong>.</em>
     </p>
     <p style="margin:24px 0;">
-      <a href="${opts.actionLink}" style="background:#8A6E42;color:#FAF7F2;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:600;">
-        Accept &amp; set up account / Aceptar y configurar cuenta
+      <a href="${opts.actionLink}" style="display:inline-block;background:#2E4A62;color:#FFFFFF;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:600;text-align:center;">
+        <span style="display:block;">Accept &amp; set up account</span>
+        <span style="display:block;font-size:13px;font-weight:500;opacity:.9;">Aceptar y configurar cuenta</span>
       </a>
     </p>
     <p style="color:#2B2B2B99;font-size:12px;">
@@ -109,18 +116,38 @@ export async function POST(request: Request) {
   // returns the action link without sending anything itself, so the branded
   // Resend email below is the only one that goes out.
   const admin = createAdminClient();
-  // request.url reflects the internal host when running behind a reverse
-  // proxy, not the public-facing domain — prefer the standard forwarded
-  // headers when present, falling back to request.url's own origin for
-  // local dev / hosts that don't set them.
+  // 2026-07-21: was a bare SITE_URL, unconditionally -- real bug, same
+  // class as the OAuth redirectTo fix elsewhere, just for invite emails
+  // instead of sign-in: an invite sent from app.sortandplace.com always
+  // linked back to www.sortandplace.com instead. Fixed with the request's
+  // own forwarded host (request.url reflects the internal host behind a
+  // reverse proxy, not the public-facing domain, hence x-forwarded-host
+  // first) run through getEmailLinkOrigin -- unlike the OAuth fix, this
+  // can't just use the request's origin unconditionally: an invite is an
+  // emailed link that may be opened later, from anywhere, so a request
+  // that happens to originate from localhost or a Vercel preview URL must
+  // still fall back to the fixed SITE_URL default, not leak that origin
+  // into a real person's inbox (confirmed: this is what happened to
+  // Blimie's invite, before SITE_URL existed at all). See lib/site-url.ts.
+  const { origin: rawOrigin } = new URL(request.url);
   const forwardedHost = request.headers.get('x-forwarded-host');
   const forwardedProto = request.headers.get('x-forwarded-proto');
-  const origin = forwardedHost ? `${forwardedProto ?? 'https'}://${forwardedHost}` : new URL(request.url).origin;
-
+  const requestOrigin = forwardedHost ? `${forwardedProto ?? 'https'}://${forwardedHost}` : rawOrigin;
+  //
+  // /auth/confirm, not /auth/callback -- generateLink never uses PKCE
+  // (confirmed against Supabase's own docs: an admin-generated link can't
+  // guarantee the same browser that requested it is the one accepting it,
+  // which PKCE requires), so the session comes back as a #access_token=...
+  // hash fragment that only a client-side page can read. /auth/callback is
+  // a plain server route and can never see it -- confirmed live: invited
+  // accounts got confirmation_sent_at set but never a working session.
+  // Redirects to /reset-password, not /properties -- the invited person has
+  // never set a real password yet; landing them in the app with an unusable
+  // placeholder password stranded them with no way back in later.
   const { data: linkData, error: inviteError } = await admin.auth.admin.generateLink({
     type: 'invite',
     email,
-    options: { redirectTo: `${origin}/auth/callback?redirectTo=/properties` },
+    options: { redirectTo: `${getEmailLinkOrigin(requestOrigin)}/auth/confirm?redirectTo=/reset-password` },
   });
 
   if (inviteError) {

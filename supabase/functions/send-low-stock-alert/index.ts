@@ -8,8 +8,15 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Fetch all items across properties below min thresholds
-    const { data: lowStockItems, error } = await supabaseClient
+    // PostgREST's .lt() takes a literal value, not a column reference --
+    // .lt('current_qty', 'min_qty') was comparing current_qty against the
+    // literal string "min_qty", not the min_qty column (same reason
+    // weekly-digest's edge function does this comparison in JS instead of
+    // as a query filter). Fetch and filter in JS, same real fix, plus
+    // requiring last_counted_at -- current_qty defaults to 0 and hasn't
+    // been physically counted for most items, so an uncounted 0 isn't a
+    // real low-stock signal, just an unknown one.
+    const { data: allItems, error } = await supabaseClient
       .from('inventory_items')
       .select(`
         id,
@@ -17,16 +24,19 @@ serve(async (req) => {
         current_qty,
         min_qty,
         unit,
+        last_counted_at,
         properties ( name )
       `)
-      .lt('current_qty', 'min_qty')
-      .not('last_counted_at', 'is', null)
 
     if (error) {
       return new Response(JSON.stringify({ error: error.message }), { status: 500 })
     }
 
-    if (!lowStockItems || lowStockItems.length === 0) {
+    const lowStockItems = (allItems ?? []).filter(
+      (item) => item.last_counted_at !== null && item.current_qty < item.min_qty
+    )
+
+    if (lowStockItems.length === 0) {
       return new Response(JSON.stringify({ status: 'All stock levels nominal' }), {
         headers: { "Content-Type": "application/json" }
       })

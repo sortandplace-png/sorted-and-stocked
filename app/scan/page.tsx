@@ -105,7 +105,7 @@ export default function ScanPage() {
           {!scanning && !result && (
             <button
               onClick={startScan}
-              className="w-full bg-charcoal text-white py-4 rounded-xl font-medium hover:bg-stone-800 transition flex items-center justify-center gap-2"
+              className="w-full bg-denim text-white py-4 rounded-xl font-medium hover:bg-stone-800 transition flex items-center justify-center gap-2"
             >
               <span>📷</span> Start Camera
             </button>

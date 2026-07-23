@@ -92,8 +92,8 @@ export default function RecipePrepLeadDays({
 
   return (
     <div className="bg-white rounded-xl2 shadow-sm shadow-charcoal/5 p-5 print:hidden">
-      <h3 className="font-display text-lg text-charcoal mb-1">{t('title')}</h3>
-      <p className="text-xs text-charcoal/50 mb-2">{t('description')}</p>
+      <h3 className="font-display text-lg text-denim mb-1">{t('title')}</h3>
+      <p className="text-xs text-dusk mb-2">{t('description')}</p>
       <div className="flex items-center gap-2">
         <input
           type="number"
@@ -103,15 +103,15 @@ export default function RecipePrepLeadDays({
           onChange={(e) => setDays(e.target.value)}
           disabled={isPending}
           placeholder={t('placeholder')}
-          className="w-24 border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-xl px-3 py-2 text-sm text-charcoal disabled:opacity-60"
+          className="w-24 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl px-3 py-2 text-sm text-denim disabled:opacity-60"
         />
-        <span className="text-sm text-charcoal/50">
+        <span className="text-sm text-dusk">
           {days.trim() === '1' ? t('daysAheadSingular') : t('daysAheadPlural')}
         </span>
       </div>
 
       {savedDays !== null && (
-        <p className="text-xs text-charcoal/50 mt-2">
+        <p className="text-xs text-dusk mt-2">
           {nextCandleLighting === undefined
             ? t('loadingCandleLighting')
             : nextCandleLighting && startByLabel
@@ -130,14 +130,14 @@ export default function RecipePrepLeadDays({
 
       <div className="flex justify-end gap-2 mt-2">
         {isDirty && !isPending && (
-          <button onClick={() => setDays(saved)} className="text-sm text-charcoal/50 hover:text-charcoal px-3 py-1.5">
+          <button onClick={() => setDays(saved)} className="text-sm text-dusk hover:text-denim px-3 py-1.5">
             {tc('revert')}
           </button>
         )}
         <button
           onClick={handleSave}
           disabled={!isDirty || isPending}
-          className="text-sm font-medium bg-gold-dark text-white px-4 py-1.5 rounded-full disabled:opacity-40"
+          className="text-sm font-medium bg-denim text-white px-4 py-1.5 rounded-full disabled:opacity-40"
         >
           {isPending ? tc('saving') : tc('save')}
         </button>

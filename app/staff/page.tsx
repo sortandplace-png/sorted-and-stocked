@@ -42,7 +42,7 @@ export default function StaffMode() {
   }
 
   return (
-    <div className="min-h-screen bg-cream p-4">
+    <div className="min-h-screen bg-linen p-4">
       <div className="max-w-lg mx-auto">
         {/* Header */}
         <div className="bg-white rounded-3xl shadow-sm p-5 mb-4 flex justify-between items-center">
@@ -91,7 +91,7 @@ export default function StaffMode() {
 
         {/* Big Action Buttons */}
         <div className="grid grid-cols-2 gap-3">
-          <a href="/scan" className="bg-charcoal text-white rounded-3xl p-6 text-center hover:bg-stone-800 transition">
+          <a href="/scan" className="bg-denim text-white rounded-3xl p-6 text-center hover:bg-stone-800 transition">
             <div className="text-3xl mb-2">📷</div>
             <div className="font-medium">Scan Item</div>
           </a>

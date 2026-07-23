@@ -1,9 +1,10 @@
 // app/layout.tsx
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Cormorant_Garamond, Nunito_Sans, Playfair_Display, Inter } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import OfflineSyncProvider from '@/components/OfflineSyncProvider';
+import ServiceWorkerUpdater from '@/components/ServiceWorkerUpdater';
 import { ToastProvider } from '@/components/Toast';
 import './globals.css';
 
@@ -25,12 +26,29 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'sw
 export const metadata: Metadata = {
   title: 'Sorted & Stocked',
   manifest: '/manifest.json',
-  themeColor: '#6B3550',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'Sorted & Stocked',
   },
+  icons: {
+    icon: [
+      { url: '/icons/favicon-16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/icons/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+};
+
+// themeColor used to live on `metadata` -- Next.js 15 split it into a
+// separate `viewport` export (metadata.themeColor is deprecated and logs a
+// build warning). Also fixes a real leftover: '#6B3550' was the pre-rebrand
+// plum/aubergine color, retired for cream/charcoal/gold in July -- no
+// aubergine should remain anywhere in this app.
+export const viewport: Viewport = {
+  themeColor: '#FAF7F2',
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -41,7 +59,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <NextIntlClientProvider messages={messages}>
           <OfflineSyncProvider>
-            <ToastProvider>{children}</ToastProvider>
+            <ToastProvider>
+              <ServiceWorkerUpdater />
+              {children}
+            </ToastProvider>
           </OfflineSyncProvider>
         </NextIntlClientProvider>
       </body>

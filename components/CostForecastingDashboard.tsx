@@ -37,7 +37,7 @@ export default function CostForecastingDashboard({ propertyId }: { propertyId: s
   }, [propertyId]);
 
   if (loading) {
-    return <div className="text-center py-8 text-charcoal/50">Calculating budget...</div>;
+    return <div className="text-center py-8 text-dusk">Calculating budget...</div>;
   }
 
   if (projections.length === 0) {
@@ -51,20 +51,20 @@ export default function CostForecastingDashboard({ propertyId }: { propertyId: s
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
-        <DollarSign className="h-5 w-5 text-charcoal" />
-        <h3 className="font-semibold text-charcoal">Replenishment Budget Forecast</h3>
+        <DollarSign className="h-5 w-5 text-denim" />
+        <h3 className="font-semibold text-denim">Replenishment Budget Forecast</h3>
       </div>
 
       {/* Total Cost Card */}
-      <div className="bg-gradient-to-br from-charcoal/10 to-gold-light/10 border border-charcoal/20 rounded-2xl p-6">
+      <div className="bg-gradient-to-br from-denim/10 to-brass/10 border border-denim/20 rounded-2xl p-6">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-sm text-charcoal/60 mb-1">Total Projected Cost</p>
-            <p className="text-3xl font-bold text-charcoal">${totalCost.toFixed(2)}</p>
+            <p className="text-sm text-dusk mb-1">Total Projected Cost</p>
+            <p className="text-3xl font-bold text-denim">${totalCost.toFixed(2)}</p>
           </div>
-          <TrendingUp className="h-8 w-8 text-gold-dark opacity-60" />
+          <TrendingUp className="h-8 w-8 text-brass opacity-60" />
         </div>
-        <p className="text-xs text-charcoal/50 mt-2">To restore all items to minimum levels</p>
+        <p className="text-xs text-dusk mt-2">To restore all items to minimum levels</p>
       </div>
 
       {/* Category Breakdown */}
@@ -72,24 +72,24 @@ export default function CostForecastingDashboard({ propertyId }: { propertyId: s
         {projections.map((projection) => (
           <div
             key={projection.category_name}
-            className="p-4 bg-white rounded-xl border border-gold-light/20 hover:border-gold-light/40 transition-colors"
+            className="p-4 bg-white rounded-xl border border-cardBorder hover:border-cardBorder transition-colors"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-sm text-charcoal">{projection.category_name}</p>
-                <p className="text-xs text-charcoal/50 mt-0.5">
+                <p className="font-medium text-sm text-denim">{projection.category_name}</p>
+                <p className="text-xs text-dusk mt-0.5">
                   {projection.depleted_count} item{projection.depleted_count !== 1 ? 's' : ''} low
                 </p>
               </div>
               <div className="text-right">
-                <p className="font-bold text-charcoal">${projection.estimated_cost?.toFixed(2) || '0.00'}</p>
+                <p className="font-bold text-denim">${projection.estimated_cost?.toFixed(2) || '0.00'}</p>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      <p className="text-xs text-charcoal/40 text-center pt-2">
+      <p className="text-xs text-dusk text-center pt-2">
         Based on average unit costs. Update item prices for accuracy.
       </p>
     </div>

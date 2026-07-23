@@ -76,10 +76,10 @@ export default function NewPropertyForm() {
   }
 
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center px-6">
+    <div className="min-h-screen bg-linen flex items-center justify-center px-6">
       <div className="max-w-sm w-full">
-        <h1 className="font-display text-2xl text-charcoal mb-1">Add a property</h1>
-        <p className="text-sm text-charcoal/50 mb-6">
+        <h1 className="font-display text-2xl text-denim mb-1">Add a property</h1>
+        <p className="text-sm text-dusk mb-6">
           You'll be set as the owner and can invite staff afterward.
         </p>
 
@@ -91,7 +91,7 @@ export default function NewPropertyForm() {
               placeholder="e.g. Strauss Residence"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-full px-4 py-2.5 bg-white"
+              className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-full px-4 py-2.5 bg-white"
               autoFocus
               required
             />
@@ -100,7 +100,7 @@ export default function NewPropertyForm() {
           <button
             type="submit"
             disabled={saving || !name.trim()}
-            className="w-full py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
+            className="w-full py-2.5 rounded-full bg-denim text-white font-medium disabled:opacity-40"
           >
             {saving ? 'Creating…' : 'Create property'}
           </button>

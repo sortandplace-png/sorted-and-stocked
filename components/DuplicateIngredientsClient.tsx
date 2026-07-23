@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { resilientUpdate } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
+import { friendlyKosherConflictMessage } from '@/lib/kosher-conflict-error';
 
 type Variant = { name: string; count: number; inventory_item_id: string | null };
 type Cluster = { key: string; variants: Variant[] };
@@ -92,7 +93,8 @@ export default function DuplicateIngredientsClient({ propertyId }: { propertyId:
         }
       );
       if (!result.ok) {
-        showToast(`Failed to merge "${other.name}".`, { variant: 'error' });
+        const friendly = friendlyKosherConflictMessage(result.error, canonical.name);
+        showToast(friendly ?? `Failed to merge "${other.name}".`, { variant: 'error', durationMs: friendly ? 8000 : undefined });
         setMerging(null);
         return;
       }
@@ -112,8 +114,8 @@ export default function DuplicateIngredientsClient({ propertyId }: { propertyId:
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Duplicate Ingredients</h1>
-      <p className="text-sm text-charcoal/50 mb-4">
+      <h1 className="text-2xl font-display text-denim mb-1">Duplicate Ingredients</h1>
+      <p className="text-sm text-dusk mb-4">
         Likely the same ingredient, spelled differently across recipes. Pick which spelling to keep.
       </p>
 
@@ -122,22 +124,22 @@ export default function DuplicateIngredientsClient({ propertyId }: { propertyId:
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search ingredient…"
-          className="w-full border border-gold-light/60 rounded-full px-4 py-2.5 bg-white mb-4 text-sm"
+          className="w-full border border-cardBorder rounded-full px-4 py-2.5 bg-card mb-4 text-sm"
         />
       )}
 
       {clusters.length === 0 && <p className="text-sm text-sage text-center py-8">No likely duplicates found.</p>}
       {clusters.length > 0 && filteredClusters.length === 0 && (
-        <p className="text-sm text-charcoal/40 text-center py-8">No duplicates match your search.</p>
+        <p className="text-sm text-dusk text-center py-8">No duplicates match your search.</p>
       )}
 
       <div className="space-y-3">
         {filteredClusters.map((cluster) => (
-          <div key={cluster.key} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+          <div key={cluster.key} className="bg-card rounded-2xl shadow-card p-4">
             <div className="flex flex-wrap gap-2 mb-3">
               {cluster.variants.map((v) => (
-                <span key={v.name} className="text-xs bg-gold-light/20 text-charcoal px-2.5 py-1 rounded-full">
-                  {v.name} <span className="text-charcoal/40">×{v.count}</span>
+                <span key={v.name} className="text-xs bg-linen text-denim px-2.5 py-1 rounded-full">
+                  {v.name} <span className="text-dusk">×{v.count}</span>
                   {v.inventory_item_id && <span className="text-sage"> ✓ linked</span>}
                 </span>
               ))}
@@ -148,7 +150,7 @@ export default function DuplicateIngredientsClient({ propertyId }: { propertyId:
                   key={v.name}
                   onClick={() => merge(cluster, v)}
                   disabled={merging === cluster.key}
-                  className="text-xs font-medium bg-charcoal text-cream px-3 py-1.5 rounded-full disabled:opacity-40"
+                  className="text-xs font-medium bg-denim text-white px-3 py-1.5 rounded-full disabled:opacity-40"
                 >
                   {merging === cluster.key ? 'Merging…' : `Keep "${v.name}"`}
                 </button>

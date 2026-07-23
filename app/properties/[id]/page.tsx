@@ -7,5 +7,5 @@ export default async function PropertyRootPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  redirect(`/properties/${id}/inventory`);
+  redirect(`/properties/${id}/dashboard`);
 }

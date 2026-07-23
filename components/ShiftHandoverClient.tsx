@@ -2,11 +2,27 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert } from '@/lib/resilient-write';
 import { compressImageToDataUrl } from '@/lib/compress-image';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
+import CameraCapture from '@/components/CameraCapture';
+import CollapsibleCard from '@/components/CollapsibleCard';
+import { Camera, Image as ImageIcon, Mic, Square, X } from 'lucide-react';
+
+// Denim header-strip pattern shared with DashboardWidgets.tsx's bento cards
+// (bg-denim, white, 10px, semibold, tracking-[0.17em], uppercase, py-[11px]
+// px-5) -- not reinvented here, just reused so a 'split' card visually
+// matches the real Dashboard cards rather than approximating them.
+export function CardHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
+      {children}
+    </div>
+  );
+}
 
 type Handover = {
   id: string;
@@ -37,22 +53,43 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-export default function ShiftHandoverClient({ propertyId }: { propertyId: string }) {
+export default function ShiftHandoverClient({
+  propertyId,
+  layout = 'stacked',
+}: {
+  propertyId: string;
+  // 'stacked' (default) is the original, unchanged single-column render --
+  // used by the standalone /properties/[id]/shift-handover page, which
+  // still exists and is still directly reachable even though SS-214
+  // dropped its nav link. 'split' is SS-202's Staff dashboard embed: same
+  // state/handlers, just the form and the recent-handovers list each get
+  // their own bento card instead of one stacked column.
+  layout?: 'stacked' | 'split';
+}) {
+  const t = useTranslations('shiftHandover');
+  // A real starting structure, not vanishing placeholder text -- lands in
+  // the textarea itself so there's something to edit around instead of a
+  // blank field, the actual friction point (zero handovers had ever been
+  // logged against this component before this change).
+  const templateText = `${t('whatsDone')} \n${t('inProgress')} \n${t('headsUp')} \n`;
+
   const [handovers, setHandovers] = useState<Handover[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [noteText, setNoteText] = useState('');
+  const [noteText, setNoteText] = useState(templateText);
   const [templateTag, setTemplateTag] = useState<string | null>(null);
   const [photoDataUrls, setPhotoDataUrls] = useState<string[]>([]);
   const [audioDataUrl, setAudioDataUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
 
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
+  const noteTextareaRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const supabase = createClient();
   const showToast = useToast();
@@ -110,7 +147,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
     if (!noteText.trim()) setNoteText(template);
   }
 
-  async function handlePhotoFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleGalleryFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
     try {
@@ -119,7 +156,21 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
     } catch {
       showToast('Could not read that photo.', { variant: 'error' });
     } finally {
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (galleryInputRef.current) galleryInputRef.current.value = '';
+    }
+  }
+
+  // One capture per open -- CameraCapture hands back a single File per
+  // shot (it's a live getUserMedia feed, not a multi-select picker), so
+  // repeated taps of "Photo" reopen it and append one at a time, same end
+  // result as the old multi-select camera input.
+  async function handleCameraFile(file: File) {
+    setShowCamera(false);
+    try {
+      const dataUrl = await resizeImageFile(file);
+      setPhotoDataUrls((prev) => [...prev, dataUrl]);
+    } catch {
+      showToast('Could not read that photo.', { variant: 'error' });
     }
   }
 
@@ -166,15 +217,19 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
   }
 
   function resetForm() {
-    setNoteText('');
+    setNoteText(templateText);
     setTemplateTag(null);
     setPhotoDataUrls([]);
     setAudioDataUrl(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (galleryInputRef.current) galleryInputRef.current.value = '';
   }
 
   async function submitHandover() {
-    if (!noteText.trim() && photoDataUrls.length === 0 && !audioDataUrl) {
+    // The template's own labels aren't real content -- someone who never
+    // typed anything into it shouldn't be able to submit that as if it
+    // were a note.
+    const noteIsUnedited = noteText.trim() === templateText.trim();
+    if (noteIsUnedited && photoDataUrls.length === 0 && !audioDataUrl) {
       showToast('Add a note, photo, or recording first.', { variant: 'error' });
       return;
     }
@@ -193,7 +248,7 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
     const result = await resilientInsert(supabase, 'shift_handovers', {
       property_id: propertyId,
       created_by: user.id,
-      note_text: noteText.trim() || null,
+      note_text: noteIsUnedited ? null : noteText.trim() || null,
       photo_data_url: photoDataUrls[0] ?? null, // kept for older readers of the single-photo column
       photo_data_urls: photoDataUrls.length > 0 ? photoDataUrls : null,
       audio_data_url: audioDataUrl,
@@ -211,6 +266,21 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
       result.queued ? 'Saved — will sync when back online.' : 'Handover note left for the next shift.',
       { variant: 'success' }
     );
+
+    // Same fire-and-forget precedent as the task-assignment hook -- only
+    // when the write actually landed, never blocks the handover flow itself.
+    if (!result.queued) {
+      fetch('/api/sms/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          propertyId,
+          trigger: 'shift_handover',
+          noteText: noteIsUnedited ? 'New shift handover (photo/audio) added.' : noteText.trim(),
+        }),
+      }).catch(() => {});
+    }
+
     resetForm();
     loadHandovers();
   }
@@ -224,23 +294,17 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
     return new Date(iso).toLocaleDateString();
   }
 
-  return (
-    <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-charcoal mb-1">Shift Handover</h1>
-      <p className="text-sm text-charcoal/50 mb-4">
-        Leave a quick note for whoever's coming on next — no long write-up needed.
-      </p>
-
-      <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-6 space-y-3">
-        <div className="flex flex-wrap gap-1.5">
+  const formContent = (
+    <>
+      <div className="flex flex-wrap gap-1.5">
           {QUICK_TEMPLATES.map((template) => (
             <button
               key={template}
               onClick={() => applyTemplate(template)}
               className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
                 templateTag === template
-                  ? 'bg-gold-dark text-white border-gold'
-                  : 'bg-cream/40 text-charcoal/70 border-gold-light/60'
+                  ? 'bg-denim text-white border-denim'
+                  : 'bg-mist text-dusk border-brass/30'
               }`}
             >
               {template}
@@ -249,11 +313,12 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
         </div>
 
         <textarea
+          ref={noteTextareaRef}
           value={noteText}
           onChange={(e) => setNoteText(e.target.value)}
           placeholder="e.g. Dinner prep is staged in the fridge, just needs reheating…"
-          rows={3}
-          className="w-full border border-gold-light/60 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/40 rounded-2xl px-4 py-3 bg-cream/40 text-sm"
+          rows={5}
+          className="w-full border border-brass/30 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-4 py-3 bg-mist text-sm text-denim"
         />
 
         {photoDataUrls.length > 0 && (
@@ -264,10 +329,10 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
                 <img src={url} alt="" className="w-full h-20 rounded-lg object-cover" />
                 <button
                   onClick={() => removePhoto(i)}
-                  className="absolute top-1 right-1 bg-charcoal/70 text-cream text-xs rounded-full h-5 w-5"
+                  className="absolute top-1 right-1 bg-denim/70 text-white rounded-full h-5 w-5 flex items-center justify-center"
                   aria-label="Remove photo"
                 >
-                  ✕
+                  <X className="h-3 w-3" />
                 </button>
               </div>
             ))}
@@ -275,32 +340,47 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
         )}
 
         <div className="flex gap-2">
-          <label className="flex-1 text-center py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm font-medium cursor-pointer">
+          {/* Real camera access (CameraCapture, getUserMedia), not a
+              file-input hint -- confirmed live that even an isolated input
+              with capture="environment" still opened the gallery picker
+              instead of the camera on a real device. Library stays a plain
+              multi-select file input -- that path always worked correctly. */}
+          <button
+            type="button"
+            onClick={() => setShowCamera(true)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium"
+          >
+            <Camera className="h-4 w-4" />
+            {photoDataUrls.length > 0 ? `+ (${photoDataUrls.length})` : 'Photo'}
+          </button>
+          <label className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium cursor-pointer">
             <input
-              ref={fileInputRef}
+              ref={galleryInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               multiple
-              onChange={handlePhotoFile}
+              onChange={handleGalleryFiles}
               className="hidden"
             />
-            📷 {photoDataUrls.length > 0 ? `Add another (${photoDataUrls.length})` : 'Photo'}
+            <ImageIcon className="h-4 w-4" />
+            Library
           </label>
 
           {!recording ? (
             <button
               onClick={startRecording}
-              className="flex-1 py-2 rounded-full bg-cream border border-charcoal/30 text-charcoal text-sm font-medium"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium"
             >
-              🎙️ {audioDataUrl ? 'Re-record' : 'Record'}
+              <Mic className="h-4 w-4" />
+              {audioDataUrl ? 'Re-record' : 'Record'}
             </button>
           ) : (
             <button
               onClick={stopRecording}
-              className="flex-1 py-2 rounded-full bg-rust text-white text-sm font-medium animate-pulse"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full bg-rust text-white text-sm font-medium animate-pulse"
             >
-              ⏹ Stop ({MAX_RECORDING_SECONDS - recordSeconds}s left)
+              <Square className="h-4 w-4" fill="currentColor" />
+              Stop ({MAX_RECORDING_SECONDS - recordSeconds}s left)
             </button>
           )}
         </div>
@@ -312,37 +392,47 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
         <button
           onClick={submitHandover}
           disabled={submitting}
-          className="w-full py-2.5 rounded-full bg-charcoal text-cream font-medium disabled:opacity-40"
+          className="w-full py-2.5 rounded-full bg-denim text-white font-medium disabled:opacity-40"
         >
           {submitting ? 'Saving…' : 'Leave handover note'}
         </button>
-      </div>
+    </>
+  );
 
-      <h2 className="font-display text-lg text-charcoal mb-2">Recent handovers</h2>
+  const recentContent = (
+    <>
       {loading ? (
         <SkeletonList rows={3} />
       ) : handovers.length === 0 ? (
-        <p className="text-sm text-charcoal/40 text-center mt-4">No handover notes yet.</p>
+        <div className="text-center mt-4 py-6 bg-card rounded-xl2 shadow-card">
+          <p className="text-sm text-dusk mb-3">No handovers yet.</p>
+          <button
+            onClick={() => noteTextareaRef.current?.focus()}
+            className="text-sm font-medium text-white bg-denim px-4 py-2 rounded-full"
+          >
+            Create end of day note
+          </button>
+        </div>
       ) : (
         <ul className="space-y-3">
           {handovers.map((h) => {
             const photos = h.photo_data_urls && h.photo_data_urls.length > 0 ? h.photo_data_urls : h.photo_data_url ? [h.photo_data_url] : [];
             return (
-              <li key={h.id} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+              <li key={h.id} className="bg-card rounded-xl2 shadow-card p-4">
                 <div className="flex items-center justify-between mb-2 flex-wrap gap-1.5">
-                  <span className="text-sm font-medium text-charcoal">
+                  <span className="text-sm font-medium text-denim">
                     {h.created_by_name ?? 'Someone'}
                   </span>
                   <div className="flex items-center gap-2">
                     {h.template_tag && (
-                      <span className="text-[10px] font-medium bg-gold-light/40 text-gold-dark px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-medium bg-brass/15 text-brass px-2 py-0.5 rounded-full">
                         {h.template_tag}
                       </span>
                     )}
-                    <span className="text-xs text-charcoal/40">{timeAgo(h.created_at)}</span>
+                    <span className="text-xs text-dusk">{timeAgo(h.created_at)}</span>
                   </div>
                 </div>
-                {h.note_text && <p className="text-sm text-charcoal mb-2">{h.note_text}</p>}
+                {h.note_text && <p className="text-sm text-denim mb-2">{h.note_text}</p>}
                 {photos.length > 0 && (
                   <div className={`grid gap-2 mb-2 ${photos.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                     {photos.map((url, i) => (
@@ -359,6 +449,48 @@ export default function ShiftHandoverClient({ propertyId }: { propertyId: string
           })}
         </ul>
       )}
+    </>
+  );
+
+  if (layout === 'split') {
+    return (
+      <>
+        <CameraCapture open={showCamera} onCapture={handleCameraFile} onClose={() => setShowCamera(false)} />
+
+        <CollapsibleCard
+          cardId="staff-handover-form"
+          pinSize="sm"
+          className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden mb-6"
+          header={<CardHeader>Shift Handover</CardHeader>}
+        >
+          <div className="p-4 space-y-3">{formContent}</div>
+        </CollapsibleCard>
+
+        <CollapsibleCard
+          cardId="staff-handover-recent"
+          pinSize="sm"
+          className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden"
+          header={<CardHeader>Recent Handovers</CardHeader>}
+        >
+          <div className="p-4">{recentContent}</div>
+        </CollapsibleCard>
+      </>
+    );
+  }
+
+  return (
+    <div className="max-w-md mx-auto p-4">
+      <h1 className="text-2xl font-display text-denim mb-1">Shift Handover</h1>
+      <p className="text-sm text-dusk mb-4">
+        Leave a quick note for whoever's coming on next — no long write-up needed.
+      </p>
+
+      <CameraCapture open={showCamera} onCapture={handleCameraFile} onClose={() => setShowCamera(false)} />
+
+      <div className="bg-card rounded-xl2 shadow-card p-4 mb-6 space-y-3">{formContent}</div>
+
+      <h2 className="font-display text-lg text-denim mb-2">Recent handovers</h2>
+      {recentContent}
     </div>
   );
 }

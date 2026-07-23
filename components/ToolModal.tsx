@@ -12,6 +12,11 @@ import HouseholdKnowledgeClient from '@/components/HouseholdKnowledgeClient';
 import HouseholdContactsClient from '@/components/HouseholdContactsClient';
 import LocalFoodDirectoryClient from '@/components/LocalFoodDirectoryClient';
 import HalachicCalendarClient from '@/components/HalachicCalendarClient';
+import CapturePhotoClient from '@/components/CapturePhotoClient';
+import IdentifyItemClient from '@/components/IdentifyItemClient';
+import LinkCapturedPhotosClient from '@/components/LinkCapturedPhotosClient';
+import HechsherVerificationClient from '@/components/HechsherVerificationClient';
+import KosherTypeTaggingClient from '@/components/KosherTypeTaggingClient';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 
 export type ToolModalSlug =
@@ -25,7 +30,12 @@ export type ToolModalSlug =
   | 'knowledge-base'
   | 'contacts'
   | 'takeout-directory'
-  | 'halachic-calendar';
+  | 'halachic-calendar'
+  | 'capture-photo'
+  | 'identify-item'
+  | 'link-captured-photos'
+  | 'hechsher-verification'
+  | 'kosher-type-tagging';
 
 // Same modal shell as KitchenOpsToolModal (its own established, verified
 // pattern) applied to the Scanners / Inventory Ops / Household groups --
@@ -47,13 +57,13 @@ export default function ToolModal({
       onClick={onClose}
     >
       <div
-        className="w-full sm:max-w-lg bg-white rounded-t-[2rem] sm:rounded-2xl max-h-[85vh] overflow-y-auto relative"
+        className="w-full sm:max-w-lg bg-card rounded-t-[2rem] sm:rounded-2xl max-h-[85vh] overflow-y-auto relative"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-3 right-3 w-11 h-11 flex items-center justify-center text-charcoal/50 hover:text-charcoal z-10"
+          className="absolute top-3 right-3 w-11 h-11 flex items-center justify-center text-dusk hover:text-denim z-10"
         >
           <X size={20} strokeWidth={1.75} />
         </button>
@@ -86,12 +96,32 @@ export default function ToolModal({
           (canManage(role) ? (
             <PhotoReviewClient propertyId={propertyId} hideBackLink />
           ) : (
-            <p className="p-5 text-sm text-charcoal/50">Only an owner or manager can use this tool.</p>
+            <p className="p-5 text-sm text-dusk">Only an owner or manager can use this tool.</p>
           ))}
         {slug === 'knowledge-base' && <HouseholdKnowledgeClient propertyId={propertyId} />}
         {slug === 'contacts' && <HouseholdContactsClient propertyId={propertyId} />}
         {slug === 'takeout-directory' && <LocalFoodDirectoryClient propertyId={propertyId} />}
         {slug === 'halachic-calendar' && <HalachicCalendarClient />}
+        {slug === 'capture-photo' && <CapturePhotoClient propertyId={propertyId} />}
+        {slug === 'identify-item' && <IdentifyItemClient propertyId={propertyId} />}
+        {slug === 'link-captured-photos' &&
+          (canManage(role) ? (
+            <LinkCapturedPhotosClient propertyId={propertyId} />
+          ) : (
+            <p className="p-5 text-sm text-dusk">Only an owner or manager can use this tool.</p>
+          ))}
+        {slug === 'hechsher-verification' &&
+          (canManage(role) ? (
+            <HechsherVerificationClient propertyId={propertyId} />
+          ) : (
+            <p className="p-5 text-sm text-dusk">Only an owner or manager can use this tool.</p>
+          ))}
+        {slug === 'kosher-type-tagging' &&
+          (canManage(role) ? (
+            <KosherTypeTaggingClient propertyId={propertyId} />
+          ) : (
+            <p className="p-5 text-sm text-dusk">Only an owner or manager can use this tool.</p>
+          ))}
       </div>
     </div>
   );

@@ -53,7 +53,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 ? 'bg-rust'
                 : toast.variant === 'success'
                 ? 'bg-sage'
-                : 'bg-charcoal')
+                : 'bg-denim')
             }
           >
             <span className="flex-1">{toast.message}</span>

@@ -11,6 +11,15 @@ import { LogoMark } from '@/components/Logo';
 
 type Property = { id: string; name: string };
 
+type LowStockSummaryRow = {
+  property: string;
+  location: string;
+  store: string | null;
+  items_low: number;
+  never_counted: number;
+  total_items: number;
+};
+
 type RawItem = {
   id: string;
   name: string;
@@ -104,9 +113,23 @@ export default function ProcurementClient({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(errorMessage ?? null);
   const [hidePurchased, setHidePurchased] = useState(false);
+  const [lowStockSummary, setLowStockSummary] = useState<LowStockSummaryRow[] | null>(null);
 
   const supabase = createClient();
   const showToast = useToast();
+
+  // "Low in both houses" is not "buy for both" -- the family is in one
+  // property at a time and each house's links point at its own store
+  // (Main -> Kosher West, Country -> Gourmet Glatt). This is a side-by-side
+  // per-property comparison, not a merged list -- v_low_stock_summary is
+  // already grouped by property, one row each, nothing stitched together.
+  useEffect(() => {
+    supabase
+      .from('v_low_stock_summary')
+      .select('*')
+      .then(({ data }) => setLowStockSummary((data as LowStockSummaryRow[]) ?? []));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -182,28 +205,50 @@ export default function ProcurementClient({
   }
 
   return (
-    <div className="min-h-screen bg-cream">
-      <header className="flex items-center justify-between px-4 py-3 bg-cream text-charcoal border-b border-gold-light/40 sticky top-0 z-30 print:hidden">
+    <div className="min-h-screen bg-mist">
+      <header className="flex items-center justify-between px-4 py-3 bg-denim text-white sticky top-0 z-30 print:hidden">
         <div className="flex items-center gap-2.5 min-w-0">
-          <LogoMark className="w-9 h-9" />
+          {/* SS-021: Procurement isn't scoped to a single property (it
+              combines shopping across several), so there's no one dashboard
+              to send this to -- links to the properties picker instead,
+              same destination as this header's own "Properties" link below. */}
+          <Link href="/properties" className="flex items-center gap-2.5 shrink-0">
+            <LogoMark className="w-9 h-9" />
+          </Link>
           <span className="font-display text-lg">Procurement</span>
         </div>
-        <Link href="/properties" className="text-sm text-charcoal/60">
+        <Link href="/properties" className="text-sm text-white/70 hover:text-white">
           ← Properties
         </Link>
       </header>
 
       <main className="max-w-md lg:max-w-4xl mx-auto p-4 print:max-w-full">
         <div className="hidden print:block mb-4">
-          <h1 className="font-display text-2xl text-charcoal">Combined Shopping Trip</h1>
-          <p className="text-sm text-charcoal/50">
+          <h1 className="font-display text-2xl text-denim">Combined Shopping Trip</h1>
+          <p className="text-sm text-dusk">
             {properties.filter((p) => selectedIds.has(p.id)).map((p) => p.name).join(', ')} —{' '}
             {new Date().toLocaleDateString()}
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-4 print:hidden">
-          <h2 className="text-sm font-medium text-charcoal mb-2">Include properties</h2>
+        {lowStockSummary && lowStockSummary.length > 0 && (
+          <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-4 mb-4 print:hidden">
+            <h2 className="text-xs font-medium uppercase tracking-wider text-brass mb-3">Low Stock by Property</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {lowStockSummary.map((row) => (
+                <div key={row.property} className="bg-mist rounded-xl2 px-3 py-2.5">
+                  <p className="font-display text-lg text-denim">{row.property}</p>
+                  <p className="text-[11px] text-dusk mb-1.5">{row.location} · {row.store ?? 'No store set'}</p>
+                  <p className="text-2xl font-display text-rust leading-none">{row.items_low}</p>
+                  <p className="text-[11px] text-dusk">of {row.total_items} items low</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-4 mb-4 print:hidden">
+          <h2 className="text-xs font-medium uppercase tracking-wider text-brass mb-2">Include properties</h2>
           <div className="flex flex-wrap gap-2">
             {properties.map((p) => (
               <button
@@ -211,8 +256,8 @@ export default function ProcurementClient({
                 onClick={() => toggleProperty(p.id)}
                 className={
                   selectedIds.has(p.id)
-                    ? 'px-3 py-1.5 rounded-full text-sm bg-charcoal text-cream'
-                    : 'px-3 py-1.5 rounded-full text-sm bg-cream border border-charcoal/30 text-charcoal'
+                    ? 'px-3 py-1.5 rounded-full text-sm bg-denim text-white'
+                    : 'px-3 py-1.5 rounded-full text-sm bg-mist border border-cardBorder text-denim'
                 }
               >
                 {p.name}
@@ -226,23 +271,23 @@ export default function ProcurementClient({
         )}
 
         <div className="flex items-center justify-between mb-3 px-1 print:hidden">
-          <span className="text-sm text-charcoal/50">
+          <span className="text-sm text-dusk">
             {stitched.filter((i) => !i.allPurchased).length} items left across{' '}
             {selectedIds.size} propert{selectedIds.size === 1 ? 'y' : 'ies'}
           </span>
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 text-sm text-charcoal/60">
+            <label className="flex items-center gap-2 text-sm text-dusk">
               <input
                 type="checkbox"
                 checked={hidePurchased}
                 onChange={(e) => setHidePurchased(e.target.checked)}
-                className="accent-gold"
+                className="accent-denim"
               />
               Hide picked up
             </label>
             <button
               onClick={() => window.print()}
-              className="text-sm font-medium bg-charcoal text-cream px-4 py-1.5 rounded-full"
+              className="text-sm font-medium bg-denim text-white px-4 py-1.5 rounded-full"
             >
               🖨️ Print
             </button>
@@ -252,40 +297,36 @@ export default function ProcurementClient({
         {loading ? (
           <SkeletonList />
         ) : stitched.length === 0 ? (
-          <p className="text-sm text-charcoal/40 text-center mt-8">
+          <p className="text-sm text-dusk text-center mt-8">
             Nothing on any selected property's list right now.
           </p>
         ) : (
           <div className="lg:columns-2 lg:gap-4">
             {grouped.map(([category, items]) => (
               <section key={category} className="mb-4 break-inside-avoid print:break-inside-avoid">
-                <div className="flex items-center gap-2 px-3 mb-2">
-                  <span className="h-px flex-1 bg-gold-light" />
-                  <h3 className="text-xs font-display italic tracking-[0.1em] text-charcoal/70 whitespace-nowrap">
-                    {category}
-                  </h3>
-                  <span className="h-px flex-1 bg-gold-light" />
-                </div>
-                <ul className="divide-y divide-gold-light/30 rounded-2xl bg-white shadow-sm shadow-charcoal/5 overflow-hidden print:shadow-none print:border print:border-gold-light">
+                <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brass px-1 mb-2">
+                  {category}
+                </h3>
+                <ul className="divide-y divide-cardBorder rounded-2xl bg-card border border-cardBorder shadow-card overflow-hidden print:shadow-none print:border print:border-cardBorder">
                   {items.map((item) => (
                     <li key={item.key} className="flex items-start gap-3 px-4 py-3 print:py-1.5">
                       <input
                         type="checkbox"
                         checked={item.allPurchased}
                         onChange={(e) => markGroupPurchased(item, e.target.checked)}
-                        className="h-5 w-5 shrink-0 accent-gold rounded mt-0.5 print:hidden"
+                        className="h-5 w-5 shrink-0 accent-denim rounded mt-0.5 print:hidden"
                       />
-                      <span className="hidden print:inline text-charcoal/40 shrink-0">☐</span>
+                      <span className="hidden print:inline text-dusk shrink-0">☐</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2">
                           <span
                             className={
-                              item.allPurchased ? 'line-through text-charcoal/30' : 'text-charcoal'
+                              item.allPurchased ? 'line-through text-dusk' : 'text-denim'
                             }
                           >
                             {item.displayName}
                           </span>
-                          <span className="text-sm text-charcoal/40 shrink-0">
+                          <span className="text-sm text-dusk shrink-0">
                             Pick {item.totalQty}
                           </span>
                         </div>
@@ -294,7 +335,7 @@ export default function ProcurementClient({
                             {item.fromProperties.map((p) => (
                               <span
                                 key={p.propertyId}
-                                className="text-[11px] bg-gold-light/40 text-charcoal px-2 py-0.5 rounded-full"
+                                className="text-[11px] bg-mist text-denim px-2 py-0.5 rounded-full"
                               >
                                 {p.propertyName}: {p.qty}
                               </span>

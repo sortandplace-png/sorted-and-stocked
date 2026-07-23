@@ -1,6 +1,7 @@
 // lib/api/shoppingList.ts
 // API layer for Enhanced Shopping List — conditional render data layer
 import { createClient } from '@/lib/supabase/client';
+import type { ReorderSource } from '@/lib/reorder-sources';
 
 export interface EnhancedShoppingItem {
   item_id: string;
@@ -8,12 +9,14 @@ export interface EnhancedShoppingItem {
   name_es: string | null;
   category: string;
   qty_needed: number;
+  purchase_qty: number | null;
   unit_estimate: string | null;
   status: 'pending' | 'purchased';
   // Rich inventory fields (null if unmapped ingredient)
   inventory_item_id: string | null;
   photo_url: string | null;
   reorder_link: string | null;
+  reorder_sources: ReorderSource[] | null;
   current_stock: number | null;
   location_name: string | null;
   supplier: string | null;
@@ -21,6 +24,10 @@ export interface EnhancedShoppingItem {
   // UI flags for conditional rendering
   is_rich_item: boolean;
   is_staple_origin: boolean;
+  // Pesach Mode: null for items with no linked inventory row (nothing to
+  // flag against) or before the Pesach status column existed on old cached
+  // callers -- the RPC itself never returns null for a real linked item.
+  pesach_status: 'kosher_for_pesach' | 'not_kosher_for_pesach' | 'needs_review' | null;
 }
 
 /**
@@ -66,13 +73,35 @@ export async function updateShoppingItemStatus(
   }
 }
 
+/**
+ * Set how many units to actually buy (distinct from qty_needed, the recipe-
+ * derived amount). Null clears it back to "not yet decided".
+ */
+export async function updatePurchaseQty(itemId: string, purchaseQty: number | null): Promise<void> {
+  const supabase = createClient();
+
+  const { error } = await supabase
+    .from('shopping_list_items')
+    .update({ purchase_qty: purchaseQty })
+    .eq('id', itemId);
+
+  if (error) {
+    console.error('Error updating purchase quantity:', error.message);
+    throw new Error(`Failed to update purchase quantity: ${error.message}`);
+  }
+}
+
 export interface ShoppingItemSource {
   shopping_list_item_id: string;
   recipe_id: string;
   recipe_name: string;
   recipe_name_es: string | null;
+  recipe_photo_url: string | null;
   quantity: number | null;
   unit: string | null;
+  // Pesach Mode: whether the source recipe is tagged Pesach -- powers the
+  // inline "not cleared for Pesach" flag on shopping list items.
+  is_pesach: boolean;
 }
 
 /**
@@ -91,7 +120,7 @@ export async function fetchItemSources(shoppingListId: string): Promise<Shopping
 
   const { data, error } = await supabase
     .from('shopping_list_item_sources')
-    .select('shopping_list_item_id, recipe_id, quantity, unit, recipes(name, name_es), shopping_list_items!inner(shopping_list_id)')
+    .select('shopping_list_item_id, recipe_id, quantity, unit, recipes(name, name_es, is_pesach, photo_url), shopping_list_items!inner(shopping_list_id)')
     .eq('shopping_list_items.shopping_list_id', shoppingListId);
 
   if (error) {
@@ -104,8 +133,10 @@ export async function fetchItemSources(shoppingListId: string): Promise<Shopping
     recipe_id: row.recipe_id,
     recipe_name: row.recipes?.name ?? 'Unknown recipe',
     recipe_name_es: row.recipes?.name_es ?? null,
+    recipe_photo_url: row.recipes?.photo_url ?? null,
     quantity: row.quantity,
     unit: row.unit,
+    is_pesach: !!row.recipes?.is_pesach,
   }));
 }
 
