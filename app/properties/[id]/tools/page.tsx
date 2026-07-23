@@ -34,12 +34,6 @@ const TOOLS = [
     description: 'The answers staff and family keep asking for.',
   },
   {
-    slug: 'tasks',
-    icon: '✅',
-    title: 'Staff Task Center',
-    description: 'What needs doing, and by whom.',
-  },
-  {
     slug: 'contacts',
     icon: '📇',
     title: 'Contacts & Vendors',
@@ -117,6 +111,12 @@ const TOOLS = [
     title: 'Home Memory Timeline',
     description: 'A running record of photos, milestones, and moments.',
   },
+  {
+    slug: 'blog',
+    icon: '📖',
+    title: 'Blog & Articles',
+    description: 'Household management tips, recipes, and insights.',
+  },
 ];
 
 const TASTE_MEMORY_TOOL = {
@@ -127,9 +127,13 @@ const TASTE_MEMORY_TOOL = {
 };
 
 // Grouped per the approved Tools Hub redesign. The design brief named ~13
-// of the real 17 tools explicitly; the rest (tasks, halachic-calendar,
+// of the real 17 tools explicitly; the rest (halachic-calendar,
 // prep-timeline, memory-timeline, taste-memory) are placed into whichever
 // of the 4 named groups fits them best rather than left ungrouped.
+// 'tasks' (Staff Task Center) removed from here -- real duplicate entry
+// point, same pattern as the Handover fix. The dedicated Staff nav group
+// (DesktopNav.tsx) is now the one real way in, not a second generic-grid
+// tile pointing at the same /tools/tasks page.
 const GROUPS: { key: string; label: string; slugs: string[] }[] = [
   { key: 'scanners', label: 'Scanners', slugs: ['price-scanner', 'ingredient-scanner', 'recipe-stealer'] },
   { key: 'kitchen-ops', label: 'Kitchen Ops', slugs: ['kitchen-timer', 'guest-scaler', 'reset-checklist', 'prep-timeline'] },
@@ -137,7 +141,7 @@ const GROUPS: { key: string; label: string; slugs: string[] }[] = [
   {
     key: 'household',
     label: 'Household',
-    slugs: ['knowledge-base', 'tasks', 'contacts', 'takeout-directory', 'halachic-calendar', 'memory-timeline', 'taste-memory'],
+    slugs: ['knowledge-base', 'contacts', 'takeout-directory', 'halachic-calendar', 'memory-timeline', 'taste-memory', 'blog'],
   },
 ];
 
