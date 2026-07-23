@@ -6,7 +6,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 // definition not signed in yet, and the session it establishes is set
 // client-side (via the Supabase SDK reading the URL) a moment after the
 // initial navigation -- both need to be reachable before that lands.
-const PUBLIC_PATHS = ['/login', '/auth/callback', '/auth/confirm', '/forgot-password', '/reset-password', '/signup', '/welcome', '/entry', '/privacy.html', '/terms.html', '/cookie-policy.html'];
+const PUBLIC_PATHS = ['/login', '/auth/callback', '/auth/confirm', '/forgot-password', '/reset-password', '/signup', '/welcome', '/entry', '/privacy.html', '/terms.html', '/cookie-policy.html', '/blog'];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
