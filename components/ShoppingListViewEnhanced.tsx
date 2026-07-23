@@ -867,13 +867,14 @@ export default function ShoppingListViewEnhanced({
         )}
       </div>
 
-      {/* Filter Tabs -- By Aisle and By Recipe only. Simplified from 4
-          generic view modes, focused on the two most useful filtering
-          dimensions for shopping. */}
+      {/* Filter Tabs -- By Aisle, By Recipe, By Store. Simplified from 4
+          generic view modes (removed Staples). Focused on the three most
+          useful filtering dimensions for shopping. */}
       <div className="print:hidden flex gap-2">
         {([
           ['category', MapPin, 'By Aisle'] as const,
           ['by-recipe', BookOpen, 'By Recipe'] as const,
+          ['by-store', Store, 'By Store'] as const,
         ]).map(([option, Icon, label]) => (
           <button
             key={option}
