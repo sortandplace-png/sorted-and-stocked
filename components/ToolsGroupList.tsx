@@ -6,6 +6,7 @@ import Link from 'next/link';
 import {
   Lock,
   Tag,
+  Tags,
   Microscope,
   UtensilsCrossed,
   Timer,
@@ -21,6 +22,16 @@ import {
   Store,
   History,
   Heart,
+  BookMarked,
+  Contact,
+  Inbox,
+  Image as ImageIcon,
+  ImagePlus,
+  Camera,
+  Sparkles,
+  ShieldCheck,
+  Languages,
+  Newspaper,
   type LucideIcon,
 } from 'lucide-react';
 import ToolModal, { type ToolModalSlug } from '@/components/ToolModal';
@@ -31,15 +42,12 @@ type Tool = { slug: string; icon: string; title: string; description: string; co
 type Subgroup = { key: string; label: string; lockIcon: boolean; tools: Tool[] };
 type Group = { key: string; label: string; tools: Tool[]; subgroups: Subgroup[] };
 
-// Scanners + Kitchen's top-level tools + Prep & Reset (SS-249's original
-// batch), Reference's pantry-zones/borrowed-items + Admin Cleanup's
-// duplicate-ingredients/needs-linking (SS-279 -- same slugs/icons as
-// InventoryClient.tsx's own Inventory Ops footer, kept in sync on
-// purpose), and Kitchen's Calendar subgroup + House's loose tools
-// (SS-280). The rest of the page is still emoji, not yet in scope. Keyed
-// by slug rather than changing TOOLS' own `icon` field in page.tsx, so a
-// slug that's ever renamed/removed here harmlessly falls back to its
-// emoji instead of rendering nothing.
+// Every tool slug now has a real lucide icon -- no more emoji fallback
+// (that was scoped to SS-249/SS-279/SS-280's rollout only; this closes it
+// out for the rest of the page). Keyed by slug rather than changing TOOLS'
+// own `icon` field in page.tsx, so a slug that's ever renamed here without
+// a matching entry added below fails loudly (a crash, not a silent emoji
+// regression) rather than reintroducing the thing this just removed.
 //
 // SS-280 icon choices, and the two departures from what was suggested:
 // halachic-calendar and yom-tov-year-view deliberately share Calendar
@@ -49,7 +57,10 @@ type Group = { key: string; label: string; tools: Tool[]; subgroups: Subgroup[] 
 // UtensilsCrossed, and taste-memory uses Heart instead of the suggested
 // Users -- both suggested icons were already claimed above (recipe-
 // stealer, guest-scaler) for genuinely unrelated tools, so reusing them
-// here would read as a mistake, not a deliberate pairing.
+// here would read as a mistake, not a deliberate pairing. Same reasoning
+// extends to link-captured-photos, which shares Link2 with needs-linking
+// -- both already share the same emoji (🔗) in TOOLS, so the pairing was
+// already implied, not invented here.
 const TOOL_ICON_OVERRIDES: Record<string, LucideIcon> = {
   'price-scanner': Tag,
   'ingredient-scanner': Microscope,
@@ -68,6 +79,18 @@ const TOOL_ICON_OVERRIDES: Record<string, LucideIcon> = {
   'takeout-directory': Store,
   'memory-timeline': History,
   'taste-memory': Heart,
+  'knowledge-base': BookMarked,
+  contacts: Contact,
+  'capture-inbox': Inbox,
+  'photo-review': ImageIcon,
+  'photo-worklist': ImagePlus,
+  'capture-photo': Camera,
+  'identify-item': Sparkles,
+  'link-captured-photos': Link2,
+  'hechsher-verification': ShieldCheck,
+  'kosher-type-tagging': Tags,
+  'translation-worklist': Languages,
+  digest: Newspaper,
 };
 
 // Same modal treatment already proven for Kitchen Ops (opened from a
@@ -114,18 +137,13 @@ export default function ToolsGroupList({ propertyId, groups }: { propertyId: str
   }
 
   function toolCard(tool: Tool) {
-    const OverrideIcon = TOOL_ICON_OVERRIDES[tool.slug];
+    const Icon = TOOL_ICON_OVERRIDES[tool.slug];
     const cardInner = (
       <>
-        {OverrideIcon ? (
-          <span className="w-11 h-11 flex items-center justify-center">
-            <OverrideIcon size={28} className="text-denim" aria-hidden="true" />
-          </span>
-        ) : (
-          <span className="w-11 h-11 flex items-center justify-center rounded-full bg-gold/15 text-lg">
-            {tool.icon}
-          </span>
-        )}
+        <Pin size="sm" />
+        <span className="w-11 h-11 flex items-center justify-center">
+          <Icon size={28} className="text-denim" aria-hidden="true" />
+        </span>
         <span className="flex items-center gap-1.5">
           <span className="font-display font-semibold text-denim">{tool.title}</span>
           {typeof tool.count === 'number' && (
@@ -138,7 +156,7 @@ export default function ToolsGroupList({ propertyId, groups }: { propertyId: str
       </>
     );
     const cardClass =
-      'flex flex-col items-center text-center gap-2 bg-mist border border-brass/30 rounded-xl2 shadow-card px-4 py-5 hover:shadow-cardHover transition-shadow h-full w-full';
+      'relative flex flex-col items-center text-center gap-2 bg-mist border border-brass/30 rounded-xl2 shadow-card px-4 py-5 hover:shadow-cardHover transition-shadow h-full w-full';
     return (
       <li key={tool.slug}>
         {MODAL_SLUGS.has(tool.slug as ToolModalSlug) ? (
