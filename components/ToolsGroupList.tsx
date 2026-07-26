@@ -207,9 +207,12 @@ export default function ToolsGroupList({ propertyId, groups }: { propertyId: str
                 )}
                 {visibleSubgroups.map((sg) => (
                   <div key={sg.key}>
-                    <div className="flex items-center gap-1.5 mb-2 pl-1">
+                    <div className="relative flex items-center gap-1.5 mb-2 pl-1 pr-6">
+                      <Pin size="sm" />
                       {sg.lockIcon && <Lock size={12} strokeWidth={1.5} className="text-dusk" aria-hidden="true" />}
-                      <span className="text-[11px] font-medium uppercase tracking-wider text-dusk">{sg.label}</span>
+                      <span className="text-xs font-medium uppercase tracking-wider text-brass">{sg.label}</span>
+                      <span className="text-xs text-dusk">({sg.tools.length})</span>
+                      <span className="flex-1 border-t border-cardBorder" />
                     </div>
                     <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {sg.tools.map((tool) => toolCard(tool))}
