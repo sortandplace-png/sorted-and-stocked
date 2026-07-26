@@ -51,7 +51,7 @@ export default function WelcomePage() {
 
         <section className="grid md:grid-cols-2 gap-10 items-center py-12">
           <div>
-            <p className="text-[11px] tracking-[0.2em] uppercase font-bold text-brass border-b border-gold inline-block pb-1 mb-4">
+            <p className="text-[11px] tracking-[0.2em] uppercase font-bold text-brass border-b border-brass inline-block pb-1 mb-4">
               For Orthodox Households
             </p>
             <h1 className="font-display font-bold text-4xl md:text-5xl text-ink leading-[1.1] mb-5">
@@ -72,7 +72,7 @@ export default function WelcomePage() {
           </div>
 
           <div className="bg-ink rounded-[10px] p-6 shadow-xl">
-            <p className="font-display font-semibold text-xl text-gold mb-4">Sunday · Jul 12</p>
+            <p className="font-display font-semibold text-xl text-brass mb-4">Sunday · Jul 12</p>
             {[
               { tag: 'Fleishig', bg: 'bg-fleishigBold', course: 'Soup', name: 'Beef and Barley Soup' },
               { tag: 'Fleishig', bg: 'bg-fleishigBold', course: 'Protein', name: 'Adventures with Pepper Steak' },
@@ -119,7 +119,7 @@ export default function WelcomePage() {
 
       <section id="signature" className="bg-ink py-14 -mx-4 px-4">
         <div className="max-w-[1080px] mx-auto">
-          <p className="text-[11px] tracking-[0.18em] uppercase font-bold text-gold mb-3.5">The Difference</p>
+          <p className="text-[11px] tracking-[0.18em] uppercase font-bold text-brass mb-3.5">The Difference</p>
           <h2 className="font-display font-semibold text-3xl text-white mb-4">One glance. Always safe.</h2>
           <p className="text-[#C9C2B4] text-[15px] max-w-[520px] leading-relaxed mb-9">
             Every recipe and every inventory item carries one of three tags — bold enough to see at a glance,
