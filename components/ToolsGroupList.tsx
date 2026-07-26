@@ -32,6 +32,7 @@ import {
   ShieldCheck,
   Languages,
   Newspaper,
+  FileText,
   type LucideIcon,
 } from 'lucide-react';
 import ToolModal, { type ToolModalSlug } from '@/components/ToolModal';
@@ -91,6 +92,7 @@ const TOOL_ICON_OVERRIDES: Record<string, LucideIcon> = {
   'kosher-type-tagging': Tags,
   'translation-worklist': Languages,
   digest: Newspaper,
+  blog: FileText,
 };
 
 // Same modal treatment already proven for Kitchen Ops (opened from a
