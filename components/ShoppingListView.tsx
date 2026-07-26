@@ -122,7 +122,7 @@ export default function ShoppingListView({ items, onToggle }: ShoppingListViewPr
             </h3>
             <span className="h-px flex-1 bg-linen" />
           </div>
-          <ul className="divide-y divide-cardBorder rounded-2xl bg-white shadow-sm shadow-charcoal/5 overflow-hidden print:shadow-none print:border print:border-cardBorder">
+          <ul className="divide-y divide-cardBorder rounded-2xl bg-white shadow-sm shadow-black/5 overflow-hidden print:shadow-none print:border print:border-cardBorder">
             {categoryItems.map((item) => (
               <li
                 key={item.id}

@@ -122,7 +122,7 @@ export default function StaffOnboardingModal({
                 const { bg, Icon } = KASH_STYLE[k];
                 const label = k === 'Fleishig' ? t('screen2Fleishig') : k === 'Milchig' ? t('screen2Milchig') : t('screen2Parve');
                 return (
-                  <div key={k} className="flex items-center gap-3 bg-white rounded-xl p-3.5 mb-2.5 shadow-sm shadow-charcoal/5">
+                  <div key={k} className="flex items-center gap-3 bg-white rounded-xl p-3.5 mb-2.5 shadow-sm shadow-black/5">
                     <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-[11px] font-bold uppercase text-white shrink-0 ${bg}`}>
                       <Icon className="w-2.5 h-2.5" fill="currentColor" aria-hidden="true" />
                       {k}
@@ -166,7 +166,7 @@ export default function StaffOnboardingModal({
                   { Icon: Plus, label: 'Add Recipe' },
                   { Icon: ShoppingCart, label: 'Shopping List' },
                 ].map(({ Icon, label }) => (
-                  <div key={label} className="flex flex-col items-center gap-2 bg-white rounded-xl p-4 text-center shadow-sm shadow-charcoal/5">
+                  <div key={label} className="flex flex-col items-center gap-2 bg-white rounded-xl p-4 text-center shadow-sm shadow-black/5">
                     <Icon size={20} className="text-brass" aria-hidden="true" />
                     <span className="text-xs font-bold text-denim">{label}</span>
                   </div>

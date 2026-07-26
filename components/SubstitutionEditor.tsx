@@ -64,7 +64,7 @@ export default function SubstitutionEditor({
   };
 
   return (
-    <div className="bg-white rounded-xl2 shadow-sm shadow-charcoal/5 p-5">
+    <div className="bg-white rounded-xl2 shadow-sm shadow-black/5 p-5">
       <h3 className="font-display text-lg text-denim mb-1">{t('title')}</h3>
       <p className="text-xs text-dusk mb-2">{t('description')}</p>
 

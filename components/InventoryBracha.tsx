@@ -107,7 +107,7 @@ export default function InventoryBracha({ itemId, itemName }: { itemId: string; 
   if (loading) return null;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+    <div className="bg-white rounded-2xl shadow-sm shadow-black/5 p-4">
       <h3 className="font-display text-base text-denim mb-1">Bracha</h3>
       <p className="text-xs text-dusk mb-2">
         Which bracha applies — a manual judgment call, never auto-assigned.

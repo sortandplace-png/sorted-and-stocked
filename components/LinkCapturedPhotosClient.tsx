@@ -119,7 +119,7 @@ export default function LinkCapturedPhotosClient({ propertyId }: { propertyId: s
       </p>
 
       {captures.length === 0 ? (
-        <p className="text-sm text-dusk text-center py-8 bg-white rounded-2xl shadow-sm shadow-charcoal/5">
+        <p className="text-sm text-dusk text-center py-8 bg-white rounded-2xl shadow-sm shadow-black/5">
           Nothing waiting to be linked.
         </p>
       ) : (
@@ -129,7 +129,7 @@ export default function LinkCapturedPhotosClient({ propertyId }: { propertyId: s
             const current = captures[0];
             const photoUrl = current.raw_payload.photo_url;
             return (
-              <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+              <div className="bg-white rounded-2xl shadow-sm shadow-black/5 p-4">
                 {photoUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={photoUrl} alt="" className="w-full h-56 object-contain rounded-xl bg-linen mb-3" />

@@ -194,7 +194,7 @@ export default function IngredientScannerClient({ propertyId }: { propertyId: st
           )}
 
           {result.allergens.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+            <div className="bg-white rounded-2xl shadow-sm shadow-black/5 p-4">
               <p className="text-xs font-medium uppercase tracking-wider text-brass mb-2">Allergens</p>
               <div className="flex flex-wrap gap-1.5">
                 {result.allergens.map((a) => (
@@ -218,7 +218,7 @@ export default function IngredientScannerClient({ propertyId }: { propertyId: st
             </div>
           )}
 
-          <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-5 whitespace-pre-wrap text-sm leading-relaxed text-denim">
+          <div className="bg-white rounded-2xl shadow-sm shadow-black/5 p-5 whitespace-pre-wrap text-sm leading-relaxed text-denim">
             {result.analysis}
           </div>
         </div>

@@ -132,7 +132,7 @@ export default function ManagerDashboardClient({ properties }: { properties: { i
             key={t}
             onClick={() => setTab(t)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              tab === t ? 'bg-gold text-denim' : 'bg-white border border-cardBorder text-dusk'
+              tab === t ? 'bg-brass text-denim' : 'bg-white border border-cardBorder text-dusk'
             }`}
           >
             {t === 'inventory' ? 'Inventory (all clients)' : t === 'recipes' ? 'Recipes (all clients)' : t === 'library' ? 'Shared Library' : 'Onboard New Client'}

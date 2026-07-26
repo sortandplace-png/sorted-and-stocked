@@ -485,7 +485,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
 
       <div className="lg:grid lg:grid-cols-3 lg:gap-4 lg:items-start">
         {/* Filters panel */}
-        <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-4 lg:mb-0 space-y-3">
+        <div className="bg-white rounded-2xl shadow-sm shadow-black/5 p-4 mb-4 lg:mb-0 space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-medium uppercase tracking-wider text-brass">Filters</h2>
             {(search || locationFilter || photosOnly || lowStockOnly || categoryFilter || labelStatusFilter) && (
@@ -648,7 +648,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
               smooth typing) -- only the rows actually visible in the 50vh
               viewport are ever mounted now, regardless of list length. */}
           {groupedItems.length > 0 && (
-            <div className="rounded-2xl bg-white shadow-sm shadow-charcoal/5 overflow-hidden h-[50vh]">
+            <div className="rounded-2xl bg-white shadow-sm shadow-black/5 overflow-hidden h-[50vh]">
               <List
                 rowComponent={VirtualGroupRow}
                 rowCount={groupedItems.length}
@@ -679,7 +679,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
             22807 sheet, first page only. Not a pixel-perfect PDF render;
             generatePdf() below is still the source of truth for the
             actual output. */}
-        <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+        <div className="bg-white rounded-2xl shadow-sm shadow-black/5 p-4">
           <h2 className="text-xs font-medium uppercase tracking-wider text-brass mb-3">
             Live Preview {selectedItems.length > 20 && `(page 1 of ${Math.ceil(selectedItems.length / 20)})`}
           </h2>
@@ -731,7 +731,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
           without scrolling back down through a long virtualized list. */}
       <div className="sticky bottom-16 md:bottom-2 z-20 mt-4 space-y-2">
         {showSelectionPanel && selectedGroups.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-md shadow-charcoal/10 border border-cardBorder p-3 max-h-56 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-md shadow-black/10 border border-cardBorder p-3 max-h-56 overflow-y-auto">
             <div className="flex flex-wrap gap-1.5">
               {selectedGroups.map((group) => (
                 <button
@@ -769,7 +769,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
           </div>
         )}
 
-        <div className="bg-white rounded-2xl shadow-md shadow-charcoal/10 border border-cardBorder p-3 flex items-center gap-3">
+        <div className="bg-white rounded-2xl shadow-md shadow-black/10 border border-cardBorder p-3 flex items-center gap-3">
           <button
             onClick={() => setShowSelectionPanel((v) => !v)}
             disabled={selected.size === 0}

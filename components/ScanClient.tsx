@@ -334,7 +334,7 @@ export default function ScanClient({
       )}
 
       {state.status === 'item-found' && (
-        <div className="mt-6 bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-5">
+        <div className="mt-6 bg-white rounded-2xl shadow-sm shadow-black/5 p-5">
           {state.item.photo_url && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -355,7 +355,7 @@ export default function ScanClient({
                 href={getPreferredSource(state.item.reorder_sources)!.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-full border border-gold text-brass text-sm font-medium mb-3"
+                className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-full border border-brass text-brass text-sm font-medium mb-3"
               >
                 <ExternalLink size={14} strokeWidth={1.75} /> {t('reorder')}
               </a>

@@ -630,7 +630,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
       {canManage(viewerRole) && (
         <>
       <h2 className="font-display text-lg text-denim mb-2">Add Person</h2>
-      <form onSubmit={handleAddPerson} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 space-y-3">
+      <form onSubmit={handleAddPerson} className="bg-white rounded-2xl shadow-sm shadow-black/5 p-4 space-y-3">
         <div>
           <FieldLabel>Full name</FieldLabel>
           <input
@@ -800,7 +800,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
       {pendingInvites.length > 0 && (
         <div className="mt-6">
           <h2 className="font-display text-lg text-denim mb-2">Pending Invites</h2>
-          <ul className="divide-y divide-cardBorder rounded-2xl bg-white shadow-sm shadow-charcoal/5 overflow-hidden">
+          <ul className="divide-y divide-cardBorder rounded-2xl bg-white shadow-sm shadow-black/5 overflow-hidden">
             {pendingInvites.map((inv) => (
               <li key={inv.userId} className="flex items-center gap-3 px-4 py-3">
                 <div className="flex-1 min-w-0">
@@ -827,7 +827,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
           <h2 className="font-display text-lg text-denim mb-2">Team Activity</h2>
           <ul className="space-y-2">
             {teamActivity.map((row) => (
-              <li key={`${row.email}-${row.property}`} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+              <li key={`${row.email}-${row.property}`} className="bg-white rounded-2xl shadow-sm shadow-black/5 p-4">
                 <div className="flex items-center gap-2 mb-1.5">
                   <span className="flex-1 truncate text-denim font-medium text-sm">{row.person}</span>
                   <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-denim/5 text-dusk shrink-0 capitalize">

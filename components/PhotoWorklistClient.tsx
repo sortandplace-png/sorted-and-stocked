@@ -129,7 +129,7 @@ export default function PhotoWorklistClient({ propertyId }: { propertyId: string
                 type="button"
                 onClick={() => startCapture(item.id)}
                 disabled={uploadingId === item.id}
-                className="w-full flex items-center gap-3 bg-white rounded-2xl shadow-sm shadow-charcoal/5 px-4 py-3 text-left hover:shadow-md transition-shadow disabled:opacity-50"
+                className="w-full flex items-center gap-3 bg-white rounded-2xl shadow-sm shadow-black/5 px-4 py-3 text-left hover:shadow-md transition-shadow disabled:opacity-50"
               >
                 <span className="w-10 h-10 rounded-lg bg-linen shrink-0 flex items-center justify-center text-dusk">
                   <Camera size={16} aria-hidden="true" />

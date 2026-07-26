@@ -89,7 +89,7 @@ export default function YomTovYearClient({ propertyId }: { propertyId: string })
             <h2 className="text-xs font-display italic tracking-[0.1em] text-dusk mb-2">
               {new Date(monthKey + '-02').toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
             </h2>
-            <ul className="divide-y divide-cardBorder rounded-2xl bg-white shadow-sm shadow-charcoal/5 overflow-hidden">
+            <ul className="divide-y divide-cardBorder rounded-2xl bg-white shadow-sm shadow-black/5 overflow-hidden">
               {monthEntries.map((entry, i) => (
                 <li key={i} className="flex items-center gap-3 px-4 py-3">
                   <span

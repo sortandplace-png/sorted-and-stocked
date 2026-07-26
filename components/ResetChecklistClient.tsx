@@ -225,7 +225,7 @@ function ChecklistCard({
   }, [sections, taskState]);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+    <div className="bg-white rounded-2xl shadow-sm shadow-black/5 p-4">
       <div className="flex items-center justify-between mb-2">
         <h2 className="font-display text-lg text-denim">{template.template_name}</h2>
       </div>

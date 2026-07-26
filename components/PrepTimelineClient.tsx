@@ -137,7 +137,7 @@ export default function PrepTimelineClient({ propertyId }: { propertyId: string 
       )}
 
       {withTimes.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 mb-4">
+        <div className="bg-white rounded-2xl shadow-sm shadow-black/5 p-4 mb-4">
           <ul className="space-y-3">
             {withTimes.map((item, i) => (
               <li key={i} className="flex items-center gap-3">

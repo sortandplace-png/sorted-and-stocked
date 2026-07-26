@@ -203,7 +203,7 @@ export default function BulkPhotoUploadClient({ propertyId }: { propertyId: stri
                 </button>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+              <div className="bg-white rounded-2xl shadow-sm shadow-black/5 p-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={current.previewUrl}
