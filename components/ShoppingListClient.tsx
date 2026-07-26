@@ -1,6 +1,9 @@
 // components/ShoppingListClient.tsx
-// This is the data-fetching parent ShoppingListView was waiting for.
-// The view component itself never changes — it stays presentational.
+// Data-fetching parent; ShoppingListViewEnhanced is the real (only) render
+// path -- ShoppingListView.tsx was the original presentational component
+// this fetched for, since removed as dead code once ShoppingListViewEnhanced
+// replaced it. ShoppingListItem lives here now instead of over there, since
+// this is its only consumer.
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
@@ -8,13 +11,20 @@ import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientUpdate } from '@/lib/resilient-write';
 import { Lightbulb } from 'lucide-react';
-import ShoppingListView, { ShoppingListItem } from '@/components/ShoppingListView';
 import ShoppingListViewEnhanced from '@/components/ShoppingListViewEnhanced';
 import StaplesTab from '@/components/StaplesTab';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import Pin from '@/components/PinAccent';
 import { usePullToRefresh } from '@/lib/use-pull-to-refresh';
+
+export type ShoppingListItem = {
+  id: string;
+  name: string;
+  category: string | null;
+  qty_needed: number;
+  status: 'pending' | 'purchased';
+};
 
 type PairingRule = { id: string; item_a: string; item_b: string };
 
