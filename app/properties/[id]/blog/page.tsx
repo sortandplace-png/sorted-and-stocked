@@ -20,9 +20,8 @@ export default async function BlogPage({ params }: { params: Promise<{ id: strin
 
   const { data: posts, error } = await supabase
     .from('blog_posts')
-    .select('id, title, slug, description, publish_date, header_image_url, header_image_alt')
-    .eq('property_id', propertyId)
-    .order('publish_date', { ascending: false });
+    .select('slug, title, excerpt, published_at, header_image_url')
+    .order('published_at', { ascending: false });
 
   if (error) {
     console.error('Error fetching blog posts:', error);
@@ -45,7 +44,11 @@ export default async function BlogPage({ params }: { params: Promise<{ id: strin
         </p>
       </div>
 
-      {posts && posts.length > 0 ? (
+      {error ? (
+        <div className="text-center py-12">
+          <p className="text-rust">Something went wrong loading the blog. Please try again later.</p>
+        </div>
+      ) : posts && posts.length > 0 ? (
         <BlogPostsList propertyId={propertyId} posts={posts} />
       ) : (
         <div className="text-center py-12">

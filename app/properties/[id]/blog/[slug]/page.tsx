@@ -30,10 +30,12 @@ export default async function BlogPostPage({
   const { data: post, error } = await supabase
     .from('blog_posts')
     .select('*')
-    .eq('property_id', propertyId)
     .eq('slug', slug)
     .single();
 
+  if (error) {
+    console.error('Error fetching blog post:', error);
+  }
   if (error || !post) {
     notFound();
   }
@@ -42,10 +44,9 @@ export default async function BlogPostPage({
     <BlogPostDetail
       propertyId={propertyId}
       title={post.title}
-      publishDate={post.publish_date}
+      publishDate={post.published_at}
       headerImageUrl={post.header_image_url}
-      headerImageAlt={post.header_image_alt}
-      content={post.content || ''}
+      content={post.body_markdown}
       ctaLabel={post.cta_label}
       ctaUrl={post.cta_url}
     />
