@@ -49,7 +49,7 @@ export default async function BlogPage({ params }: { params: Promise<{ id: strin
         <BlogPostsList propertyId={propertyId} posts={posts} />
       ) : (
         <div className="text-center py-12">
-          <p className="text-charcoal/60">No blog posts yet. Check back soon!</p>
+          <p className="text-dusk">No blog posts yet. Check back soon!</p>
         </div>
       )}
     </div>
