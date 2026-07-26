@@ -93,7 +93,7 @@ export default function ShoppingListView({ items, onToggle }: ShoppingListViewPr
               type="checkbox"
               checked={hidePurchased}
               onChange={(e) => setHidePurchased(e.target.checked)}
-              className="accent-gold"
+              className="accent-brass"
             />
             Hide checked off
           </label>
@@ -135,7 +135,7 @@ export default function ShoppingListView({ items, onToggle }: ShoppingListViewPr
                     onChange={(e) =>
                       onToggle(item.id, e.target.checked ? 'purchased' : 'pending')
                     }
-                    className="h-5 w-5 accent-gold rounded"
+                    className="h-5 w-5 accent-brass rounded"
                   />
                 </label>
                 <span className="hidden print:inline text-dusk shrink-0">☐</span>

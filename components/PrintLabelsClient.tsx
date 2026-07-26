@@ -826,7 +826,7 @@ function VirtualGroupRow({
         type="checkbox"
         checked={allSelected}
         onChange={() => onToggle(group.items)}
-        className="h-5 w-5 accent-gold rounded"
+        className="h-5 w-5 accent-brass rounded"
       />
       <span className="flex-1 text-denim truncate">{group.name}</span>
       {group.items.length > 1 && (
