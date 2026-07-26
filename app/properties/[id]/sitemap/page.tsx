@@ -117,6 +117,7 @@ function buildSections(propertyId: string): Section[] {
         { href: p('/tools/takeout-directory'), label: 'Local Takeout Directory', subtitle: 'Nearby options', icon: UtensilsCrossed },
         { href: p('/tools/memory-timeline'), label: 'Home Memory Timeline', subtitle: 'House history', icon: History },
         { href: p('/tools/taste-memory'), label: 'Guest & Family Taste Memory', subtitle: 'Preferences & allergies', icon: Heart },
+        { href: p('/blog'), label: 'Blog & Articles', subtitle: 'Tips and insights', icon: BookOpen },
       ],
     },
     {
