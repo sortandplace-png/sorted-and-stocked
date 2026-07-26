@@ -103,7 +103,7 @@ export default function HechsherVerificationClient({ propertyId }: { propertyId:
     const draft = drafts[item.id] ?? '';
     const busy = savingId === item.id;
     return (
-      <li key={item.id} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4 space-y-2">
+      <li key={item.id} className="bg-white rounded-2xl shadow-sm shadow-black/5 p-4 space-y-2">
         <div>
           <p className="font-medium text-sm text-denim">{item.name}</p>
           {item.category && <p className="text-xs text-dusk">{item.category}</p>}
@@ -164,7 +164,7 @@ export default function HechsherVerificationClient({ propertyId }: { propertyId:
       </p>
 
       {searchableItems.length === 0 && meatItems.length === 0 ? (
-        <p className="text-sm text-dusk text-center py-8 bg-white rounded-2xl shadow-sm shadow-charcoal/5">
+        <p className="text-sm text-dusk text-center py-8 bg-white rounded-2xl shadow-sm shadow-black/5">
           Nothing left to verify.
         </p>
       ) : (

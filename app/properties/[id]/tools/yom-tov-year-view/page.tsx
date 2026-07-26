@@ -34,7 +34,7 @@ export default async function YomTovYearViewPage({ params }: { params: Promise<{
                   'flex items-center justify-between rounded-xl px-4 py-3 border ' +
                   (isPast
                     ? 'border-cardBorder bg-linen opacity-50'
-                    : 'border-cardBorder bg-white shadow-sm shadow-charcoal/5')
+                    : 'border-cardBorder bg-white shadow-sm shadow-black/5')
                 }
               >
                 <span className="font-medium text-denim">{d.holiday_name}</span>

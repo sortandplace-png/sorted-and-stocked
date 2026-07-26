@@ -91,7 +91,7 @@ export default function RecipePrepLeadDays({
   }
 
   return (
-    <div className="bg-white rounded-xl2 shadow-sm shadow-charcoal/5 p-5 print:hidden">
+    <div className="bg-white rounded-xl2 shadow-sm shadow-black/5 p-5 print:hidden">
       <h3 className="font-display text-lg text-denim mb-1">{t('title')}</h3>
       <p className="text-xs text-dusk mb-2">{t('description')}</p>
       <div className="flex items-center gap-2">

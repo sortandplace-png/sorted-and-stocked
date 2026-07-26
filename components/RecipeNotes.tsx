@@ -14,7 +14,7 @@ export default function RecipeNotes({ notes }: { notes: string | null }) {
   if (!notes || !notes.trim() || notes === 'placeholder-fill-batch2') return null;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+    <div className="bg-white rounded-2xl shadow-sm shadow-black/5 p-4">
       <h2 className="font-display text-lg text-denim mb-2">Notes</h2>
       <p className="text-sm text-dusk whitespace-pre-wrap">{notes}</p>
     </div>

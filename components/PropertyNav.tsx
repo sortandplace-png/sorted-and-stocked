@@ -57,7 +57,7 @@ export default function PropertyNav({
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-lg shadow-charcoal/10 overflow-hidden z-50">
+        <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-lg shadow-black/10 overflow-hidden z-50">
           {items.map((item) => (
             <Link
               key={item.segment}

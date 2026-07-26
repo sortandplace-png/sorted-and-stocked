@@ -105,7 +105,7 @@ export default function KosherTypeTaggingClient({ propertyId }: { propertyId: st
       </p>
 
       {groups.length === 0 ? (
-        <p className="text-sm text-dusk text-center py-8 bg-white rounded-2xl shadow-sm shadow-charcoal/5">
+        <p className="text-sm text-dusk text-center py-8 bg-white rounded-2xl shadow-sm shadow-black/5">
           Nothing left to tag.
         </p>
       ) : (
@@ -114,7 +114,7 @@ export default function KosherTypeTaggingClient({ propertyId }: { propertyId: st
             const groupSelectedCount = groupItems.filter((i) => selected.has(i.id)).length;
             const busy = applyingCategory === category;
             return (
-              <div key={category} className="bg-white rounded-2xl shadow-sm shadow-charcoal/5 p-4">
+              <div key={category} className="bg-white rounded-2xl shadow-sm shadow-black/5 p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="font-display text-base text-denim">
                     {category} <span className="text-dusk font-normal text-sm">({groupItems.length})</span>

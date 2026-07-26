@@ -145,7 +145,7 @@ export default function BrachaCategorySelect({
         <ul
           id={listId}
           role="listbox"
-          className="absolute left-0 right-0 mt-1 max-h-72 overflow-y-auto bg-white border border-cardBorder rounded-xl shadow-md shadow-charcoal/10 z-30 py-1"
+          className="absolute left-0 right-0 mt-1 max-h-72 overflow-y-auto bg-white border border-cardBorder rounded-xl shadow-md shadow-black/10 z-30 py-1"
         >
           {options.map((o, i) => (
             <li
