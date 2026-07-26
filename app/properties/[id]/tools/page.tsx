@@ -200,7 +200,11 @@ const GROUPS: {
   slugs: string[];
   subgroups?: { key: string; label: string; slugs: string[]; lockIcon?: boolean }[];
 }[] = [
-  { key: 'scanners', label: 'Scanners', slugs: ['price-scanner', 'ingredient-scanner', 'recipe-stealer'] },
+  // recipe-stealer hidden pending a build-or-kill decision (SS-318/SS-096)
+  // -- no backing table, currently live/clickable but goes nowhere. Route
+  // and component left in place; don't "restore" this without resolving
+  // that decision first.
+  { key: 'scanners', label: 'Scanners', slugs: ['price-scanner', 'ingredient-scanner'] },
   {
     key: 'kitchen',
     label: 'Kitchen',
@@ -213,7 +217,11 @@ const GROUPS: {
   {
     key: 'house',
     label: 'House',
-    slugs: ['tasks', 'takeout-directory', 'memory-timeline', 'taste-memory', 'blog'],
+    // memory-timeline hidden pending a build-or-kill decision (SS-318/
+    // SS-096) -- no backing table, currently live/clickable but goes
+    // nowhere. Route and component left in place; don't "restore" this
+    // without resolving that decision first.
+    slugs: ['tasks', 'takeout-directory', 'taste-memory', 'blog'],
     subgroups: [
       // Location-based pair first (House Manual, Pantry Zone Map), then the
       // people/contact-based pair (Contacts & Vendors, Borrowed & Lent).

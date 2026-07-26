@@ -11,7 +11,6 @@ import {
   Users,
   RotateCcw,
   Scan,
-  ChefHat,
   Timer,
   Scale,
   ListChecks,
@@ -25,7 +24,6 @@ import {
   ClipboardList,
   Contact,
   UtensilsCrossed,
-  History,
   Heart,
   ImagePlus,
   Layers,
@@ -84,10 +82,12 @@ function buildSections(propertyId: string): Section[] {
     },
     {
       label: 'Tools — Scanners',
+      // Recipe Scanner (recipe-stealer) hidden pending a build-or-kill
+      // decision (SS-318/SS-096) -- no backing table. Don't "restore" this
+      // entry without resolving that decision first.
       entries: [
         { href: p('/tools/price-scanner'), label: 'Price Scanner', subtitle: 'Compare prices', icon: Scan },
         { href: p('/tools/ingredient-scanner'), label: 'Ingredient Scanner', subtitle: 'Check a label', icon: Scan },
-        { href: p('/tools/recipe-stealer'), label: 'Recipe Scanner', subtitle: 'Recreate a dish', icon: ChefHat },
       ],
     },
     {
@@ -111,11 +111,13 @@ function buildSections(propertyId: string): Section[] {
     },
     {
       label: 'Tools — Household',
+      // Home Memory Timeline (memory-timeline) hidden pending a
+      // build-or-kill decision (SS-318/SS-096) -- no backing table. Don't
+      // "restore" this entry without resolving that decision first.
       entries: [
         { href: p('/tools/knowledge-base'), label: 'Household Knowledge Base', subtitle: 'House know-how', icon: BookMarked },
         { href: p('/tools/contacts'), label: 'Contacts & Vendors', subtitle: 'Who to call', icon: Contact },
         { href: p('/tools/takeout-directory'), label: 'Local Takeout Directory', subtitle: 'Nearby options', icon: UtensilsCrossed },
-        { href: p('/tools/memory-timeline'), label: 'Home Memory Timeline', subtitle: 'House history', icon: History },
         { href: p('/tools/taste-memory'), label: 'Guest & Family Taste Memory', subtitle: 'Preferences & allergies', icon: Heart },
         { href: p('/blog'), label: 'Blog & Articles', subtitle: 'Tips and insights', icon: BookOpen },
       ],
