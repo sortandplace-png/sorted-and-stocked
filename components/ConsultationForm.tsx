@@ -44,25 +44,38 @@ export default function ConsultationForm() {
         name="name"
         placeholder="Full Name"
         required
-        className="px-4 py-3 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl bg-card text-sm text-denim"
+        className="px-4 py-3 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 bg-card text-sm text-denim"
       />
       <input
         type="tel"
         name="phone"
         placeholder="Phone Number"
         required
-        className="px-4 py-3 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl bg-card text-sm text-denim"
+        className="px-4 py-3 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 bg-card text-sm text-denim"
       />
       <input
         type="email"
         name="email"
         placeholder="Email"
         required
-        className="px-4 py-3 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl bg-card text-sm text-denim"
+        className="px-4 py-3 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 bg-card text-sm text-denim"
       />
 
-      <fieldset className="border border-cardBorder rounded-xl px-4 py-3 bg-card">
-        <legend className="text-xs font-semibold uppercase tracking-wide text-dusk px-1">Service Interest</legend>
+      {/* Was a <fieldset> with a <legend> riding the border: the legend
+          inherited the fieldset's px-4 AND added its own px-1, so its text
+          started at 20px while all three inputs start at 16px -- visibly
+          crooked on mobile. Now a labelled group whose heading sits inside
+          the box at the same 16px inset as every other field. role="group"
+          + aria-labelledby preserves the grouping semantics that fieldset/
+          legend provided, rather than dropping accessibility for looks. */}
+      <div
+        role="group"
+        aria-labelledby="service-interest-label"
+        className="border border-cardBorder rounded-xl2 px-4 py-3 bg-card"
+      >
+        <p id="service-interest-label" className="text-xs font-semibold uppercase tracking-wide text-dusk">
+          Service Interest
+        </p>
         <div className="flex flex-col gap-2 mt-1.5">
           {SERVICE_OPTIONS.map((option) => (
             <label key={option} className="flex items-center gap-2.5 text-sm text-denim">
@@ -76,19 +89,19 @@ export default function ConsultationForm() {
             </label>
           ))}
         </div>
-      </fieldset>
+      </div>
 
       <textarea
         name="notes"
         placeholder="Notes (optional)"
         rows={3}
-        className="px-4 py-3 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl bg-card text-sm text-denim resize-none"
+        className="px-4 py-3 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 bg-card text-sm text-denim resize-none"
       />
 
       <button
         type="submit"
         disabled={status === 'sending'}
-        className="bg-denim text-white font-bold text-sm py-3.5 rounded-xl disabled:opacity-50 hover:opacity-90 transition-opacity"
+        className="bg-denim text-white font-bold text-sm py-3.5 rounded-xl2 disabled:opacity-50 hover:opacity-90 transition-opacity"
       >
         {status === 'sending' ? 'Sending…' : 'Book Your Consultation'}
       </button>
