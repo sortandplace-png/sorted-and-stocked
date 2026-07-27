@@ -30,6 +30,7 @@ import type { ReorderSource } from '@/lib/reorder-sources';
 import { FilterPill, FilterPillRow } from '@/components/recipes/FilterPill';
 import { isFoodCategory } from '@/lib/foodCategories';
 import { compressImageToBlob } from '@/lib/compress-image';
+import PhotoCropper from '@/components/PhotoCropper';
 import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
 import CameraCapture from '@/components/CameraCapture';
 import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle, Package, StickyNote, ArrowLeft, Pencil, QrCode as QrCodeIcon, ScanLine, MapPin, ArrowLeftRight, Copy, Link2, X, type LucideIcon } from 'lucide-react';
@@ -2364,6 +2365,7 @@ function ItemFormSheet({
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoRemoved, setPhotoRemoved] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+  const [showCropper, setShowCropper] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   function applyPhoto(file: File) {
@@ -2537,6 +2539,19 @@ function ItemFormSheet({
               onChange={(e) => handleGalleryFile(e.target.files)}
             />
             <CameraCapture open={showCamera} onCapture={handleCameraFile} onClose={() => setShowCamera(false)} />
+            {showCropper && displayedPhoto && (
+              <PhotoCropper
+                src={displayedPhoto}
+                onCancel={() => setShowCropper(false)}
+                onCropped={(blob) => {
+                  // Back through applyPhoto so the cropped result takes the
+                  // same save path as any other new photo -- the form's
+                  // pendingPhotoFile, uploaded on submit.
+                  applyPhoto(new File([blob], 'photo.jpg', { type: 'image/jpeg' }));
+                  setShowCropper(false);
+                }}
+              />
+            )}
             {displayedPhoto ? (
               <div>
                 <img
@@ -2558,6 +2573,16 @@ function ItemFormSheet({
                     className="flex-1 py-2 rounded-full bg-linen border border-brass/30 text-denim text-xs font-medium"
                   >
                     Library
+                  </button>
+                  {/* Works on the photo already on the item, not just a fresh
+                      capture -- the badly-framed photos are the ones already
+                      saved, so crop-on-capture alone would fix nothing. */}
+                  <button
+                    type="button"
+                    onClick={() => setShowCropper(true)}
+                    className="flex-1 py-2 rounded-full bg-linen border border-brass/30 text-denim text-xs font-medium"
+                  >
+                    Crop
                   </button>
                   <button
                     type="button"
