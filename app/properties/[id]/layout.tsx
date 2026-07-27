@@ -130,7 +130,7 @@ export default async function PropertyLayout({
           {children}
           <Footer propertyId={id} />
         </main>
-        <MobileBottomNav propertyId={id} />
+        <MobileBottomNav propertyId={id} role={membership.role as PropertyRole} />
         {showStaffOnboarding && (
           <StaffOnboardingModal propertyId={id} propertyName={propertyName} userId={user.id} />
         )}
