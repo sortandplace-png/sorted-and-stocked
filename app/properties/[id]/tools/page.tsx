@@ -186,6 +186,42 @@ const TASTE_MEMORY_TOOL = {
   description: 'Likes, dislikes, allergies, and sensitivities — kept with the person.',
 };
 
+// Minimum role required to SEE a tile. Kept as one reviewable block rather
+// than a field repeated across 29 entries -- the whole point is that someone
+// can check the access rules at a glance.
+//
+// Anything not listed is 'staff' (visible to everyone). Filtering happens
+// server-side below, so a staff member never receives manager tile data at
+// all; the tile list is not merely hidden in the browser. Tile filtering is
+// still only half the job -- each manager-only ROUTE needs its own guard,
+// since RLS does not block most of these (Translation Worklist, for example,
+// reads recipes a staff member can legitimately select).
+const MIN_ROLE: Record<string, 'staff' | 'manager'> = {
+  // Named manager-only in the spec.
+  tasks: 'manager',
+  'capture-inbox': 'manager',
+  'needs-linking': 'manager',
+  'translation-worklist': 'manager',
+  'photo-worklist': 'manager',
+  'duplicate-ingredients': 'manager',
+  // Admin Cleanup remainder -- already hidden from staff by the subgroup's
+  // lockIcon + canManage() check, listed here so the rule is stated once and
+  // does not depend on that subgroup never being restructured.
+  'link-captured-photos': 'manager',
+  'hechsher-verification': 'manager',
+  'kosher-type-tagging': 'manager',
+  // Household-wide operational summary, not a shift tool.
+  digest: 'manager',
+  // Third-party health data (guest allergies and sensitivities) and family
+  // photos/milestones. Neither is a work tool -- confirmed by the owner.
+  'taste-memory': 'manager',
+  'memory-timeline': 'manager',
+};
+
+function canSeeTile(slug: string, role: string): boolean {
+  return MIN_ROLE[slug] === 'manager' ? role === 'owner' || role === 'manager' : true;
+}
+
 // Grouped per the finalized nav restructure spec (2026-07-14): Kitchen and
 // House each keep their existing loose items and gain named subgroups so
 // the previously-unplaced pages (Prep Timeline, Yom Tov Year View, Pantry
@@ -236,6 +272,21 @@ const GROUPS: {
 export default async function ToolsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: membership } = user
+    ? await supabase
+        .from('property_members')
+        .select('role')
+        .eq('property_id', id)
+        .eq('user_id', user.id)
+        .maybeSingle()
+    : { data: null };
+  // Unknown role is treated as the least privileged, not the most.
+  const role = membership?.role ?? 'staff';
+
   const { data: property } = await supabase
     .from('properties')
     .select('feature_flags')
@@ -248,9 +299,9 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
     .select('id', { count: 'exact', head: true })
     .eq('property_id', id);
 
-  const tools = (flags.guest_taste_memory ? [...TOOLS, TASTE_MEMORY_TOOL] : TOOLS).map((t) =>
-    t.slug === 'knowledge-base' ? { ...t, count: knowledgeCount ?? 0 } : t
-  );
+  const tools = (flags.guest_taste_memory ? [...TOOLS, TASTE_MEMORY_TOOL] : TOOLS)
+    .filter((t) => canSeeTile(t.slug, role))
+    .map((t) => (t.slug === 'knowledge-base' ? { ...t, count: knowledgeCount ?? 0 } : t));
   const bySlug = new Map(tools.map((t) => [t.slug, t]));
 
   const groups = GROUPS.map((group) => ({

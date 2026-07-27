@@ -1,5 +1,6 @@
 // app/properties/[id]/sitemap/page.tsx
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server';
 import Pin from '@/components/PinAccent';
 import {
   LayoutDashboard,
@@ -30,6 +31,7 @@ import {
   Layers,
   CalendarRange,
   ListTodo,
+  Settings as SettingsIcon,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -128,6 +130,9 @@ function buildSections(propertyId: string): Section[] {
         { href: p('/bulk-photos'), label: 'Bulk Photo Upload', subtitle: 'Add many photos', icon: ImagePlus },
         { href: p('/batch-operations'), label: 'Batch Operations', subtitle: 'Bulk edits', icon: Layers },
         { href: p('/yom-tov'), label: 'Yom Tov Year View', subtitle: 'Full year ahead', icon: CalendarRange },
+        // Was reachable only by typing the URL -- not in any nav, header,
+        // tools page or this index. StaffSlotsEditor lives here.
+        { href: p('/settings'), label: 'Settings', subtitle: 'Staff slots & preferences', icon: SettingsIcon },
       ],
     },
   ];
@@ -139,9 +144,52 @@ function buildSections(propertyId: string): Section[] {
 // an unrequested addition to a visual-redesign ask. Flagging since the
 // standing rule is bilingual client-facing content and this page still
 // isn't; a real gap, just not one this task asked to close.
+// Manager-only destinations, mirroring MIN_ROLE in tools/page.tsx. Listed by
+// href suffix because this page is a flat link index, not the tile config.
+// Settings is included here for the first time -- it was reachable only by
+// typing the URL, which is why StaffSlotsEditor was effectively unreachable.
+const MANAGER_ONLY_HREFS = [
+  '/tools/tasks',
+  '/tools/capture-inbox',
+  '/tools/needs-linking',
+  '/tools/translation-worklist',
+  '/tools/photo-worklist',
+  '/tools/duplicate-ingredients',
+  '/tools/link-captured-photos',
+  '/tools/hechsher-verification',
+  '/tools/kosher-type-tagging',
+  '/tools/digest',
+  '/tools/taste-memory',
+  '/tools/memory-timeline',
+  '/tools/duty-roster',
+  '/print-labels',
+  '/settings',
+];
+
 export default async function SitemapPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: propertyId } = await params;
-  const sections = buildSections(propertyId);
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: membership } = user
+    ? await supabase
+        .from('property_members')
+        .select('role')
+        .eq('property_id', propertyId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+    : { data: null };
+  const canManage = membership?.role === 'owner' || membership?.role === 'manager';
+
+  const sections = buildSections(propertyId)
+    .map((section) => ({
+      ...section,
+      entries: section.entries.filter(
+        (e) => canManage || !MANAGER_ONLY_HREFS.some((suffix) => e.href.endsWith(suffix))
+      ),
+    }))
+    .filter((section) => section.entries.length > 0);
 
   return (
     <div className="max-w-5xl mx-auto p-4">
