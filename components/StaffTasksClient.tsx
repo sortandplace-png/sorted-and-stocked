@@ -23,6 +23,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale } from 'next-intl';
+import { jobFamily, jobFamilyLabel, jobLabel, type JobFamily } from '@/lib/job-types';
 import { createClient } from '@/lib/supabase/client';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
@@ -60,6 +61,7 @@ type MasterTask = {
   pass_fail_en: string | null;
   pass_fail_es: string | null;
   estimated_minutes: number | null;
+  job_type: string | null;
   active: boolean;
 };
 
@@ -133,6 +135,7 @@ export default function StaffTasksClient({
   const [lastCompletionByTask, setLastCompletionByTask] = useState<Record<string, Completion>>({});
   const [sopLibrary, setSopLibrary] = useState<SopRow[]>([]);
   const [showLibrary, setShowLibrary] = useState(false);
+  const [jobFilter, setJobFilter] = useState<JobFamily | 'all'>('all');
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [busyTaskId, setBusyTaskId] = useState<string | null>(null);
@@ -167,7 +170,7 @@ export default function StaffTasksClient({
     const [{ data: taskRows }, { data: roomRows }, { data: freqRows }, { data: memberRows }] = await Promise.all([
       supabase
         .from('master_tasks')
-        .select('id, task_number, room_id, frequency_id, sop_id, task_en, task_es, sop_en, sop_es, pass_fail_en, pass_fail_es, estimated_minutes, active')
+        .select('id, task_number, room_id, frequency_id, sop_id, task_en, task_es, sop_en, sop_es, pass_fail_en, pass_fail_es, estimated_minutes, job_type, active')
         .eq('property_id', propertyId)
         .eq('active', true)
         .order('sort_order'),
@@ -332,7 +335,7 @@ export default function StaffTasksClient({
   // My Day's widget: only what's assigned to the viewer and actually
   // actionable today -- not the full property task board, and not future
   // recurring items that aren't due yet.
-  const visibleRows =
+  const scopedRows =
     scope === 'mine'
       ? rows.filter(
           (r) =>
@@ -340,6 +343,14 @@ export default function StaffTasksClient({
             (assignmentsByTask.get(r.task.id) ?? []).some((a) => a.member_id === myMemberId)
         )
       : rows;
+
+  // Which job families actually exist here, derived from the data rather than
+  // hardcoded -- Lax is entirely 'maintenance' (79 tasks), Main is 12
+  // granular cleaning-family types plus one uncategorised row, and a property
+  // with only one family shouldn't be shown a pointless filter.
+  const familiesPresent = Array.from(new Set(scopedRows.map((r) => jobFamily(r.task.job_type))));
+  const visibleRows =
+    jobFilter === 'all' ? scopedRows : scopedRows.filter((r) => jobFamily(r.task.job_type) === jobFilter);
 
   const sopsByZone = sopLibrary.reduce((acc, s) => {
     const key = s.zone_type || 'General';
@@ -428,6 +439,33 @@ export default function StaffTasksClient({
         </div>
       )}
 
+      {/* Cleaning vs Maintenance. Only shown when a property actually has
+          more than one family -- Lax is 100% maintenance and Main is almost
+          entirely cleaning, so a filter with one real option would be noise.
+          Counts come from the scoped rows so "Mine" reflects what's assigned. */}
+      {scope !== 'mine' && familiesPresent.length > 1 && (
+        <div className="flex flex-wrap items-center gap-1.5 mb-3">
+          {(['all', ...familiesPresent] as const).map((f) => {
+            const count =
+              f === 'all' ? scopedRows.length : scopedRows.filter((r) => jobFamily(r.task.job_type) === f).length;
+            const label = f === 'all' ? (locale === 'es' ? 'Todas' : 'All') : jobFamilyLabel(f as JobFamily, locale);
+            const isActive = jobFilter === f;
+            return (
+              <button
+                key={f}
+                onClick={() => setJobFilter(f as JobFamily | 'all')}
+                aria-pressed={isActive}
+                className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                  isActive ? 'bg-denim text-white border-denim' : 'bg-mist text-denim border-cardBorder'
+                }`}
+              >
+                {label} <span className={isActive ? 'text-white/70' : 'text-dusk'}>({count})</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {visibleRows.length === 0 ? (
         <p className="text-sm text-dusk text-center py-4 bg-card rounded-2xl shadow-card">
           {scope === 'mine'
@@ -476,6 +514,17 @@ export default function StaffTasksClient({
                       <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${STATUS_STYLE[status]}`}>
                         {STATUS_LABEL[status]}
                       </span>
+                      {/* The specific job type, not just the coarse family --
+                          "Bathroom Cleaning" is more useful on the card than
+                          "Cleaning", and it's what makes a maintenance task
+                          visibly different from a cleaning one at a glance.
+                          Hidden when uncategorised rather than showing an
+                          empty chip. */}
+                      {task.job_type && (
+                        <span className="text-[10px] font-medium text-brass bg-brass/10 px-2 py-0.5 rounded-full">
+                          {jobLabel(task.job_type, locale)}
+                        </span>
+                      )}
                       {room && (
                         <span className="text-[10px] text-dusk bg-mist px-2 py-0.5 rounded-full">
                           {locale === 'es' && room.name_es ? room.name_es : room.name_en}

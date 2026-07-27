@@ -11,6 +11,7 @@ import { useLocale } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { Plus } from 'lucide-react';
+import { jobLabel as sharedJobLabel } from '@/lib/job-types';
 
 export type StaffSlot = {
   id: string;
@@ -40,23 +41,6 @@ export function slotLabel(slot: StaffSlot | undefined, locale: string): string {
   if (!slot) return '—';
   return locale === 'es' ? slot.label_es : slot.label_en;
 }
-
-// EN values are the literal labels given in the spec; ES are my own
-// translations (explicitly asked for, not present in the source data).
-const JOB_LABELS: Record<string, { en: string; es: string }> = {
-  general_tidying: { en: 'General Tidying', es: 'Limpieza General' },
-  shades_windows: { en: 'Shades & Windows', es: 'Persianas y Ventanas' },
-  floors: { en: 'Floors', es: 'Pisos' },
-  dusting_surfaces: { en: 'Dusting & Surfaces', es: 'Sacudir y Superficies' },
-  trash_disinfecting: { en: 'Trash & Disinfecting', es: 'Basura y Desinfección' },
-  glass_mirrors: { en: 'Glass & Mirrors', es: 'Vidrios y Espejos' },
-  bathroom_cleaning: { en: 'Bathroom Cleaning', es: 'Limpieza de Baños' },
-  laundry: { en: 'Laundry', es: 'Lavandería' },
-  outdoor_perimeter: { en: 'Outdoor & Perimeter', es: 'Exterior y Perímetro' },
-  bed_making: { en: 'Bed-Making', es: 'Tender Camas' },
-  kitchen_dishes: { en: 'Kitchen Dishes', es: 'Platos de Cocina' },
-  childcare: { en: 'Childcare', es: 'Cuidado de Niños' },
-};
 
 const cellInputClass =
   'w-full text-sm px-2 py-1.5 rounded border border-transparent hover:border-brass/30 focus:border-brass focus:outline-none bg-transparent text-denim';
@@ -92,10 +76,7 @@ export default function DutyRosterEditor({
   const filtered = rows.filter((r) => (!roomFilter || r.area_en === roomFilter) && (!jobFilter || r.job_type === jobFilter));
 
   function jobLabel(job: string | null) {
-    if (!job) return '—';
-    const l = JOB_LABELS[job];
-    if (!l) return job;
-    return locale === 'es' ? l.es : l.en;
+    return sharedJobLabel(job, locale);
   }
 
   async function patchRow(id: string, patch: Partial<Row>) {
