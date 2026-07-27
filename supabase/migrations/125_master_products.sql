@@ -1,10 +1,8 @@
 -- 125_master_products.sql
---
--- !! NOT YET APPLIED -- AWAITING REVIEW (SS-327). !!
--- Unlike every other migration in this directory, this one has NOT been run
--- against the database. It was explicitly requested as "show me the migration
--- before applying." Do not assume master_products exists in any environment
--- because this file does. Verified absent from the live DB as of 2026-07-26.
+-- Applied 2026-07-26 after review (SS-327). Verified live: master_products
+-- created with 5 columns, inventory_items gained master_product_id +
+-- variant_label, 4 RLS policies present, RLS enabled, and 0 rows
+-- auto-grouped -- the opt-in constraint held.
 --
 -- Product-variant grouping ("Master Product") -- additive only. Nothing
 -- existing is restructured, no data is migrated, no rows are merged.
