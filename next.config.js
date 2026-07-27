@@ -61,6 +61,14 @@ const withPWA = require('next-pwa')({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Two dev servers on this repo (a human on :3000, an agent on :3100) were
+  // both writing to the same .next directory, which on Windows produces
+  // EBUSY "resource busy or locked" errors on
+  // .next/server/app/page_client-reference-manifest.js and takes both
+  // servers down. Giving each its own build dir removes the contention.
+  // Defaults to '.next' so nothing changes for a normal single-server run
+  // or for `next build`.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   images: {
     domains: [
       'jfaaqzrezcrkkidlsbwj.supabase.co',
