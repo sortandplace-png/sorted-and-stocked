@@ -16,7 +16,7 @@ import StaffDutyChecklist from '@/components/StaffDutyChecklist';
 import StaffTasksClient from '@/components/StaffTasksClient';
 import ToolModal from '@/components/ToolModal';
 import KitchenOpsToolModal from '@/components/KitchenOpsToolModal';
-import { Camera, ShoppingCart, Timer, Info } from 'lucide-react';
+import { Camera, ShoppingCart, Timer, Info, PlayCircle } from 'lucide-react';
 import Pin from '@/components/PinAccent';
 
 type DutyTask = { id: string; taskEn: string; taskEs: string; completed: boolean };
@@ -38,6 +38,7 @@ export default function MyDayClient({
   todayStr: string;
 }) {
   const t = useTranslations('myDay');
+  const tTraining = useTranslations('training');
   const [showCapture, setShowCapture] = useState(false);
   const [showKitchenTimer, setShowKitchenTimer] = useState(false);
 
@@ -48,6 +49,17 @@ export default function MyDayClient({
       <p className="text-sm text-dusk mb-4">
         {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
       </p>
+
+      {/* SP_06 is the video about THIS page, so it belongs on this page --
+          linked to the Training series rather than embedded, so there's one
+          player and one place the videos live. */}
+      <Link
+        href={`/properties/${propertyId}/tools/training`}
+        className="inline-flex items-center gap-1.5 text-xs font-medium text-brass underline underline-offset-2 mb-4"
+      >
+        <PlayCircle size={13} strokeWidth={1.75} aria-hidden="true" />
+        {tTraining('watchMyDayVideo')}
+      </Link>
 
       {/* Calendar-driven staff notice -- plain, high-contrast, instructional
           copy for people who may not know the Jewish calendar at all, not a

@@ -697,5 +697,20 @@
     "saving": "Guardando…",
     "saved": "Procedimiento actualizado.",
     "saveFailed": "No se pudo guardar — inténtelo de nuevo."
+  },
+  "training": {
+    "title": "Capacitación",
+    "description": "Seis videos cortos, en el orden en que conviene verlos.",
+    "englishOnlyNotice": "Estos videos están solo en inglés y todavía no tienen subtítulos. Las versiones en español están pendientes.",
+    "videoNumber": "Video {n}",
+    "openSection": "Abrir esta sección",
+    "unavailable": "Los videos no están disponibles en este momento.",
+    "v1": "Bienvenido a Sorted & Stocked",
+    "v2": "Entender el Panel",
+    "v3": "Encontrar artículos en Inventario",
+    "v4": "Crear listas de compras",
+    "v5": "Gestionar recetas y plan de comidas",
+    "v6": "Personal — Mi Día",
+    "watchMyDayVideo": "Ver: Mi Día (2 min)"
   }
 }
