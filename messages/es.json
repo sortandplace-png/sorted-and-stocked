@@ -665,5 +665,18 @@
     "addSlot": "Agregar puesto",
     "addFailed": "No se pudo agregar el puesto — inténtelo de nuevo.",
     "renameNote": "Renombrar cambia solo la etiqueta. Las tareas, asignaciones e historial siguen vinculados al puesto."
+  },
+  "halachicCalendar": {
+    "omerTitle": "Sefirat HaOmer",
+    "omerDay": "Día {day} del Omer",
+    "omerBeginsNightOf": "La cuenta comienza la noche del {date}",
+    "omerFirstDay": "Día 1 — {hdate}, {date}",
+    "omerUnavailable": "Las fechas del Omer no están disponibles en este momento.",
+    "roshChodeshTitle": "Rosh Jodesh",
+    "roshChodeshToday": "Rosh Jodesh {month} es hoy",
+    "roshChodeshNext": "Rosh Jodesh {month}",
+    "inDays": "en {count} días",
+    "twoDay": "Rosh Jodesh de dos días.",
+    "roshChodeshUnavailable": "Las fechas de Rosh Jodesh no están disponibles en este momento."
   }
 }

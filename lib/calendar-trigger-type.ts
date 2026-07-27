@@ -225,33 +225,134 @@ export async function getOmerStatus(): Promise<string | null> {
   }
 }
 
-export type RoshChodeshStatus = { isToday: boolean; monthName: string; daysUntil: number } | null
+export type RoshChodeshDay = { date: string; hdate: string }
+export type RoshChodeshStatus = {
+  isToday: boolean
+  monthName: string
+  hebrewName: string
+  daysUntil: number
+  /** One entry for a one-day Rosh Chodesh, two for a two-day. */
+  days: RoshChodeshDay[]
+} | null
 
-const ROSH_CHODESH_LOOKAHEAD_DAYS = 5
+// Day-count between two 'yyyy-MM-dd' calendar dates, both parsed as UTC
+// midnight. Diffing against Date.now() instead would fold in the current
+// time-of-day and round inconsistently through the day.
+function daysBetween(fromStr: string, toStr: string): number {
+  return Math.round((Date.parse(`${toStr}T00:00:00Z`) - Date.parse(`${fromStr}T00:00:00Z`)) / 86400000)
+}
 
 // Same nx=on Hebcal query/category Hebcal itself uses for Rosh Chodesh.
+//
+// There is deliberately NO lookahead cut-off. There used to be a 5-day one,
+// which is why the card read "No Rosh Chodesh in the next 5 days" -- the next
+// one had been found correctly and then discarded. A card that answers
+// "when is it" must always have an answer; Rosh Chodesh occurs monthly, so
+// the next one always exists.
+//
+// Hebrew dates come from Hebcal's own `hdate` ("1 Sh'vat 5786") and the
+// Hebrew-script name from `hebrew` -- neither is derived here.
+//
+// Two-day Rosh Chodesh is grouped by title: Hebcal emits the pair as two
+// consecutive same-title items (e.g. Adar 5786 on 30 Sh'vat and 1 Adar),
+// so both days are read from the data rather than inferred from month length.
 export async function getRoshChodeshStatus(todayStr: string): Promise<RoshChodeshStatus> {
   try {
-    const now = new Date()
-    const years = [now.getFullYear(), now.getFullYear() + 1]
-    const events: { title: string; date: string }[] = []
-    for (const year of years) {
-      const res = await fetch(`https://www.hebcal.com/hebcal?cfg=json&v=1&year=${year}&nx=on`, {
+    const year = Number(todayStr.slice(0, 4))
+    const events: { title: string; date: string; hdate?: string; hebrew?: string }[] = []
+    for (const y of [year, year + 1]) {
+      const res = await fetch(`https://www.hebcal.com/hebcal?cfg=json&v=1&year=${y}&nx=on`, {
         next: { revalidate: 3600 * 24 },
       })
       const data = await res.json()
       events.push(...(data.items ?? []).filter((i: any) => i.category === 'roshchodesh'))
     }
-    const monthNameOf = (title: string) => title.replace(/^Rosh Chodesh /, '')
-    const todayItem = events.find((e) => e.date === todayStr)
-    if (todayItem) {
-      return { isToday: true, monthName: monthNameOf(todayItem.title), daysUntil: 0 }
+    events.sort((a, b) => a.date.localeCompare(b.date))
+
+    // The occurrence we want is the one whose LAST day is still >= today, so
+    // day 2 of a two-day Rosh Chodesh still reads as "today" rather than
+    // skipping ahead to next month.
+    const byTitle = new Map<string, typeof events>()
+    for (const e of events) {
+      const list = byTitle.get(e.title) ?? []
+      list.push(e)
+      byTitle.set(e.title, list)
     }
-    const next = events.filter((e) => e.date > todayStr).sort((a, b) => a.date.localeCompare(b.date))[0]
+    const occurrences = Array.from(byTitle.values())
+      .map((days) => days.sort((a, b) => a.date.localeCompare(b.date)))
+      .sort((a, b) => a[0].date.localeCompare(b[0].date))
+
+    const next = occurrences.find((days) => days[days.length - 1].date >= todayStr)
     if (!next) return null
-    const daysUntil = Math.round((new Date(next.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-    if (daysUntil > ROSH_CHODESH_LOOKAHEAD_DAYS) return null
-    return { isToday: false, monthName: monthNameOf(next.title), daysUntil }
+
+    const first = next[0]
+    const isToday = next.some((d) => d.date === todayStr)
+    return {
+      isToday,
+      monthName: first.title.replace(/^Rosh Chodesh /, ''),
+      hebrewName: first.hebrew ?? '',
+      daysUntil: isToday ? 0 : daysBetween(todayStr, first.date),
+      days: next.map((d) => ({ date: d.date, hdate: d.hdate ?? '' })),
+    }
+  } catch {
+    return null
+  }
+}
+
+export type OmerOutlook =
+  | { state: 'inside'; day: number; countText: string; hdate: string; date: string }
+  | { state: 'before'; nightOfDate: string; firstDayDate: string; firstDayHdate: string }
+  | null
+
+// getOmerStatus() only ever answers "is today in the Omer", so outside the
+// count the card had nothing to say. This adds the future-start case.
+//
+// Both dates are taken from Hebcal, not derived:
+//   firstDayDate  -- the date of "1st day of the Omer" (a civil date; the
+//                    count for that day is made the PREVIOUS night)
+//   nightOfDate   -- firstDayDate minus one, i.e. the night the counting
+//                    actually begins
+// Showing both prevents the night/day ambiguity that made the original spec
+// name Erev Pesach (21 Apr 2027) as the start when Hebcal's day 1 is 23 Apr.
+//
+// Inside the count, countText is Hebcal's own omer.count.en ("Today is 8
+// days, which is 1 week and 1 day of the Omer") rather than a locally
+// computed week-and-day breakdown.
+export async function getOmerOutlook(todayStr: string): Promise<OmerOutlook> {
+  try {
+    const year = Number(todayStr.slice(0, 4))
+    const items: any[] = []
+    for (const y of [year, year + 1]) {
+      const res = await fetch(`https://www.hebcal.com/hebcal?cfg=json&v=1&year=${y}&o=on`, {
+        next: { revalidate: 3600 * 24 },
+      })
+      const data = await res.json()
+      items.push(...(data.items ?? []).filter((i: any) => i.category === 'omer'))
+    }
+    items.sort((a, b) => a.date.localeCompare(b.date))
+
+    const today = items.find((i) => i.date === todayStr)
+    if (today) {
+      return {
+        state: 'inside',
+        day: Number(String(today.title_orig ?? '').replace(/\D/g, '')) || 0,
+        countText: today.omer?.count?.en ?? today.title,
+        hdate: today.hdate ?? '',
+        date: today.date,
+      }
+    }
+
+    const firstDay = items.find((i) => i.date > todayStr && /(^|\s)1(st)? day/i.test(i.title))
+    if (!firstDay) return null
+    const nightOf = new Date(Date.parse(`${firstDay.date}T00:00:00Z`) - 86400000)
+      .toISOString()
+      .slice(0, 10)
+    return {
+      state: 'before',
+      nightOfDate: nightOf,
+      firstDayDate: firstDay.date,
+      firstDayHdate: firstDay.hdate ?? '',
+    }
   } catch {
     return null
   }

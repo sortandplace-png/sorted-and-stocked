@@ -665,5 +665,18 @@
     "addSlot": "Add slot",
     "addFailed": "Could not add a slot — try again.",
     "renameNote": "Renaming changes the label only. Duties, assignments and history stay attached to the slot."
+  },
+  "halachicCalendar": {
+    "omerTitle": "Sefiras HaOmer",
+    "omerDay": "Day {day} of the Omer",
+    "omerBeginsNightOf": "Counting begins the night of {date}",
+    "omerFirstDay": "Day 1 — {hdate}, {date}",
+    "omerUnavailable": "Omer dates are unavailable right now.",
+    "roshChodeshTitle": "Rosh Chodesh",
+    "roshChodeshToday": "Rosh Chodesh {month} is today",
+    "roshChodeshNext": "Rosh Chodesh {month}",
+    "inDays": "in {count} days",
+    "twoDay": "Two-day Rosh Chodesh.",
+    "roshChodeshUnavailable": "Rosh Chodesh dates are unavailable right now."
   }
 }

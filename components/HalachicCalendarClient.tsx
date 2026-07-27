@@ -7,6 +7,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { format, parseISO } from 'date-fns';
 import { SkeletonList } from '@/components/Skeleton';
 import { createClient } from '@/lib/supabase/client';
@@ -39,16 +40,29 @@ const BEDIKAS_TOLAIM_ITEMS = [
   { item: 'Corn on the cob', note: 'Check silk and tip carefully before cooking.' },
 ];
 
-type RoshChodeshStatus = { isToday: boolean; monthName: string; daysUntil: number } | null;
+type RoshChodeshStatus = {
+  isToday: boolean;
+  monthName: string;
+  hebrewName: string;
+  daysUntil: number;
+  days: { date: string; hdate: string }[];
+} | null;
+
+type OmerOutlook =
+  | { state: 'inside'; day: number; countText: string; hdate: string; date: string }
+  | { state: 'before'; nightOfDate: string; firstDayDate: string; firstDayHdate: string }
+  | null;
 
 type CalendarData = {
   omerTitle: string | null;
+  omerOutlook: OmerOutlook;
   erevPesach: { title: string; date: string } | null;
   daysUntilPesach: number | null;
   roshChodeshStatus: RoshChodeshStatus;
 };
 
 export default function HalachicCalendarClient() {
+  const t = useTranslations('halachicCalendar');
   const [data, setData] = useState<CalendarData | null>(null);
   const [loading, setLoading] = useState(true);
   const [upcoming, setUpcoming] = useState<YomTovOccasion[] | null>(null);
@@ -76,8 +90,8 @@ export default function HalachicCalendarClient() {
 
   if (loading) return <SkeletonList rows={3} />;
 
-  const { omerTitle, erevPesach, daysUntilPesach, roshChodeshStatus } = data ?? {
-    omerTitle: null,
+  const { omerOutlook, erevPesach, daysUntilPesach, roshChodeshStatus } = data ?? {
+    omerOutlook: null,
     erevPesach: null,
     daysUntilPesach: null,
     roshChodeshStatus: null,
@@ -102,25 +116,71 @@ export default function HalachicCalendarClient() {
         </Card>
       )}
 
-      <Card title="Sefiras HaOmer">
-        {omerTitle ? (
-          <p className="text-sm text-denim">Tonight/today: {omerTitle}</p>
+      {/* Answers "where are we in the count", never reports absence. Outside
+          the count it shows when counting next begins, with BOTH the night
+          and the first civil day -- the spec originally named Erev Pesach
+          (21 Apr 2027) as the start, when Hebcal's day 1 is 23 Apr and the
+          counting night is the 22nd. Showing one date alone is what makes
+          that ambiguous. Both come from Hebcal; neither is derived here. */}
+      <Card title={t('omerTitle')}>
+        {omerOutlook?.state === 'inside' ? (
+          <>
+            <p className="text-sm font-medium text-denim">{t('omerDay', { day: omerOutlook.day })}</p>
+            <p className="text-sm text-denim mt-0.5">{omerOutlook.countText}</p>
+            {omerOutlook.hdate && <p className="text-xs text-dusk mt-1">{omerOutlook.hdate}</p>}
+          </>
+        ) : omerOutlook?.state === 'before' ? (
+          <>
+            <p className="text-sm text-denim">
+              {t('omerBeginsNightOf', { date: format(parseISO(omerOutlook.nightOfDate), 'd MMMM yyyy') })}
+            </p>
+            <p className="text-xs text-dusk mt-1">
+              {t('omerFirstDay', {
+                hdate: omerOutlook.firstDayHdate,
+                date: format(parseISO(omerOutlook.firstDayDate), 'EEEE d MMMM'),
+              })}
+            </p>
+          </>
         ) : (
-          <p className="text-sm text-dusk">Not currently within the Omer count.</p>
+          <p className="text-sm text-dusk">{t('omerUnavailable')}</p>
         )}
       </Card>
 
-      <Card title="Rosh Chodesh">
+      {/* Always shows the next Rosh Chodesh, however far out -- the old
+          5-day lookahead found it correctly and then discarded it, which is
+          why this card used to report absence. Two-day Rosh Chodesh renders
+          both days; Hebrew month name, Hebrew date and civil date all come
+          straight from Hebcal's title/hebrew/hdate fields. */}
+      <Card title={t('roshChodeshTitle')}>
         {roshChodeshStatus ? (
-          <p className="text-sm text-denim">
-            {roshChodeshStatus.isToday
-              ? `Rosh Chodesh ${roshChodeshStatus.monthName} is today.`
-              : `Rosh Chodesh ${roshChodeshStatus.monthName} in ${roshChodeshStatus.daysUntil} day${
-                  roshChodeshStatus.daysUntil === 1 ? '' : 's'
-                }.`}
-          </p>
+          <>
+            <p className={roshChodeshStatus.isToday ? 'text-base font-semibold text-denim' : 'text-sm font-medium text-denim'}>
+              {roshChodeshStatus.isToday
+                ? t('roshChodeshToday', { month: roshChodeshStatus.monthName })
+                : t('roshChodeshNext', { month: roshChodeshStatus.monthName })}
+              {roshChodeshStatus.hebrewName && (
+                <span className="text-dusk font-normal"> · {roshChodeshStatus.hebrewName}</span>
+              )}
+            </p>
+            <ul className="mt-1 space-y-0.5">
+              {roshChodeshStatus.days.map((d) => (
+                <li key={d.date} className="text-sm text-denim">
+                  {format(parseISO(d.date), 'EEEE d MMMM')}
+                  {d.hdate && <span className="text-dusk"> ({d.hdate})</span>}
+                </li>
+              ))}
+            </ul>
+            {!roshChodeshStatus.isToday && (
+              <p className="text-xs text-brass mt-1">
+                {t('inDays', { count: roshChodeshStatus.daysUntil })}
+              </p>
+            )}
+            {roshChodeshStatus.days.length > 1 && (
+              <p className="text-xs text-dusk mt-1">{t('twoDay')}</p>
+            )}
+          </>
         ) : (
-          <p className="text-sm text-dusk">No Rosh Chodesh in the next 5 days.</p>
+          <p className="text-sm text-dusk">{t('roshChodeshUnavailable')}</p>
         )}
       </Card>
 

@@ -4,7 +4,7 @@
 // unchanged from the old halachic-calendar/page.tsx server component as
 // part of the client-refactor into ToolModal).
 import { NextResponse } from 'next/server';
-import { getOmerStatus, getRoshChodeshStatus } from '@/lib/calendar-trigger-type';
+import { getOmerOutlook, getOmerStatus, getRoshChodeshStatus } from '@/lib/calendar-trigger-type';
 
 // Same Eastern-anchoring pattern the Dashboard page uses (app/properties/
 // [id]/dashboard/page.tsx's own local easternDateStr) -- kept local here
@@ -48,8 +48,9 @@ async function getNextErevPesach(todayStr: string) {
 
 export async function GET() {
   const todayStr = easternDateStr(new Date());
-  const [omerTitle, erevPesach, roshChodeshStatus] = await Promise.all([
+  const [omerTitle, omerOutlook, erevPesach, roshChodeshStatus] = await Promise.all([
     getOmerStatus(),
+    getOmerOutlook(todayStr),
     getNextErevPesach(todayStr),
     getRoshChodeshStatus(todayStr),
   ]);
@@ -63,5 +64,5 @@ export async function GET() {
     ? Math.round((Date.parse(erevPesach.date) - Date.parse(todayStr)) / (1000 * 60 * 60 * 24))
     : null;
 
-  return NextResponse.json({ omerTitle, erevPesach, daysUntilPesach, roshChodeshStatus });
+  return NextResponse.json({ omerTitle, omerOutlook, erevPesach, daysUntilPesach, roshChodeshStatus });
 }
