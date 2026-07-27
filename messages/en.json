@@ -726,6 +726,11 @@
     "emptyNoneInArea": "No items in this area yet.",
     "emptyNone": "No items yet. Tap “Add item” to get started.",
     "emptyNoFavorites": "No favorites yet — tap the star on any item.",
-    "searchLinkWarning": "This link runs a search rather than opening a specific product — check it points at the right item."
+    "searchLinkWarning": "This link runs a search rather than opening a specific product — check it points at the right item.",
+    "varietyCount": "{count} varieties",
+    "locationCount": "{count} locations",
+    "rowCount": "{count} rows",
+    "pivotVariety": "By variety",
+    "pivotLocation": "By location"
   }
 }

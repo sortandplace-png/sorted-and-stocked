@@ -24,6 +24,8 @@ import ReorderSourcesEditor from '@/components/ReorderSourcesEditor';
 import UsedInRecipes from '@/components/UsedInRecipes';
 import OrderLink from '@/components/OrderLink';
 import { isSearchLink } from '@/lib/reorder-link';
+import GroupedProductCard from '@/components/GroupedProductCard';
+import { partitionByProduct, type MasterProduct } from '@/lib/product-groups';
 import type { ReorderSource } from '@/lib/reorder-sources';
 import { FilterPill, FilterPillRow } from '@/components/recipes/FilterPill';
 import { isFoodCategory } from '@/lib/foodCategories';
@@ -87,6 +89,12 @@ type InventoryItem = {
   qr_code: string | null;
   print_label: boolean;
   pesach_status: 'kosher_for_pesach' | 'not_kosher_for_pesach' | 'needs_review' | 'not_applicable';
+  // Variant grouping (migrations 125/131). Null on every item until someone
+  // groups them by hand -- ungrouped is the permanent normal state, never an
+  // error, and nothing here auto-groups.
+  master_product_id: string | null;
+  variant_label: string | null;
+  variant_label_es: string | null;
   last_counted_at: string | null;
   updated_at: string;
   notes: string | null;
@@ -261,6 +269,7 @@ export default function InventoryClient({
   const displayName = (item: { name: string; name_es: string | null }) =>
     locale === 'es' && item.name_es ? item.name_es : item.name;
   const [items, setItems] = useState<InventoryItem[]>([]);
+  const [masterProducts, setMasterProducts] = useState<MasterProduct[]>([]);
   const [locations, setLocations] = useState<StorageLocation[]>([]);
   const [categorySuggestions, setCategorySuggestions] = useState<string[]>([]);
   const [categoryIconNames, setCategoryIconNames] = useState<Record<string, string>>({});
@@ -421,7 +430,7 @@ export default function InventoryClient({
         const { data, error } = await supabase
           .from('inventory_items')
           .select(
-            'id, name, name_es, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at, notes'
+            'id, name, name_es, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, master_product_id, variant_label, variant_label_es, last_counted_at, updated_at, notes'
           )
           .eq('property_id', propertyId)
           .order('name')
@@ -434,7 +443,7 @@ export default function InventoryClient({
       return { data: all, error: null };
     }
 
-    const [itemsRes, locationsRes, categoriesRes, favoritesRes, propertyRes] = await Promise.all([
+    const [itemsRes, locationsRes, categoriesRes, favoritesRes, propertyRes, masterProductsRes] = await Promise.all([
       fetchAllInventoryItems(),
       supabase
         .from('locations')
@@ -456,11 +465,15 @@ export default function InventoryClient({
       // feature_flags.pesach_mode -- same jsonb pattern already used for
       // auto_restock (now on its own Shopping Rules settings page).
       supabase.from('properties').select('feature_flags').eq('id', propertyId).single(),
+      // Variant grouping. Currently 0 rows -- the grouped card is inert until
+      // someone groups items by hand, which is the intended state.
+      supabase.from('master_products').select('id, name, name_es').eq('property_id', propertyId),
     ]);
 
     const loadErrors = [itemsRes.error, locationsRes.error, categoriesRes.error].filter(Boolean);
     if (loadErrors.length > 0) setError(loadErrors.map((e) => e!.message).join('; '));
     setItems(itemsRes.data ?? []);
+    setMasterProducts(masterProductsRes.data ?? []);
     setLocations(locationsRes.data ?? []);
     setCategorySuggestions([...new Set((categoriesRes.data ?? []).map((c) => c.name))]);
     setCategoryIconNames(
@@ -826,7 +839,7 @@ export default function InventoryClient({
     const { data: existing } = await supabase
       .from('inventory_items')
       .select(
-        'id, name, name_es, category, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, expiration_date, opened_date, qr_code, print_label, pesach_status, last_counted_at, updated_at, notes'
+        'id, name, name_es, category, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, expiration_date, opened_date, qr_code, print_label, pesach_status, master_product_id, variant_label, variant_label_es, last_counted_at, updated_at, notes'
       )
       .eq('id', matchId)
       .single();
@@ -986,6 +999,11 @@ export default function InventoryClient({
             updated_at: new Date().toISOString(),
             reorder_link: reorderUrl || null,
             reorder_sources: optimisticSources,
+            // A newly added item is never grouped -- grouping is always an
+            // explicit later decision by a person, never applied on create.
+            master_product_id: null,
+            variant_label: null,
+            variant_label_es: null,
           },
         ]);
         if (photoUploadError) {
@@ -1206,7 +1224,16 @@ export default function InventoryClient({
   // filter is active (category, below-par, search) rather than the whole
   // unfiltered inventory. Same helper powers both All Items and a single
   // room's item list below -- one collapsible-letters implementation, not two.
-  const allItemsByLetter = useMemo(() => groupByLetter(allItemsDisplay), [allItemsDisplay]);
+  // Grouped products are pulled OUT of the A-Z list so a grouped item doesn't
+  // appear twice -- once in its product card and again under its letter.
+  const allItemsGrouped = useMemo(
+    () => partitionByProduct(allItemsDisplay, masterProducts),
+    [allItemsDisplay, masterProducts]
+  );
+  const allItemsByLetter = useMemo(
+    () => groupByLetter(allItemsGrouped.ungrouped),
+    [allItemsGrouped.ungrouped]
+  );
   const roomItemsByLetter = useMemo(() => groupByLetter(displayItems), [displayItems]);
 
   function toggleLetter(letter: string) {
@@ -1771,6 +1798,22 @@ export default function InventoryClient({
         // into collapsible A-Z letter sections (this is the longest list in
         // the app -- 698 items -- so collapsing actually helps here) ----
         <div className="space-y-3">
+          {/* Grouped products sit above the A-Z sections: a product isn't a
+              letter, and burying "Trash Bags · 5 varieties" under T would
+              lose the thing grouping exists to show. Renders nothing while
+              master_products is empty, which is today's state. */}
+          {allItemsGrouped.groups.length > 0 && (
+            <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5 mb-4">
+              {allItemsGrouped.groups.map((g) => (
+                <GroupedProductCard
+                  key={g.masterProductId}
+                  group={g}
+                  locationName={locationName}
+                  renderRow={(item) => renderItemCard(item, false)}
+                />
+              ))}
+            </div>
+          )}
           {allItemsByLetter.map(([letter, letterItems]) => {
             const collapsed = collapsedLetters.has(letter);
             return (
