@@ -1296,14 +1296,33 @@ export default function InventoryClient({
         )}
         <div className="flex-1 min-w-0">
           <p className="font-medium text-denim truncate">{displayName(item)}</p>
-          <p className="text-xs text-dusk truncate mt-0.5">
-            {[
-              item.category ? `${categoryIcon(item.category)} ${item.category}` : null,
-              showLocation ? locationName(item.location_id) : item.supplier,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </p>
+          {/* Location gets its own line rather than being appended after the
+              category behind a single `truncate`. It was already rendered
+              here, but effectively invisible on a phone: the meta line is one
+              truncated row, category comes first, and the two biggest
+              categories are "Health & First Aid" (18 chars, 111 items) and
+              "Household & Tools" (17 chars, 92 items) -- with the emoji, the
+              separator, and a 56px thumbnail, the location was clipped off
+              the end exactly for the paper-goods items where it matters.
+              That is why the 9 real per-bathroom "Facial Tissues (Kleenex)"
+              rows read as duplicates: this is a per-location inventory model
+              and the one field that disambiguates them was being cut off. */}
+          {(item.category || (!showLocation && item.supplier)) && (
+            <p className="text-xs text-dusk truncate mt-0.5">
+              {[
+                item.category ? `${categoryIcon(item.category)} ${item.category}` : null,
+                showLocation ? null : item.supplier,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          )}
+          {showLocation && (
+            <p className="text-xs text-denim truncate mt-0.5 flex items-center gap-1">
+              <MapPin className="w-3 h-3 shrink-0 text-brass" strokeWidth={1.75} aria-hidden="true" />
+              {locationName(item.location_id)}
+            </p>
+          )}
           {/* Was fetched, typed, saved -- and rendered nowhere (2026-07-20,
               same fix as the edit form's own new Notes field). Visible on
               the card itself, not just behind Edit, since some of these are
