@@ -712,5 +712,19 @@
     "v5": "Gestionar recetas y plan de comidas",
     "v6": "Personal — Mi Día",
     "watchMyDayVideo": "Ver: Mi Día (2 min)"
+  },
+  "inventory": {
+    "filterSearch": "Búsqueda",
+    "filterExpiring7": "Vencen en 7 días",
+    "filterExpiring30": "Vencen en 30 días",
+    "filterPesach": "Estado de Pésaj",
+    "filtersActive": "Filtros activos",
+    "clearAll": "Borrar todo",
+    "clearOne": "Quitar {label}",
+    "emptyFiltered": "Ningún artículo coincide con estos filtros.",
+    "emptyFilteredHint": "Los filtros se mantienen entre visitas — alguno puede ser de una sesión anterior.",
+    "emptyNoneInArea": "Aún no hay artículos en esta área.",
+    "emptyNone": "Aún no hay artículos. Toque “Agregar artículo” para empezar.",
+    "emptyNoFavorites": "Aún no hay favoritos — toque la estrella en cualquier artículo."
   }
 }

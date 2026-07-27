@@ -712,5 +712,19 @@
     "v5": "Managing Recipes & Meal Planning",
     "v6": "Staff — My Day",
     "watchMyDayVideo": "Watch: My Day (2 min)"
+  },
+  "inventory": {
+    "filterSearch": "Search",
+    "filterExpiring7": "Expiring in 7 days",
+    "filterExpiring30": "Expiring in 30 days",
+    "filterPesach": "Pesach status",
+    "filtersActive": "Filters on",
+    "clearAll": "Clear all",
+    "clearOne": "Clear {label}",
+    "emptyFiltered": "No items match these filters.",
+    "emptyFilteredHint": "Filters stay on between visits — one of these may be from an earlier session.",
+    "emptyNoneInArea": "No items in this area yet.",
+    "emptyNone": "No items yet. Tap “Add item” to get started.",
+    "emptyNoFavorites": "No favorites yet — tap the star on any item."
   }
 }

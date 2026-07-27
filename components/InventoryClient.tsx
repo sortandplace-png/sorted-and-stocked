@@ -29,7 +29,7 @@ import { isFoodCategory } from '@/lib/foodCategories';
 import { compressImageToBlob } from '@/lib/compress-image';
 import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
 import CameraCapture from '@/components/CameraCapture';
-import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle, Package, StickyNote, ArrowLeft, Pencil, QrCode as QrCodeIcon, ScanLine, MapPin, ArrowLeftRight, Copy, Link2, type LucideIcon } from 'lucide-react';
+import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle, Package, StickyNote, ArrowLeft, Pencil, QrCode as QrCodeIcon, ScanLine, MapPin, ArrowLeftRight, Copy, Link2, X, type LucideIcon } from 'lucide-react';
 import QRCode from 'qrcode';
 import { SITE_URL } from '@/lib/site-url';
 
@@ -256,6 +256,7 @@ export default function InventoryClient({
 }) {
   const locale = useLocale();
   const tc = useTranslations('common');
+  const ti = useTranslations('inventory');
   const displayName = (item: { name: string; name_es: string | null }) =>
     locale === 'es' && item.name_es ? item.name_es : item.name;
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -1114,6 +1115,48 @@ export default function InventoryClient({
     expiringSoon30Only ||
     (pesachModeEnabled && pesachStatusFilter !== null);
 
+  // Every filter here is useSessionPersistedState, so one left on days ago is
+  // STILL ON today -- and until now nothing on screen said so. Naming each
+  // active filter (and letting it be cleared individually or all at once) is
+  // what makes "no results" explicable instead of looking like missing data.
+  const activeFilters: { key: string; label: string; clear: () => void }[] = [
+    searchQuery.trim() !== '' && {
+      key: 'search',
+      label: `${ti('filterSearch')}: “${searchQuery.trim()}”`,
+      clear: () => setSearchQuery(''),
+    },
+    categoryFilter !== null && {
+      key: 'category',
+      label: categoryFilter,
+      clear: () => setCategoryFilter(null),
+    },
+    belowParOnly && { key: 'low', label: tc('runningLow'), clear: () => setBelowParOnly(false) },
+    expiringSoonOnly && {
+      key: 'exp7',
+      label: ti('filterExpiring7'),
+      clear: () => setExpiringSoonOnly(false),
+    },
+    expiringSoon30Only && {
+      key: 'exp30',
+      label: ti('filterExpiring30'),
+      clear: () => setExpiringSoon30Only(false),
+    },
+    pesachModeEnabled && pesachStatusFilter !== null && {
+      key: 'pesach',
+      label: `${ti('filterPesach')}: ${pesachStatusFilter}`,
+      clear: () => setPesachStatusFilter(null),
+    },
+  ].filter(Boolean) as { key: string; label: string; clear: () => void }[];
+
+  function clearAllFilters() {
+    setSearchQuery('');
+    setCategoryFilter(null);
+    setBelowParOnly(false);
+    setExpiringSoonOnly(false);
+    setExpiringSoon30Only(false);
+    setPesachStatusFilter(null);
+  }
+
   function matchesFilters(item: InventoryItem) {
     const q = searchQuery.trim();
     if (q) {
@@ -1578,6 +1621,39 @@ export default function InventoryClient({
           specifically. All Items mode's own FilterPillRow section below is
           untouched -- not what this consolidation was about. */}
       <div className="mb-4 bg-card border border-cardBorder rounded-xl2 shadow-card p-4 space-y-3">
+        {/* Always visible while anything is on. Every filter here persists in
+            sessionStorage, so one set days ago is still active with nothing
+            on screen saying so -- which is how a search for a real item read
+            as "doesn't exist". Naming each one also makes tile-toggling
+            discoverable, which it wasn't. */}
+        {hasActiveFilter && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-brass">
+              {ti('filtersActive')}
+            </span>
+            {activeFilters.map((f) => (
+              <span
+                key={f.key}
+                className="inline-flex items-center gap-1 text-xs text-denim bg-mist border border-cardBorder rounded-full pl-2.5 pr-1 py-1"
+              >
+                {f.label}
+                <button
+                  onClick={f.clear}
+                  aria-label={ti('clearOne', { label: f.label })}
+                  className="w-5 h-5 flex items-center justify-center text-dusk hover:text-rust"
+                >
+                  <X size={12} strokeWidth={2} aria-hidden="true" />
+                </button>
+              </span>
+            ))}
+            <button
+              onClick={clearAllFilters}
+              className="ml-auto text-xs font-medium text-brass underline underline-offset-2"
+            >
+              {ti('clearAll')}
+            </button>
+          </div>
+        )}
         <div className="flex flex-wrap gap-2">
           <input
             value={searchQuery}
@@ -1854,17 +1930,47 @@ export default function InventoryClient({
         </>
       )}
 
-      {(viewMode === 'all' ? allItemsDisplay : displayItems).length === 0 && (
-        <p className="text-sm text-dusk text-center mt-8">
-          {hasActiveFilter
-            ? 'No items match your search.'
-            : locationFilter === FAVORITES
-            ? 'No favorites yet — tap the star on any item.'
-            : locationFilter
-            ? 'No items in this area yet.'
-            : 'No items yet. Tap "Add item" to get started.'}
-        </p>
-      )}
+      {(viewMode === 'all' ? allItemsDisplay : displayItems).length === 0 &&
+        (hasActiveFilter ? (
+          // Names the filters actually responsible instead of "No items match
+          // your search" -- which read as "this item doesn't exist" when the
+          // real cause was a category left on from a previous session.
+          <div className="mt-8 text-center">
+            <p className="text-sm text-denim">{ti('emptyFiltered')}</p>
+            <div className="flex flex-wrap items-center justify-center gap-1.5 mt-2">
+              {activeFilters.map((f) => (
+                <span
+                  key={f.key}
+                  className="inline-flex items-center gap-1 text-xs text-denim bg-mist border border-cardBorder rounded-full pl-2.5 pr-1 py-1"
+                >
+                  {f.label}
+                  <button
+                    onClick={f.clear}
+                    aria-label={ti('clearOne', { label: f.label })}
+                    className="w-5 h-5 flex items-center justify-center text-dusk hover:text-rust"
+                  >
+                    <X size={12} strokeWidth={2} aria-hidden="true" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <p className="text-xs text-dusk mt-2">{ti('emptyFilteredHint')}</p>
+            <button
+              onClick={clearAllFilters}
+              className="mt-2 text-sm font-medium bg-denim text-white px-4 py-1.5 rounded-full"
+            >
+              {ti('clearAll')}
+            </button>
+          </div>
+        ) : (
+          <p className="text-sm text-dusk text-center mt-8">
+            {locationFilter === FAVORITES
+              ? ti('emptyNoFavorites')
+              : locationFilter
+              ? ti('emptyNoneInArea')
+              : ti('emptyNone')}
+          </p>
+        ))}
 
       <div className="mt-8 pt-4 border-t border-cardBorder">
         <h2 className="text-xs font-medium uppercase tracking-wider text-dusk mb-2">Inventory Ops Tools</h2>
