@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useToast } from '@/components/Toast';
 import { fetchStaplesWithInventory, addStapleToList } from '@/lib/api/staples';
 import {
@@ -68,10 +69,11 @@ type Staple = {
 };
 
 export default function StaplesTab({ propertyId, shoppingListId }: { propertyId: string; shoppingListId: string }) {
+  const tc = useTranslations('common');
   const [staples, setStaples] = useState<Staple[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'category' | 'name' | 'low-first'>('category');
-  // Same category-dropdown + "Below par only" pattern as the main
+  // Same category-dropdown + "Running low" pattern as the main
   // Inventory page's Rooms filter bar -- reused exactly, not a second
   // filter UI. Sort modes above still control ordering; these narrow.
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
@@ -317,7 +319,7 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
                 belowParOnly ? 'bg-rust text-white border-rust' : 'border-cardBorder text-denim'
               }`}
             >
-              Below par only
+              {tc('runningLow')}
             </button>
           </div>
 

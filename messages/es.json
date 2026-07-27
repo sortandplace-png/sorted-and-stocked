@@ -130,7 +130,8 @@
     "saving": "Guardando…",
     "revert": "Deshacer",
     "signOut": "Cerrar sesión",
-    "unknown": "alguien"
+    "unknown": "alguien",
+    "runningLow": "Se está acabando"
   },
   "recipesGrid": {
     "title": "Recetas",

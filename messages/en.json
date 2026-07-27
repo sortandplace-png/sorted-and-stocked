@@ -130,7 +130,8 @@
     "saving": "Saving…",
     "revert": "Revert",
     "signOut": "Sign out",
-    "unknown": "someone"
+    "unknown": "someone",
+    "runningLow": "Running low"
   },
   "recipesGrid": {
     "title": "Recipes",

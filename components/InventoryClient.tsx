@@ -4,7 +4,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef, useId } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientUpdate, resilientUpdateWithVersionCheck, resilientDelete } from '@/lib/resilient-write';
 import { usePropertyRole, canManage } from '@/components/PropertyRoleContext';
@@ -255,6 +255,7 @@ export default function InventoryClient({
   initialCategoryFilter?: string | null;
 }) {
   const locale = useLocale();
+  const tc = useTranslations('common');
   const displayName = (item: { name: string; name_es: string | null }) =>
     locale === 'es' && item.name_es ? item.name_es : item.name;
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -1588,7 +1589,7 @@ export default function InventoryClient({
                   belowParOnly ? 'bg-rust text-white border-rust' : 'border-cardBorder text-denim bg-mist'
                 }`}
               >
-                Below par only
+                {tc('runningLow')}
               </button>
             </>
           )}
