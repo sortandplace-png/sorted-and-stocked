@@ -678,5 +678,24 @@
     "inDays": "in {count} days",
     "twoDay": "Two-day Rosh Chodesh.",
     "roshChodeshUnavailable": "Rosh Chodesh dates are unavailable right now."
+  },
+  "sopLibrary": {
+    "title": "SOP Library",
+    "description": "{count} standard procedures, in English and Spanish.",
+    "searchPlaceholder": "Search procedures…",
+    "unzoned": "Unzoned",
+    "emptyNone": "No procedures in the library yet.",
+    "emptyFiltered": "No procedures match that search.",
+    "methodEn": "Method (English)",
+    "methodEs": "Método (español)",
+    "bothRequired": "Both languages are required.",
+    "passFail": "Done when:",
+    "noMethod": "No method written yet.",
+    "edit": "Edit method",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Procedure updated.",
+    "saveFailed": "Could not save — try again."
   }
 }

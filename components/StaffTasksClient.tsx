@@ -29,7 +29,8 @@ import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import FieldLabel from '@/components/FieldLabel';
-import { CheckCircle2, ChevronDown, Circle, Clock, Library, ListChecks } from 'lucide-react';
+import Link from 'next/link';
+import { CheckCircle2, ChevronDown, Circle, ClipboardList, Clock, Library, ListChecks } from 'lucide-react';
 import Pin from '@/components/PinAccent';
 
 type Frequency = { id: string; code: string; label_en: string; label_es: string; interval_days: number | null };
@@ -567,6 +568,20 @@ export default function StaffTasksClient({
                     {expanded && status !== 'done' && (
                       <div className="mt-3 pt-3 border-t border-cardBorder space-y-2">
                         {sop && <p className="text-xs text-dusk">{sop}</p>}
+                        {/* Links to the shared procedure rather than
+                            duplicating its text on the card. Only shown when
+                            the task actually references one -- sop_id is set
+                            on just 1 of 141 tasks today, which is the gap the
+                            SOP Library page exists to close. */}
+                        {task.sop_id && (
+                          <Link
+                            href={`/properties/${propertyId}/tools/sops`}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-brass underline underline-offset-2"
+                          >
+                            <ClipboardList size={12} strokeWidth={1.75} aria-hidden="true" />
+                            {locale === 'es' ? 'Ver procedimiento completo' : 'View full procedure'}
+                          </Link>
+                        )}
                         {passFail && <p className="text-xs text-brass">Pass/fail: {passFail}</p>}
                         <div>
                           <FieldLabel>Note (optional)</FieldLabel>

@@ -33,6 +33,7 @@ import {
   Languages,
   Newspaper,
   FileText,
+  ClipboardList,
   type LucideIcon,
 } from 'lucide-react';
 import ToolModal, { type ToolModalSlug } from '@/components/ToolModal';
@@ -93,6 +94,9 @@ const TOOL_ICON_OVERRIDES: Record<string, LucideIcon> = {
   'translation-worklist': Languages,
   digest: Newspaper,
   blog: FileText,
+  // Required, not optional: this map has no emoji fallback any more, so a
+  // slug missing from it renders <undefined /> and crashes the Tools page.
+  sops: ClipboardList,
 };
 
 // Same modal treatment already proven for Kitchen Ops (opened from a

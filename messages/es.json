@@ -678,5 +678,24 @@
     "inDays": "en {count} días",
     "twoDay": "Rosh Jodesh de dos días.",
     "roshChodeshUnavailable": "Las fechas de Rosh Jodesh no están disponibles en este momento."
+  },
+  "sopLibrary": {
+    "title": "Biblioteca de Procedimientos",
+    "description": "{count} procedimientos estándar, en inglés y español.",
+    "searchPlaceholder": "Buscar procedimientos…",
+    "unzoned": "Sin zona",
+    "emptyNone": "Aún no hay procedimientos en la biblioteca.",
+    "emptyFiltered": "Ningún procedimiento coincide con esa búsqueda.",
+    "methodEn": "Método (inglés)",
+    "methodEs": "Método (español)",
+    "bothRequired": "Ambos idiomas son obligatorios.",
+    "passFail": "Está listo cuando:",
+    "noMethod": "Aún no se ha escrito el método.",
+    "edit": "Editar método",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "saved": "Procedimiento actualizado.",
+    "saveFailed": "No se pudo guardar — inténtelo de nuevo."
   }
 }
