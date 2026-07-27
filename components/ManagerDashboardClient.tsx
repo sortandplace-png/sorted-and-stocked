@@ -194,7 +194,17 @@ export default function ManagerDashboardClient({ properties }: { properties: { i
               </button>
             </div>
           ))}
-          {inventoryRows.length === 0 && <p className="text-sm text-dusk">No items match.</p>}
+          {/* Same distinction as the duty roster: this list is fetched
+              server-side WITH propertyFilter/search already applied, so an
+              empty result means either "nothing matched" or "nothing exists"
+              -- and only the filter state can tell them apart here. */}
+          {inventoryRows.length === 0 && (
+            <p className="text-sm text-dusk">
+              {propertyFilter || search.trim()
+                ? 'No items match these filters.'
+                : 'No captured items yet.'}
+            </p>
+          )}
         </div>
       )}
 

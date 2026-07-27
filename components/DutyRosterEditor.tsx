@@ -221,8 +221,21 @@ export default function DutyRosterEditor({
               ))}
               {filtered.length === 0 && (
                 <tr>
+                  {/* Empty-because-filtered and empty-because-none-exist are
+                      different states and must not share a message. Country
+                      and Lax both have 0 duty templates, so "No rows match
+                      these filters" blamed a filter that wasn't doing
+                      anything and hid the real next step (Add Row). */}
                   <td colSpan={6} className="text-center py-8 text-dusk text-sm">
-                    No rows match these filters.
+                    {rows.length === 0 ? (
+                      <>
+                        No duty templates for this property yet.
+                        <br />
+                        <span className="text-xs">Use “Add Row” above to create the first one.</span>
+                      </>
+                    ) : (
+                      'No rows match these filters.'
+                    )}
                   </td>
                 </tr>
               )}
