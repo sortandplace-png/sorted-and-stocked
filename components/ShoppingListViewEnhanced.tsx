@@ -631,13 +631,20 @@ export default function ShoppingListViewEnhanced({
     const kosherStyle = item.kosher_type ? KOSHER_PILL_STYLE[item.kosher_type] : null;
     const secondary = secondaryName(item);
 
+    // Card treatment matched to Inventory's item card: rounded-xl2 (20px per
+    // the design system, was rounded-lg/8px), shadow-card with the blue-grey
+    // tint plus shadow-cardHover on hover, and the pin dot every card in this
+    // app carries. Border kept -- Shopping's cards sit on the bg-mist group
+    // panel rather than the page background, so they need the edge that
+    // Inventory's don't.
     return (
       <div
         key={item.item_id}
-        className={`rounded-lg border bg-card border-cardBorder hover:border-brass/30 transition-colors ${
+        className={`relative rounded-xl2 border bg-card border-cardBorder shadow-card hover:shadow-cardHover hover:border-brass/30 transition-shadow ${
           density === 'compact' ? 'p-2' : 'p-3'
         } ${isChecked ? 'opacity-60' : ''}`}
       >
+        <Pin size="sm" />
         <div className="flex gap-3">
           {/* Checkbox first, per the card redesign order */}
           <button
@@ -955,8 +962,14 @@ export default function ShoppingListViewEnhanced({
                   from the tile that opened it, even though it's already
                   correctly grid-positioned directly beneath it (confirmed
                   via computed geometry before this fix, not assumed). */}
+              {/* Same grid as Inventory's item lists, verbatim:
+                  space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2
+                  xl:grid-cols-3 lg:gap-2.5. Stacks below lg and only becomes
+                  a grid at lg+, so this does NOT re-introduce the mobile
+                  crush 21abbf7 fixed -- the col-span-full on the expanded
+                  group is what gives it the full row to use. */}
               {!collapsed && (
-                <div className="border-t border-brass/20 px-[18px] py-3 space-y-2">
+                <div className="border-t border-brass/20 px-[18px] py-3 space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
                   {group.items.map(renderItemCard)}
                 </div>
               )}
@@ -1018,7 +1031,9 @@ export default function ShoppingListViewEnhanced({
             <span className="flex-1 border-t border-cardBorder" />
           </div>
           {completedExpanded && (
-            <div className="space-y-2 mt-3">{aggregateItems(completedItems).map(renderItemCard)}</div>
+            <div className="mt-3 space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5">
+              {aggregateItems(completedItems).map(renderItemCard)}
+            </div>
           )}
         </div>
       )}
