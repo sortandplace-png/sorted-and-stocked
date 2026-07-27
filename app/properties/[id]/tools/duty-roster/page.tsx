@@ -31,12 +31,20 @@ export default async function DutyRosterPage({
     redirect(`/properties/${id}/inventory`);
   }
 
-  const { data: templates } = await supabase
-    .from('staff_duty_templates')
-    .select('id, area_en, area_es, task_en, task_es, staff_roster_key, job_type, sort_order')
-    .eq('property_id', id)
-    .order('area_en')
-    .order('sort_order');
+  const [{ data: templates }, { data: slots }] = await Promise.all([
+    supabase
+      .from('staff_duty_templates')
+      .select('id, area_en, area_es, task_en, task_es, slot_id, job_type, sort_order')
+      .eq('property_id', id)
+      .order('area_en')
+      .order('sort_order'),
+    // Slots are per-property by design -- Main's staff are not Lax's staff.
+    supabase
+      .from('staff_slots')
+      .select('id, slot_number, label_en, label_es, active')
+      .eq('property_id', id)
+      .order('sort_order'),
+  ]);
 
-  return <DutyRosterEditor propertyId={id} initialRows={templates ?? []} />;
+  return <DutyRosterEditor propertyId={id} initialRows={templates ?? []} slots={slots ?? []} />;
 }

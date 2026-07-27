@@ -67,6 +67,16 @@ alter table staff_duty_templates
 -- duties whose slot is linked to their own account. NULL slot_id = unassigned,
 -- visible to owners/managers (and to staff via the Grab Pool, which will need
 -- its own narrowly-scoped claim policy -- deliberately not added here).
+-- THREE MORE dependants, on a different table: staff_duty_completions'
+-- select/insert/update policies each join back to
+-- staff_duty_templates.staff_roster_key. A first attempt at this migration
+-- failed on exactly this (2BP01) -- checking the policies ON a table is not
+-- the same as finding the policies that REFERENCE its columns. They must all
+-- be dropped before the column goes, then recreated against slot_id.
+drop policy if exists "staff_duty_completions_select" on staff_duty_completions;
+drop policy if exists "staff_duty_completions_insert" on staff_duty_completions;
+drop policy if exists "staff_duty_completions_update" on staff_duty_completions;
+
 drop policy if exists "staff_duty_templates_select" on staff_duty_templates;
 create policy "staff_duty_templates_select" on staff_duty_templates
   for select using (
@@ -79,6 +89,44 @@ create policy "staff_duty_templates_select" on staff_duty_templates
   );
 
 alter table staff_duty_templates drop column if exists staff_roster_key;
+
+-- Recreated with the roster-key string match swapped for the slot link.
+-- Access semantics are preserved exactly as they were, deliberately: SELECT
+-- allows owner/manager or the assigned person; INSERT/UPDATE allow only the
+-- assigned person. Widening INSERT/UPDATE to managers would be a real
+-- security change and is out of scope here.
+create policy "staff_duty_completions_select" on staff_duty_completions
+  for select using (
+    exists (
+      select 1 from staff_duty_templates t
+      left join staff_slots s on s.id = t.slot_id
+      where t.id = staff_duty_completions.template_id
+        and (
+          has_property_role(t.property_id, array['owner'::member_role, 'manager'::member_role])
+          or s.user_id = auth.uid()
+        )
+    )
+  );
+
+create policy "staff_duty_completions_insert" on staff_duty_completions
+  for insert with check (
+    exists (
+      select 1 from staff_duty_templates t
+      join staff_slots s on s.id = t.slot_id
+      where t.id = staff_duty_completions.template_id
+        and s.user_id = auth.uid()
+    )
+  );
+
+create policy "staff_duty_completions_update" on staff_duty_completions
+  for update using (
+    exists (
+      select 1 from staff_duty_templates t
+      join staff_slots s on s.id = t.slot_id
+      where t.id = staff_duty_completions.template_id
+        and s.user_id = auth.uid()
+    )
+  );
 
 -- The table had INSERT/SELECT/UPDATE policies but no DELETE policy at all.
 -- With RLS enabled that denies deletes to everyone, so duty templates could

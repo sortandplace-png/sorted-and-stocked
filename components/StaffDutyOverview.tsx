@@ -2,35 +2,31 @@
 // SS-156: a manager/owner-facing summary of today's staff_duty_templates
 // completion -- percentage complete, per-roster breakdown, last completion
 // time. Deliberately separate from StaffDutyChecklist.tsx, which is the
-// personal "check off my own tasks" view gated on the viewer's own
-// staff_roster_key -- this is the audit view, showing everyone's rows
+// personal "check off my own tasks" view gated on the viewer's own linked
+// slot -- this is the audit view, showing everyone's rows
 // regardless of who's looking, which is exactly what RLS already allows
 // for an owner/manager (see staff_duty_templates_select /
-// staff_duty_completions_select: scoped to the caller's own roster key,
-// OR unrestricted for owner/manager). Same day/date matching convention
+// staff_duty_completions_select: scoped to the slot linked to the caller's
+// account, OR unrestricted for owner/manager). Same day/date matching convention
 // as my-day/page.tsx's getDutyAreas() (ISO weekday from real Eastern
 // date parts, not Date.getDay()) so this can never disagree with what
 // staff themselves see as "today."
 //
 // Real, current caveat worth knowing before reading this data as
-// "assigned but incomplete": staff_roster_key on staff_duty_templates
-// is a real per-person key (amber/leti/marlyn/live_in, see
-// DutyRosterEditor.tsx), but property_members.staff_roster_key -- the
-// column that would link one of those keys to an actual signed-in
-// account -- is null on all 7 current members. Nobody has been linked
-// yet, so the personal StaffDutyChecklist view is currently a dead end
-// for every real staff member (hasRosterKey is false for all of them),
-// and 100% of today's applicable duties here will show as 'Unassigned'
-// (staff_roster_key = 'unassigned' on every one of the 61 real rows) --
-// not a bug in this component, an accurate reflection of a roster that
-// was built but never actually distributed to specific people.
+// "assigned but incomplete": duties point at staff_slots via slot_id, and
+// every slot is currently unlinked (staff_slots.user_id null) with all 61
+// duty rows unassigned (slot_id null). So 100% of today's applicable duties
+// show as Unassigned -- not a bug in this component, an accurate reflection
+// of a roster that exists but has not been handed to anyone yet. Slots are
+// renameable labels, never people's names: when someone starts, a manager
+// renames the slot and links the account.
 'use client';
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { ROSTER_LABELS } from '@/components/DutyRosterEditor';
+import { useLocale } from 'next-intl';
 
-type RosterStat = { key: string; total: number; done: number; lastCompletedAt: string | null };
+type RosterStat = { key: string; label: string; total: number; done: number; lastCompletedAt: string | null };
 
 function easternTodayParts(now: Date) {
   const map = Object.fromEntries(
@@ -56,6 +52,7 @@ function formatTime(iso: string | null): string {
 }
 
 export default function StaffDutyOverview({ propertyId }: { propertyId: string }) {
+  const locale = useLocale();
   const [stats, setStats] = useState<RosterStat[] | null>(null);
 
   useEffect(() => {
@@ -66,7 +63,7 @@ export default function StaffDutyOverview({ propertyId }: { propertyId: string }
 
       const { data: templates } = await supabase
         .from('staff_duty_templates')
-        .select('id, staff_roster_key')
+        .select('id, slot_id, staff_slots(label_en, label_es)')
         .eq('property_id', propertyId)
         .or(`day_of_week.is.null,day_of_week.eq.${isoWeekday}`);
       if (cancelled) return;
@@ -89,8 +86,16 @@ export default function StaffDutyOverview({ propertyId }: { propertyId: string }
 
       const byKey = new Map<string, RosterStat>();
       for (const t of templates) {
-        const key = t.staff_roster_key ?? 'unassigned';
-        const entry = byKey.get(key) ?? { key, total: 0, done: 0, lastCompletedAt: null };
+        // Label comes from the joined slot, never a hardcoded map. Unassigned
+        // duties (slot_id null) group under one bucket.
+        // PostgREST types an embedded relation as an array even for a
+        // to-one FK, so normalise before reading it.
+        const embedded = (t as { staff_slots?: { label_en: string; label_es: string }[] | { label_en: string; label_es: string } | null })
+          .staff_slots;
+        const slot = Array.isArray(embedded) ? embedded[0] : embedded;
+        const key = t.slot_id ?? 'unassigned';
+        const label = slot ? (locale === 'es' ? slot.label_es : slot.label_en) : locale === 'es' ? 'Sin asignar' : 'Unassigned';
+        const entry = byKey.get(key) ?? { key, label, total: 0, done: 0, lastCompletedAt: null };
         entry.total += 1;
         const completedAt = completedByTemplate.get(t.id);
         if (completedAt) {
@@ -105,7 +110,7 @@ export default function StaffDutyOverview({ propertyId }: { propertyId: string }
     return () => {
       cancelled = true;
     };
-  }, [propertyId]);
+  }, [propertyId, locale]);
 
   if (stats === null || stats.length === 0) return null;
 
@@ -129,7 +134,7 @@ export default function StaffDutyOverview({ propertyId }: { propertyId: string }
       <ul className="space-y-1.5">
         {stats.map((s) => (
           <li key={s.key} className="flex items-center justify-between gap-2 bg-mist rounded-xl px-3 py-2">
-            <span className="text-sm text-denim">{ROSTER_LABELS[s.key] ?? s.key}</span>
+            <span className="text-sm text-denim">{s.label}</span>
             <span className={`text-xs font-medium ${s.done === s.total ? 'text-sage' : 'text-dusk'}`}>
               {s.done}/{s.total}
             </span>

@@ -12,33 +12,34 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { Plus } from 'lucide-react';
 
+export type StaffSlot = {
+  id: string;
+  slot_number: number;
+  label_en: string;
+  label_es: string;
+  active: boolean;
+};
+
 type Row = {
   id: string;
   area_en: string;
   area_es: string;
   task_en: string;
   task_es: string;
-  staff_roster_key: string;
+  slot_id: string | null;
   job_type: string | null;
   sort_order: number;
 };
 
-// 'unassigned' is a real, live value -- every one of the 61 rows in the
-// database has it (the default a new row is created with, before anyone
-// picks a real person). It was missing from this list even though it was
-// never missing from the data: a <select> whose bound value doesn't match
-// any of its <option>s falls back to showing the first option in the
-// browser, which silently displayed "Amber" for every single
-// still-unassigned row -- reading as if triage was already done when none
-// of it had happened. Added as its own real, selectable option instead.
-export const ROSTER_OPTIONS = ['unassigned', 'amber', 'leti', 'marlyn', 'live_in'] as const;
-export const ROSTER_LABELS: Record<string, string> = {
-  unassigned: 'Unassigned',
-  amber: 'Amber',
-  leti: 'Leti',
-  marlyn: 'Marlyn',
-  live_in: 'Live-In (Nino/Noni)',
-};
+// Assignment is a real FK to staff_slots, per property. There is deliberately
+// no hardcoded list of people here and there must never be one again: slots
+// are renameable labels that exist independently of who currently holds them,
+// so a person leaving is a rename, not a code change. Unassigned is the null
+// state, not a magic string.
+export function slotLabel(slot: StaffSlot | undefined, locale: string): string {
+  if (!slot) return '—';
+  return locale === 'es' ? slot.label_es : slot.label_en;
+}
 
 // EN values are the literal labels given in the spec; ES are my own
 // translations (explicitly asked for, not present in the source data).
@@ -60,9 +61,18 @@ const JOB_LABELS: Record<string, { en: string; es: string }> = {
 const cellInputClass =
   'w-full text-sm px-2 py-1.5 rounded border border-transparent hover:border-brass/30 focus:border-brass focus:outline-none bg-transparent text-denim';
 
-export default function DutyRosterEditor({ propertyId, initialRows }: { propertyId: string; initialRows: Row[] }) {
+export default function DutyRosterEditor({
+  propertyId,
+  initialRows,
+  slots,
+}: {
+  propertyId: string;
+  initialRows: Row[];
+  slots: StaffSlot[];
+}) {
   const locale = useLocale();
   const [rows, setRows] = useState<Row[]>(initialRows);
+  const slotById = useMemo(() => new Map(slots.map((s) => [s.id, s])), [slots]);
   const [roomFilter, setRoomFilter] = useState('');
   const [jobFilter, setJobFilter] = useState('');
   const [savingIds, setSavingIds] = useState<Record<string, boolean>>({});
@@ -96,18 +106,17 @@ export default function DutyRosterEditor({ propertyId, initialRows }: { property
     if (error) showToast('Failed to save — try again.', { variant: 'error' });
   }
 
-  // Inserts a real row immediately (empty text fields, defaulted to
-  // Live-In since that roster currently has zero rows and this is the
-  // way a first one gets created) rather than opening a separate "new
-  // row" form -- it appears in the table using the exact same inline
-  // inputs as every other row.
+  // Inserts a real row immediately rather than opening a separate "new row"
+  // form -- it appears in the table using the same inline inputs as every
+  // other row. Starts unassigned (slot_id null); assignment is an explicit
+  // choice, never a default.
   async function addRow() {
     setAdding(true);
     const { data, error } = await supabase
       .from('staff_duty_templates')
       .insert({
         property_id: propertyId,
-        staff_roster_key: 'live_in',
+        slot_id: null,
         area_en: '',
         area_es: '',
         task_en: '',
@@ -115,7 +124,7 @@ export default function DutyRosterEditor({ propertyId, initialRows }: { property
         job_type: null,
         sort_order: 0,
       })
-      .select('id, area_en, area_es, task_en, task_es, staff_roster_key, job_type, sort_order')
+      .select('id, area_en, area_es, task_en, task_es, slot_id, job_type, sort_order')
       .single();
     setAdding(false);
     if (error || !data) {
@@ -211,16 +220,20 @@ export default function DutyRosterEditor({ propertyId, initialRows }: { property
                   </td>
                   <td className="p-1.5">
                     <select
-                      value={row.staff_roster_key}
-                      onChange={(e) => patchRow(row.id, { staff_roster_key: e.target.value })}
+                      value={row.slot_id ?? ''}
+                      onChange={(e) => patchRow(row.id, { slot_id: e.target.value || null })}
                       disabled={savingIds[row.id]}
                       className="text-sm border border-brass/30 rounded-full px-2.5 py-1.5 bg-mist text-denim disabled:opacity-50"
                     >
-                      {ROSTER_OPTIONS.map((k) => (
-                        <option key={k} value={k}>
-                          {ROSTER_LABELS[k]}
-                        </option>
-                      ))}
+                      <option value="">{locale === 'es' ? 'Sin asignar' : 'Unassigned'}</option>
+                      {slots
+                        .filter((s) => s.active || s.id === row.slot_id)
+                        .map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {slotLabel(s, locale)}
+                            {!s.active ? (locale === 'es' ? ' (inactivo)' : ' (inactive)') : ''}
+                          </option>
+                        ))}
                     </select>
                   </td>
                 </tr>

@@ -647,5 +647,23 @@
     "sukkot": "Sukkot",
     "tu-bishvat": "Tu BiShvat",
     "yom-kippur": "Yom Kippur"
+  },
+  "staffSlots": {
+    "title": "Staff Slots",
+    "description": "Renameable positions for this residence. Slots exist whether or not anyone is hired yet -- rename one when someone starts. Each residence has its own set.",
+    "slotNumber": "Slot {number}",
+    "linked": "Account linked",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "labelEn": "Label (English)",
+    "labelEs": "Etiqueta (español)",
+    "bothRequired": "Both languages are required.",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Slot renamed.",
+    "saveFailed": "Could not save — try again.",
+    "addSlot": "Add slot",
+    "addFailed": "Could not add a slot — try again.",
+    "renameNote": "Renaming changes the label only. Duties, assignments and history stay attached to the slot."
   }
 }

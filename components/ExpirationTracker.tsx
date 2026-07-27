@@ -20,10 +20,22 @@ export default function ExpirationTracker({ propertyId }: { propertyId: string }
 
   useEffect(() => {
     const loadRiskItems = async () => {
+      // Was .or('property_name.eq.Strauss Residence') -- a hardcoded tenant
+      // filter that returns nothing for Lax or any future client. Scoped to
+      // the active property instead.
+      //
+      // BIGGER PROBLEM, flagged rather than papered over: the relation
+      // `operational_risk_tracker` does not exist in the database at all
+      // (information_schema returns zero columns for it, and nothing matching
+      // %risk%/%operational%/%expir% exists either). This component is also
+      // not rendered anywhere in the app. So this query has always failed,
+      // silently -- `error` is truthy, setItems never runs, and the UI shows
+      // an empty list forever. Scoping the filter does not make it work; the
+      // view has to be created, or this component deleted.
       const { data, error } = await supabase
         .from('operational_risk_tracker')
         .select('*')
-        .or(`property_name.eq.Strauss Residence`);
+        .eq('property_id', propertyId);
 
       if (!error && data) {
         setItems(data);

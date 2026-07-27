@@ -647,5 +647,23 @@
     "sukkot": "Sucot",
     "tu-bishvat": "Tu BiShvat",
     "yom-kippur": "Yom Kipur"
+  },
+  "staffSlots": {
+    "title": "Puestos del personal",
+    "description": "Puestos renombrables para esta residencia. Los puestos existen aunque todavía no haya nadie contratado: renombre uno cuando alguien empiece. Cada residencia tiene su propio conjunto.",
+    "slotNumber": "Puesto {number}",
+    "linked": "Cuenta vinculada",
+    "activate": "Activar",
+    "deactivate": "Desactivar",
+    "labelEn": "Etiqueta (inglés)",
+    "labelEs": "Etiqueta (español)",
+    "bothRequired": "Ambos idiomas son obligatorios.",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "saved": "Puesto renombrado.",
+    "saveFailed": "No se pudo guardar — inténtelo de nuevo.",
+    "addSlot": "Agregar puesto",
+    "addFailed": "No se pudo agregar el puesto — inténtelo de nuevo.",
+    "renameNote": "Renombrar cambia solo la etiqueta. Las tareas, asignaciones e historial siguen vinculados al puesto."
   }
 }

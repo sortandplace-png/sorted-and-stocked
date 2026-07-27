@@ -2,10 +2,11 @@
 // Recurring daily duty checklist, grouped by area -- distinct from the
 // staff_tasks list already on this page (one-off assigned tasks) below it.
 // staff_duty_templates/staff_duty_completions RLS already scopes every row
-// to the caller's own staff_roster_key (or lets owner/manager see
-// everything), matched via property_members.staff_roster_key for
-// auth.uid() -- this component never filters by roster key itself, it
-// only ever receives what the server query (already RLS-scoped) fetched.
+// to the staff_slots row linked to the caller's account (or lets
+// owner/manager see everything) -- this component never filters by slot
+// itself, it only ever receives what the server query (already RLS-scoped)
+// fetched. Until a manager links an account to a slot, staff see nothing
+// here, which is correct rather than broken.
 // Bilingual per-row content (area_es/task_es) follows the same
 // locale === 'es' && value_es pattern already used for calendar_content
 // (see getDailyContent in dashboard/page.tsx), driven by the existing
