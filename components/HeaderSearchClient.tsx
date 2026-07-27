@@ -38,6 +38,7 @@ export default function HeaderSearchClient({ propertyId }: { propertyId: string 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Result[]>([]);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [openTool, setOpenTool] = useState<ToolModalSlug | null>(null);
@@ -82,8 +83,14 @@ export default function HeaderSearchClient({ propertyId }: { propertyId: string 
         return;
       }
       setLoading(true);
+      setSearchError(null);
       const like = `%${q.trim()}%`;
-      const [recipes, inventory, locations, knowledge, contacts, preferences] = await Promise.all([
+      // allSettled, not all: one failing source must not blank the other
+      // five. Previously every result was read as `?? []`, with no .error
+      // check and no try/catch anywhere -- so a query that FAILED was
+      // indistinguishable from one that found nothing, and the modal said
+      // "No matches" either way. A working search looked broken.
+      const settled = await Promise.allSettled([
         supabase
           .from('recipes')
           .select('id, name, recipe_property_links!inner(property_id)')
@@ -118,6 +125,30 @@ export default function HeaderSearchClient({ propertyId }: { propertyId: string 
           .or(`preference_type.ilike.${like},subject.ilike.${like},notes.ilike.${like}`)
           .limit(5),
       ]);
+
+      // Surface real failures instead of swallowing them. Both shapes count:
+      // a rejected promise (a thrown error, e.g. a builder method that isn't
+      // available on an RPC) and a resolved {data:null, error} from PostgREST
+      // (permissions, a bad argument, an RLS block).
+      const SOURCES = ['recipes', 'inventory', 'locations', 'knowledge', 'contacts', 'preferences'] as const;
+      const failed: string[] = [];
+      const rows = settled.map((s, idx) => {
+        if (s.status === 'rejected') {
+          console.error(`search: ${SOURCES[idx]} threw`, s.reason);
+          failed.push(SOURCES[idx]);
+          return [] as any[];
+        }
+        const res = s.value as { data: unknown; error: unknown };
+        if (res?.error) {
+          console.error(`search: ${SOURCES[idx]} errored`, res.error);
+          failed.push(SOURCES[idx]);
+          return [] as any[];
+        }
+        return (res?.data as any[]) ?? [];
+      });
+      if (failed.length > 0) setSearchError(failed.join(', '));
+
+      const [recipes, inventory, locations, knowledge, contacts, preferences] = rows.map((data) => ({ data }));
 
       const next: Result[] = [
         ...(recipes.data ?? []).map((r) => ({
@@ -235,7 +266,13 @@ export default function HeaderSearchClient({ propertyId }: { propertyId: string 
 
             <div className="max-h-96 overflow-y-auto">
               {loading && <p className="px-4 py-6 text-sm text-dusk text-center">{t('searching')}</p>}
-              {!loading && query.trim() && results.length === 0 && (
+              {/* An error is NEVER reported as "no matches" -- that is exactly
+                  how a working search comes to look broken. Named sources so
+                  the next failure is diagnosable from the screen. */}
+              {!loading && searchError && (
+                <p className="px-4 py-3 text-xs text-rust bg-rust/10">{t('partialFailure', { sources: searchError })}</p>
+              )}
+              {!loading && !searchError && query.trim() && results.length === 0 && (
                 <p className="px-4 py-6 text-sm text-dusk text-center">{t('noResults')}</p>
               )}
               {!loading &&

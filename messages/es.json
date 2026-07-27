@@ -12,7 +12,8 @@
     "kindPreference": "Gustos y Preferencias",
     "navigate": "navegar",
     "open": "abrir",
-    "close": "cerrar"
+    "close": "cerrar",
+    "partialFailure": "Algunos resultados no se pudieron cargar ({sources}). Esto es un error, no un resultado vacío — inténtelo de nuevo."
   },
   "auth": {
     "contact": "Contacto",
