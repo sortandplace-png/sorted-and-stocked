@@ -47,8 +47,20 @@ export const metadata: Metadata = {
 // build warning). Also fixes a real leftover: '#6B3550' was the pre-rebrand
 // plum/aubergine color, retired for cream/charcoal/gold in July -- no
 // aubergine should remain anywhere in this app.
+// width/initialScale are NOT optional here. Next.js only emits its default
+// <meta name="viewport" content="width=device-width, initial-scale=1"> when
+// no `viewport` export exists; declaring this object to carry themeColor
+// replaced that default, so the app shipped with NO viewport meta tag at
+// all. Mobile browsers then fall back to an assumed ~980px desktop width and
+// show a 390px window onto it -- which is the real cause of the "horizontal
+// overflow": headings clipped to "emap"/"ASHBOARD"/"LAN"/"HOP" and the logo
+// cut off. Nothing was actually overflowing; the whole page was being
+// rendered too wide. Confirmed by reading the live DOM: meta[name=viewport]
+// absent, window.innerWidth 980 at a 390px viewport.
 export const viewport: Viewport = {
   themeColor: '#FAF7F2',
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
