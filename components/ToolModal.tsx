@@ -3,6 +3,7 @@
 
 import { X } from 'lucide-react';
 import PhotoToolClient from '@/components/PhotoToolClient';
+import RecipeScannerClient from '@/components/RecipeScannerClient';
 import IngredientScannerClient from '@/components/IngredientScannerClient';
 import PantryZonesClient from '@/components/PantryZonesClient';
 import BorrowedItemsClient from '@/components/BorrowedItemsClient';
@@ -78,16 +79,7 @@ export default function ToolModal({
             textPlaceholder="e.g. Heinz Tomato Ketchup 32oz"
           />
         )}
-        {slug === 'recipe-stealer' && (
-          <PhotoToolClient
-            propertyId={propertyId}
-            title="Recipe Scanner"
-            description="Photograph or describe a dish to get a home-cookable version."
-            apiRoute="/api/tools/recipe-stealer"
-            actionLabel="Take or upload a photo of a dish"
-            textPlaceholder="e.g. Cheesecake Factory's Louisiana chicken pasta"
-          />
-        )}
+        {slug === 'recipe-stealer' && <RecipeScannerClient propertyId={propertyId} />}
         {slug === 'ingredient-scanner' && <IngredientScannerClient propertyId={propertyId} />}
         {slug === 'pantry-zones' && <PantryZonesClient propertyId={propertyId} />}
         {slug === 'borrowed-items' && <BorrowedItemsClient propertyId={propertyId} />}

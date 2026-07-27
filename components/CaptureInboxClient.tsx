@@ -152,6 +152,15 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
   }
 
   async function writeApproved(type: CaptureType, payload: Record<string, any>): Promise<boolean> {
+    // Both inventory_items and recipes carry a BEFORE INSERT trigger
+    // (trg_require_spanish -> enforce_bilingual_required) that RAISES when
+    // name_es is null or blank. Checking here turns a raw Postgres exception
+    // into an actionable message next to an editable field, and keeps the
+    // capture pending instead of half-failing.
+    if ((type === 'inventory' || type === 'recipe') && !payload.name_es?.trim()) {
+      showToast('Add the Spanish name before approving — it is required.', { variant: 'error' });
+      return false;
+    }
     if (type === 'inventory') {
       if (!payload.name?.trim()) return false;
       const location = locations.find(
@@ -164,7 +173,7 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
         // its own for this). Null rather than falling back to the English
         // name -- a row that looks translated but isn't is worse than an
         // honest blank, and the Translation Worklist already finds nulls.
-        name_es: payload.name_es?.trim() || null,
+        name_es: payload.name_es.trim(),
         category: payload.category?.trim() || null,
         location_id: location?.id ?? null,
         current_qty: Number(payload.current_qty) || 0,
@@ -177,13 +186,55 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
     }
     if (type === 'recipe') {
       if (!payload.name?.trim()) return false;
-      const result = await resilientInsert(supabase, 'recipes', {
-        property_id: propertyId,
-        name: payload.name.trim(),
-        notes: payload.notes?.trim() || null,
-        tags: ['NEW', 'captured'],
-      });
-      return result.ok;
+      // Recipe Scanner captures carry a full bilingual recipe in raw_payload
+      // (name_es, ingredients[], instructions_en/es). Previously only `name`
+      // and `notes` were read here, so everything else was silently dropped
+      // on approval. kosher_type is deliberately NOT set from the payload --
+      // nothing upstream is allowed to suggest it; a person sets it on the
+      // recipe afterwards.
+      const { data: created, error: recipeError } = await supabase
+        .from('recipes')
+        .insert({
+          property_id: propertyId,
+          name: payload.name.trim(),
+          name_es: payload.name_es.trim(),
+          instructions_en: payload.instructions_en?.trim() || null,
+          instructions_es: payload.instructions_es?.trim() || null,
+          notes: payload.notes?.trim() || null,
+          tags: ['NEW', 'captured'],
+        })
+        .select('id')
+        .single();
+      if (recipeError || !created) return false;
+
+      const ingredients = Array.isArray(payload.ingredients) ? payload.ingredients : [];
+      if (ingredients.length > 0) {
+        const rows = ingredients
+          .filter((i: Record<string, any>) => i?.name?.trim())
+          .map((i: Record<string, any>) => ({
+            recipe_id: created.id,
+            name: i.name.trim(),
+            name_es: i.name_es?.trim() || null,
+            // quantity is numeric in recipe_ingredients but the scanner
+            // returns human strings ("2 cups"). Parse the leading number and
+            // keep the rest as the unit, rather than dropping it or writing
+            // a bad numeric.
+            quantity: (() => {
+              const m = String(i.quantity ?? '').match(/[\d.]+/);
+              return m ? Number(m[0]) : null;
+            })(),
+            unit: String(i.quantity ?? '').replace(/^[\d.\s]+/, '').trim() || null,
+          }));
+        if (rows.length > 0) {
+          const { error: ingError } = await supabase.from('recipe_ingredients').insert(rows);
+          // The recipe itself is already saved; a failed ingredient write
+          // shouldn't silently look like total success.
+          if (ingError) {
+            showToast('Recipe saved, but its ingredients failed to attach.', { variant: 'error' });
+          }
+        }
+      }
+      return true;
     }
     if (type === 'meal_plan') {
       if (!payload.plan_date || !payload.course) return false;

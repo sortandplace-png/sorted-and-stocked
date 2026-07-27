@@ -11,6 +11,7 @@ import {
   Users,
   RotateCcw,
   Scan,
+  ChefHat,
   Timer,
   Scale,
   ListChecks,
@@ -82,12 +83,10 @@ function buildSections(propertyId: string): Section[] {
     },
     {
       label: 'Tools — Scanners',
-      // Recipe Scanner (recipe-stealer) hidden pending a build-or-kill
-      // decision (SS-318/SS-096) -- no backing table. Don't "restore" this
-      // entry without resolving that decision first.
       entries: [
         { href: p('/tools/price-scanner'), label: 'Price Scanner', subtitle: 'Compare prices', icon: Scan },
         { href: p('/tools/ingredient-scanner'), label: 'Ingredient Scanner', subtitle: 'Check a label', icon: Scan },
+        { href: p('/tools/recipe-stealer'), label: 'Recipe Scanner', subtitle: 'Recreate a dish', icon: ChefHat },
       ],
     },
     {

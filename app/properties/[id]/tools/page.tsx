@@ -200,11 +200,7 @@ const GROUPS: {
   slugs: string[];
   subgroups?: { key: string; label: string; slugs: string[]; lockIcon?: boolean }[];
 }[] = [
-  // recipe-stealer hidden pending a build-or-kill decision (SS-318/SS-096)
-  // -- no backing table, currently live/clickable but goes nowhere. Route
-  // and component left in place; don't "restore" this without resolving
-  // that decision first.
-  { key: 'scanners', label: 'Scanners', slugs: ['price-scanner', 'ingredient-scanner'] },
+  { key: 'scanners', label: 'Scanners', slugs: ['price-scanner', 'ingredient-scanner', 'recipe-stealer'] },
   {
     key: 'kitchen',
     label: 'Kitchen',

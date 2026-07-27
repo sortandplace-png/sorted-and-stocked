@@ -95,7 +95,7 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
         // is read back out by the Capture Inbox on approval. No migration.
         raw_payload: {
           name: name.trim(),
-          name_es: nameEs.trim() || null,
+          name_es: nameEs.trim(),
           photo_url: publicUrlData.publicUrl,
         },
       });
@@ -169,14 +169,14 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
               className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-3 py-2.5 text-sm"
             />
           </div>
-          {/* Spanish is a first-class field here, not an afterthought: the
-              staff who read this inventory are Spanish-speaking, so an
-              English-only row is unusable to the person doing the job. Shown
-              always (never behind a toggle) so it can't be skipped silently,
-              but not hard-required -- blocking the save would push someone
-              standing in a pantry with a half-loaded page into typing
-              anything to get past it, which is worse than an honest blank a
-              reviewer fills in at the Capture Inbox. */}
+          {/* Spanish is REQUIRED, not optional -- and that's a database
+              contract, not a UI preference: inventory_items has a BEFORE
+              INSERT trigger (trg_require_spanish -> enforce_bilingual_required)
+              that raises 'Spanish name is required...' when name_es is null
+              or blank. Letting someone save without it here would just move
+              the failure to the Capture Inbox, where approval would blow up
+              with a raw Postgres error and no obvious cause. Better to stop
+              it at the point where the person can actually fix it. */}
           <div>
             <label className="block text-xs font-medium uppercase tracking-wider text-brass mb-1">
               Nombre en español
@@ -189,7 +189,7 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
             />
             {!nameEs.trim() && (
               <p className="text-[11px] text-brass mt-1">
-                Add the Spanish name so staff can find this item.
+                Required — staff read this inventory in Spanish.
               </p>
             )}
           </div>
@@ -207,7 +207,7 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
             </button>
             <button
               onClick={handleAdd}
-              disabled={step === 'saving' || !name.trim()}
+              disabled={step === 'saving' || !name.trim() || !nameEs.trim()}
               className="flex-1 py-2.5 rounded-full bg-denim text-white text-sm font-medium disabled:opacity-40"
             >
               {step === 'saving' ? 'Saving…' : 'Add to Capture Inbox'}

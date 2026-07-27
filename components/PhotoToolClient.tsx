@@ -13,6 +13,12 @@ type PhotoToolClientProps = {
   apiRoute: string;
   actionLabel: string;
   textPlaceholder: string;
+  // Optional. When supplied, the caller renders the result itself from the
+  // full response body instead of this component printing body.result as a
+  // text blob. Added for Recipe Scanner, which returns structured JSON the
+  // user then edits and saves. Price Scanner passes nothing and is
+  // unaffected -- its { result: text } contract is unchanged.
+  renderResult?: (body: Record<string, unknown>, reset: () => void) => React.ReactNode;
 };
 
 // Downscaling here also shrinks the payload sent to the vision API — a raw
@@ -30,12 +36,14 @@ export default function PhotoToolClient({
   apiRoute,
   actionLabel,
   textPlaceholder,
+  renderResult,
 }: PhotoToolClientProps) {
   const [mode, setMode] = useState<'photo' | 'text'>('photo');
   const [preview, setPreview] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [resultBody, setResultBody] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -43,6 +51,7 @@ export default function PhotoToolClient({
 
   async function runAnalysis(payload: Record<string, unknown>) {
     setResult(null);
+    setResultBody(null);
     setError(null);
     setLoading(true);
     try {
@@ -57,7 +66,8 @@ export default function PhotoToolClient({
         showToast('Failed to analyze.', { variant: 'error' });
         return;
       }
-      setResult(body.result);
+      setResultBody(body);
+      setResult(typeof body.result === 'string' ? body.result : null);
     } catch {
       setError('Network error — check your connection and try again.');
     } finally {
@@ -105,11 +115,12 @@ export default function PhotoToolClient({
     setPreview(null);
     setTextInput('');
     setResult(null);
+    setResultBody(null);
     setError(null);
     if (galleryInputRef.current) galleryInputRef.current.value = '';
   }
 
-  const hasInput = !!preview || !!result;
+  const hasInput = !!preview || !!result || !!resultBody;
 
   return (
     <div className="max-w-md mx-auto p-4">
@@ -208,13 +219,18 @@ export default function PhotoToolClient({
         <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2 mb-3">{error}</p>
       )}
 
-      {result && (
-        <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-5 whitespace-pre-wrap text-sm leading-relaxed text-denim">
-          {result}
-        </div>
-      )}
+      {/* Custom renderer owns its own result UI and actions (it's handed
+          `reset`), so the default text blob and "Try another" are skipped
+          for it. Price Scanner passes no renderer and keeps both. */}
+      {renderResult
+        ? resultBody && !loading && renderResult(resultBody, reset)
+        : result && (
+            <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-5 whitespace-pre-wrap text-sm leading-relaxed text-denim">
+              {result}
+            </div>
+          )}
 
-      {(preview || result) && !loading && (
+      {!renderResult && (preview || result) && !loading && (
         <button
           onClick={reset}
           className="w-full mt-4 py-2.5 rounded-full bg-card border border-brass/30 text-denim text-sm font-medium"
