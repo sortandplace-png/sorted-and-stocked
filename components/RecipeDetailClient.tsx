@@ -171,6 +171,13 @@ export default function RecipeDetailClient({
   const showToast = useToast();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  // SS-188: v_recipe_used_in is recipe-to-recipe, not ingredient-to-recipe --
+  // it answers "which recipes use THIS recipe as a component" (Caesar
+  // Dressing -> Chopped Kale Caesar Salad), so a recipe page is where it
+  // belongs. Read-only view; nothing here writes.
+  const [usedIn, setUsedIn] = useState<
+    { used_in_recipe_id: string; used_in_name: string; used_in_name_es: string | null; used_in_course: string | null; referenced_as: string | null }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [targetServings, setTargetServings] = useState<number | null>(null);
@@ -280,6 +287,30 @@ export default function RecipeDetailClient({
     }, 250);
     return () => clearTimeout(timer);
   }, [repointing, repointSearch, propertyId, recipeId, supabase]);
+
+  // SS-188: surface the existing, populated v_recipe_used_in view, which had
+  // no frontend at all. Separate from the main load so a failure here can
+  // never blank the recipe itself -- this is supplementary context, not
+  // required content.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error: usedInError } = await supabase
+        .from('v_recipe_used_in')
+        .select('used_in_recipe_id, used_in_name, used_in_name_es, used_in_course, referenced_as')
+        .eq('component_recipe_id', recipeId)
+        .order('used_in_name');
+      if (cancelled) return;
+      if (usedInError) {
+        console.error('Failed to load recipe dependencies:', usedInError);
+        return;
+      }
+      setUsedIn(data ?? []);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [recipeId, supabase]);
 
   async function repointMealPlanEntries(replacementId: string) {
     setRepointBusy(true);
@@ -1036,6 +1067,34 @@ export default function RecipeDetailClient({
               🔎 Bedikas Tolaim: {bedikahIngredients.join(', ')}
             </p>
             <p className="text-xs text-dusk">{BEDIKAS_TOLAIM_NOTE}</p>
+          </div>
+        )}
+        {/* SS-188: "Used in" -- this recipe as a component of others. The
+            v_recipe_used_in view already existed and was populated but had
+            no frontend anywhere. Renders nothing when the recipe isn't a
+            component of anything, which is the common case. */}
+        {usedIn.length > 0 && (
+          <div className="bg-mist border border-brass/30 rounded-xl2 px-3 py-2.5 mb-3 print:hidden">
+            <p className="text-xs font-semibold uppercase tracking-wide text-brass mb-1.5">
+              {lang === 'es' ? 'Se usa en' : 'Used in'}
+            </p>
+            <ul className="space-y-1">
+              {usedIn.map((u) => (
+                <li key={u.used_in_recipe_id}>
+                  <Link
+                    href={`/properties/${propertyId}/recipes/${u.used_in_recipe_id}`}
+                    className="text-sm text-denim underline underline-offset-2 hover:text-brass transition-colors"
+                  >
+                    {lang === 'es' && u.used_in_name_es ? u.used_in_name_es : u.used_in_name}
+                  </Link>
+                  {u.referenced_as && (
+                    <span className="block text-xs text-dusk">
+                      {lang === 'es' ? 'como' : 'as'} “{u.referenced_as}”
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
         {ingredients.length === 0 ? (

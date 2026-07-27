@@ -1,0 +1,27 @@
+-- 127_v_recipe_used_in_security_invoker.sql
+-- Security fix, found while giving v_recipe_used_in a frontend (SS-188).
+--
+-- The view had no `security_invoker` option set (pg_class.reloptions was
+-- null). Postgres defaults views to security_invoker = false, meaning the
+-- view executes with the VIEW OWNER's privileges and therefore BYPASSES row
+-- level security on the tables underneath it. v_recipe_used_in exposes
+-- recipe names and has no property_id column and no property filter of its
+-- own, so nothing was constraining what a caller could read from it.
+--
+-- No live cross-client leak today: every row currently in the view belongs
+-- to recipes shared between the Strauss properties (Main and Country), and
+-- Lax has no component recipes yet. The flaw was latent -- but SS-188 puts a
+-- real UI on this view, which would have made it reachable, and the moment
+-- Lax (or the third client) adds a sub-recipe, Strauss staff would have been
+-- able to read its recipe names. Per-property isolation via property_members
+-- is explicitly not to be weakened.
+--
+-- Safe to enable: both underlying tables already have member-scoped SELECT
+-- policies, so legitimate members keep exactly the access they have now.
+--   recipes                -> recipes_select_member
+--                             (EXISTS recipe_property_links WHERE
+--                              is_property_member(rpl.property_id))
+--   recipe_property_links  -> "recipe_property_links: members can read"
+--                             (is_property_member(property_id))
+
+alter view v_recipe_used_in set (security_invoker = on);
