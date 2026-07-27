@@ -25,6 +25,7 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
   const [step, setStep] = useState<Step>('idle');
   const [preview, setPreview] = useState<string | null>(null);
   const [name, setName] = useState('');
+  const [nameEs, setNameEs] = useState('');
   const [uncertain, setUncertain] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
@@ -39,6 +40,7 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
     setPreview(URL.createObjectURL(file));
     setError(null);
     setName('');
+    setNameEs('');
     setStep('identifying');
 
     try {
@@ -54,6 +56,7 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
         setUncertain(true);
       } else {
         setName(body.name ?? '');
+        setNameEs(typeof body.name_es === 'string' ? body.name_es : '');
         setUncertain(!!body.uncertain);
       }
     } catch {
@@ -87,7 +90,14 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
         property_id: propertyId,
         submitted_by: user?.id ?? null,
         capture_type: 'inventory',
-        raw_payload: { name: name.trim(), photo_url: publicUrlData.publicUrl },
+        // capture_staging has no name/name_es columns of its own -- the whole
+        // capture lives in this jsonb payload, so name_es rides along here and
+        // is read back out by the Capture Inbox on approval. No migration.
+        raw_payload: {
+          name: name.trim(),
+          name_es: nameEs.trim() || null,
+          photo_url: publicUrlData.publicUrl,
+        },
       });
       if (insertError) throw insertError;
 
@@ -103,6 +113,7 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
     fileRef.current = null;
     setPreview(null);
     setName('');
+    setNameEs('');
     setUncertain(false);
     setError(null);
     setStep('idle');
@@ -149,17 +160,41 @@ export default function IdentifyItemClient({ propertyId }: { propertyId: string 
           )}
           <div>
             <label className="block text-xs font-medium uppercase tracking-wider text-brass mb-1">
-              Item name
+              Item name (English)
             </label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Red Onions"
-              className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl px-3 py-2.5 text-sm"
+              className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-3 py-2.5 text-sm"
             />
           </div>
+          {/* Spanish is a first-class field here, not an afterthought: the
+              staff who read this inventory are Spanish-speaking, so an
+              English-only row is unusable to the person doing the job. Shown
+              always (never behind a toggle) so it can't be skipped silently,
+              but not hard-required -- blocking the save would push someone
+              standing in a pantry with a half-loaded page into typing
+              anything to get past it, which is worse than an honest blank a
+              reviewer fills in at the Capture Inbox. */}
+          <div>
+            <label className="block text-xs font-medium uppercase tracking-wider text-brass mb-1">
+              Nombre en español
+            </label>
+            <input
+              value={nameEs}
+              onChange={(e) => setNameEs(e.target.value)}
+              placeholder="p. ej. Cebollas Rojas"
+              className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-3 py-2.5 text-sm"
+            />
+            {!nameEs.trim() && (
+              <p className="text-[11px] text-brass mt-1">
+                Add the Spanish name so staff can find this item.
+              </p>
+            )}
+          </div>
           <p className="text-[11px] text-dusk">
-            Just the name for now — category, location, and quantity get filled in when this is reviewed in the
+            Just the names for now — category, location, and quantity get filled in when this is reviewed in the
             Capture Inbox.
           </p>
           <div className="flex gap-2">

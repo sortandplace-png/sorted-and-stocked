@@ -13,23 +13,37 @@ Rules:
 - Only guess a category or additional detail if it's genuinely visible; do not invent brand, size, or flavor information you can't actually see.
 - If you genuinely cannot tell what the item is (blurry, unclear, empty frame), say so honestly rather than guessing.
 
-Respond with ONLY a JSON object (no text before or after it, no markdown code fence) with exactly these keys: "name" (string — your best-guess name, or empty string if you truly cannot tell) and "uncertain" (boolean — true if this is a low-confidence guess that should be double-checked).`;
+Also give the Spanish name, because the household staff reading this inventory are Spanish-speaking:
+- Translate the generic part of the name, not the brand ("Heinz Ketchup 32oz" -> "Kétchup Heinz 32oz", "Red Onions" -> "Cebollas Rojas").
+- If the item is a proper brand name with nothing translatable, repeat the same string rather than inventing a Spanish-sounding variant.
+- If you cannot tell what the item is, return an empty string for the Spanish name too.
+
+Do NOT suggest a category, a kosher type, or whether the item is food — those are decided by a person, never inferred from a photo.
+
+Respond with ONLY a JSON object (no text before or after it, no markdown code fence) with exactly these keys: "name" (string — your best-guess English name, or empty string if you truly cannot tell), "name_es" (string — the Spanish name, or empty string) and "uncertain" (boolean — true if this is a low-confidence guess that should be double-checked).`;
 
 type IdentifyResult = {
   name: string;
+  name_es: string;
   uncertain: boolean;
 };
 
 // Same "don't fail the whole request over a formatting slip" fallback as
 // ingredient-scanner's parseScannerResult.
 function parseIdentifyResult(raw: string): IdentifyResult {
-  const fallback: IdentifyResult = { name: '', uncertain: true };
+  const fallback: IdentifyResult = { name: '', name_es: '', uncertain: true };
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
   const candidate = fenced ? fenced[1] : raw;
   try {
     const parsed = JSON.parse(candidate.trim());
     return {
       name: typeof parsed.name === 'string' ? parsed.name.trim() : '',
+      // Missing/malformed name_es degrades to empty rather than failing the
+      // request -- the confirming step shows it as an editable field either
+      // way, so a person still fills it in. Never falls back to the English
+      // name: a silent English-in-a-Spanish-field row is exactly the
+      // "looks translated but isn't" state the bilingual rule exists to stop.
+      name_es: typeof parsed.name_es === 'string' ? parsed.name_es.trim() : '',
       uncertain: typeof parsed.uncertain === 'boolean' ? parsed.uncertain : true,
     };
   } catch {

@@ -160,6 +160,11 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
       const result = await resilientInsert(supabase, 'inventory_items', {
         property_id: propertyId,
         name: payload.name.trim(),
+        // Carried through from raw_payload (capture_staging has no columns of
+        // its own for this). Null rather than falling back to the English
+        // name -- a row that looks translated but isn't is worse than an
+        // honest blank, and the Translation Worklist already finds nulls.
+        name_es: payload.name_es?.trim() || null,
         category: payload.category?.trim() || null,
         location_id: location?.id ?? null,
         current_qty: Number(payload.current_qty) || 0,
@@ -296,8 +301,18 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
                     <input
                       value={fields.name ?? ''}
                       onChange={(e) => setField(capture.id, capture.raw_payload, 'name', e.target.value)}
-                      placeholder="Item name"
-                      className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
+                      placeholder="Item name (English)"
+                      className="w-full border border-cardBorder rounded-xl2 px-3 py-2 text-sm"
+                    />
+                    {/* Last chance to get Spanish onto the row before it
+                        becomes a real inventory item -- the reviewer is
+                        typically the manager, and this is the point where
+                        category and location get filled in anyway. */}
+                    <input
+                      value={fields.name_es ?? ''}
+                      onChange={(e) => setField(capture.id, capture.raw_payload, 'name_es', e.target.value)}
+                      placeholder="Nombre en español"
+                      className="w-full border border-cardBorder rounded-xl2 px-3 py-2 text-sm"
                     />
                     <div className="grid grid-cols-2 gap-2">
                       <input
