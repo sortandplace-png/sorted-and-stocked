@@ -34,6 +34,9 @@ type NavItem = {
   // `segment` is still set for it, purely so segmentIsActive() has
   // something to match against.
   href?: string;
+  // Hairline rule above this item -- separates "what I do" from "what I read"
+  // inside the Staff group.
+  dividerBefore?: boolean;
 };
 
 const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
@@ -69,6 +72,10 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // through My Day instead. Was open to every role before that RLS
       // change made a full board something only a manager can actually see.
       { segment: 'tools/tasks', labelKey: 'staffTasks', managerOnly: true },
+      // Duty Roster is manager-gated because the page itself redirects staff
+      // (see app/properties/[id]/staff/duty-roster/page.tsx). Offering it to
+      // staff would be a link that bounces them straight back out.
+      { segment: 'staff/duty-roster', labelKey: 'dutyRoster', managerOnly: true },
       // Handover nav link removed (SS-214) -- everyone, including owners
       // and managers, now reaches it the same way: embedded on My Day.
       // The standalone /shift-handover route file is untouched (still
@@ -76,7 +83,20 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // bookmarked; this just stops offering it as its own destination.
       // Team management (invite/role-change/remove) stays owner/manager
       // only, same as it's always been.
-      { segment: 'staff', labelKey: 'team', managerOnly: true },
+      // 'staff' is a prefix of 'staff/duty-roster' and the three below, so
+      // without this Team would light up active on every one of them.
+      {
+        segment: 'staff',
+        labelKey: 'team',
+        managerOnly: true,
+        excludeFromActive: ['staff/duty-roster', 'staff/sops', 'staff/training', 'staff/handbook'],
+      },
+      // Everything below the rule is what a housekeeper reads rather than
+      // does. These three used to live under Tools, where staff never go --
+      // SOPs and Training have moved here outright, the handbook is new.
+      { segment: 'staff/sops', labelKey: 'sopLibrary', dividerBefore: true },
+      { segment: 'staff/training', labelKey: 'trainingVideos' },
+      { segment: 'staff/handbook', labelKey: 'staffHandbook' },
     ],
   },
   {
@@ -190,8 +210,9 @@ export default function DesktopNav({
                 {visibleItems.map((item) => {
                   const active = segmentIsActive(pathname, item);
                   return (
+                    <div key={item.segment}>
+                      {item.dividerBefore && <div className="my-1.5 border-t border-cardBorder" role="separator" />}
                     <Link
-                      key={item.segment}
                       href={item.href ?? `/properties/${propertyId}/${item.segment}`}
                       role="menuitem"
                       onClick={() => setOpenGroup(null)}
@@ -202,6 +223,7 @@ export default function DesktopNav({
                     >
                       {t(item.labelKey)}
                     </Link>
+                    </div>
                   );
                 })}
               </div>

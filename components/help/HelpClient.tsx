@@ -5,9 +5,10 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import Pin from '@/components/PinAccent';
+import { ChevronLeft } from 'lucide-react';
 
 export type HelpArticle = {
   id: string;
@@ -23,7 +24,28 @@ export type HelpArticle = {
 
 type Props = {
   articles: HelpArticle[];
+  /** From ?category= -- opens that category alone and collapses the rest, so
+   *  the Staff Handbook link lands on a handbook rather than the whole FAQ. */
+  initialCategory?: string;
 };
+
+// The staff handbook spine, in shift order: arrive -> find things -> report
+// problems -> house standards -> finish the shift. These ten are written to be
+// read top to bottom; the rest of the category is admin-facing and sorts after
+// them by id.
+const STAFF_HANDBOOK_ORDER = [
+  'FAQ-101', // what do I do first when I arrive
+  'FAQ-102', // notes from the last shift
+  'FAQ-103', // where does this belong
+  'FAQ-104', // found something in the wrong place
+  'FAQ-105', // something ran out or is missing
+  'FAQ-107', // why the app instead of a text
+  'FAQ-106', // how the family likes it done
+  'FAQ-108', // cannot finish a task
+  'FAQ-109', // finished early
+  'FAQ-110', // what to log
+];
+const STAFF_CATEGORY = 'Staff & Permissions';
 
 const CATEGORY_ORDER = [
   'Getting Started',
@@ -36,23 +58,36 @@ const CATEGORY_ORDER = [
   'Troubleshooting',
 ];
 
-export default function HelpClient({ articles }: Props) {
+export default function HelpClient({ articles, initialCategory }: Props) {
   const t = useTranslations('help');
   const locale = useLocale();
   const isEs = locale === 'es';
+  const router = useRouter();
   const searchParams = useSearchParams();
   const deepLinkId = searchParams.get('article');
+  const focusCategory = initialCategory ?? searchParams.get('category') ?? null;
 
   const [query, setQuery] = useState('');
   const [openId, setOpenId] = useState<string | null>(deepLinkId);
-  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+  // Arriving with ?category= collapses everything else, so the requested
+  // section is what you land on rather than one heading among eight.
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
+    () => new Set(focusCategory ? CATEGORY_ORDER.filter((c) => c !== focusCategory) : [])
+  );
   const articleRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
     if (deepLinkId && articleRefs.current[deepLinkId]) {
       articleRefs.current[deepLinkId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [deepLinkId]);
+
+  useEffect(() => {
+    if (!deepLinkId && focusCategory && categoryRefs.current[focusCategory]) {
+      categoryRefs.current[focusCategory]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [focusCategory, deepLinkId]);
 
   const grouped = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -73,10 +108,20 @@ export default function HelpClient({ articles }: Props) {
       list.push(article);
       byCategory.set(article.category, list);
     }
-    return CATEGORY_ORDER.filter((c) => byCategory.has(c)).map((c) => ({
-      category: c,
-      items: byCategory.get(c)!,
-    }));
+    return CATEGORY_ORDER.filter((c) => byCategory.has(c)).map((c) => {
+      const items = byCategory.get(c)!;
+      if (c !== STAFF_CATEGORY) return { category: c, items };
+      // Handbook first, in shift order; everything else in the category keeps
+      // its id order underneath. Sorting rather than filtering -- nothing in
+      // the category is hidden, it is just no longer the first thing a
+      // housekeeper reads.
+      const rank = (id: string) => {
+        const i = STAFF_HANDBOOK_ORDER.indexOf(id);
+        return i === -1 ? STAFF_HANDBOOK_ORDER.length : i;
+      };
+      const sorted = [...items].sort((a, b) => rank(a.id) - rank(b.id) || a.id.localeCompare(b.id));
+      return { category: c, items: sorted };
+    });
   }, [articles, query, isEs]);
 
   const toggleCategory = (category: string) => {
@@ -89,8 +134,19 @@ export default function HelpClient({ articles }: Props) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
+      {/* Help was reachable but not leavable -- no header, no nav, no way back
+          except the browser button. The property-scoped route restores the app
+          chrome; this covers the case of arriving from a deep link. */}
+      <button
+        onClick={() => router.back()}
+        className="inline-flex items-center gap-1.5 text-[12px] text-denim border border-cardBorder bg-card rounded-full px-3 py-1.5 mb-4"
+      >
+        <ChevronLeft size={14} className="text-brass" strokeWidth={1.5} aria-hidden="true" />
+        {t('back')}
+      </button>
+
       <h1 className="font-display text-3xl font-semibold text-denim mb-1">
-        {t('title')}
+        {focusCategory === STAFF_CATEGORY ? t('staffHandbook') : t('title')}
       </h1>
       <p className="text-xs uppercase tracking-wide text-dusk mb-6">
         {t('subtitle')}
@@ -114,7 +170,7 @@ export default function HelpClient({ articles }: Props) {
       {grouped.map(({ category, items }) => {
         const isCollapsed = collapsedCategories.has(category);
         return (
-          <div key={category} className="mb-6">
+          <div key={category} ref={(el) => { categoryRefs.current[category] = el; }} className="mb-6">
             <button
               type="button"
               onClick={() => toggleCategory(category)}

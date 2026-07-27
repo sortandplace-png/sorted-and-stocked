@@ -103,7 +103,12 @@
     "photoReview": "Photo Review",
     "procurement": "Procurement",
     "help": "Help",
-    "scanAriaLabel": "Scan item to inventory"
+    "scanAriaLabel": "Scan item to inventory",
+    "dutyRoster": "Duty Roster",
+    "sopLibrary": "SOP Library",
+    "trainingVideos": "Training Videos",
+    "staffHandbook": "Staff Handbook",
+    "close": "Close"
   },
   "help": {
     "title": "Help Center",
@@ -119,7 +124,9 @@
       "Staff & Permissions": "Staff & Permissions",
       "Multi-Property": "Multi-Property",
       "Troubleshooting": "Troubleshooting"
-    }
+    },
+    "back": "Back",
+    "staffHandbook": "Staff Handbook"
   },
   "common": {
     "print": "Print",
@@ -775,5 +782,10 @@
     "loading": "Loading duties…",
     "loadPartial": "Some duties could not be loaded. Reload to try again.",
     "saveFailed": "That assignment did not save. Please try again."
+  },
+  "staffHandbook": {
+    "title": "Staff Handbook",
+    "subtitle": "Ten questions, in the order your shift happens.",
+    "empty": "The handbook has no entries yet."
   }
 }

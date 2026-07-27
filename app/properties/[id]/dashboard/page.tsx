@@ -1234,7 +1234,10 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           </Link>
           {/* Property-agnostic (see app/help/page.tsx), ungated like
               Settings -- every role, not just owner/manager. */}
-          <Link href="/help" className="text-dusk hover:text-denim underline underline-offset-2">
+          {/* Property-scoped so Help inherits the app header. /help renders
+              outside app/properties/[id]/ and therefore has no chrome and no
+              way back -- this link was the main way people got stranded. */}
+          <Link href={`/properties/${propertyId}/help`} className="text-dusk hover:text-denim underline underline-offset-2">
             {t('mobileFooter.help')}
           </Link>
         </div>

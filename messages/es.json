@@ -103,7 +103,12 @@
     "photoReview": "Revisión de Fotos",
     "procurement": "Abastecimiento",
     "help": "Ayuda",
-    "scanAriaLabel": "Escanear artículo al inventario"
+    "scanAriaLabel": "Escanear artículo al inventario",
+    "dutyRoster": "Lista de Deberes",
+    "sopLibrary": "Biblioteca de SOP",
+    "trainingVideos": "Videos de Capacitación",
+    "staffHandbook": "Manual del Personal",
+    "close": "Cerrar"
   },
   "help": {
     "title": "Centro de Ayuda",
@@ -119,7 +124,9 @@
       "Staff & Permissions": "Personal y Permisos",
       "Multi-Property": "Múltiples Propiedades",
       "Troubleshooting": "Solución de Problemas"
-    }
+    },
+    "back": "Atrás",
+    "staffHandbook": "Manual del Personal"
   },
   "common": {
     "print": "Imprimir",
@@ -775,5 +782,10 @@
     "loading": "Cargando tareas…",
     "loadPartial": "Algunas tareas no se pudieron cargar. Recargue para reintentar.",
     "saveFailed": "Esa asignación no se guardó. Inténtelo de nuevo."
+  },
+  "staffHandbook": {
+    "title": "Manual del Personal",
+    "subtitle": "Diez preguntas, en el orden en que ocurre su turno.",
+    "empty": "El manual aún no tiene entradas."
   }
 }

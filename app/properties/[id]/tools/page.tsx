@@ -172,18 +172,6 @@ const TOOLS = [
     description: "A preview of what's low and what's coming up this week.",
   },
   {
-    slug: 'training',
-    icon: '🎬',
-    title: 'Training',
-    description: 'Short videos covering each part of the app, in order.',
-  },
-  {
-    slug: 'sops',
-    icon: '📋',
-    title: 'SOP Library',
-    description: 'How each job is done, step by step, in both languages.',
-  },
-  {
     slug: 'blog',
     icon: '📖',
     title: 'Blog & Articles',
@@ -269,7 +257,7 @@ const GROUPS: {
     subgroups: [
       // Location-based pair first (House Manual, Pantry Zone Map), then the
       // people/contact-based pair (Contacts & Vendors, Borrowed & Lent).
-      { key: 'reference', label: 'Reference', slugs: ['knowledge-base', 'training', 'sops', 'pantry-zones', 'contacts', 'borrowed-items', 'digest'] },
+      { key: 'reference', label: 'Reference', slugs: ['knowledge-base', 'pantry-zones', 'contacts', 'borrowed-items', 'digest'] },
       { key: 'capture-tools', label: 'Capture Tools', slugs: ['capture-inbox', 'capture-photo', 'identify-item', 'photo-review', 'photo-worklist'] },
       {
         key: 'admin-cleanup',
