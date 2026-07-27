@@ -889,12 +889,19 @@ export default function ShoppingListViewEnhanced({
         ))}
       </div>
 
-      {/* Items Grouped -- collapsed by default (title + count only) until
-          tapped open. Each group is its own bordered card in a 2-column
-          desktop grid (1-column on mobile), matching StaplesTab's card
-          treatment so both tabs feel like the same app rather than two
-          different styles. Checked-off items don't appear here at all --
-          they move to the single Completed section below. */}
+      {/* Items Grouped. Each group is its own bordered card, matching
+          StaplesTab's card treatment so both tabs feel like the same app.
+          Checked-off items don't appear here at all -- they move to the
+          single Completed section below.
+
+          NOTE: this comment used to claim groups were "collapsed by default
+          (title + count only) until tapped open" and that the grid was
+          "2-column desktop / 1-column mobile". Both were wrong.
+          collapsedGroups initialises to an empty Set, so every group starts
+          EXPANDED, and the grid is 2-col on mobile up to 4-col on desktop.
+          That combination is what made the phone layout unusable: every
+          group, not just a tapped-open one, was rendering its item list into
+          a half-width cell. Expanded groups now take the full row. */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-start">
         {groups.map(group => {
           if (group.items.length === 0) return null;
@@ -903,7 +910,18 @@ export default function ShoppingListViewEnhanced({
           return (
             <div
               key={group.title}
-              className="relative bg-mist border border-brass/30 rounded-xl2 shadow-card hover:shadow-cardHover transition-shadow overflow-hidden"
+              // An expanded group spans the full grid width instead of
+              // staying in its cell. On a phone the grid is 2 columns, so an
+              // expanded list was rendering into roughly half the viewport:
+              // item names wrapped one word per line and the Buy/Qty
+              // controls ran off the right edge. Collapsed tiles still tile
+              // normally. Kept the list nested inside this same bordered
+              // container (rather than hoisting it out below the grid) so it
+              // stays visually attached to the tile that opened it -- the
+              // deliberate choice recorded in the comment below.
+              className={`relative bg-mist border border-brass/30 rounded-xl2 shadow-card hover:shadow-cardHover transition-shadow overflow-hidden ${
+                collapsed ? '' : 'col-span-full'
+              }`}
             >
               <Pin size="sm" collapsed={collapsed} onToggle={() => toggleGroup(group.title)} />
               <div className="min-h-[128px] flex flex-col items-center justify-center gap-1.5 py-[14px] px-[18px] text-center">
