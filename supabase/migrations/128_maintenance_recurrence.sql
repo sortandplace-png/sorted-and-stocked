@@ -1,6 +1,12 @@
 -- 128_maintenance_recurrence.sql
 --
--- !! NOT YET APPLIED -- FOR REVIEW. !!
+-- Applied 2026-07-26 after review. Verified live: frequencies 13 -> 21
+-- (4 interval + 4 Hebrew anchors), recurrence_kind backfilled with 0 rows
+-- outside the allowed set, both season columns and both CHECK constraints
+-- present, master_tasks still 62 rows with 0 seasonal windows auto-assigned,
+-- and v_master_tasks still resolving (daily x61, weekly x1) -- i.e. the view
+-- did not break and no existing task was disturbed.
+--
 -- Household maintenance schedules: the missing long-interval frequencies,
 -- plus the two recurrence shapes interval_days genuinely cannot express.
 --
