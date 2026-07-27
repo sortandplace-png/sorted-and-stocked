@@ -725,6 +725,7 @@
     "emptyFilteredHint": "Los filtros se mantienen entre visitas — alguno puede ser de una sesión anterior.",
     "emptyNoneInArea": "Aún no hay artículos en esta área.",
     "emptyNone": "Aún no hay artículos. Toque “Agregar artículo” para empezar.",
-    "emptyNoFavorites": "Aún no hay favoritos — toque la estrella en cualquier artículo."
+    "emptyNoFavorites": "Aún no hay favoritos — toque la estrella en cualquier artículo.",
+    "searchLinkWarning": "Este enlace hace una búsqueda en lugar de abrir un producto específico — verifique que apunte al artículo correcto."
   }
 }

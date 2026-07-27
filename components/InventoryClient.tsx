@@ -23,6 +23,7 @@ import InventoryBracha from '@/components/InventoryBracha';
 import ReorderSourcesEditor from '@/components/ReorderSourcesEditor';
 import UsedInRecipes from '@/components/UsedInRecipes';
 import OrderLink from '@/components/OrderLink';
+import { isSearchLink } from '@/lib/reorder-link';
 import type { ReorderSource } from '@/lib/reorder-sources';
 import { FilterPill, FilterPillRow } from '@/components/recipes/FilterPill';
 import { isFoodCategory } from '@/lib/foodCategories';
@@ -2056,6 +2057,23 @@ export default function InventoryClient({
 
                 <div className="mt-3">
                   <OrderLink itemName={viewingItem.name} sources={viewingItem.reorder_sources} fallbackLink={viewingItem.reorder_link} />
+                  {/* 695 of 1,572 reorder links (44%) are SEARCH queries, not
+                      product pages -- Amazon 422, Instacart 224, other 49.
+                      A search link can't say which product is meant: Purple
+                      Cabbage pointed at `?k=purple+cabbage`, which is exactly
+                      why nobody could tell whether it was a bag or a head,
+                      and it was ultimately deleted for that reason.
+
+                      Surfaced, deliberately not auto-fixed: only a person can
+                      say which product was meant. This matters more under
+                      variant grouping, since the point of grouping is that
+                      each variety keeps its OWN product link. */}
+                  {isSearchLink(viewingItem.reorder_sources?.[0]?.url ?? viewingItem.reorder_link) && (
+                    <p className="flex items-start gap-1.5 text-xs text-brass mt-2 bg-linen rounded-xl2 px-3 py-2">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={1.75} aria-hidden="true" />
+                      {ti('searchLinkWarning')}
+                    </p>
+                  )}
                 </div>
 
                 {/* "Where it is" -- every row in this property that shares
