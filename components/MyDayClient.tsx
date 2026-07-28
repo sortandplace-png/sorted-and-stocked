@@ -19,7 +19,7 @@ import ClockInOutButton from '@/components/ClockInOutButton';
 import TeamOnShiftBar from '@/components/TeamOnShiftBar';
 import KitchenOpsToolModal from '@/components/KitchenOpsToolModal';
 import { Camera, ShoppingCart, Timer, Info, PlayCircle } from 'lucide-react';
-import Pin from '@/components/PinAccent';
+import Tile from '@/components/ui/Tile';
 
 type DutyTask = { id: string; taskEn: string; taskEs: string; completed: boolean };
 type DutyArea = { areaEn: string; areaEs: string; tasks: DutyTask[] };
@@ -56,10 +56,6 @@ export default function MyDayClient({
           ending a shift is the first and last thing done here and should
           never be hunted for. Renders nothing until it knows the current
           state, so it can't flash the wrong label. */}
-      <div className="mb-5">
-        <ClockInOutButton propertyId={propertyId} />
-      </div>
-
       {/* Who else is in the house right now. Sits under the clock control
           because it's the same question in two halves -- am I on, and who
           else is. Renders nothing when nobody is clocked in. */}
@@ -70,7 +66,10 @@ export default function MyDayClient({
           player and one place the videos live. */}
       <Link
         href={`/properties/${propertyId}/tools/training`}
-        className="inline-flex items-center gap-1.5 text-xs font-medium text-brass underline underline-offset-2 mb-4"
+        // SS-306: denim, not brass. Brass on a link is the same violation
+        // D-01 keeps catching -- and SS-150 already set the precedent for
+        // links in the staff area: denim, Inter, underline on hover only.
+        className="inline-flex items-center gap-1.5 text-xs font-medium text-denim underline-offset-2 hover:underline mb-4"
       >
         <PlayCircle size={13} strokeWidth={1.75} aria-hidden="true" />
         {tTraining('watchMyDayVideo')}
@@ -101,37 +100,37 @@ export default function MyDayClient({
           tile row (brass eyebrow, centered icon, display title, one-line
           subtitle, mist fill) rather than a one-off smaller pattern just
           for this page. */}
-      <div className="grid grid-cols-3 gap-[14px] mb-6">
-        <button
+      {/* SS-250/SS-306: these three were hand-rolled copies of the same
+          markup, three times over, with the pin and the eyebrow re-declared
+          in each. They are the shared Tile now -- migrated, not rewritten,
+          and nothing was deleted (R21). The Time Clock joins them as a
+          fourth card instead of a pill floating above the grid. */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[14px] mb-6">
+        <Tile
+          centered
           onClick={() => setShowCapture(true)}
-          className="relative flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 py-[14px] px-2 shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
-        >
-          <Pin size="sm" />
-          <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{t('captureTile')}</span>
-          <Camera size={28} className="text-denim" aria-hidden="true" />
-          <span className="font-display font-normal text-sm text-denim text-center">{t('captureTile')}</span>
-          <span className="text-[10px] text-dusk text-center">{t('captureSubtitle')}</span>
-        </button>
-        <Link
+          eyebrow={t('captureTile')}
+          label={t('captureTile')}
+          subtitle={t('captureSubtitle')}
+          icon={<Camera size={28} className="text-denim" aria-hidden="true" />}
+        />
+        <Tile
+          centered
           href={`/properties/${propertyId}/shopping-list`}
-          className="relative flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 py-[14px] px-2 shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
-        >
-          <Pin size="sm" />
-          <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{t('shoppingTile')}</span>
-          <ShoppingCart size={28} className="text-denim" aria-hidden="true" />
-          <span className="font-display font-normal text-sm text-denim text-center">{t('shoppingTile')}</span>
-          <span className="text-[10px] text-dusk text-center">{t('shoppingSubtitle')}</span>
-        </Link>
-        <button
+          eyebrow={t('shoppingTile')}
+          label={t('shoppingTile')}
+          subtitle={t('shoppingSubtitle')}
+          icon={<ShoppingCart size={28} className="text-denim" aria-hidden="true" />}
+        />
+        <Tile
+          centered
           onClick={() => setShowKitchenTimer(true)}
-          className="relative flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 py-[14px] px-2 shadow-card hover:shadow-cardHover transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
-        >
-          <Pin size="sm" />
-          <span className="text-[9px] tracking-[0.2em] uppercase font-semibold text-brass">{t('timerTile')}</span>
-          <Timer size={28} className="text-denim" aria-hidden="true" />
-          <span className="font-display font-normal text-sm text-denim text-center">{t('timerTile')}</span>
-          <span className="text-[10px] text-dusk text-center">{t('timerSubtitle')}</span>
-        </button>
+          eyebrow={t('timerTile')}
+          label={t('timerTile')}
+          subtitle={t('timerSubtitle')}
+          icon={<Timer size={28} className="text-denim" aria-hidden="true" />}
+        />
+        <ClockInOutButton propertyId={propertyId} />
       </div>
 
       {showCapture && (
