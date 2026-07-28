@@ -844,7 +844,8 @@
     "adding": "Adding…",
     "showProcedure": "Show procedure",
     "hideProcedure": "Hide procedure",
-    "viewFullProcedure": "View full procedure →"
+    "viewFullProcedure": "View full procedure →",
+    "removeAssignment": "Remove assignment"
   },
   "staffHandbook": {
     "title": "Staff Handbook",

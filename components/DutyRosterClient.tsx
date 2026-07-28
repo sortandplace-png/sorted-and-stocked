@@ -44,6 +44,7 @@ type Task = {
   job_type: string | null;
   assigned_role: string | null;
   source_area_en: string | null;
+  source_area_es: string | null;
   photo_url: string | null;
   active: boolean;
   sort_order: number;
@@ -108,6 +109,11 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   // Retired (active=false) tasks are out of scope by default -- see the
   // scopedTasks note below.
   const [showRetired, setShowRetired] = useState(false);
+  // Which room sections are collapsed. Sections start expanded, so an empty
+  // set is the correct initial state -- this is the inverse of the Shopping
+  // List, which seeds "everything collapsed" because it can hold 124 items
+  // in one bucket. Here the sections themselves are the structure.
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -122,7 +128,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     const settled = await Promise.allSettled([
       supabase
         .from('master_tasks')
-        .select('id, task_number, room_id, frequency_id, task_en, task_es, job_type, assigned_role, source_area_en, photo_url, active, sort_order')
+        .select('id, task_number, room_id, frequency_id, task_en, task_es, job_type, assigned_role, source_area_en, source_area_es, photo_url, active, sort_order')
         .eq('property_id', propertyId)
         .order('sort_order'),
       supabase.from('frequencies').select('id, code, label_en, label_es, recurrence_kind, sort_order').order('sort_order'),
@@ -323,6 +329,54 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     () => scopedTasks.filter((x) => matchRoom(x) && matchJob(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x)),
     [scopedTasks, room, job, freq, assignment, search, passesFrequency]
   );
+
+  // Room sections. Label is the room name when room_id is set, otherwise the
+  // task's source area -- every null-room task has one (checked live: 24 of
+  // 124 on Main have no room, 0 of those lack an area), so there is no
+  // "everything else" bucket to design around.
+  //
+  // Built from `filtered`, not from tasks, so every existing filter keeps
+  // working untouched: a section only exists if something in it survived the
+  // filters, which is also why zero-match sections disappear rather than
+  // needing to be hidden.
+  //
+  // Sorted by the label the viewer actually sees, using localeCompare with
+  // the active locale. The brief said A-Z by task_en, but sorting Spanish
+  // text by its English original produces an order that looks scrambled to
+  // the person reading it -- and accented characters need locale-aware
+  // collation regardless.
+  const sections = useMemo(() => {
+    const map = new Map<string, Task[]>();
+    for (const x of filtered) {
+      const room = x.room_id ? roomById.get(x.room_id) : null;
+      const label = room
+        ? (es ? room.name_es || room.name_en : room.name_en)
+        : (es ? x.source_area_es || x.source_area_en : x.source_area_en) || t('noRoom');
+      const list = map.get(label);
+      if (list) list.push(x);
+      else map.set(label, [x]);
+    }
+    return [...map.entries()]
+      .map(([label, items]) => ({
+        label,
+        items: [...items].sort((a, b) =>
+          (es ? a.task_es || a.task_en : a.task_en).localeCompare(
+            es ? b.task_es || b.task_en : b.task_en,
+            locale
+          )
+        ),
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, locale));
+  }, [filtered, roomById, es, locale, t]);
+
+  function toggleSection(label: string) {
+    setCollapsedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  }
 
   // Derived from `filtered`, so the tiles answer "of what I'm looking at
   // right now" and move as the filters move. That is the whole reason they
@@ -621,8 +675,32 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[14px]">
-              {filtered.map((x) => {
+            <div className="space-y-5">
+              {sections.map((section) => {
+                const sectionCollapsed = collapsedSections.has(section.label);
+                return (
+                  <div key={section.label}>
+                    {/* Denim strip header, room name left, count right, pin
+                        dot top-right (D-03). The whole strip is the toggle,
+                        matching the Shopping List's tap-the-header pattern
+                        rather than introducing a chevron (D-21). */}
+                    <button
+                      onClick={() => toggleSection(section.label)}
+                      aria-expanded={!sectionCollapsed}
+                      className="relative w-full flex items-center justify-between gap-3 bg-denim rounded-xl2 py-[11px] pl-5 pr-8 mb-[14px] text-left"
+                    >
+                      <span className="text-[10px] font-semibold tracking-[0.17em] uppercase text-white truncate">
+                        {section.label}
+                      </span>
+                      <span className="text-[10px] font-semibold tracking-[0.17em] uppercase text-white/70 shrink-0">
+                        {section.items.length}
+                      </span>
+                      <PinDot />
+                    </button>
+
+                    {!sectionCollapsed && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[14px]">
+                        {section.items.map((x) => {
                 const f = x.frequency_id ? freqById.get(x.frequency_id) : undefined;
                 const unassigned = isUnassigned(x);
                 const sops = sopCounts[x.id] ?? 0;
@@ -778,7 +856,13 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                         onChange={(e) => assign(x.id, e.target.value)}
                         aria-label={t('assignTo')}
                       >
-                        <option value="">{t('unassigned')}</option>
+                        {/* Reads as an action when there is something to
+                            remove, and as a placeholder when there isn't --
+                            "Unassigned" sitting above a list of names looks
+                            like another person rather than a verb. */}
+                        <option value="">
+                          {unassigned ? t('unassigned') : t('removeAssignment')}
+                        </option>
                         {assignees.map((a) => (
                           <option key={a.id} value={a.id}>
                             {a.label}
@@ -786,6 +870,11 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                         ))}
                       </select>
                     </div>
+                        </div>
+                        );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })}

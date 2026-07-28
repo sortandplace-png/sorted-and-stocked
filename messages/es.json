@@ -844,7 +844,8 @@
     "adding": "Agregando…",
     "showProcedure": "Ver procedimiento",
     "hideProcedure": "Ocultar procedimiento",
-    "viewFullProcedure": "Ver procedimiento completo →"
+    "viewFullProcedure": "Ver procedimiento completo →",
+    "removeAssignment": "Quitar asignación"
   },
   "staffHandbook": {
     "title": "Manual del Personal",
