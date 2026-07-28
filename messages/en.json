@@ -402,7 +402,8 @@
     "whatsDone": "What's Done:",
     "inProgress": "In Progress:",
     "headsUp": "Heads Up:",
-    "alsoDid": "Also did:"
+    "alsoDid": "Also did",
+    "alsoDidPlaceholder": "Anything else worth mentioning — errands, small fixes, favours"
   },
   "myDay": {
     "staffNoteHeading": "Today's note for staff",

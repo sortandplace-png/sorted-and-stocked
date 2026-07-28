@@ -402,7 +402,8 @@
     "whatsDone": "Lo Que Está Hecho:",
     "inProgress": "En Progreso:",
     "headsUp": "Atención:",
-    "alsoDid": "También hice:"
+    "alsoDid": "También hice",
+    "alsoDidPlaceholder": "Algo más que valga la pena mencionar — mandados, arreglos pequeños, favores"
   },
   "myDay": {
     "staffNoteHeading": "Nota de hoy para el personal",

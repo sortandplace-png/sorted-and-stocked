@@ -27,6 +27,7 @@ export function CardHeader({ children }: { children: React.ReactNode }) {
 type Handover = {
   id: string;
   note_text: string | null;
+  also_did: string | null;
   photo_data_url: string | null;
   photo_data_urls: string[] | null;
   audio_data_url: string | null;
@@ -71,18 +72,18 @@ export default function ShiftHandoverClient({
   // the textarea itself so there's something to edit around instead of a
   // blank field, the actual friction point (zero handovers had ever been
   // logged against this component before this change).
-  // SS-274 adds "Also did" as a fourth line. These are labelled sections of
-  // one textarea, not four separate inputs -- so the new field is a template
-  // line, and needs no column and no table (explicitly out of scope: if it
-  // ever needs structure, that's a separate decision). Appended after Heads
-  // Up rather than slotted mid-list, to leave the approved order of the
-  // existing three untouched.
-  const templateText = `${t('whatsDone')} \n${t('inProgress')} \n${t('headsUp')} \n${t('alsoDid')} \n`;
+  // SS-274 briefly added "Also did" as a fourth template line here, on the
+  // basis that it needed no column. SS-295 supersedes that: also_did is a
+  // real column and a real field now, so the template line is gone. Leaving
+  // both would have asked staff to type the same thing twice, in two
+  // places, one of which is not the one that gets stored.
+  const templateText = `${t('whatsDone')} \n${t('inProgress')} \n${t('headsUp')} \n`;
 
   const [handovers, setHandovers] = useState<Handover[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [noteText, setNoteText] = useState(templateText);
+  const [alsoDid, setAlsoDid] = useState('');
   const [templateTag, setTemplateTag] = useState<string | null>(null);
   const [photoDataUrls, setPhotoDataUrls] = useState<string[]>([]);
   const [audioDataUrl, setAudioDataUrl] = useState<string | null>(null);
@@ -104,7 +105,7 @@ export default function ShiftHandoverClient({
     setLoading(true);
     const { data, error } = await supabase
       .from('shift_handovers')
-      .select('id, note_text, photo_data_url, photo_data_urls, audio_data_url, template_tag, created_at, profiles(full_name)')
+      .select('id, note_text, also_did, photo_data_url, photo_data_urls, audio_data_url, template_tag, created_at, profiles(full_name)')
       .eq('property_id', propertyId)
       .order('created_at', { ascending: false })
       .limit(10);
@@ -114,6 +115,7 @@ export default function ShiftHandoverClient({
         (data ?? []).map((h) => ({
           id: h.id,
           note_text: h.note_text,
+          also_did: h.also_did,
           photo_data_url: h.photo_data_url,
           photo_data_urls: h.photo_data_urls,
           audio_data_url: h.audio_data_url,
@@ -224,6 +226,7 @@ export default function ShiftHandoverClient({
 
   function resetForm() {
     setNoteText(templateText);
+    setAlsoDid('');
     setTemplateTag(null);
     setPhotoDataUrls([]);
     setAudioDataUrl(null);
@@ -235,7 +238,9 @@ export default function ShiftHandoverClient({
     // typed anything into it shouldn't be able to submit that as if it
     // were a note.
     const noteIsUnedited = noteText.trim() === templateText.trim();
-    if (noteIsUnedited && photoDataUrls.length === 0 && !audioDataUrl) {
+    // also_did counts as real content -- someone whose whole handover is
+    // "also picked up the dry cleaning" must be able to submit it.
+    if (noteIsUnedited && !alsoDid.trim() && photoDataUrls.length === 0 && !audioDataUrl) {
       showToast('Add a note, photo, or recording first.', { variant: 'error' });
       return;
     }
@@ -255,6 +260,7 @@ export default function ShiftHandoverClient({
       property_id: propertyId,
       created_by: user.id,
       note_text: noteIsUnedited ? null : noteText.trim() || null,
+      also_did: alsoDid.trim() || null,
       photo_data_url: photoDataUrls[0] ?? null, // kept for older readers of the single-photo column
       photo_data_urls: photoDataUrls.length > 0 ? photoDataUrls : null,
       audio_data_url: audioDataUrl,
@@ -326,6 +332,25 @@ export default function ShiftHandoverClient({
           rows={5}
           className="w-full border border-brass/30 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-4 py-3 bg-mist text-sm text-denim"
         />
+
+        {/* Its own field rather than a fourth line in the template above:
+            the note is the structured handover the next shift must act on,
+            this is the loose "and I also sorted out the..." that otherwise
+            never gets written down. Labelled, because an unlabelled second
+            box just reads as more of the same note. */}
+        <div>
+          <label htmlFor="also-did" className="block text-xs font-medium text-dusk mb-1">
+            {t('alsoDid')}
+          </label>
+          <textarea
+            id="also-did"
+            value={alsoDid}
+            onChange={(e) => setAlsoDid(e.target.value)}
+            placeholder={t('alsoDidPlaceholder')}
+            rows={2}
+            className="w-full border border-brass/30 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-4 py-3 bg-mist text-sm text-denim"
+          />
+        </div>
 
         {photoDataUrls.length > 0 && (
           <div className="grid grid-cols-3 gap-2">
@@ -439,6 +464,9 @@ export default function ShiftHandoverClient({
                   </div>
                 </div>
                 {h.note_text && <p className="text-sm text-denim mb-2">{h.note_text}</p>}
+                {/* dusk, not denim: secondary to the note. Nobody has to act
+                    on it, which is what keeps it inside D-19. */}
+                {h.also_did && <p className="text-sm text-dusk mt-1 mb-2">{h.also_did}</p>}
                 {photos.length > 0 && (
                   <div className={`grid gap-2 mb-2 ${photos.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                     {photos.map((url, i) => (
