@@ -1644,9 +1644,13 @@ export default function InventoryClient({
           }`}
         >
           <Clock size={18} className="mx-auto mb-1 text-brass" strokeWidth={1.5} aria-hidden="true" />
-          <div className={`text-2xl font-display ${expiringSoon30Count > 0 ? 'text-brass' : 'text-denim'}`}>
-            {expiringSoon30Count}
-          </div>
+          {/* D-01: was text-brass at text-2xl when non-zero -- a 24px brass
+              numeral, over the ceiling AND not one of the three permitted
+              roles. Brass on a 1.2-1.5px stroke is an accent; brass filling a
+              glyph is a fill, whatever the size. The 18px lucide icons above
+              are legal on both counts; this was not. Same violation as the
+              handbook's brass numerals. */}
+          <div className="text-2xl font-display text-denim">{expiringSoon30Count}</div>
           <div className="text-xs text-dusk">Expiring Soon</div>
         </button>
       </div>
