@@ -15,7 +15,7 @@
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import Pin from '@/components/PinAccent';
-import { ChevronDown, MapPin, Layers } from 'lucide-react';
+import { MapPin, Layers } from 'lucide-react';
 import { pivotByLocation, type GroupableItem, type ProductGroup } from '@/lib/product-groups';
 
 type Props<T extends GroupableItem> = {
@@ -61,11 +61,6 @@ export default function GroupedProductCard<T extends GroupableItem>({
             {t('rowCount', { count: group.rowCount })}
           </span>
         </span>
-        <ChevronDown
-          size={16}
-          className={`shrink-0 text-dusk transition-transform ${open ? 'rotate-180' : ''}`}
-          aria-hidden="true"
-        />
       </button>
 
       {open && (

@@ -18,7 +18,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import Pin from '@/components/PinAccent';
-import { Search, ChevronDown } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 export type Sop = {
   id: string;
@@ -167,11 +167,6 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
                             )}
                           </span>
                         </span>
-                        <ChevronDown
-                          size={16}
-                          className={`shrink-0 text-dusk transition-transform ${open ? 'rotate-180' : ''}`}
-                          aria-hidden="true"
-                        />
                       </button>
 
                       {open && (

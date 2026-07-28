@@ -3,11 +3,10 @@
 //
 // Rebuilt against design_rules (SS-150 second pass). The two defects:
 //
-//   D-14 (supersedes D-09) -- the previous build deleted the chevron and left
-//        no affordance, so detailed_answer became invisible and unreachable.
-//        The arrow is back: vertically centred at the RIGHT EDGE, clear of the
-//        pin dot in the top-right corner, rotating 180 degrees on open. The
-//        whole row is the tap target; the arrow is the signal that it is.
+//   D-21 (supersedes D-14, amends D-03) -- SS-231 ruled CARDS ONLY. The gold
+//        pin dot IS the collapse control; there is no chevron. Tap the pin or
+//        tap the card. This reverses D-14's arrow, which this file briefly
+//        carried. Do not re-add one citing D-14 -- it is superseded.
 //
 //   D-15 (supersedes D-13) -- rows shipped at ~190px. Concept B: a dense,
 //        scannable list, not a few large illustrated cards. py-12 px-16,
@@ -22,7 +21,6 @@
 
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronDown } from 'lucide-react';
 import PageShell from '@/components/ui/PageShell';
 import Pin from '@/components/ui/Pin';
 
@@ -71,9 +69,8 @@ export default function StaffHandbookClient({
                     aria-expanded={open}
                     className="relative w-full text-left bg-mist rounded-xl2 border border-brass/30 shadow-card hover:shadow-cardHover transition-shadow py-[12px] px-[16px] flex items-center gap-3"
                   >
-                    {/* Pin stays top-right at 11/12; the chevron is centred at
-                        the right edge, so a decorative dot and a real control
-                        never share a corner (D-14). */}
+                    {/* The pin IS the control (D-21). The whole row is the tap
+                        target and the pin is the signal that it is. */}
                     <Pin size="sm" />
 
                     {/* 15px: a numeral is a label, not display type (D-15). */}
@@ -100,12 +97,6 @@ export default function StaffHandbookClient({
                       )}
                     </span>
 
-                    <ChevronDown
-                      size={16}
-                      strokeWidth={1.5}
-                      aria-hidden="true"
-                      className={`shrink-0 self-center text-dusk transition-transform ${open ? 'rotate-180' : ''}`}
-                    />
                   </button>
                 </li>
               );
