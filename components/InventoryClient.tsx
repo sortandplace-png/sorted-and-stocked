@@ -1397,7 +1397,11 @@ export default function InventoryClient({
           <div className="w-14 h-14 rounded-xl bg-mist shrink-0 flex items-center justify-center">
             {(() => {
               const Icon = getItemIcon(item.name, item.category, categoryIconNames[item.category ?? '']);
-              return <Icon className="w-6 h-6 text-brass" strokeWidth={1.75} />;
+              // D-01: brass is never above 20px and never a fill -- only
+              // eyebrow labels, icon strokes and the pin dot. These render at
+              // 24px, so they go denim. Same violation the Staff Handbook made
+              // with brass numerals at display size.
+              return <Icon className="w-6 h-6 text-denim" strokeWidth={1.2} aria-hidden="true" />;
             })()}
           </div>
         )}
