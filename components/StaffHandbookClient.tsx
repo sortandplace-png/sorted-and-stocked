@@ -1,22 +1,19 @@
 // components/StaffHandbookClient.tsx
-// Staff handbook: ten questions in shift order, read top to bottom.
+// Staff handbook: ten questions, shift order, as a BENTO GRID.
 //
-// Rebuilt against design_rules (SS-150 second pass). The two defects:
+// D-20 (supersedes D-15 for this page) -- RACQUEL: "bento never ever list".
+// She wrote D-15 and overrode it; its reading-order argument is recorded as
+// noted and rejected. Any future rebuild of this page as a single-column list
+// citing D-15 is wrong: D-20 governs the handbook.
 //
-//   D-21 (supersedes D-14, amends D-03) -- SS-231 ruled CARDS ONLY. The gold
-//        pin dot IS the collapse control; there is no chevron. Tap the pin or
-//        tap the card. This reverses D-14's arrow, which this file briefly
-//        carried. Do not re-add one citing D-14 -- it is superseded.
+// D-21 (supersedes D-14) -- the gold pin dot IS the collapse control. No
+// chevrons, no arrows. Tap the pin or tap the card.
 //
-//   D-15 (supersedes D-13) -- rows shipped at ~190px. Concept B: a dense,
-//        scannable list, not a few large illustrated cards. py-12 px-16,
-//        question 16px Cormorant, answer 13px Inter dusk on ONE line, numeral
-//        15px Cormorant denim because a numeral is a label, not display type.
-//        Roughly 72-88px collapsed so five or six fit a phone screen.
+// D-19 -- answers render DENIM, not dusk. dusk #7A8A9C on mist #E8EEF6 is
+// about 2.9:1, below AA, and these answers carry instructions.
 //
-// No fixed height anywhere: Spanish runs 15-30% longer and would clip (D-15).
-// Kept from the pass that succeeded: denim strip, denim numerals, pin dot on
-// every row, mist fills, Cormorant question / Inter answer (D-03, D-04).
+// Also kept: no grey subtitle (SS-224), 15px Cormorant denim numerals
+// (a numeral is a label, not display type), mist fills, denim strip.
 'use client';
 
 import { useState } from 'react';
@@ -34,6 +31,22 @@ export type HandbookArticle = {
   detailed_answer_es?: string | null;
 };
 
+// The bento rhythm. Each pair sums to 6 so rows stay flush on desktop while
+// card sizes visibly vary -- written as literal class strings because Tailwind
+// cannot see dynamically built ones.
+const SPANS = [
+  'lg:col-span-4',
+  'lg:col-span-2',
+  'lg:col-span-2',
+  'lg:col-span-4',
+  'lg:col-span-3',
+  'lg:col-span-3',
+  'lg:col-span-2',
+  'lg:col-span-4',
+  'lg:col-span-4',
+  'lg:col-span-2',
+];
+
 export default function StaffHandbookClient({
   articles,
 }: {
@@ -49,59 +62,49 @@ export default function StaffHandbookClient({
   const pick = (en: string, esVal?: string | null) => (es && esVal ? esVal : en);
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      {/* SS-224: the grey subtitle is gone. The denim strip already says
-          "10 questions - shift order", and the subtitle was hardcoded English
-          on a page whose whole audience is Spanish-speaking. */}
+    <div className="max-w-5xl mx-auto px-4 py-8">
       <h1 className="font-display text-[34px] font-normal text-denim mb-5">{t('title')}</h1>
 
       <PageShell strip={t('strip', { count: articles.length })}>
         {articles.length === 0 ? (
           <p className="text-center italic text-dusk font-display text-lg py-10">{t('empty')}</p>
         ) : (
-          <ol className="flex flex-col gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-[14px] auto-rows-fr">
             {articles.map((a, i) => {
               const open = openId === a.id;
               return (
-                <li key={a.id}>
-                  <button
-                    onClick={() => setOpenId(open ? null : a.id)}
-                    aria-expanded={open}
-                    className="relative w-full text-left bg-mist rounded-xl2 border border-brass/30 shadow-card hover:shadow-cardHover transition-shadow py-[12px] px-[16px] flex items-center gap-3"
-                  >
-                    {/* The pin IS the control (D-21). The whole row is the tap
-                        target and the pin is the signal that it is. */}
-                    <Pin size="sm" />
+                <button
+                  key={a.id}
+                  onClick={() => setOpenId(open ? null : a.id)}
+                  aria-expanded={open}
+                  // No fixed height: Spanish runs 15-30% longer and would clip.
+                  className={`relative text-left bg-mist rounded-xl2 border border-brass/30 shadow-card hover:shadow-cardHover transition-shadow py-[14px] px-[18px] flex flex-col gap-[11px] ${
+                    open ? 'sm:col-span-2 lg:col-span-6' : SPANS[i % SPANS.length]
+                  }`}
+                >
+                  {/* The pin is the control (D-21). Nothing else marks it. */}
+                  <Pin size="sm" />
 
-                    {/* 15px: a numeral is a label, not display type (D-15). */}
-                    <span className="font-display text-[15px] text-denim shrink-0 w-6 tabular-nums">
-                      {i + 1}
+                  <span className="font-display text-[15px] text-denim tabular-nums">{i + 1}</span>
+
+                  <span className="font-display text-[18px] text-denim leading-snug pr-4">
+                    {pick(a.question, a.question_es)}
+                  </span>
+
+                  {/* Denim, not dusk -- D-19. These are instructions. */}
+                  <span className="text-[13px] text-denim leading-relaxed">
+                    {pick(a.short_answer, a.short_answer_es)}
+                  </span>
+
+                  {open && (
+                    <span className="text-[13px] text-denim leading-relaxed whitespace-pre-line border-t border-cardBorder pt-3">
+                      {pick(a.detailed_answer, a.detailed_answer_es)}
                     </span>
-
-                    <span className="flex-1 min-w-0 pr-2">
-                      <span className="block font-display text-[16px] text-denim leading-snug">
-                        {pick(a.question, a.question_es)}
-                      </span>
-                      {/* One line collapsed -- truncated, not clipped by a
-                          fixed height, so longer Spanish still lays out. */}
-                      <span
-                        className={`block text-[13px] text-dusk leading-snug ${open ? '' : 'truncate'}`}
-                      >
-                        {pick(a.short_answer, a.short_answer_es)}
-                      </span>
-
-                      {open && (
-                        <span className="block text-[13px] text-denim leading-relaxed whitespace-pre-line border-t border-cardBorder mt-2 pt-2">
-                          {pick(a.detailed_answer, a.detailed_answer_es)}
-                        </span>
-                      )}
-                    </span>
-
-                  </button>
-                </li>
+                  )}
+                </button>
               );
             })}
-          </ol>
+          </div>
         )}
       </PageShell>
     </div>
