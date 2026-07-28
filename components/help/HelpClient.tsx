@@ -171,19 +171,21 @@ export default function HelpClient({ articles, initialCategory }: Props) {
         const isCollapsed = collapsedCategories.has(category);
         return (
           <div key={category} ref={(el) => { categoryRefs.current[category] = el; }} className="mb-6">
+            {/* SS-231 / D-21: the pin IS the collapse control -- no caret. The
+                entity chevron that used to sit here would have survived a
+                grep for "Chevron", which is why the app-wide sweep missed it.
+                Pin placement matches SOP Library's section strips: pr-8 keeps
+                the count clear of the dot at top 11 / right 12. */}
             <button
               type="button"
               onClick={() => toggleCategory(category)}
-              className="w-full flex items-center justify-between rounded-xl2 bg-denim text-white
-                         px-4 py-3 text-xs font-medium uppercase tracking-wide"
+              aria-expanded={!isCollapsed}
+              className="relative w-full flex items-center justify-between rounded-xl2 bg-denim text-white
+                         px-4 py-3 pr-8 text-xs font-medium uppercase tracking-wide"
             >
+              <Pin size="sm" />
               <span>{t(`categories.${category}`, { default: category })}</span>
-              <span className="flex items-center gap-2">
-                <span className="opacity-75 font-normal normal-case">{items.length}</span>
-                <span className={`transition-transform ${isCollapsed ? '-rotate-90' : ''}`}>
-                  &#9662;
-                </span>
-              </span>
+              <span className="opacity-75 font-normal normal-case">{items.length}</span>
             </button>
 
             {!isCollapsed && (
