@@ -297,7 +297,11 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
   const { count: knowledgeCount } = await supabase
     .from('household_knowledge')
     .select('id', { count: 'exact', head: true })
-    .eq('property_id', id);
+    .eq('property_id', id)
+    // Must match what the page actually renders (SS-240). Counting all rows
+    // here while the page filters to audience='staff' would put "36" on the
+    // tile and show 17 inside it.
+    .eq('audience', 'staff');
 
   const tools = (flags.guest_taste_memory ? [...TOOLS, TASTE_MEMORY_TOOL] : TOOLS)
     .filter((t) => canSeeTile(t.slug, role))
