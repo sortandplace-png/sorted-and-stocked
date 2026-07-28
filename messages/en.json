@@ -786,6 +786,7 @@
   "staffHandbook": {
     "title": "Staff Handbook",
     "subtitle": "Ten questions, in the order your shift happens.",
-    "empty": "The handbook has no entries yet."
+    "empty": "The handbook has no entries yet.",
+    "strip": "{count} questions · shift order"
   }
 }
