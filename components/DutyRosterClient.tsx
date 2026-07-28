@@ -26,7 +26,11 @@ type Frequency = {
   sort_order: number;
 };
 type Room = { id: string; name_en: string; name_es: string };
-type Slot = { id: string; label_en: string; label_es: string; sort_order: number };
+// SS-131: assignment is to a PERSON. task_assignments.member_id is an FK to
+// property_members.id; there is no assigned_slot_id and staff_slots are not in
+// this path (SS-243 parked for exactly that reason).
+type Member = { id: string; user_id: string; full_name: string | null };
+type Assignment = { id: string; task_id: string; member_id: string | null };
 type Task = {
   id: string;
   task_number: string;
@@ -52,7 +56,8 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   const [tasks, setTasks] = useState<Task[]>([]);
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [slots, setSlots] = useState<Slot[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [sopCounts, setSopCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -74,12 +79,12 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
       supabase.from('frequencies').select('id, code, label_en, label_es, recurrence_kind, sort_order').order('sort_order'),
       supabase.from('rooms').select('id, name_en, name_es').eq('property_id', propertyId).order('sort_order'),
       supabase
-        .from('staff_slots')
-        .select('id, label_en, label_es, sort_order')
-        .eq('property_id', propertyId)
-        .eq('active', true)
-        .order('sort_order'),
+        .from('property_members')
+        .select('id, user_id, profiles(full_name)')
+        .eq('property_id', propertyId),
       supabase.from('master_task_sops').select('master_task_id'),
+      // Only live assignments. Ended ones stay on the table as history.
+      supabase.from('task_assignments').select('id, task_id, member_id').eq('active', true),
     ]);
 
     // One failing source must not blank the page, and an error must never be
@@ -101,13 +106,20 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     setTasks(rows[0] as Task[]);
     setFrequencies(rows[1] as Frequency[]);
     setRooms(rows[2] as Room[]);
-    setSlots(rows[3] as Slot[]);
+    setMembers(
+      (rows[3] as { id: string; user_id: string; profiles: unknown }[]).map((m) => ({
+        id: m.id,
+        user_id: m.user_id,
+        full_name: (m.profiles as { full_name: string | null } | null)?.full_name ?? null,
+      }))
+    );
 
     const counts: Record<string, number> = {};
     (rows[4] as { master_task_id: string }[]).forEach((r) => {
       counts[r.master_task_id] = (counts[r.master_task_id] ?? 0) + 1;
     });
     setSopCounts(counts);
+    setAssignments(rows[5] as Assignment[]);
     setLoadError(failed.length > 0 ? t('loadPartial') : null);
     setLoading(false);
   }, [propertyId, supabase, t]);
@@ -138,7 +150,25 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
 
   const needsScoping = (x: Task) => duplicateText.has(x.task_en) && x.room_id === null;
 
-  const isUnassigned = (x: Task) => !x.assigned_role || x.assigned_role.trim() === '' || x.assigned_role === UNASSIGNED;
+  // SS-131: assignment now lives in task_assignments, not in the free-text
+  // assigned_role column. My Day reads task_assignments (SS-242), so anything
+  // written to assigned_role never reached the person it was assigned to.
+  const assignmentByTask = useMemo(() => {
+    const m = new Map<string, Assignment>();
+    assignments.forEach((a) => {
+      if (a.member_id) m.set(a.task_id, a);
+    });
+    return m;
+  }, [assignments]);
+
+  const memberById = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
+
+  const memberName = (memberId: string | null | undefined) => {
+    if (!memberId) return null;
+    return memberById.get(memberId)?.full_name ?? null;
+  };
+
+  const isUnassigned = (x: Task) => !assignmentByTask.has(x.id);
 
   // --- THE EREV SHABBOS RULE ------------------------------------------------
   // Selecting a non-Hebrew frequency drops every Hebrew-calendar task, even one
@@ -211,22 +241,54 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     setAssignment('all');
   }
 
-  async function assign(taskId: string, value: string) {
-    const previous = tasks;
-    setTasks((prev) => prev.map((x) => (x.id === taskId ? { ...x, assigned_role: value } : x)));
-    const { error } = await supabase
-      .from('master_tasks')
-      .update({ assigned_role: value === UNASSIGNED ? null : value })
-      .eq('id', taskId);
-    if (error) {
-      setTasks(previous); // never leave the screen claiming a save that failed
-      setLoadError(t('saveFailed'));
+  // Same shape as StaffTasksClient.assignMember -- one mechanism, not two.
+  // Effective-dated reassignment: the current row is deactivated and stamped
+  // with effective_to, never deleted, which is what active/effective_from/
+  // effective_to on this table are for (R21).
+  //
+  // assigned_role is deliberately left alone. Not dropped, not cleared -- just
+  // no longer written. It is null on every active task, so nothing is lost.
+  async function assign(taskId: string, memberId: string) {
+    const existing = assignmentByTask.get(taskId);
+    if (existing && existing.member_id === memberId) return;
+
+    if (existing) {
+      const { error } = await supabase
+        .from('task_assignments')
+        .update({ active: false, effective_to: new Date().toISOString().slice(0, 10) })
+        .eq('id', existing.id);
+      if (error) {
+        setLoadError(t('saveFailed'));
+        return;
+      }
     }
+
+    // Empty selection means "unassign": the old row is closed out above and no
+    // new one is opened.
+    if (!memberId) {
+      setAssignments((prev) => prev.filter((a) => a.task_id !== taskId));
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('task_assignments')
+      .insert({ task_id: taskId, member_id: memberId })
+      .select('id, task_id, member_id')
+      .single();
+    if (error || !data) {
+      setLoadError(t('saveFailed'));
+      load(); // never leave the screen claiming a save that failed
+      return;
+    }
+    setAssignments((prev) => [...prev.filter((a) => a.task_id !== taskId), data as Assignment]);
   }
 
+  // Real people from property_members, never a hardcoded name (R17). A member
+  // with no profile row still gets an option rather than disappearing from the
+  // list -- unnamed is a data gap, not a reason to be unassignable.
   const assignees = useMemo(
-    () => [UNASSIGNED, ...slots.map((s) => (es ? s.label_es : s.label_en))],
-    [slots, es]
+    () => members.map((m) => ({ id: m.id, label: m.full_name ?? t('unnamedMember') })),
+    [members, t]
   );
 
   const pill =
@@ -387,18 +449,22 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                         </span>
                       ) : (
                         <span className="w-5 h-5 rounded-full bg-denim text-white text-[10px] font-bold flex items-center justify-center shrink-0">
-                          {x.assigned_role!.trim()[0].toUpperCase()}
+                          {(memberName(assignmentByTask.get(x.id)?.member_id) ?? '?')
+                            .trim()
+                            .charAt(0)
+                            .toUpperCase()}
                         </span>
                       )}
                       <select
                         className="appearance-none bg-white border border-cardBorder rounded-full px-3 py-1.5 text-[11px] text-denim truncate max-w-[110px]"
-                        value={unassigned ? UNASSIGNED : x.assigned_role!}
+                        value={assignmentByTask.get(x.id)?.member_id ?? ''}
                         onChange={(e) => assign(x.id, e.target.value)}
                         aria-label={t('assignTo')}
                       >
+                        <option value="">{t('unassigned')}</option>
                         {assignees.map((a) => (
-                          <option key={a} value={a}>
-                            {a === UNASSIGNED ? t('unassigned') : a}
+                          <option key={a.id} value={a.id}>
+                            {a.label}
                           </option>
                         ))}
                       </select>

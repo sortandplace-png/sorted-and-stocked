@@ -782,7 +782,8 @@
     "clearFilters": "Clear filters",
     "loading": "Loading duties…",
     "loadPartial": "Some duties could not be loaded. Reload to try again.",
-    "saveFailed": "That assignment did not save. Please try again."
+    "saveFailed": "That assignment did not save. Please try again.",
+    "unnamedMember": "Unnamed member"
   },
   "staffHandbook": {
     "title": "Staff Handbook",
