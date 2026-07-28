@@ -97,6 +97,7 @@ type InventoryItem = {
   variant_label: string | null;
   variant_label_es: string | null;
   last_counted_at: string | null;
+  auto_restock_eligible: boolean;
   updated_at: string;
   notes: string | null;
 };
@@ -223,8 +224,32 @@ function isExpiringSoon(expirationDate: string | null): boolean {
 // page's own stat back in line with what the Dashboard already showed,
 // not a new, untested definition. Matches Racquel's stated comparison
 // exactly: current_qty <= min_qty, not the RPC's strict <.
-function isLowStock(item: Pick<InventoryItem, 'current_qty' | 'min_qty'>): boolean {
+// SS-157: last_counted_at is required again. This reverses the July 19 call
+// above, and the reason it is not the same argument going round twice: back
+// then, gating on last_counted_at HID the never-counted items, so Racquel
+// rightly chose the honest-but-noisy option. Never-counted is now its own
+// state with its own count and its own action, so excluding it from "low"
+// hides nothing -- 1,023 Main items move from a false alarm to a real to-do.
+//
+// Matches the database definition, which was corrected the same day:
+// v_low_stock_summary / _by_property / _all_properties and
+// get_low_stock_items() all now require last_counted_at IS NOT NULL.
+// Two definitions of "low" is what caused this bug in the first place.
+function isLowStock(
+  item: Pick<InventoryItem, 'current_qty' | 'min_qty' | 'last_counted_at' | 'auto_restock_eligible'>
+): boolean {
+  if (item.last_counted_at === null) return false;
+  // SS-247: the view requires this too. Every row is true today, so this
+  // changes no number now -- it stops the page and the view disagreeing the
+  // first time an item is marked not-auto-restock.
+  if (!item.auto_restock_eligible) return false;
   return item.current_qty <= item.min_qty;
+}
+
+// A thing nobody has ever counted is not low, and it is not fine either. It
+// is unknown, and the action is "count it" rather than "buy more".
+function isNeverCounted(item: Pick<InventoryItem, 'last_counted_at'>): boolean {
+  return item.last_counted_at === null;
 }
 
 function isExpiringWithin30Days(expirationDate: string | null): boolean {
@@ -351,6 +376,7 @@ export default function InventoryClient({
     null
   );
   const [belowParOnly, setBelowParOnly] = useSessionPersistedState('inventory-filter-belowPar', false);
+  const [neverCountedOnly, setNeverCountedOnly] = useSessionPersistedState('inventory-filter-neverCounted', false);
   const [expiringSoonOnly, setExpiringSoonOnly] = useSessionPersistedState('inventory-filter-expiringSoon', false);
   // Separate from expiringSoonOnly (4-day filter pill) -- this is the new
   // stat card's own 30-day filter.
@@ -431,7 +457,7 @@ export default function InventoryClient({
         const { data, error } = await supabase
           .from('inventory_items')
           .select(
-            'id, name, name_es, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, master_product_id, variant_label, variant_label_es, last_counted_at, updated_at, notes'
+            'id, name, name_es, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, master_product_id, variant_label, variant_label_es, last_counted_at, auto_restock_eligible, updated_at, notes'
           )
           .eq('property_id', propertyId)
           .order('name')
@@ -840,7 +866,7 @@ export default function InventoryClient({
     const { data: existing } = await supabase
       .from('inventory_items')
       .select(
-        'id, name, name_es, category, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, expiration_date, opened_date, qr_code, print_label, pesach_status, master_product_id, variant_label, variant_label_es, last_counted_at, updated_at, notes'
+        'id, name, name_es, category, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, expiration_date, opened_date, qr_code, print_label, pesach_status, master_product_id, variant_label, variant_label_es, last_counted_at, auto_restock_eligible, updated_at, notes'
       )
       .eq('id', matchId)
       .single();
@@ -997,6 +1023,9 @@ export default function InventoryClient({
             qr_code: null,
             pesach_status: 'needs_review',
             last_counted_at: null,
+            // Mirrors the DB column default (boolean NOT NULL DEFAULT true),
+            // same as the other server-side defaults approximated here.
+            auto_restock_eligible: true,
             updated_at: new Date().toISOString(),
             reorder_link: reorderUrl || null,
             reorder_sources: optimisticSources,
@@ -1131,6 +1160,7 @@ export default function InventoryClient({
     searchQuery.trim() !== '' ||
     categoryFilter !== null ||
     belowParOnly ||
+    neverCountedOnly ||
     expiringSoonOnly ||
     expiringSoon30Only ||
     (pesachModeEnabled && pesachStatusFilter !== null);
@@ -1151,6 +1181,7 @@ export default function InventoryClient({
       clear: () => setCategoryFilter(null),
     },
     belowParOnly && { key: 'low', label: tc('runningLow'), clear: () => setBelowParOnly(false) },
+    neverCountedOnly && { key: 'neverCounted', label: ti('neverCounted'), clear: () => setNeverCountedOnly(false) },
     expiringSoonOnly && {
       key: 'exp7',
       label: ti('filterExpiring7'),
@@ -1189,6 +1220,7 @@ export default function InventoryClient({
     if (categoryFilter && item.category !== categoryFilter) return false;
     if (expiringSoon30Only && !isExpiringWithin30Days(item.expiration_date)) return false;
     if (belowParOnly && !isLowStock(item)) return false;
+    if (neverCountedOnly && !isNeverCounted(item)) return false;
     if (expiringSoonOnly && !isExpiringSoon(item.expiration_date)) return false;
     if (pesachModeEnabled && pesachStatusFilter && item.pesach_status !== pesachStatusFilter) return false;
     return true;
@@ -1253,6 +1285,8 @@ export default function InventoryClient({
   // Stat cards — real counts from the real fetched data, not placeholders.
   const totalItemsCount = items.length;
   const lowStockCount = items.filter(isLowStock).length;
+  // Surfaced, not hidden: these are the items excluded from Low Stock above.
+  const neverCountedCount = items.filter(isNeverCounted).length;
   const expiringSoon30Count = items.filter((i) => isExpiringWithin30Days(i.expiration_date)).length;
 
   // Room summaries for the grid view — one card per real room, not just
@@ -1295,6 +1329,7 @@ export default function InventoryClient({
         location: loc.name,
         count: subtreeItems.length,
         lowCount: subtreeItems.filter(isLowStock).length,
+        neverCount: subtreeItems.filter(isNeverCounted).length,
       };
     });
 
@@ -1581,6 +1616,20 @@ export default function InventoryClient({
             {lowStockCount}
           </div>
           <div className="text-xs text-dusk">Low Stock</div>
+        </button>
+        {/* The items excluded from Low Stock, surfaced rather than hidden.
+            1,023 on Main today. Not an alarm -- a to-do with its own action. */}
+        <button
+          type="button"
+          onClick={() => setNeverCountedOnly((v) => !v)}
+          aria-pressed={neverCountedOnly}
+          className={`text-center rounded-xl3 p-4 bg-card border shadow-card transition-colors ${
+            neverCountedOnly ? 'border-brass' : 'border-cardBorder'
+          }`}
+        >
+          <HelpCircle size={18} className="mx-auto mb-1 text-brass" strokeWidth={1.5} aria-hidden="true" />
+          <div className="text-2xl font-display text-denim">{neverCountedCount}</div>
+          <div className="text-xs text-dusk">{ti('neverCounted')}</div>
         </button>
         <button
           type="button"

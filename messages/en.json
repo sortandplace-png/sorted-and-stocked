@@ -739,7 +739,8 @@
     "locationCount": "{count} locations",
     "rowCount": "{count} rows",
     "pivotVariety": "By variety",
-    "pivotLocation": "By location"
+    "pivotLocation": "By location",
+    "neverCounted": "Never counted"
   },
   "photoCrop": {
     "title": "Adjust photo",
