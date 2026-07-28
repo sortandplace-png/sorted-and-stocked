@@ -76,6 +76,9 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // (see app/properties/[id]/staff/duty-roster/page.tsx). Offering it to
       // staff would be a link that bounces them straight back out.
       { segment: 'staff/duty-roster', labelKey: 'dutyRoster', managerOnly: true },
+      // SS-285. managerOnly matches the page's own redirect -- staff clock
+      // in and out on My Day and never need the property timesheet.
+      { segment: 'staff/hours', labelKey: 'hours', managerOnly: true },
       // Handover nav link removed (SS-214) -- everyone, including owners
       // and managers, now reaches it the same way: embedded on My Day.
       // The standalone /shift-handover route file is untouched (still
@@ -89,7 +92,7 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
         segment: 'staff',
         labelKey: 'team',
         managerOnly: true,
-        excludeFromActive: ['staff/duty-roster', 'staff/sops', 'staff/training', 'staff/handbook'],
+        excludeFromActive: ['staff/duty-roster', 'staff/hours', 'staff/sops', 'staff/training', 'staff/handbook'],
       },
       // Everything below the rule is what a housekeeper reads rather than
       // does. These three used to live under Tools, where staff never go --
