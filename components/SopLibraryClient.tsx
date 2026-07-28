@@ -18,7 +18,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import Pin from '@/components/PinAccent';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
 export type Sop = {
   id: string;
@@ -31,6 +31,8 @@ export type Sop = {
   pass_fail_en: string | null;
   pass_fail_es: string | null;
   estimated_minutes: number | null;
+  /** Public Storage URL, or null for the 8 SOPs with no poster yet. */
+  expected_appearance_url: string | null;
 };
 
 const FIELD =
@@ -47,6 +49,7 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
   const [sops, setSops] = useState<Sop[]>(initialSops);
   const [search, setSearch] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{ url: string; label: string } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ sop_en: string; sop_es: string }>({ sop_en: '', sop_es: '' });
   const [saving, setSaving] = useState(false);
@@ -216,6 +219,33 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
                             </>
                           ) : (
                             <>
+                              {/* SS-124 / SS-162: the poster. 47 of 55 SOPs
+                                  have one hosted in Supabase Storage; the
+                                  other 8 get a plain line, never a broken
+                                  image. Tap to open full size -- these are
+                                  posters, meant to be looked at. */}
+                              {s.expected_appearance_url ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setLightbox({ url: s.expected_appearance_url!, label: pick(s.task_en, s.task_es) });
+                                  }}
+                                  className="block w-full rounded-xl2 overflow-hidden border border-cardBorder bg-mist"
+                                  aria-label={t('viewPoster')}
+                                >
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={s.expected_appearance_url}
+                                    alt={t('posterAlt', { name: pick(s.task_en, s.task_es) })}
+                                    loading="lazy"
+                                    className="w-full max-h-64 object-contain"
+                                  />
+                                </button>
+                              ) : (
+                                <p className="text-xs text-dusk italic">{t('noPoster')}</p>
+                              )}
+
                               <p className="text-sm text-denim whitespace-pre-wrap">
                                 {pick(s.sop_en, s.sop_es) || t('noMethod')}
                               </p>
@@ -245,6 +275,34 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
               </ul>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Full-size poster. Backdrop and Escape both close it; the image itself
+          does not, so pinch-zooming on a phone cannot dismiss it by accident. */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[90] bg-denim/95 flex flex-col items-center justify-center p-4"
+          onClick={() => setLightbox(null)}
+          onKeyDown={(e) => e.key === 'Escape' && setLightbox(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={lightbox.label}
+        >
+          <button
+            onClick={() => setLightbox(null)}
+            aria-label={t('closePoster')}
+            className="self-end w-11 h-11 flex items-center justify-center text-white"
+          >
+            <X size={20} strokeWidth={1.75} />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightbox.url}
+            alt={t('posterAlt', { name: lightbox.label })}
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-[85vh] object-contain rounded-xl2"
+          />
         </div>
       )}
     </div>

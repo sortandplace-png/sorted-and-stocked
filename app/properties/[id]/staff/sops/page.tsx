@@ -12,7 +12,7 @@ export default async function SopLibraryPage() {
 
   const { data: sops } = await supabase
     .from('sop_library')
-    .select('id, sop_code, zone_type, task_en, task_es, sop_en, sop_es, pass_fail_en, pass_fail_es, estimated_minutes')
+    .select('id, sop_code, zone_type, task_en, task_es, sop_en, sop_es, pass_fail_en, pass_fail_es, estimated_minutes, expected_appearance_url')
     .eq('active', true)
     .order('zone_type')
     .order('task_en');

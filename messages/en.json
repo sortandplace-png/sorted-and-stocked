@@ -705,7 +705,11 @@
     "save": "Save",
     "saving": "Saving…",
     "saved": "Procedure updated.",
-    "saveFailed": "Could not save — try again."
+    "saveFailed": "Could not save — try again.",
+    "viewPoster": "View poster full size",
+    "closePoster": "Close poster",
+    "posterAlt": "Expected result for {name}",
+    "noPoster": "No poster for this SOP yet."
   },
   "training": {
     "title": "Training",
