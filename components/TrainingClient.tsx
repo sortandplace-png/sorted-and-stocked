@@ -2,12 +2,16 @@
 // Staff training series. Plays from the PRIVATE training-videos bucket via
 // short-lived signed URLs minted server-side -- see the page component.
 //
-// KNOWN GAP, flagged not solved (per instruction): all six videos are English
-// with no captions and no Spanish track. The staff this series is built for
-// are Spanish-speaking, so today they get the visuals and little else. That
-// needs either Spanish captions (.vtt) or re-recorded audio; the <video>
-// element below already renders a <track> when a captions file exists, so
-// adding one later is a content task, not a code change.
+// KNOWN GAP, still not closed: all six videos are English with no Spanish
+// track. The staff this series is built for are Spanish-speaking, so today
+// they get the visuals and little else. Closing it needs Spanish captions
+// (.vtt) or re-recorded audio -- a content task.
+//
+// The code side of it is now real (SS-293). This comment previously claimed
+// the <video> element "already renders a <track> when a captions file
+// exists"; it did not -- there was no <track> in this file at all. It does
+// now, driven by captionPath in lib/training-videos.ts, and the bucket
+// holds no .vtt yet, so nothing renders one until one is uploaded.
 'use client';
 
 import { useState } from 'react';
@@ -22,6 +26,8 @@ export type SignedVideo = {
   titleKey: string;
   href: string | null;
   signedUrl: string | null;
+  /** Signed URL for the Spanish .vtt, or null when the video has none. */
+  captionSignedUrl: string | null;
 };
 
 export default function TrainingClient({ videos }: { videos: SignedVideo[] }) {
@@ -37,8 +43,15 @@ export default function TrainingClient({ videos }: { videos: SignedVideo[] }) {
 
       {/* Stated in the product, not just in a code comment -- a staff member
           who can't follow the audio should be told why, not left to assume
-          the app is broken for them. */}
-      <p className="text-xs text-brass bg-linen rounded-xl2 px-3 py-2 mb-4">{t('englishOnlyNotice')}</p>
+          the app is broken for them.
+
+          Now tied to the video actually being watched rather than shown
+          unconditionally: once a video has a Spanish track, telling its
+          viewer it is English-only is simply false, and a notice that is
+          sometimes wrong stops being read at all. */}
+      {active && !active.captionSignedUrl && (
+        <p className="text-xs text-brass bg-linen rounded-xl2 px-3 py-2 mb-4">{t('englishOnlyNotice')}</p>
+      )}
 
       {active?.signedUrl && (
         <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden mb-4">
@@ -49,8 +62,23 @@ export default function TrainingClient({ videos }: { videos: SignedVideo[] }) {
             controls
             playsInline
             preload="metadata"
+            // A cross-origin text track is only fetched when the media
+            // element is CORS-enabled, so this is required for the <track>
+            // to load from Supabase at all -- and set only when there is a
+            // track, to leave plain video playback exactly as it was.
+            crossOrigin={active.captionSignedUrl ? 'anonymous' : undefined}
             className="w-full bg-denim aspect-video"
-          />
+          >
+            {active.captionSignedUrl && (
+              <track
+                kind="captions"
+                srcLang="es"
+                label="Español"
+                src={active.captionSignedUrl}
+                default
+              />
+            )}
+          </video>
           <div className="p-4">
             <p className="font-display text-lg text-denim">{t(active.titleKey)}</p>
             {active.href && (
