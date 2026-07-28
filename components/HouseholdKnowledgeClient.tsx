@@ -58,6 +58,11 @@ export default function HouseholdKnowledgeClient({ propertyId }: { propertyId: s
       .from('household_knowledge')
       .select('id, question, answer, category')
       .eq('property_id', propertyId)
+      // SS-160 split this table into staff-facing guidance and internal notes.
+      // Without this the page showed all 36 rows including the 19 archived
+      // ones -- account questions, migration numbering, incident notes -- to
+      // the staff member who came here to find out how the family folds towels.
+      .eq('audience', 'staff')
       .order('category')
       .order('question');
     setEntries(data ?? []);
@@ -80,6 +85,10 @@ export default function HouseholdKnowledgeClient({ propertyId }: { propertyId: s
       question: question.trim(),
       answer: answer.trim(),
       category,
+      // The column defaults to 'internal', so without this an entry added
+      // here would save successfully and then vanish from the list that just
+      // added it. This page IS the staff-facing House Manual.
+      audience: 'staff',
       created_by: user?.id ?? null,
     });
     setSaving(false);
