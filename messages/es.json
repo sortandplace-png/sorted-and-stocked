@@ -401,7 +401,8 @@
   "shiftHandover": {
     "whatsDone": "Lo Que Está Hecho:",
     "inProgress": "En Progreso:",
-    "headsUp": "Atención:"
+    "headsUp": "Atención:",
+    "alsoDid": "También hice:"
   },
   "myDay": {
     "staffNoteHeading": "Nota de hoy para el personal",

@@ -401,7 +401,8 @@
   "shiftHandover": {
     "whatsDone": "What's Done:",
     "inProgress": "In Progress:",
-    "headsUp": "Heads Up:"
+    "headsUp": "Heads Up:",
+    "alsoDid": "Also did:"
   },
   "myDay": {
     "staffNoteHeading": "Today's note for staff",

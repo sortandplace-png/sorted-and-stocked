@@ -71,7 +71,13 @@ export default function ShiftHandoverClient({
   // the textarea itself so there's something to edit around instead of a
   // blank field, the actual friction point (zero handovers had ever been
   // logged against this component before this change).
-  const templateText = `${t('whatsDone')} \n${t('inProgress')} \n${t('headsUp')} \n`;
+  // SS-274 adds "Also did" as a fourth line. These are labelled sections of
+  // one textarea, not four separate inputs -- so the new field is a template
+  // line, and needs no column and no table (explicitly out of scope: if it
+  // ever needs structure, that's a separate decision). Appended after Heads
+  // Up rather than slotted mid-list, to leave the approved order of the
+  // existing three untouched.
+  const templateText = `${t('whatsDone')} \n${t('inProgress')} \n${t('headsUp')} \n${t('alsoDid')} \n`;
 
   const [handovers, setHandovers] = useState<Handover[]>([]);
   const [loading, setLoading] = useState(true);
