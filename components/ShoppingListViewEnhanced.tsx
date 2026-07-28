@@ -675,7 +675,14 @@ export default function ShoppingListViewEnhanced({
                 Delete moves up here too rather than staying on its own
                 bottom row. */}
             <div className="flex items-center gap-2">
-              <h4 className={`min-w-0 flex-1 truncate font-medium text-sm ${isChecked ? 'line-through text-dusk' : 'text-denim'}`}>
+              {/* SS-286: was `truncate` -- single line, ellipsis, and at this
+                  column width four different products all rendered as
+                  "Chicken ...". That is not a cosmetic problem: someone
+                  choosing between four identical rows is guessing. Two lines
+                  with break-words keeps them distinguishable. The structural
+                  fix -- an expanded category escaping its grid cell, one
+                  column on mobile -- is separate and still open. */}
+              <h4 className={`min-w-0 flex-1 line-clamp-2 break-words font-medium text-sm ${isChecked ? 'line-through text-dusk' : 'text-denim'}`}>
                 {displayName(item)}
                 {mergedCount > 1 && <span className="text-dusk font-normal"> ×{mergedCount}</span>}
               </h4>
