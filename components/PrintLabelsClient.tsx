@@ -672,7 +672,16 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
             {flaggedIds.length > 0 && (
               <button
                 onClick={loadFlagged}
-                className="mr-auto inline-flex items-center gap-1.5 rounded-full border border-brass/40 bg-linen px-3 py-1.5 font-medium text-denim hover:bg-white transition-colors"
+                // Solid primary fill, no border -- SS-297. The ticket named
+                // bg-denimBlue, but that is the logged-out/auth CTA colour
+                // (AuthSubmitButton, the marketing pages, LocaleToggle --
+                // all 4 of its uses). Inside the product it is bg-denim:
+                // 198 uses, D-18 states it outright ("selected state is
+                // bg-denim with white text"), and Generate PDF at the
+                // bottom of THIS page is already bg-denim. denimBlue here
+                // would have clashed with the primary button directly below
+                // it. One token away if that was actually intended.
+                className="mr-auto inline-flex items-center gap-1.5 rounded-full bg-denim px-3 py-1.5 font-medium text-white hover:opacity-90 transition-opacity"
               >
                 Load {flaggedIds.length} items flagged for printing
               </button>
