@@ -100,8 +100,37 @@ const STORE_ICON_SRC: Record<string, string> = {
   'Gourmet Glatt': '/store-icons/gourmet-glatt.png',
   Instacart: '/store-icons/instacart.png',
   'Kosher West': '/store-icons/kosher-west.png',
+  // Seasons is a real retailer in reorder_sources (verified live) and its
+  // icon has sat in /public unreferenced -- this is the line that was
+  // missing, not the asset.
+  Seasons: '/store-icons/seasons.png',
   Target: '/store-icons/target.png',
   Walmart: '/store-icons/walmart.png',
+};
+
+// Aisle/category tiles, same shape as STORE_ICON_SRC above. Keys are the
+// real inventory_items.category values (verified live), not guessed --
+// "Meat & Seafood" and "Dairy" are what the data actually says, so a map
+// keyed on "Meat" or "Dairy & Eggs" would silently match nothing.
+//
+// Only the categories that have art. Everything else falls through to the
+// lucide icon exactly as before -- a partial map is fine here, a wrong key
+// is not.
+const CATEGORY_ICON_SRC: Record<string, string> = {
+  Produce: '/category-icons/produce.png',
+  Pantry: '/category-icons/pantry.png',
+  'Meat & Seafood': '/category-icons/meat-fish.png',
+  Dairy: '/category-icons/dairy-eggs.png',
+};
+
+// The four grouping toggles. These were lucide components in a
+// [option, Icon, label] tuple; the art exists for all four, so they are
+// image sources now.
+const VIEW_ICON_SRC: Record<string, string> = {
+  'staples-first': '/category-icons/staples.png',
+  category: '/view-icons/by-aisle.png',
+  'by-recipe': '/view-icons/by-recipe.png',
+  'by-store': '/view-icons/by-store.png',
 };
 
 type ShoppingListItem = {
@@ -897,7 +926,19 @@ export default function ShoppingListViewEnhanced({
               groupBy === option ? 'bg-denim border-denim' : 'bg-mist border-brass/30 hover:bg-card'
             }`}
           >
-            <Icon className={`w-4 h-4 ${groupBy === option ? 'text-white' : 'text-brass'}`} strokeWidth={1.75} aria-hidden="true" />
+            {VIEW_ICON_SRC[option] ? (
+              // The art is two-tone denim/brass and does not recolour, so
+              // on the denim active face it is inverted with a brightness
+              // filter rather than left as dark-on-dark.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={VIEW_ICON_SRC[option]}
+                alt=""
+                className={`w-5 h-5 object-contain ${groupBy === option ? 'brightness-0 invert' : ''}`}
+              />
+            ) : (
+              <Icon className={`w-4 h-4 ${groupBy === option ? 'text-white' : 'text-brass'}`} strokeWidth={1.75} aria-hidden="true" />
+            )}
             <span className={`text-[11px] font-medium ${groupBy === option ? 'text-white' : 'text-denim'}`}>{label}</span>
           </button>
         ))}
@@ -955,6 +996,13 @@ export default function ShoppingListViewEnhanced({
                 ) : groupBy === 'by-store' && STORE_ICON_SRC[group.title] ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={STORE_ICON_SRC[group.title]} alt="" className="w-9 h-9 object-contain" />
+                ) : CATEGORY_ICON_SRC[group.title] ? (
+                  // Aisle/category art, same img-or-fallback shape as the
+                  // store branch above. Not gated on a grouping mode: a
+                  // category title means the same thing whichever way the
+                  // list is grouped.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={CATEGORY_ICON_SRC[group.title]} alt="" className="w-9 h-9 object-contain" />
                 ) : (
                   <Icon size={32} className="text-denim" aria-hidden="true" />
                 )}
