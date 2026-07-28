@@ -70,6 +70,7 @@ type Staple = {
 
 export default function StaplesTab({ propertyId, shoppingListId }: { propertyId: string; shoppingListId: string }) {
   const tc = useTranslations('common');
+  const ts = useTranslations('shopping');
   const [staples, setStaples] = useState<Staple[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'category' | 'name' | 'low-first'>('category');
@@ -280,12 +281,17 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
   return (
     <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
       <Pin size="sm" />
-      {/* Renamed from "Household Staples" per Racquel's direct approval
-          (2026-07-21). t('householdStaplesTab') in messages/en.json /
-          es.json is the source of truth for the actual tab button above
-          this component; this literal string just needs to stay in sync
-          with it. */}
-      <CardHeader>Household Supplies & Non-Foods</CardHeader>
+      {/* SS-258: reverted to "Household Staples". The 2026-07-21 rename to
+          "Household Supplies & Non-Foods" was approved on the assumption the
+          data would follow it; it never did. All 148 staples rows are food and
+          there are zero non-food rows, so the label described something that
+          does not exist. A real non-foods list is its own data project.
+
+          Reads the same key as the tab button rather than repeating the
+          English. The old comment asked whoever edited this to keep the two in
+          sync by hand, which is exactly why they drifted -- and a hardcoded
+          English literal has no business on a bilingual surface (R19). */}
+      <CardHeader>{ts('householdStaplesTab')}</CardHeader>
       <div className="p-4 space-y-4">
         {/* Search & Filter Bar */}
         <div className="space-y-3">
