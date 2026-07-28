@@ -26,6 +26,7 @@ import { useLocale } from 'next-intl';
 import { jobFamily, jobFamilyLabel, jobLabel, type JobFamily } from '@/lib/job-types';
 import { createClient } from '@/lib/supabase/client';
 import { compressImageToBlob } from '@/lib/compress-image';
+import { storageThumbnail } from '@/lib/storage-image';
 import CameraCapture from '@/components/CameraCapture';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
@@ -711,8 +712,10 @@ export default function StaffTasksClient({
                     // duplicate announcement.
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={tileImage}
+                      src={storageThumbnail(tileImage, 88)}
                       alt=""
+                      loading="lazy"
+                      decoding="async"
                       className="shrink-0 h-11 w-11 rounded-lg object-cover bg-card"
                     />
                   )}
@@ -812,7 +815,13 @@ export default function StaffTasksClient({
                           <div className="flex items-center gap-2">
                             {photoUrl && (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={photoUrl} alt="" className="h-12 w-12 rounded-lg object-cover bg-mist" />
+                              <img
+                                src={storageThumbnail(photoUrl, 96)}
+                                alt=""
+                                loading="lazy"
+                                decoding="async"
+                                className="h-12 w-12 rounded-lg object-cover bg-mist"
+                              />
                             )}
                             <button
                               onClick={() => setCameraTaskId(task.id)}
