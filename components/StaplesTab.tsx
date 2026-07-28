@@ -364,7 +364,7 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
             </p>
           </div>
         ) : groups ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-start">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-[14px] items-stretch">
             {groups.map(([key, groupStaples]) => {
               const collapsed = collapsedGroups.has(key);
               const lowCount = groupStaples.filter((s) => s.is_low).length;
@@ -372,12 +372,12 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
               return (
                 <div
                   key={key}
-                  className="relative bg-mist border border-brass/30 rounded-xl2 shadow-card hover:shadow-cardHover transition-shadow overflow-hidden"
+                  className="relative h-full flex flex-col bg-mist border border-brass/30 rounded-xl2 shadow-card hover:shadow-cardHover transition-shadow overflow-hidden"
                 >
                   <Pin size="sm" collapsed={collapsed} onToggle={() => toggleGroup(key)} />
-                  <div className="min-h-[128px] flex flex-col items-center justify-center gap-1.5 py-[14px] px-[18px] text-center">
+                  <div className="flex-1 flex flex-col items-center justify-center gap-[11px] py-[14px] px-[18px] text-center">
                     <Icon size={32} className="text-denim" aria-hidden="true" />
-                    <span className="font-display text-lg text-denim">{key}</span>
+                    <span className="font-display text-lg text-denim leading-tight text-balance">{key}</span>
                     <span className="text-xs text-dusk">
                       {groupStaples.length} {groupStaples.length === 1 ? 'item' : 'items'}
                     </span>
