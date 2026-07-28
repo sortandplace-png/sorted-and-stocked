@@ -272,15 +272,37 @@ export async function getRoshChodeshStatus(todayStr: string): Promise<RoshChodes
     // The occurrence we want is the one whose LAST day is still >= today, so
     // day 2 of a two-day Rosh Chodesh still reads as "today" rather than
     // skipping ahead to next month.
-    const byTitle = new Map<string, typeof events>()
+    //
+    // SS-287: this used to group by title, which is wrong over a two-year
+    // fetch. The same title occurs twice -- "Rosh Chodesh Sh'vat" in January
+    // 2026 AND January 2027 -- so those two merged into a single occurrence
+    // that began in January 2026 (sorting it ahead of everything later in
+    // the year) and ended in January 2027 (so it passed the >= today test
+    // all year long). Sh'vat therefore won from roughly February onwards,
+    // months before Elul was ever considered.
+    //
+    // Grouping by contiguous dates instead needs no title at all: Hebcal
+    // emits a two-day Rosh Chodesh as two items on consecutive days, so one
+    // unbroken run of dates is exactly one occurrence, and two runs a year
+    // apart can never merge.
+    //
+    // The consecutive-year fetches can repeat a date at the year boundary
+    // (a run spanning 31 Dec / 1 Jan appears in both), so identical dates
+    // are dropped rather than treated as a gap of zero.
+    const occurrences: (typeof events)[] = []
     for (const e of events) {
-      const list = byTitle.get(e.title) ?? []
-      list.push(e)
-      byTitle.set(e.title, list)
+      const current = occurrences[occurrences.length - 1]
+      const prev = current?.[current.length - 1]
+      if (prev) {
+        const gap = daysBetween(prev.date, e.date)
+        if (gap === 0) continue
+        if (gap === 1) {
+          current.push(e)
+          continue
+        }
+      }
+      occurrences.push([e])
     }
-    const occurrences = Array.from(byTitle.values())
-      .map((days) => days.sort((a, b) => a.date.localeCompare(b.date)))
-      .sort((a, b) => a[0].date.localeCompare(b[0].date))
 
     const next = occurrences.find((days) => days[days.length - 1].date >= todayStr)
     if (!next) return null
