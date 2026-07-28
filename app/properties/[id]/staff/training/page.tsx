@@ -21,6 +21,23 @@ export default async function TrainingPage({ params }: { params: Promise<{ id: s
 
   const byPath = new Map((signed ?? []).map((s) => [s.path ?? '', s.signedUrl]));
 
+  // Captions get their own batch, same pattern and same bucket. Skipped
+  // entirely when no video declares one, so this costs nothing until the
+  // first .vtt is uploaded -- and createSignedUrls is never handed an
+  // empty array. A failure here must not take the videos down with it:
+  // an unsigned caption just means no <track>, which is the state the
+  // page is in today anyway.
+  const captionPaths = TRAINING_VIDEOS.map((v) => v.captionPath).filter(
+    (p): p is string => Boolean(p)
+  );
+  const captionByPath = new Map<string, string | null>();
+  if (captionPaths.length > 0) {
+    const { data: signedCaptions } = await supabase.storage
+      .from('training-videos')
+      .createSignedUrls(captionPaths, SIGNED_URL_TTL_SECONDS);
+    for (const s of signedCaptions ?? []) captionByPath.set(s.path ?? '', s.signedUrl);
+  }
+
   const videos: SignedVideo[] = TRAINING_VIDEOS.map((v) => ({
     path: v.path,
     order: v.order,
@@ -29,6 +46,7 @@ export default async function TrainingPage({ params }: { params: Promise<{ id: s
     // Null when signing failed -- the client renders an honest "unavailable"
     // row rather than a dead <video> element.
     signedUrl: byPath.get(v.path) ?? null,
+    captionSignedUrl: v.captionPath ? captionByPath.get(v.captionPath) ?? null : null,
   }));
 
   return <TrainingClient videos={videos} />;

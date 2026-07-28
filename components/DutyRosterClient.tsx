@@ -40,12 +40,23 @@ type Task = {
   task_es: string;
   job_type: string | null;
   assigned_role: string | null;
+  source_area_en: string | null;
   active: boolean;
   sort_order: number;
 };
 
 const UNASSIGNED = 'Unassigned';
 const NO_ROOM = '__noroom__';
+
+// Areas whose work is not room-shaped: you maintain the boiler, watch the
+// children, sweep the patio. A null room_id on one of these is correct
+// data, not a gap to chase -- so they are excluded from Rooms Missing
+// rather than counted and quietly ignored.
+//
+// This must stay in step with the select below: source_area_en was NOT
+// fetched before this change, and a filter on a field the query never
+// returns matches nothing while looking entirely reasonable.
+const NON_ROOM_AREAS = ['Maintenance', 'Childcare', 'Outdoors'];
 
 export default function DutyRosterClient({ propertyId }: { propertyId: string }) {
   const t = useTranslations('dutyRoster');
@@ -73,7 +84,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     const settled = await Promise.allSettled([
       supabase
         .from('master_tasks')
-        .select('id, task_number, room_id, frequency_id, task_en, task_es, job_type, assigned_role, active, sort_order')
+        .select('id, task_number, room_id, frequency_id, task_en, task_es, job_type, assigned_role, source_area_en, active, sort_order')
         .eq('property_id', propertyId)
         .order('sort_order'),
       supabase.from('frequencies').select('id, code, label_en, label_es, recurrence_kind, sort_order').order('sort_order'),
@@ -225,7 +236,9 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
       total: filtered.length,
       unassigned: filtered.filter(isUnassigned).length,
       withSop: filtered.filter((x) => (sopCounts[x.id] ?? 0) > 0).length,
-      roomsMissing: filtered.filter((x) => x.room_id === null).length,
+      roomsMissing: filtered.filter(
+        (x) => x.room_id === null && !NON_ROOM_AREAS.includes(x.source_area_en ?? '')
+      ).length,
     }),
     [filtered, sopCounts]
   );
@@ -308,12 +321,21 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
           { k: 'statTotal', v: stats.total },
           { k: 'statUnassigned', v: stats.unassigned },
           { k: 'statWithSop', v: stats.withSop },
-          { k: 'statRoomsMissing', v: stats.roomsMissing },
+          // Carries a hint because a zero here is a real answer, not an
+          // empty one: without saying why, "Rooms Missing 0" looks like the
+          // count is broken. Rendered as a caption as well as a title
+          // attribute -- a hover-only tooltip tells a phone user nothing.
+          { k: 'statRoomsMissing', v: stats.roomsMissing, hint: t('statRoomsMissingHint') },
         ].map((s) => (
-          <div key={s.k} className="relative bg-card border border-cardBorder rounded-xl2 shadow-card p-4">
+          <div
+            key={s.k}
+            title={s.hint}
+            className="relative bg-card border border-cardBorder rounded-xl2 shadow-card p-4"
+          >
             <PinDot />
             <p className="text-[12px] text-dusk">{t(s.k)}</p>
             <p className="font-display text-[24px] text-denim leading-tight mt-0.5">{s.v}</p>
+            {s.hint && <p className="text-[10px] text-dusk leading-snug mt-1">{s.hint}</p>}
           </div>
         ))}
       </div>

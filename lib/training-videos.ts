@@ -17,8 +17,20 @@ export type TrainingVideo = {
   titleKey: string;
   /** Route this video is about, so a viewer can go straight there. */
   href?: (propertyId: string) => string;
+  /**
+   * Spanish caption track, as an object path in the SAME private
+   * training-videos bucket (e.g. 'sp-02-dashboard_es.vtt'). Signed
+   * alongside the video; absent means the player renders no <track> and
+   * the English-only notice stays visible for that video.
+   */
+  captionPath?: string;
 };
 
+// captionPath is deliberately unset on all six: the bucket currently holds
+// the six .mp4s and nothing else, so pointing at a .vtt that does not exist
+// would sign to null and change nothing except to imply the file is there.
+// When a caption is produced, upload it and add one field here -- no other
+// code change is needed.
 export const TRAINING_VIDEOS: TrainingVideo[] = [
   { path: 'sp-01-welcome.mp4', order: 1, titleKey: 'v1' },
   { path: 'sp-02-dashboard.mp4', order: 2, titleKey: 'v2', href: (p) => `/properties/${p}/dashboard` },

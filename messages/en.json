@@ -401,7 +401,9 @@
   "shiftHandover": {
     "whatsDone": "What's Done:",
     "inProgress": "In Progress:",
-    "headsUp": "Heads Up:"
+    "headsUp": "Heads Up:",
+    "alsoDid": "Also did",
+    "alsoDidPlaceholder": "Anything else worth mentioning — errands, small fixes, favours"
   },
   "myDay": {
     "staffNoteHeading": "Today's note for staff",
@@ -766,6 +768,7 @@
     "statUnassigned": "Unassigned",
     "statWithSop": "With SOP",
     "statRoomsMissing": "Rooms Missing",
+    "statRoomsMissingHint": "Area-level work (Maintenance, Childcare, Outdoors) is excluded on purpose — it isn't tied to a room.",
     "searchPlaceholder": "Search tasks, rooms, jobs",
     "allRooms": "All Rooms",
     "allJobs": "All Jobs",

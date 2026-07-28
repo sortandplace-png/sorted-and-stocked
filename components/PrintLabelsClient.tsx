@@ -14,6 +14,7 @@ import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import { SITE_URL } from '@/lib/site-url';
 import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
+import { storageThumbnail } from '@/lib/storage-image';
 
 type Item = {
   id: string;
@@ -124,6 +125,10 @@ async function loadImageAsDataUrl(url: string): Promise<string | null> {
 }
 
 const MAX_LABEL_NAME_LENGTH = 35;
+
+// Above this many selected labels the page stops merely reporting the size
+// and starts warning about it. 100 = 5 sheets; Racquel can move it.
+const LARGE_BATCH_WARNING = 100;
 function truncateForLabel(name: string): string {
   return name.length > MAX_LABEL_NAME_LENGTH ? name.slice(0, MAX_LABEL_NAME_LENGTH - 1) + '…' : name;
 }
@@ -186,12 +191,12 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
       const data = itemsRes.data ?? [];
       setItems(data);
       setLocations(locationsRes.data ?? []);
-      // Respect each item's Print Label toggle (set in the Edit Item
-      // modal) as the initial selection — still fully overridable below.
-      // Produce is excluded from this default: a permanent QR sticker
-      // doesn't make sense for perishable produce, though it stays visible
-      // and toggleable back on individually or via a filter.
-      setSelected(new Set(data.filter((i) => i.print_label && i.category !== 'Produce').map((i) => i.id)));
+      // SS-296: the page used to arrive with every print_label item already
+      // selected. That is a large batch chosen for you before you have
+      // looked at anything -- it rendered a full preview on load and put a
+      // hundreds-of-labels PDF one tap away. The same set is still one
+      // click away via "Load flagged", which makes it a decision instead
+      // of a default. Selection now starts empty.
       setLoading(false);
     });
 
@@ -225,9 +230,24 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
   }
 
   function selectAll(value: boolean) {
-    // Same Produce exclusion as the initial default — "Select all" is the
+    // Same Produce exclusion as the flagged default — "Select all" is the
     // other place a bulk-select would otherwise silently re-include them.
     setSelected(value ? new Set(items.filter((i) => i.category !== 'Produce').map((i) => i.id)) : new Set());
+  }
+
+  // Exactly the predicate the mount effect used to apply silently: the
+  // item's own Print Label toggle, minus Produce (a permanent QR sticker
+  // makes no sense on something perishable). Computed always, applied only
+  // when asked. Deliberately NOT narrowed by the active filters -- it means
+  // "everything flagged", and quietly loading a subset under that label
+  // would be the same kind of invisible decision this change removes.
+  const flaggedIds = useMemo(
+    () => items.filter((i) => i.print_label && i.category !== 'Produce').map((i) => i.id),
+    [items]
+  );
+
+  function loadFlagged() {
+    setSelected(new Set(flaggedIds));
   }
 
   // Cross-narrowing: every filter's own option list only offers choices
@@ -253,10 +273,18 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
     return true;
   }
 
+  // A Map rather than a Set so each option can show how many items picking
+  // it would actually yield. The count is leave-one-out, exactly like
+  // photosOnlyCount: it reflects every OTHER active filter, so "Kitchen
+  // (214)" means 214 given what is already narrowed, not 214 in the
+  // property. A raw unfiltered count would promise items that the current
+  // filters have already excluded.
   const locationOptions = useMemo(() => {
-    const ids = new Set<string>();
-    for (const i of items) if (i.location_id && matchesExcept(i, 'location')) ids.add(i.location_id);
-    return ids;
+    const counts = new Map<string, number>();
+    for (const i of items)
+      if (i.location_id && matchesExcept(i, 'location'))
+        counts.set(i.location_id, (counts.get(i.location_id) ?? 0) + 1);
+    return counts;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, q, photosOnly, lowStockOnly, categoryFilter, sortMode, labelStatusFilter]);
 
@@ -265,9 +293,13 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
   // flips so the dropdown never offers a value the current mode can't
   // actually match, on top of the narrowing from every other filter.
   const categoryOptions = useMemo(() => {
-    const cats = new Set<string>();
-    for (const i of items) if (matchesExcept(i, 'category')) cats.add(sortCategory(i, sortMode));
-    return [...cats].sort((a, b) => a.localeCompare(b));
+    const counts = new Map<string, number>();
+    for (const i of items)
+      if (matchesExcept(i, 'category')) {
+        const c = sortCategory(i, sortMode);
+        counts.set(c, (counts.get(c) ?? 0) + 1);
+      }
+    return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, q, locationFilter, photosOnly, lowStockOnly, sortMode, labelStatusFilter]);
 
@@ -520,7 +552,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
               .filter((loc) => locationOptions.has(loc.id))
               .map((loc) => (
                 <option key={loc.id} value={loc.id}>
-                  {loc.name}
+                  {loc.name} ({locationOptions.get(loc.id)})
                 </option>
               ))}
           </select>
@@ -545,9 +577,9 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
             className="w-full border border-cardBorder rounded-full px-3 py-2 text-sm"
           >
             <option value="">All categories</option>
-            {categoryOptions.map((c) => (
+            {categoryOptions.map(([c, n]) => (
               <option key={c} value={c}>
-                {c}
+                {c} ({n})
               </option>
             ))}
           </select>
@@ -633,7 +665,18 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
 
         {/* Items panel — deduplicated by name */}
         <div className="mb-4 lg:mb-0">
-          <div className="flex justify-end gap-3 mb-2 text-xs">
+          <div className="flex items-center justify-end gap-3 mb-2 text-xs flex-wrap">
+            {/* What the page used to do to you on arrival, now offered as a
+                choice. Hidden entirely when nothing is flagged rather than
+                shown as a dead "Load 0". */}
+            {flaggedIds.length > 0 && (
+              <button
+                onClick={loadFlagged}
+                className="mr-auto inline-flex items-center gap-1.5 rounded-full border border-brass/40 bg-linen px-3 py-1.5 font-medium text-denim hover:bg-white transition-colors"
+              >
+                Load {flaggedIds.length} items flagged for printing
+              </button>
+            )}
             <button onClick={() => selectAll(true)} className="text-denim underline">
               Select all
             </button>
@@ -709,7 +752,31 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
                 >
                   {item ? (
                     <>
-                      <span className="text-[10px] leading-none">{hasPhoto ? '📷' : '🏷️'}</span>
+                      {/* The real photo, not a camera emoji standing in for
+                          one. A preview whose job is "check this before
+                          committing to N sheets" has to show what actually
+                          prints. Requested at 96px for a cell well under
+                          that: these are full-size inventory photos, and 20
+                          of them unresized is megabytes to fill a grid of
+                          thumbnails (see lib/storage-image.ts). */}
+                      {hasPhoto ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={storageThumbnail(item.photo_url!, 96)}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          // Spec said w-full h-full. That is a flex column
+                          // with a name span under it, so h-full would push
+                          // the name out of an overflow-hidden cell --
+                          // and the brief says the name stays as-is.
+                          // flex-1 min-h-0 fills the space above the name
+                          // instead of all of it. Same intent, both visible.
+                          className="flex-1 min-h-0 w-full object-cover rounded-sm"
+                        />
+                      ) : (
+                        <span className="text-[10px] leading-none">🏷️</span>
+                      )}
                       <span className="text-[6px] leading-tight text-center text-dusk line-clamp-2 mt-0.5">
                         {truncateForLabel(labelName(item, labelLanguage))}
                       </span>
@@ -749,6 +816,19 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Second, louder guardrail above a batch nobody prints by
+            accident. The 50-sheet notice below is informational -- it tells
+            you the count and offers a test sheet. This one is a warning: at
+            this size the likeliest explanation is that a filter was meant
+            to be applied and wasn't, so it says what to do rather than just
+            how big the number is. Rust, and it sits above the other one.
+            Threshold is a single constant -- move it if 100 is wrong. */}
+        {selected.size > LARGE_BATCH_WARNING && (
+          <div className="bg-rust/10 border border-rust/30 rounded-2xl px-4 py-2.5 text-xs text-rust">
+            That&apos;s {Math.ceil(selected.size / 20)}+ sheets — filter by location first.
           </div>
         )}
 
