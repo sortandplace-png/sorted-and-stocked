@@ -95,7 +95,7 @@ export default function TrainingClient({ videos }: { videos: SignedVideo[] }) {
               viewer it is English-only is simply false, and a notice that is
               sometimes wrong stops being read at all. */}
           {!active.captionSignedUrl && (
-            <p className="text-xs text-brass bg-linen px-3 py-2">{t('englishOnlyNotice')}</p>
+            <p className="text-xs text-denim bg-linen px-3 py-2">{t('englishOnlyNotice')}</p>
           )}
 
           <video
@@ -126,7 +126,7 @@ export default function TrainingClient({ videos }: { videos: SignedVideo[] }) {
             {active.href && (
               <Link
                 href={active.href}
-                className="inline-flex items-center gap-1 text-xs font-medium text-brass underline underline-offset-2 mt-1"
+                className="inline-flex items-center gap-1 text-xs font-medium text-denim underline underline-offset-2 mt-1"
               >
                 {t('openSection')} <ExternalLink size={11} strokeWidth={1.75} aria-hidden="true" />
               </Link>
