@@ -349,9 +349,13 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
         </>
       )}
 
-      {/* Household Staples Tab */}
+      {/* Household Staples Tab.
+          This wrapper was a bare max-w-md, so the earlier width pass -- which
+          replaced the string "max-w-md lg:max-w-6xl" -- did not match it, and
+          the whole tab stayed pinned to 448px. Collapsed it looked survivable;
+          expanded it clipped product names mid-word. */}
       {activeTab === 'staples' && (
-        <div className="max-w-md mx-auto px-4">
+        <div className="max-w-6xl mx-auto px-4">
           {listId ? (
             <StaplesTab propertyId={propertyId} shoppingListId={listId} />
           ) : (
