@@ -1,4 +1,9 @@
 // components/ui/PinDot.tsx
+//
+// SUPERSEDED by components/ui/Pin.tsx (re-export of PinAccent). Kept, not
+// deleted (R21). Do not use in new code: this dot is decorative only and has
+// no size/collapsed/onToggle, so it cannot serve as a collapse control the
+// way PinAccent does on 7 components.
 // The brass pin dot that belongs on every card.
 //
 // Extracted because it was hand-rolled on each page that had one, which is why

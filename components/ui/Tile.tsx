@@ -1,7 +1,7 @@
 // components/ui/Tile.tsx
 // The mist action tile. Brass appears only as the eyebrow and the pin dot --
 // never as a fill or a background (R9).
-import PinDot from '@/components/ui/PinDot';
+import Pin from '@/components/ui/Pin';
 
 export default function Tile({
   eyebrow,
@@ -22,7 +22,7 @@ export default function Tile({
     <div
       className={`relative bg-mist rounded-xl2 border border-brass/30 shadow-card hover:shadow-cardHover transition-shadow py-[14px] px-[18px] flex flex-col gap-[11px] ${className}`}
     >
-      <PinDot />
+      <Pin size="sm" />
       {(eyebrow || right) && (
         <div className="flex items-start justify-between gap-2 pr-4">
           {eyebrow && (

@@ -5,7 +5,7 @@
 // `strip` is the uppercase summary line, e.g. "10 QUESTIONS · SHIFT ORDER".
 // Pass an already-translated string; this component holds no copy of its own
 // so it never becomes a place English hides (R19).
-import PinDot from '@/components/ui/PinDot';
+import Pin from '@/components/ui/Pin';
 
 export default function PageShell({
   strip,
@@ -20,7 +20,7 @@ export default function PageShell({
 }) {
   return (
     <div className={`relative bg-card border border-cardBorder rounded-xl3 shadow-card overflow-hidden ${className}`}>
-      <PinDot />
+      <Pin size="sm" />
       {strip && (
         <div className="bg-denim py-[11px] px-5 flex items-center justify-between gap-3">
           <span className="text-[10px] font-semibold tracking-[0.17em] uppercase text-white">{strip}</span>
