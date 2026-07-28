@@ -939,16 +939,19 @@ export default function StaffTasksClient({
 
   if (scope === 'mine') return content;
 
+  // No outer container any more (SS-156 Phase 2). The background and the
+  // max-width belong to whatever page frames this, and since Phase 1 that
+  // is TaskCenterTabs -- which frames Duty Roster identically. Keeping a
+  // second wrapper here is what made the two tabs change width and colour
+  // as you switched between them.
   return (
-    <div className="bg-[#F9F5EF] min-h-screen">
-      <div className="max-w-[720px] mx-auto p-4">
-        <h1 className="text-2xl font-display font-normal text-denim mb-1 flex items-center gap-2">
-          <ListChecks size={22} className="text-brass" strokeWidth={1.75} aria-hidden="true" />
-          Staff Task Center
-        </h1>
-        <p className="text-[11px] font-interDisplay font-normal text-dusk mb-4">What needs doing, from the real task library.</p>
-        {content}
-      </div>
-    </div>
+    <>
+      <h1 className="text-2xl font-display font-normal text-denim mb-1 flex items-center gap-2">
+        <ListChecks size={22} className="text-brass" strokeWidth={1.75} aria-hidden="true" />
+        Staff Task Center
+      </h1>
+      <p className="text-[11px] font-interDisplay font-normal text-dusk mb-4">What needs doing, from the real task library.</p>
+      {content}
+    </>
   );
 }

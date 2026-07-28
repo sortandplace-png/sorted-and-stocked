@@ -793,7 +793,12 @@
     "loading": "Loading duties…",
     "loadPartial": "Some duties could not be loaded. Reload to try again.",
     "saveFailed": "That assignment did not save. Please try again.",
-    "unnamedMember": "Unnamed member"
+    "unnamedMember": "Unnamed member",
+    "deployFromLibrary": "Deploy from the task library",
+    "addToList": "Add to list",
+    "adding": "Adding…",
+    "showProcedure": "Show procedure",
+    "hideProcedure": "Hide procedure"
   },
   "staffHandbook": {
     "title": "Staff Handbook",

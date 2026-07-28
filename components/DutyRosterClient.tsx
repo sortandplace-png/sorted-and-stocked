@@ -16,6 +16,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
+import { storageThumbnail } from '@/lib/storage-image';
+import { ChevronDown, ClipboardList, Library } from 'lucide-react';
 
 type Frequency = {
   id: string;
@@ -41,8 +43,29 @@ type Task = {
   job_type: string | null;
   assigned_role: string | null;
   source_area_en: string | null;
+  photo_url: string | null;
   active: boolean;
   sort_order: number;
+};
+
+// The linked SOP, embedded on master_task_sops. sop_id is a many-to-one
+// FK so PostgREST returns an object, but the generated types model it as
+// an array -- and guessing wrong there fails silently (no poster, no
+// text, no error), so both shapes are accepted.
+type SopEmbed = {
+  expected_appearance_url: string | null;
+  sop_en: string | null;
+  sop_es: string | null;
+} | null;
+type SopLinkRow = { master_task_id: string; sop_library: SopEmbed | SopEmbed[] };
+type LinkedSop = { sopEn: string | null; sopEs: string | null };
+type SopLibraryRow = {
+  id: string;
+  sop_code: string | null;
+  zone_type: string | null;
+  task_en: string;
+  task_es: string;
+  default_frequency_id: string | null;
 };
 
 const UNASSIGNED = 'Unassigned';
@@ -70,6 +93,16 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   const [members, setMembers] = useState<Member[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [sopCounts, setSopCounts] = useState<Record<string, number>>({});
+  const [posterByTask, setPosterByTask] = useState<Record<string, string>>({});
+  const [sopTextByTask, setSopTextByTask] = useState<Record<string, LinkedSop>>({});
+  const [sopLibrary, setSopLibrary] = useState<SopLibraryRow[]>([]);
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [deployBusyId, setDeployBusyId] = useState<string | null>(null);
+  const [deployRoom, setDeployRoom] = useState<Record<string, string>>({});
+  const [deployMember, setDeployMember] = useState<Record<string, string>>({});
+  // Which tile has its procedure open. One at a time -- a grid with every
+  // panel expanded is not a grid any more.
+  const [openSopTaskId, setOpenSopTaskId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -84,7 +117,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     const settled = await Promise.allSettled([
       supabase
         .from('master_tasks')
-        .select('id, task_number, room_id, frequency_id, task_en, task_es, job_type, assigned_role, source_area_en, active, sort_order')
+        .select('id, task_number, room_id, frequency_id, task_en, task_es, job_type, assigned_role, source_area_en, photo_url, active, sort_order')
         .eq('property_id', propertyId)
         .order('sort_order'),
       supabase.from('frequencies').select('id, code, label_en, label_es, recurrence_kind, sort_order').order('sort_order'),
@@ -93,9 +126,24 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
         .from('property_members')
         .select('id, user_id, profiles(full_name)')
         .eq('property_id', propertyId),
-      supabase.from('master_task_sops').select('master_task_id'),
+      // Already fetched for the SOP count; the poster and the procedure
+      // text ride along on the same query rather than costing a second
+      // round trip. Ordered so the first row per task is its primary SOP.
+      supabase
+        .from('master_task_sops')
+        .select('master_task_id, sop_library(expected_appearance_url, sop_en, sop_es)')
+        .order('is_primary', { ascending: false })
+        .order('sort_order', { ascending: true }),
       // Only live assignments. Ended ones stay on the table as history.
       supabase.from('task_assignments').select('id, task_id, member_id').eq('active', true),
+      // Deploy-from-library, folded in from Task Center: adding tasks to a
+      // property is an admin action and belongs on the manager's page.
+      supabase
+        .from('sop_library')
+        .select('id, sop_code, zone_type, task_en, task_es, default_frequency_id')
+        .eq('active', true)
+        .order('zone_type')
+        .order('task_en'),
     ]);
 
     // One failing source must not blank the page, and an error must never be
@@ -125,12 +173,32 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
       }))
     );
 
+    // One pass over the SOP links produces all three things the tiles
+    // need: how many SOPs a task has, its poster, and its procedure text.
+    //
+    // Poster and text are accumulated separately on purpose. The poster
+    // may come from a later link when the primary SOP has no picture; the
+    // TEXT must not, or a tile would show one procedure's words beside a
+    // different procedure's photo.
     const counts: Record<string, number> = {};
-    (rows[4] as { master_task_id: string }[]).forEach((r) => {
+    const posters: Record<string, string> = {};
+    const sopTexts: Record<string, LinkedSop> = {};
+    (rows[4] as unknown as SopLinkRow[]).forEach((r) => {
       counts[r.master_task_id] = (counts[r.master_task_id] ?? 0) + 1;
+      const embed = Array.isArray(r.sop_library) ? r.sop_library[0] ?? null : r.sop_library;
+      if (!embed) return;
+      if (embed.expected_appearance_url && !posters[r.master_task_id]) {
+        posters[r.master_task_id] = embed.expected_appearance_url;
+      }
+      if (!sopTexts[r.master_task_id]) {
+        sopTexts[r.master_task_id] = { sopEn: embed.sop_en, sopEs: embed.sop_es };
+      }
     });
     setSopCounts(counts);
+    setPosterByTask(posters);
+    setSopTextByTask(sopTexts);
     setAssignments(rows[5] as Assignment[]);
+    setSopLibrary(rows[6] as SopLibraryRow[]);
     setLoadError(failed.length > 0 ? t('loadPartial') : null);
     setLoading(false);
   }, [propertyId, supabase, t]);
@@ -231,6 +299,9 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     [tasks, room, job, freq, assignment, search, passesFrequency]
   );
 
+  // Derived from `filtered`, so the tiles answer "of what I'm looking at
+  // right now" and move as the filters move. That is the whole reason they
+  // stayed in this component rather than being hoisted into a page shell.
   const stats = useMemo(
     () => ({
       total: filtered.length,
@@ -261,6 +332,28 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   //
   // assigned_role is deliberately left alone. Not dropped, not cleared -- just
   // no longer written. It is null on every active task, so nothing is lost.
+  // Folded in from Task Center, unchanged in behaviour: the same
+  // deploy_sop_to_property RPC with the same arguments. Reloads on success
+  // because a deployed SOP becomes a new master_task and the grid, the
+  // filters and the stat tiles all have to see it.
+  async function deploySop(sop: SopLibraryRow) {
+    setDeployBusyId(sop.id);
+    const roomId = deployRoom[sop.id] ?? '';
+    const roomNameEn = roomId ? rooms.find((r) => r.id === roomId)?.name_en ?? null : null;
+    const { error } = await supabase.rpc('deploy_sop_to_property', {
+      p_sop_id: sop.id,
+      p_property_id: propertyId,
+      p_room_name_en: roomNameEn,
+      p_member_id: deployMember[sop.id] || null,
+    });
+    setDeployBusyId(null);
+    if (error) {
+      setLoadError(error.message || t('saveFailed'));
+      return;
+    }
+    load();
+  }
+
   async function assign(taskId: string, memberId: string) {
     const existing = assignmentByTask.get(taskId);
     if (existing && existing.member_id === memberId) return;
@@ -307,8 +400,16 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   const pill =
     'appearance-none bg-card border border-cardBorder rounded-full px-3 py-1.5 text-[12px] text-denim';
 
+  // Outer container removed (SS-156 Phase 2) -- the page frame owns the
+  // background and max-width now, so the Tasks and Roster tabs stop
+  // changing width and colour as you switch. The standalone
+  // /staff/duty-roster route supplies the same frame itself.
+  //
+  // The stat tiles moved up into TaskCenterTabs so they are visible on
+  // both tabs rather than only this one. Their computation (`stats`, from
+  // `filtered`) is still here and untouched -- see the note above it.
   return (
-    <div className="max-w-[1240px] mx-auto px-4 py-6">
+    <>
       <h1 className="font-display text-[34px] font-normal text-denim">{t('title')}</h1>
       <p className="text-[13px] text-dusk mb-5">{t('subtitle')}</p>
 
@@ -338,6 +439,68 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
             {s.hint && <p className="text-[10px] text-dusk leading-snug mt-1">{s.hint}</p>}
           </div>
         ))}
+      </div>
+
+      {/* Deploy from the task library. Folded in from Task Center because
+          adding tasks to a property is an admin action and this is now the
+          only page a manager needs for the roster. Collapsed by default --
+          it is a periodic action, not the reason you opened the page. */}
+      <div className="mb-4 rounded-xl2 border border-cardBorder bg-card shadow-card overflow-hidden">
+        <button
+          onClick={() => setShowLibrary((v) => !v)}
+          className="w-full flex items-center gap-2 px-4 py-3 text-left"
+        >
+          <Library size={16} className="text-brass shrink-0" strokeWidth={1.75} aria-hidden="true" />
+          <span className="flex-1 font-display text-denim">{t('deployFromLibrary')}</span>
+          <span className="text-xs text-dusk">({sopLibrary.length})</span>
+          <ChevronDown
+            size={16}
+            className={`text-dusk transition-transform ${showLibrary ? 'rotate-180' : ''}`}
+            aria-hidden="true"
+          />
+        </button>
+        {showLibrary && (
+          <div className="border-t border-cardBorder p-4 space-y-2 max-h-[28rem] overflow-y-auto">
+            {sopLibrary.map((sop) => (
+              <div key={sop.id} className="rounded-xl bg-mist p-2.5">
+                <p className="text-sm text-denim mb-1.5">{es ? sop.task_es : sop.task_en}</p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <select
+                    value={deployRoom[sop.id] ?? ''}
+                    onChange={(e) => setDeployRoom((p) => ({ ...p, [sop.id]: e.target.value }))}
+                    className={pill}
+                  >
+                    <option value="">{t('noRoom')}</option>
+                    {rooms.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {es ? r.name_es : r.name_en}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={deployMember[sop.id] ?? ''}
+                    onChange={(e) => setDeployMember((p) => ({ ...p, [sop.id]: e.target.value }))}
+                    className={pill}
+                  >
+                    <option value="">{t('unassigned')}</option>
+                    {members.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.full_name ?? t('unnamedMember')}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => deploySop(sop)}
+                    disabled={deployBusyId === sop.id}
+                    className="text-xs font-medium bg-denim text-white px-3 py-1.5 rounded-full disabled:opacity-40"
+                  >
+                    {deployBusyId === sop.id ? t('adding') : t('addToList')}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -422,6 +585,12 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                 const f = x.frequency_id ? freqById.get(x.frequency_id) : undefined;
                 const unassigned = isUnassigned(x);
                 const sops = sopCounts[x.id] ?? 0;
+                const tileImage = x.photo_url ?? posterByTask[x.id] ?? null;
+                const linked = sopTextByTask[x.id] ?? null;
+                // Falls back to the other language rather than showing an
+                // empty panel: English instructions beat no instructions.
+                const sopText = linked ? (es ? linked.sopEs ?? linked.sopEn : linked.sopEn ?? linked.sopEs) : null;
+                const sopOpen = openSopTaskId === x.id;
                 return (
                   <div
                     key={x.id}
@@ -442,13 +611,32 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                         </span>
                       </div>
 
-                      <p
-                        className="font-display text-[15px] text-denim mt-2"
-                        style={{ lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-                        title={es ? x.task_es : x.task_en}
-                      >
-                        {es ? x.task_es : x.task_en}
-                      </p>
+                      {/* Task illustration first (what this job is), else
+                          the linked SOP's poster (what finished looks
+                          like). Different meanings, never conflated -- the
+                          task's own photo wins. Nothing renders when there
+                          is neither, rather than a grey placeholder on most
+                          tiles. Resized: these are full-size images and a
+                          grid draws many at once. */}
+                      <div className="flex items-start gap-2.5 mt-2">
+                        {tileImage && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={storageThumbnail(tileImage, 96)}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className="shrink-0 h-12 w-12 rounded-lg object-cover bg-card"
+                          />
+                        )}
+                        <p
+                          className="flex-1 min-w-0 font-display text-[15px] text-denim"
+                          style={{ lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                          title={es ? x.task_es : x.task_en}
+                        >
+                          {es ? x.task_es : x.task_en}
+                        </p>
+                      </div>
 
                       <div className="flex items-center gap-2 mt-1.5">
                         {sops > 0 && (
@@ -462,6 +650,44 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                           </span>
                         )}
                       </div>
+
+                      {/* The full procedure, inline. Collapsed by default so
+                          the grid stays a grid; open one and it expands in
+                          place. No navigation away -- the whole point of
+                          SS-300 was that the procedure reaches the person
+                          looking at the task. */}
+                      {sopText && (
+                        <>
+                          <button
+                            onClick={() => setOpenSopTaskId(sopOpen ? null : x.id)}
+                            aria-expanded={sopOpen}
+                            className="mt-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-brass"
+                          >
+                            <ClipboardList size={11} strokeWidth={1.75} aria-hidden="true" />
+                            {sopOpen ? t('hideProcedure') : t('showProcedure')}
+                          </button>
+                          {sopOpen && (
+                            <div className="mt-2 rounded-xl bg-card border border-cardBorder p-2.5 space-y-2">
+                              {/* Authored as multi-step instructions with
+                                  real line breaks; collapsing them into one
+                                  paragraph makes a procedure unreadable. */}
+                              <p className="text-[11px] text-denim whitespace-pre-line leading-relaxed">
+                                {sopText}
+                              </p>
+                              {posterByTask[x.id] && (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={storageThumbnail(posterByTask[x.id], 640)}
+                                  alt=""
+                                  loading="lazy"
+                                  decoding="async"
+                                  className="w-full max-h-48 object-contain rounded-lg bg-mist"
+                                />
+                              )}
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
 
                     <div className="-mx-[18px] -mb-[14px] mt-2 bg-card px-[18px] py-2 flex justify-between items-center rounded-b-xl2 border-t border-cardBorder">
@@ -498,7 +724,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

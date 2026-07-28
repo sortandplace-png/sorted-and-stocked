@@ -793,7 +793,12 @@
     "loading": "Cargando tareas…",
     "loadPartial": "Algunas tareas no se pudieron cargar. Recargue para reintentar.",
     "saveFailed": "Esa asignación no se guardó. Inténtelo de nuevo.",
-    "unnamedMember": "Miembro sin nombre"
+    "unnamedMember": "Miembro sin nombre",
+    "deployFromLibrary": "Agregar desde la biblioteca de tareas",
+    "addToList": "Agregar a la lista",
+    "adding": "Agregando…",
+    "showProcedure": "Ver procedimiento",
+    "hideProcedure": "Ocultar procedimiento"
   },
   "staffHandbook": {
     "title": "Manual del Personal",
