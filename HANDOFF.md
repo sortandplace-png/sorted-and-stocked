@@ -8,40 +8,60 @@ two tables are the authority.
 
 ## State
 
-- `main` at **`38d91a9`**.
-- **`feat/staff-completions` has 5 commits, pushed, no PR.** Typecheck clean,
-  **none of it seen in a browser.** See "Blocked" below before trusting it.
+- `main` at **`f0135f3`** (Merge PR #19). **All 21 commits from the 28 Jul
+  session are merged and deployed to production.** Nothing is waiting.
 - `feat/staff-cleanup` is behind `main` — start a new branch, don't reuse it.
 - `sop-posters` bucket: **76 objects**, no strays.
 - **Standing instruction: finish visible work → open the PR → merge it.**
   "Shall I open a PR" is not a decision worth asking about.
 
-### Blocked (28 Jul) — both need a human
+### Deploy state (28 Jul) — verified, not assumed
 
-1. **No PR could be opened.** There is no `gh` on this machine, no
-   `GITHUB_*` in the environment or `.env.local`, no `~/.git-credentials`,
-   no `gh/hosts.yml`, and `credential.helper` is unset — yet `git push`
-   authenticates fine. Whatever holds that credential is not reachable from
-   a shell. **Find out where the token lives and write it down here.** Five
-   commits are pushed and waiting.
-2. **No screenshot could be taken**, so R4 is unmet for all five commits.
-   Port 3000 is held by another chat's server and the preview tool refuses
-   to start a second one even against this repo's own `dev:agent` config.
-   Port 3100 was listening but returned **500** and belongs to another
-   process, so its logs were unreadable.
+PRs #17, #18 and #19 merged; every Vercel build **Ready**, `main` deployed
+to Production. The 13-failure run recorded in SS-236 is over — the
+"failed to deploy" notices in the Vercel inbox are all a day old.
 
-   **The dual-checkout warning is now confirmed by measurement, not
-   inference.** Fetching `localhost:3000/login` and searching the payload:
-   `headsUp` is PRESENT, `alsoDid` — added directly beside it in the same
-   JSON block — is ABSENT. The server on 3000 is not serving this checkout.
-   Re-run that probe before trusting anything you see on :3000.
+**Verified against production, not inferred:** fetching
+`https://www.sortandplace.com/login` and searching the payload finds
+`linkHouseManual`, `showProcedure`, `deployFromLibrary`,
+`statRoomsMissingHint`, `templateDinnerStaged` and `alsoDidPlaceholder` —
+strings added in the last commits of the session, including the handbook
+one. Note the redirect: `sortandplace.com` 308s to `www.`, so probe the
+`www.` host or you'll read a redirect as a failure.
+
+**This probe is the cheap standing answer to R4/SS-010-R.** Pick a string
+your change added, fetch the live login page, and grep for it. It costs
+one call and it distinguishes "committed" from "actually live" — which is
+the exact gap SS-236 was about.
+
+### What was still open at end of session
+
+**Screenshots.** Nothing here was seen rendered. Every check was code,
+schema, payload or measurement. Highest-value things to actually look at:
+the roster page (SS-156 Phase 2 rebuilt it), the handbook (SS-150 rebuilt
+it), the My Day clock control and the Hours page — the last two being
+brand-new UI nobody has viewed.
+
+**Local dev server.** Port 3000 is held by another chat's server and the
+preview tool refuses a second one even against this repo's own `dev:agent`
+config; port 3100 answered 500 and belonged to another process. If you hit
+this again: the same payload probe works against `localhost:3000` and will
+tell you whether that server is even serving this checkout — on 28 Jul it
+was not.
+
+**GitHub token.** Not reachable from a shell: no `gh`, no `GITHUB_*` in
+the environment or `.env.local`, no `~/.git-credentials`, no
+`gh/hosts.yml`, `credential.helper` unset — yet `git push` authenticates
+fine. Pushing works; opening a PR from the CLI does not. Worth writing
+down where that credential actually lives.
 
 ---
 
 ## What was done on 28 July
 
-All on `feat/staff-completions`, all typecheck-clean, **none verified in a
-browser**. Reviewed in commit-message detail, summarised here:
+All merged to `main` and live in production. Typecheck-clean, and verified
+live by payload probe — but **none of it seen rendered**. Reviewed in
+commit-message detail, summarised here:
 
 | Commit | Item | Note |
 |---|---|---|
