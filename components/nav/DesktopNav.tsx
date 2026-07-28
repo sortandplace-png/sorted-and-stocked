@@ -78,9 +78,12 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // the same place. Kept in excludeFromActive below so a direct visit to
       // that URL doesn't light up Team.
       { segment: 'tools/tasks', labelKey: 'staffTasks', managerOnly: true },
-      // SS-285. managerOnly matches the page's own redirect -- staff clock
-      // in and out on My Day and never need the property timesheet.
-      { segment: 'staff/hours', labelKey: 'hours', managerOnly: true },
+      // Hours removed from the dropdown: it belongs inside My Day, not as
+      // its own destination. The /staff/hours ROUTE is untouched and still
+      // enforces its own owner/manager gate (R21) -- it is simply no longer
+      // offered here. Deliberately NOT redirected to My Day yet: My Day has
+      // the clock control but no hours summary, so a redirect today would
+      // remove the only place the weekly timesheet can be read.
       // Handover nav link removed (SS-214) -- everyone, including owners
       // and managers, now reaches it the same way: embedded on My Day.
       // The standalone /shift-handover route file is untouched (still
@@ -100,7 +103,11 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // does. These three used to live under Tools, where staff never go --
       // SOPs and Training have moved here outright, the handbook is new.
       { segment: 'staff/sops', labelKey: 'sopLibrary', dividerBefore: true },
-      { segment: 'staff/training', labelKey: 'trainingVideos' },
+      // Training Videos removed from the dropdown -- it is due to become a
+      // section of the Handbook page. Route untouched (R21) and NOT yet
+      // redirected: the combined page does not exist, so redirecting today
+      // would make the six training videos unreachable rather than moving
+      // them. Redirect belongs in the same change that builds the section.
       { segment: 'staff/handbook', labelKey: 'staffHandbook' },
     ],
   },
