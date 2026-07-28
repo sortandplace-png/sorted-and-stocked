@@ -832,6 +832,16 @@
     "title": "Manual del Personal",
     "subtitle": "Diez preguntas, en el orden en que ocurre su turno.",
     "empty": "El manual aún no tiene entradas.",
-    "strip": "{count} preguntas · orden del turno"
+    "strip": "{count} preguntas · orden del turno",
+    "searchPlaceholder": "Buscar en el manual…",
+    "noResults": "Ninguna pregunta coincide con esa búsqueda.",
+    "progress": "{opened} de {total} abiertas",
+    "goTo": "Ir a",
+    "linkMyDay": "Mi Día",
+    "linkInventory": "Inventario",
+    "linkShoppingList": "Lista de Compras",
+    "linkHouseManual": "Manual de la Casa",
+    "linkSops": "Biblioteca de Procedimientos",
+    "linkTraining": "Capacitación"
   }
 }

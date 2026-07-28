@@ -832,6 +832,16 @@
     "title": "Staff Handbook",
     "subtitle": "Ten questions, in the order your shift happens.",
     "empty": "The handbook has no entries yet.",
-    "strip": "{count} questions · shift order"
+    "strip": "{count} questions · shift order",
+    "searchPlaceholder": "Search the handbook…",
+    "noResults": "No questions match that search.",
+    "progress": "{opened} of {total} opened",
+    "goTo": "Go to",
+    "linkMyDay": "My Day",
+    "linkInventory": "Inventory",
+    "linkShoppingList": "Shopping List",
+    "linkHouseManual": "House Manual",
+    "linkSops": "SOP Library",
+    "linkTraining": "Training"
   }
 }
