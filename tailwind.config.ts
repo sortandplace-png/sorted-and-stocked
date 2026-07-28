@@ -41,6 +41,25 @@ const config: Config = {
         rust: '#B5636B',       // alerts/low-stock — dusty rose-red, not brown-rust
         dairy: '#4A6B8A',      // dusty blue — third kashrut-indicator color, same softened treatment as rust/sage
 
+        // SS-308. Overdue/needs-attention, as a three-part set: this badge
+        // is always a fill + border + text together, which is why it is
+        // three values rather than one like sage/rust/dairy above.
+        //
+        // Deliberately NOT folded into rust. rust means "stock is low";
+        // briar means "this is overdue or wants attention". Same family of
+        // red, different meanings, and collapsing them would make the two
+        // indistinguishable at exactly the moment a manager needs to tell
+        // them apart.
+        //
+        // Was copy-pasted raw across four call sites in three files, one of
+        // which carried a comment instructing future edits to keep copying
+        // the hex. That comment is why this token exists.
+        briar: {
+          bg: '#FDF2F2',
+          border: '#F8C4C4',
+          DEFAULT: '#9B2C2C',  // text
+        },
+
         // Bold Direction (2026-07-15) — additive only. Phase 1 of the
         // approved redesign, Home dashboard only that round; every other
         // page still reads Bold Direction or the New Direction below until

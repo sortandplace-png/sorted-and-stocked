@@ -14,6 +14,9 @@
 //   href/onClick  renders a real <Link> or <button> instead of a <div>,
 //             so an action tile is actually operable by keyboard and
 //             announced correctly, rather than a div with a handler.
+//   pin       defaults true. Pure navigation tiles pass pin={false},
+//             matching the Dashboard Quick Actions precedent: the dot
+//             marks a card that holds or does something, not a signpost.
 import Link from 'next/link';
 import Pin from '@/components/ui/Pin';
 
@@ -28,6 +31,7 @@ export default function Tile({
   href,
   onClick,
   disabled = false,
+  pin = true,
   children,
   className = '',
 }: {
@@ -41,6 +45,7 @@ export default function Tile({
   href?: string;
   onClick?: () => void;
   disabled?: boolean;
+  pin?: boolean;
   children?: React.ReactNode;
   className?: string;
 }) {
@@ -56,7 +61,7 @@ export default function Tile({
 
   const body = (
     <>
-      <Pin size="sm" />
+      {pin && <Pin size="sm" />}
       {(eyebrow || right) && (
         <div className={`flex items-start gap-2 pr-4 ${centered ? 'justify-center' : 'justify-between'}`}>
           {eyebrow && (

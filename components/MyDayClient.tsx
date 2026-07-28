@@ -18,8 +18,9 @@ import ToolModal from '@/components/ToolModal';
 import ClockInOutButton from '@/components/ClockInOutButton';
 import TeamOnShiftBar from '@/components/TeamOnShiftBar';
 import KitchenOpsToolModal from '@/components/KitchenOpsToolModal';
-import { Camera, ShoppingCart, Timer, Info, PlayCircle } from 'lucide-react';
+import { Camera, ShoppingCart, Timer, Info, PlayCircle, BookOpen, Package } from 'lucide-react';
 import Tile from '@/components/ui/Tile';
+import { routes } from '@/lib/app-routes';
 
 type DutyTask = { id: string; taskEn: string; taskEs: string; completed: boolean };
 type DutyArea = { areaEn: string; areaEs: string; tasks: DutyTask[] };
@@ -65,7 +66,10 @@ export default function MyDayClient({
           linked to the Training series rather than embedded, so there's one
           player and one place the videos live. */}
       <Link
-        href={`/properties/${propertyId}/tools/training`}
+        // Was /tools/training, which is the documented redirect stub -- so
+        // every staff visit took a needless hop. app-routes returns the
+        // real destination, which is exactly the rule that file states.
+        href={routes.training(propertyId)}
         // SS-306: denim, not brass. Brass on a link is the same violation
         // D-01 keeps catching -- and SS-150 already set the precedent for
         // links in the staff area: denim, Inter, underline on hover only.
@@ -105,7 +109,14 @@ export default function MyDayClient({
           in each. They are the shared Tile now -- migrated, not rewritten,
           and nothing was deleted (R21). The Time Clock joins them as a
           fourth card instead of a pill floating above the grid. */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[14px] mb-6">
+      {/* Six tiles, one grid. 2 across on a phone, 3 from tablet up -- six
+          divides evenly by both, so there is no orphan tile stranded on a
+          row of its own at any breakpoint.
+
+          Handbook and Inventory carry pin={false}: they are pure signposts,
+          and the dot marks a card that holds or does something. Same
+          precedent as Dashboard Quick Actions. */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-[14px] mb-6">
         <Tile
           centered
           onClick={() => setShowCapture(true)}
@@ -129,6 +140,24 @@ export default function MyDayClient({
           label={t('timerTile')}
           subtitle={t('timerSubtitle')}
           icon={<Timer size={28} className="text-denim" aria-hidden="true" />}
+        />
+        <Tile
+          centered
+          pin={false}
+          href={routes.handbook(propertyId)}
+          eyebrow={t('handbookTile')}
+          label={t('handbookTile')}
+          subtitle={t('handbookSubtitle')}
+          icon={<BookOpen size={28} className="text-denim" aria-hidden="true" />}
+        />
+        <Tile
+          centered
+          pin={false}
+          href={routes.inventory(propertyId)}
+          eyebrow={t('inventoryTile')}
+          label={t('inventoryTile')}
+          subtitle={t('inventorySubtitle')}
+          icon={<Package size={28} className="text-denim" aria-hidden="true" />}
         />
         <ClockInOutButton propertyId={propertyId} />
       </div>

@@ -102,15 +102,19 @@ type Completion = {
 
 type Status = 'done' | 'due' | 'not_due' | 'optional' | 'never_done';
 
-// SS-277: due/never_done reuse the exact Inventory low-stock badge tokens
-// (bg-[#FDF2F2]/border-[#F8C4C4]/text-[#9B2C2C]) rather than a new rose
-// variant -- both already shared one rust/10 treatment before this, and
-// moving only one of the two to the new tokens would have fragmented that
-// pairing instead of fixing it.
+// SS-277: due/never_done share the Inventory attention badge rather than a
+// new rose variant -- both already shared one rust/10 treatment before
+// this, and moving only one of the two would have fragmented that pairing
+// instead of fixing it.
+//
+// SS-308: that shared treatment is now the `briar` token, not a raw hex
+// triple. The previous version of this comment told future edits to keep
+// copying the hex across files, which is how it ended up in four places.
+// Use bg-briar-bg / border-briar-border / text-briar.
 const STATUS_STYLE: Record<Status, string> = {
   done: 'text-sage bg-sage/10',
-  due: 'bg-[#FDF2F2] border border-[#F8C4C4] text-[#9B2C2C]',
-  never_done: 'bg-[#FDF2F2] border border-[#F8C4C4] text-[#9B2C2C]',
+  due: 'bg-briar-bg border border-briar-border text-briar',
+  never_done: 'bg-briar-bg border border-briar-border text-briar',
   not_due: 'text-dusk bg-mist',
   optional: 'text-brass bg-mist',
 };

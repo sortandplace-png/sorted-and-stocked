@@ -146,7 +146,7 @@ export default function ShiftHoursClient({ propertyId }: { propertyId: string })
                     {nameByUser.get(userId) ?? (es ? 'Sin nombre' : 'Unnamed')}
                   </span>
                   {v.open > 0 && (
-                    <span className="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#FDF2F2] border border-[#F8C4C4] text-[#9B2C2C]">
+                    <span className="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full bg-briar-bg border border-briar-border text-briar">
                       {es ? 'sin salida' : 'still clocked in'}
                     </span>
                   )}
