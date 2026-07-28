@@ -705,7 +705,11 @@
     "save": "Guardar",
     "saving": "Guardando…",
     "saved": "Procedimiento actualizado.",
-    "saveFailed": "No se pudo guardar — inténtelo de nuevo."
+    "saveFailed": "No se pudo guardar — inténtelo de nuevo.",
+    "viewPoster": "Ver el póster en tamaño completo",
+    "closePoster": "Cerrar póster",
+    "posterAlt": "Resultado esperado para {name}",
+    "noPoster": "Aún no hay póster para este SOP."
   },
   "training": {
     "title": "Capacitación",
