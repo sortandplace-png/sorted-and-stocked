@@ -97,6 +97,7 @@ type InventoryItem = {
   variant_label: string | null;
   variant_label_es: string | null;
   last_counted_at: string | null;
+  auto_restock_eligible: boolean;
   updated_at: string;
   notes: string | null;
 };
@@ -234,8 +235,14 @@ function isExpiringSoon(expirationDate: string | null): boolean {
 // v_low_stock_summary / _by_property / _all_properties and
 // get_low_stock_items() all now require last_counted_at IS NOT NULL.
 // Two definitions of "low" is what caused this bug in the first place.
-function isLowStock(item: Pick<InventoryItem, 'current_qty' | 'min_qty' | 'last_counted_at'>): boolean {
+function isLowStock(
+  item: Pick<InventoryItem, 'current_qty' | 'min_qty' | 'last_counted_at' | 'auto_restock_eligible'>
+): boolean {
   if (item.last_counted_at === null) return false;
+  // SS-247: the view requires this too. Every row is true today, so this
+  // changes no number now -- it stops the page and the view disagreeing the
+  // first time an item is marked not-auto-restock.
+  if (!item.auto_restock_eligible) return false;
   return item.current_qty <= item.min_qty;
 }
 
@@ -450,7 +457,7 @@ export default function InventoryClient({
         const { data, error } = await supabase
           .from('inventory_items')
           .select(
-            'id, name, name_es, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, master_product_id, variant_label, variant_label_es, last_counted_at, updated_at, notes'
+            'id, name, name_es, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, category, expiration_date, opened_date, qr_code, print_label, pesach_status, master_product_id, variant_label, variant_label_es, last_counted_at, auto_restock_eligible, updated_at, notes'
           )
           .eq('property_id', propertyId)
           .order('name')
@@ -859,7 +866,7 @@ export default function InventoryClient({
     const { data: existing } = await supabase
       .from('inventory_items')
       .select(
-        'id, name, name_es, category, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, expiration_date, opened_date, qr_code, print_label, pesach_status, master_product_id, variant_label, variant_label_es, last_counted_at, updated_at, notes'
+        'id, name, name_es, category, location_id, current_qty, min_qty, unit, case_size, supplier, unit_cost, reorder_link, reorder_sources(id, retailer_name, url, is_preferred), photo_url, expiration_date, opened_date, qr_code, print_label, pesach_status, master_product_id, variant_label, variant_label_es, last_counted_at, auto_restock_eligible, updated_at, notes'
       )
       .eq('id', matchId)
       .single();
@@ -1016,6 +1023,9 @@ export default function InventoryClient({
             qr_code: null,
             pesach_status: 'needs_review',
             last_counted_at: null,
+            // Mirrors the DB column default (boolean NOT NULL DEFAULT true),
+            // same as the other server-side defaults approximated here.
+            auto_restock_eligible: true,
             updated_at: new Date().toISOString(),
             reorder_link: reorderUrl || null,
             reorder_sources: optimisticSources,
