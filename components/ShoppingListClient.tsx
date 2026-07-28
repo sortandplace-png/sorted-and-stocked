@@ -248,7 +248,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
     <div className="pt-4">
       {/* Tab Navigation */}
       <div className="bg-card border-b border-cardBorder sticky top-0 z-10 mb-4">
-        <div className="max-w-md lg:max-w-6xl mx-auto flex px-4">
+        <div className="max-w-6xl mx-auto flex px-4">
           <button
             onClick={() => setActiveTab('recipes')}
             className={`flex-1 py-3 font-medium text-sm border-b-2 transition-colors ${
@@ -281,13 +281,13 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
         </div>
       )}
       {error && (
-        <p className="text-sm text-rust bg-rust/10 rounded-lg px-3 py-2 mb-3 mx-4 max-w-md lg:max-w-6xl md:mx-auto">
+        <p className="text-sm text-rust bg-rust/10 rounded-lg px-3 py-2 mb-3 mx-4 max-w-6xl md:mx-auto">
           {error}
         </p>
       )}
 
       {!dismissedPairingNudge && missingPairs.length > 0 && (
-        <div className="relative mx-4 max-w-md lg:max-w-6xl md:mx-auto mb-3 bg-card rounded-xl2 border border-cardBorder shadow-card p-4 flex items-start gap-2.5">
+        <div className="relative mx-4 max-w-6xl md:mx-auto mb-3 bg-card rounded-xl2 border border-cardBorder shadow-card p-4 flex items-start gap-2.5">
           <Pin size="sm" />
           <div className="shrink-0 mt-0.5 w-6 h-6 rounded-full bg-brass/15 flex items-center justify-center">
             <Lightbulb className="h-3.5 w-3.5 text-brass" strokeWidth={1.75} aria-hidden="true" />
@@ -322,7 +322,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
       {/* Recipe Ingredients Tab */}
       {activeTab === 'recipes' && (
         <>
-          <div className="max-w-md lg:max-w-6xl mx-auto px-4 mb-4 flex gap-2">
+          <div className="max-w-6xl mx-auto px-4 mb-4 flex gap-2">
             <input
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
@@ -339,7 +339,7 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
             </button>
           </div>
 
-          <div className="max-w-md lg:max-w-6xl mx-auto px-4">
+          <div className="max-w-6xl mx-auto px-4">
             {listId ? (
               <ShoppingListViewEnhanced propertyId={propertyId} shoppingListId={listId} pesachModeEnabled={pesachModeEnabled} />
             ) : (
