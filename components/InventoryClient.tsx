@@ -1602,7 +1602,8 @@ export default function InventoryClient({
           forcing the full dashboard tile height; these are compact
           stat/filter toggles, not content cards. */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="rounded-xl3 p-4 bg-card border border-cardBorder shadow-card text-center">
+        <div className="relative rounded-xl2 p-4 bg-mist border border-brass/30 shadow-card text-center">
+          <Pin size="sm" />
           <Package size={18} className="text-brass mx-auto mb-1" strokeWidth={1.5} aria-hidden="true" />
           <div className="text-2xl font-display text-denim">{totalItemsCount}</div>
           <div className="text-xs text-dusk">Total Items</div>
@@ -1611,10 +1612,11 @@ export default function InventoryClient({
           type="button"
           onClick={() => setBelowParOnly((v) => !v)}
           aria-pressed={belowParOnly}
-          className={`text-center rounded-xl3 p-4 bg-card border shadow-card transition-colors ${
-            belowParOnly ? 'border-rust' : 'border-cardBorder'
+          className={`relative text-center rounded-xl2 p-4 bg-mist border shadow-card transition-colors ${
+            belowParOnly ? 'border-rust' : 'border-brass/30'
           }`}
         >
+          <Pin size="sm" />
           <AlertTriangle size={18} className={`mx-auto mb-1 ${lowStockCount > 0 ? 'text-rust' : 'text-brass'}`} strokeWidth={1.5} aria-hidden="true" />
           <div className={`text-2xl font-display ${lowStockCount > 0 ? 'text-rust' : 'text-denim'}`}>
             {lowStockCount}
@@ -1627,10 +1629,11 @@ export default function InventoryClient({
           type="button"
           onClick={() => setNeverCountedOnly((v) => !v)}
           aria-pressed={neverCountedOnly}
-          className={`text-center rounded-xl3 p-4 bg-card border shadow-card transition-colors ${
-            neverCountedOnly ? 'border-brass' : 'border-cardBorder'
+          className={`relative text-center rounded-xl2 p-4 bg-mist border shadow-card transition-colors ${
+            neverCountedOnly ? 'border-brass' : 'border-brass/30'
           }`}
         >
+          <Pin size="sm" />
           <HelpCircle size={18} className="mx-auto mb-1 text-brass" strokeWidth={1.5} aria-hidden="true" />
           <div className="text-2xl font-display text-denim">{neverCountedCount}</div>
           <div className="text-xs text-dusk">{ti('neverCounted')}</div>
@@ -1639,10 +1642,11 @@ export default function InventoryClient({
           type="button"
           onClick={() => setExpiringSoon30Only((v) => !v)}
           aria-pressed={expiringSoon30Only}
-          className={`text-center rounded-xl3 p-4 bg-card border shadow-card transition-colors ${
-            expiringSoon30Only ? 'border-brass' : 'border-cardBorder'
+          className={`relative text-center rounded-xl2 p-4 bg-mist border shadow-card transition-colors ${
+            expiringSoon30Only ? 'border-brass' : 'border-brass/30'
           }`}
         >
+          <Pin size="sm" />
           <Clock size={18} className="mx-auto mb-1 text-brass" strokeWidth={1.5} aria-hidden="true" />
           {/* D-01: was text-brass at text-2xl when non-zero -- a 24px brass
               numeral, over the ceiling AND not one of the three permitted
