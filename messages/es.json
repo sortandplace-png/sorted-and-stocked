@@ -108,7 +108,8 @@
     "sopLibrary": "Biblioteca de SOP",
     "trainingVideos": "Videos de Capacitación",
     "staffHandbook": "Manual del Personal",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "allProperties": "Todas las Propiedades"
   },
   "help": {
     "title": "Centro de Ayuda",
@@ -782,7 +783,8 @@
     "clearFilters": "Borrar filtros",
     "loading": "Cargando tareas…",
     "loadPartial": "Algunas tareas no se pudieron cargar. Recargue para reintentar.",
-    "saveFailed": "Esa asignación no se guardó. Inténtelo de nuevo."
+    "saveFailed": "Esa asignación no se guardó. Inténtelo de nuevo.",
+    "unnamedMember": "Miembro sin nombre"
   },
   "staffHandbook": {
     "title": "Manual del Personal",

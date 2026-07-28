@@ -74,17 +74,24 @@ async function getDutyAreas(
 ): Promise<DutyArea[]> {
   const supabase = await createClient()
 
-  const { data: assignments } = await supabase
+  // Errors are logged, never silently returned as an empty list. The RLS
+  // recursion on 27 Jul made this concrete: the Duty Roster reported "Some
+  // duties could not be loaded" while this page said "Nothing due right now"
+  // for the same failure -- one told the truth, one invented an answer. A
+  // query that FAILED must not be indistinguishable from one that found
+  // nothing.
+  const { data: assignments, error: assignErr } = await supabase
     .from('task_assignments')
     .select('task_id')
     .eq('member_id', memberId)
     .eq('active', true)
     .lte('effective_from', todayStr)
     .or(`effective_to.is.null,effective_to.gte.${todayStr}`)
+  if (assignErr) console.error('my-day: task_assignments fetch failed', assignErr)
   const assignedIds = (assignments ?? []).map((a) => a.task_id).filter(Boolean)
   if (assignedIds.length === 0) return []
 
-  const { data: tasks } = await supabase
+  const { data: tasks, error: tasksErr } = await supabase
     .from('master_tasks')
     .select('id, task_en, task_es, source_area_en, source_area_es, sort_order')
     .eq('property_id', propertyId)
@@ -96,14 +103,19 @@ async function getDutyAreas(
     .or(`day_of_week.is.null,day_of_week.eq.${isoWeekday}`)
     .or(`time_of_day.is.null,time_of_day.eq.${timeBlock}`)
     .order('sort_order')
+  if (tasksErr) console.error('my-day: master_tasks fetch failed', tasksErr)
   if (!tasks || tasks.length === 0) return []
 
   const ids = tasks.map((t) => t.id)
-  const { data: completions } = await supabase
+  const { data: completions, error: complErr } = await supabase
     .from('task_completions')
     .select('task_id, completed')
     .eq('due_date', todayStr)
     .in('task_id', ids)
+  // A completions failure is the mildest of the three: tasks still render,
+  // they just all read as not-done. Logged so it is diagnosable rather than
+  // looking like nobody did any work today.
+  if (complErr) console.error('my-day: task_completions fetch failed', complErr)
   const completedSet = new Set((completions ?? []).filter((c) => c.completed).map((c) => c.task_id))
 
   // source_area_en/_es are the bilingual area labels already on master_tasks.
