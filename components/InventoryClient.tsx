@@ -1397,7 +1397,11 @@ export default function InventoryClient({
           <div className="w-14 h-14 rounded-xl bg-mist shrink-0 flex items-center justify-center">
             {(() => {
               const Icon = getItemIcon(item.name, item.category, categoryIconNames[item.category ?? '']);
-              return <Icon className="w-6 h-6 text-brass" strokeWidth={1.75} />;
+              // D-01: brass is never above 20px and never a fill -- only
+              // eyebrow labels, icon strokes and the pin dot. These render at
+              // 24px, so they go denim. Same violation the Staff Handbook made
+              // with brass numerals at display size.
+              return <Icon className="w-6 h-6 text-denim" strokeWidth={1.2} aria-hidden="true" />;
             })()}
           </div>
         )}
@@ -1640,9 +1644,13 @@ export default function InventoryClient({
           }`}
         >
           <Clock size={18} className="mx-auto mb-1 text-brass" strokeWidth={1.5} aria-hidden="true" />
-          <div className={`text-2xl font-display ${expiringSoon30Count > 0 ? 'text-brass' : 'text-denim'}`}>
-            {expiringSoon30Count}
-          </div>
+          {/* D-01: was text-brass at text-2xl when non-zero -- a 24px brass
+              numeral, over the ceiling AND not one of the three permitted
+              roles. Brass on a 1.2-1.5px stroke is an accent; brass filling a
+              glyph is a fill, whatever the size. The 18px lucide icons above
+              are legal on both counts; this was not. Same violation as the
+              handbook's brass numerals. */}
+          <div className="text-2xl font-display text-denim">{expiringSoon30Count}</div>
           <div className="text-xs text-dusk">Expiring Soon</div>
         </button>
       </div>
