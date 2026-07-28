@@ -71,11 +71,16 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // sense as a staff-facing surface -- staff get their own tasks
       // through My Day instead. Was open to every role before that RLS
       // change made a full board something only a manager can actually see.
+      // SS-156 Phase 1: Task Center and Duty Roster are one destination now,
+      // two tabs behind this single entry. The staff/duty-roster route still
+      // exists and still enforces its own identical owner/manager gate, so a
+      // bookmark keeps working -- it just isn't offered as a second door to
+      // the same place. Kept in excludeFromActive below so a direct visit to
+      // that URL doesn't light up Team.
       { segment: 'tools/tasks', labelKey: 'staffTasks', managerOnly: true },
-      // Duty Roster is manager-gated because the page itself redirects staff
-      // (see app/properties/[id]/staff/duty-roster/page.tsx). Offering it to
-      // staff would be a link that bounces them straight back out.
-      { segment: 'staff/duty-roster', labelKey: 'dutyRoster', managerOnly: true },
+      // SS-285. managerOnly matches the page's own redirect -- staff clock
+      // in and out on My Day and never need the property timesheet.
+      { segment: 'staff/hours', labelKey: 'hours', managerOnly: true },
       // Handover nav link removed (SS-214) -- everyone, including owners
       // and managers, now reaches it the same way: embedded on My Day.
       // The standalone /shift-handover route file is untouched (still
@@ -89,7 +94,7 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
         segment: 'staff',
         labelKey: 'team',
         managerOnly: true,
-        excludeFromActive: ['staff/duty-roster', 'staff/sops', 'staff/training', 'staff/handbook'],
+        excludeFromActive: ['staff/duty-roster', 'staff/hours', 'staff/sops', 'staff/training', 'staff/handbook'],
       },
       // Everything below the rule is what a housekeeper reads rather than
       // does. These three used to live under Tools, where staff never go --

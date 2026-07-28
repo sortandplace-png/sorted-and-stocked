@@ -250,6 +250,12 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
     setSelected(new Set(flaggedIds));
   }
 
+  // SS-298 asked for a join to locations to get the name onto each label.
+  // No join is needed: this component already loads every location for the
+  // property (for the filter dropdown) and every item already carries
+  // location_id, so it is a lookup, not a fetch.
+  const locationById = useMemo(() => new Map(locations.map((l) => [l.id, l.name])), [locations]);
+
   // Cross-narrowing: every filter's own option list only offers choices
   // that actually exist given every OTHER active filter -- e.g. once a
   // location is picked, the category dropdown drops any category with zero
@@ -430,6 +436,36 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
 
         // QR code at bottom-left
         doc.addImage(qrDataUrl, 'PNG', x + 0.08, y + t.labelHeight - qrSize - 0.08, qrSize, qrSize);
+
+        // Location, as a small grey kicker ABOVE the item name (SS-298).
+        //
+        // The brief asked for it directly UNDER the name. Measured with
+        // jsPDF at the real sizes, that position is already occupied:
+        // truncateForLabel caps names at 35 characters, but 35 characters
+        // at 7pt is ~1.75" against a 1.1" text column, so long names
+        // ALREADY wrap to a second line whose baseline lands at 1.812" --
+        // within a thousandth of an inch of where the location line would
+        // have gone. Three of the four longest real item names wrap. A
+        // fourth line under the name would have needed a baseline at
+        // ~1.97" on a 2" label: descenders on the sticker edge.
+        //
+        // Above the name is genuinely free: the photo ends at 0.9" and the
+        // name's cap height starts at ~1.63". Sitting at 1.58" it clears
+        // both, stays in the same text column so it reads as deliberate,
+        // and -- unlike anything below the name -- is unaffected by
+        // whether the name wraps. Widest real location ("Basement Common
+        // Area") is 0.852" at 5.5pt, inside the 1.1" column.
+        const locationName = item.location_id ? locationById.get(item.location_id) ?? null : null;
+        if (locationName) {
+          doc.setFontSize(5.5);
+          doc.setTextColor(120);
+          // splitTextToSize rather than a character cap: the column is
+          // measured in inches, and it was a character cap that let the
+          // name overflow in the first place.
+          const [locLine] = doc.splitTextToSize(locationName, t.labelWidth - qrSize - 0.3);
+          doc.text(locLine, x + qrSize + 0.18, y + t.labelHeight - 0.42);
+          doc.setTextColor(0);
+        }
 
         // Item name at bottom-right of QR
         doc.setFontSize(7);
@@ -672,7 +708,16 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
             {flaggedIds.length > 0 && (
               <button
                 onClick={loadFlagged}
-                className="mr-auto inline-flex items-center gap-1.5 rounded-full border border-brass/40 bg-linen px-3 py-1.5 font-medium text-denim hover:bg-white transition-colors"
+                // Solid primary fill, no border -- SS-297. The ticket named
+                // bg-denimBlue, but that is the logged-out/auth CTA colour
+                // (AuthSubmitButton, the marketing pages, LocaleToggle --
+                // all 4 of its uses). Inside the product it is bg-denim:
+                // 198 uses, D-18 states it outright ("selected state is
+                // bg-denim with white text"), and Generate PDF at the
+                // bottom of THIS page is already bg-denim. denimBlue here
+                // would have clashed with the primary button directly below
+                // it. One token away if that was actually intended.
+                className="mr-auto inline-flex items-center gap-1.5 rounded-full bg-denim px-3 py-1.5 font-medium text-white hover:opacity-90 transition-opacity"
               >
                 Load {flaggedIds.length} items flagged for printing
               </button>

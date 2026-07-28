@@ -22,7 +22,11 @@ import type { PropertyRole } from '@/components/PropertyRoleContext';
 const STAFF_LINKS: { segment: string; labelKey: string; managerOnly?: boolean; dividerBefore?: boolean }[] = [
   { segment: 'my-day', labelKey: 'myDay' },
   { segment: 'tools/tasks', labelKey: 'staffTasks', managerOnly: true },
-  { segment: 'staff/duty-roster', labelKey: 'dutyRoster', managerOnly: true },
+  // SS-156 Phase 1: Duty Roster is a tab inside tools/tasks now, not its
+  // own entry. Kept in step with DesktopNav, which these two lists mirror.
+  // SS-285, same mirroring -- a link that exists on desktop only is a link
+  // staff on phones will never find.
+  { segment: 'staff/hours', labelKey: 'hours', managerOnly: true },
   { segment: 'staff', labelKey: 'team', managerOnly: true },
   { segment: 'staff/sops', labelKey: 'sopLibrary', dividerBefore: true },
   { segment: 'staff/training', labelKey: 'trainingVideos' },

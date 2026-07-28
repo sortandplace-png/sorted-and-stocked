@@ -14,11 +14,11 @@
 // holds no .vtt yet, so nothing renders one until one is uploaded.
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import Pin from '@/components/PinAccent';
-import { Play, ExternalLink } from 'lucide-react';
+import { Play, ExternalLink, X } from 'lucide-react';
 
 export type SignedVideo = {
   path: string;
@@ -32,30 +32,72 @@ export type SignedVideo = {
 
 export default function TrainingClient({ videos }: { videos: SignedVideo[] }) {
   const t = useTranslations('training');
-  const [activePath, setActivePath] = useState<string | null>(videos[0]?.path ?? null);
+  // Starts null, not videos[0]. The player is a modal now, and seeding this
+  // with the first video would pop that modal open over the list the moment
+  // the page loads, before anyone has chosen anything to watch.
+  const [activePath, setActivePath] = useState<string | null>(null);
 
   const active = videos.find((v) => v.path === activePath) ?? null;
+
+  // Escape closes, same as the X and the backdrop. A modal that traps you
+  // because you reached for the key every other dialog uses is worse than
+  // no modal.
+  useEffect(() => {
+    if (!active) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActivePath(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [active]);
 
   return (
     <div className="max-w-md lg:max-w-4xl mx-auto p-4">
       <h1 className="text-2xl font-display text-denim mb-1">{t('title')}</h1>
       <p className="text-sm text-dusk mb-3">{t('description')}</p>
 
-      {/* Stated in the product, not just in a code comment -- a staff member
-          who can't follow the audio should be told why, not left to assume
-          the app is broken for them.
+      {/* The player is an overlay now, not a card above the list. The list
+          keeps its own scroll position and the video gets the screen while
+          it is being watched. Everything inside -- signed URL, the caption
+          <track>, crossOrigin, the English-only notice -- is the same code
+          that ran in the main column, relocated rather than rewritten.
 
-          Now tied to the video actually being watched rather than shown
-          unconditionally: once a video has a Spanish track, telling its
-          viewer it is English-only is simply false, and a notice that is
-          sometimes wrong stops being read at all. */}
-      {active && !active.captionSignedUrl && (
-        <p className="text-xs text-brass bg-linen rounded-xl2 px-3 py-2 mb-4">{t('englishOnlyNotice')}</p>
-      )}
-
+          Backdrop and shell match ToolModal's established pattern: full
+          screen, bottom-sheet on a phone, centred from sm up, with
+          stopPropagation on the panel so a tap inside never closes it. */}
       {active?.signedUrl && (
-        <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden mb-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center sm:justify-center sm:p-4"
+          onClick={() => setActivePath(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={t(active.titleKey)}
+        >
+        <div
+          className="relative w-full sm:max-w-2xl max-h-[92vh] overflow-y-auto bg-card rounded-t-xl3 sm:rounded-xl3 border border-cardBorder shadow-card"
+          onClick={(e) => e.stopPropagation()}
+        >
           <Pin size="sm" />
+          <button
+            onClick={() => setActivePath(null)}
+            aria-label={t('close')}
+            className="absolute top-2 left-2 z-10 h-8 w-8 rounded-full bg-denim/70 text-white flex items-center justify-center"
+          >
+            <X size={16} strokeWidth={1.75} aria-hidden="true" />
+          </button>
+
+          {/* Stated in the product, not just in a code comment -- a staff
+              member who can't follow the audio should be told why, not left
+              to assume the app is broken for them.
+
+              Tied to the video actually being watched rather than shown
+              unconditionally: once a video has a Spanish track, telling its
+              viewer it is English-only is simply false, and a notice that is
+              sometimes wrong stops being read at all. */}
+          {!active.captionSignedUrl && (
+            <p className="text-xs text-brass bg-linen px-3 py-2">{t('englishOnlyNotice')}</p>
+          )}
+
           <video
             key={active.path}
             src={active.signedUrl}
@@ -90,6 +132,7 @@ export default function TrainingClient({ videos }: { videos: SignedVideo[] }) {
               </Link>
             )}
           </div>
+        </div>
         </div>
       )}
 

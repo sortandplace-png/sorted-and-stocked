@@ -8,9 +8,16 @@
 // listed it managerOnly -- and MobileBottomNav's comment claimed managerOnly
 // "mirrors each page's own server-side gate". For this route that was false.
 // Same pattern as staff/duty-roster/page.tsx, which did have the guard.
+//
+// SS-156 Phase 1: this route is now the single entry point for both Task
+// Center and Duty Roster, via tabs. The guard below is unchanged and still
+// correct for both -- staff/duty-roster/page.tsx enforces exactly the same
+// owner/manager gate, so nothing is newly exposed by putting them behind
+// one door. That route still exists and still works for anyone with it
+// bookmarked; it just no longer appears in the nav.
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import StaffTasksClient from '@/components/StaffTasksClient';
+import TaskCenterTabs from '@/components/TaskCenterTabs';
 
 export default async function StaffTasksPage({
   params,
@@ -37,5 +44,5 @@ export default async function StaffTasksPage({
     redirect(`/properties/${id}/inventory`);
   }
 
-  return <StaffTasksClient propertyId={id} />;
+  return <TaskCenterTabs propertyId={id} />;
 }

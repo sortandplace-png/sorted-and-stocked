@@ -32,7 +32,6 @@ import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import FieldLabel from '@/components/FieldLabel';
-import Link from 'next/link';
 import { Camera, CheckCircle2, ChevronDown, Circle, ClipboardList, Clock, Library, ListChecks } from 'lucide-react';
 import Pin from '@/components/PinAccent';
 
@@ -76,16 +75,22 @@ type Assignment = { id: string; task_id: string; member_id: string | null };
 // model it as an array, and getting this wrong fails silently (no poster
 // ever renders, no error anywhere). Accepting both shapes is three lines
 // and removes the guess entirely.
-type SopEmbed = { expected_appearance_url: string | null } | null;
+type SopEmbed = {
+  expected_appearance_url: string | null;
+  sop_en: string | null;
+  sop_es: string | null;
+} | null;
 type PosterRow = {
   master_task_id: string;
   sop_library: SopEmbed | SopEmbed[];
 };
 
-function posterUrl(row: PosterRow): string | null {
-  const embed = Array.isArray(row.sop_library) ? row.sop_library[0] : row.sop_library;
-  return embed?.expected_appearance_url ?? null;
+function sopEmbed(row: PosterRow): SopEmbed {
+  return Array.isArray(row.sop_library) ? row.sop_library[0] ?? null : row.sop_library;
 }
+
+/** The linked SOP's own instructions, kept per task alongside its poster. */
+type LinkedSop = { sopEn: string | null; sopEs: string | null };
 type Completion = {
   task_id: string;
   due_date: string;
@@ -175,6 +180,7 @@ export default function StaffTasksClient({
   const [lastCompletionByTask, setLastCompletionByTask] = useState<Record<string, Completion>>({});
   const [todayCompletionByTask, setTodayCompletionByTask] = useState<Record<string, Completion>>({});
   const [posterByTaskId, setPosterByTaskId] = useState<Record<string, string>>({});
+  const [linkedSopByTaskId, setLinkedSopByTaskId] = useState<Record<string, LinkedSop>>({});
   const [sopLibrary, setSopLibrary] = useState<SopRow[]>([]);
   const [showLibrary, setShowLibrary] = useState(false);
   const [jobFilter, setJobFilter] = useState<JobFamily | 'all'>('all');
@@ -252,7 +258,11 @@ export default function StaffTasksClient({
         // a different thing that happens to read the same table.
         supabase
           .from('master_task_sops')
-          .select('master_task_id, sop_library(expected_appearance_url)')
+          // sop_en/sop_es ride along with the poster (SS-300) -- the full
+          // procedure now renders inline on the card, and it would be
+          // absurd to fetch the same join twice to get the text next to
+          // the picture it belongs with.
+          .select('master_task_id, sop_library(expected_appearance_url, sop_en, sop_es)')
           .in('master_task_id', taskIds)
           .order('is_primary', { ascending: false })
           .order('sort_order', { ascending: true }),
@@ -280,17 +290,34 @@ export default function StaffTasksClient({
       // same first-wins dedupe as the completions above. Links whose SOP
       // has no poster are skipped rather than stored as null, so a task
       // with a second, poster-bearing SOP still gets a picture.
+      //
+      // Two accumulators on purpose. The poster keeps its existing
+      // skip-if-absent rule so a task whose primary SOP has no picture can
+      // still borrow one from a second linked SOP. The instructions must
+      // NOT work that way: text and picture would then come from different
+      // SOPs, which is how someone ends up following one procedure while
+      // looking at another's photo. The text is simply the first linked
+      // SOP, primary first.
       const posters: Record<string, string> = {};
+      const linkedSops: Record<string, LinkedSop> = {};
       for (const r of (posterRows as unknown as PosterRow[]) ?? []) {
-        const url = posterUrl(r);
-        if (url && !posters[r.master_task_id]) posters[r.master_task_id] = url;
+        const embed = sopEmbed(r);
+        if (!embed) continue;
+        if (embed.expected_appearance_url && !posters[r.master_task_id]) {
+          posters[r.master_task_id] = embed.expected_appearance_url;
+        }
+        if (!linkedSops[r.master_task_id]) {
+          linkedSops[r.master_task_id] = { sopEn: embed.sop_en, sopEs: embed.sop_es };
+        }
       }
       setPosterByTaskId(posters);
+      setLinkedSopByTaskId(linkedSops);
     } else {
       setAssignments([]);
       setLastCompletionByTask({});
       setTodayCompletionByTask({});
       setPosterByTaskId({});
+      setLinkedSopByTaskId({});
     }
 
     if (canManage(role)) {
@@ -675,6 +702,12 @@ export default function StaffTasksClient({
             // placeholder when both are absent: an empty grey square on
             // most rows is worse than no square at all.
             const tileImage = task.photo_url ?? posterByTaskId[task.id] ?? null;
+            // Linked-SOP instructions in the viewer's language, falling back
+            // to the other language rather than showing nothing: a Spanish
+            // reader is better served by English instructions than by a
+            // blank panel where the procedure should be.
+            const linked = linkedSopByTaskId[task.id] ?? null;
+            const linkedSop = linked ? (locale === 'es' ? linked.sopEs ?? linked.sopEn : linked.sopEn ?? linked.sopEs) : null;
             return (
               <li
                 key={task.id}
@@ -779,20 +812,52 @@ export default function StaffTasksClient({
 
                     {expanded && (
                       <div className="mt-3 pt-3 border-t border-cardBorder space-y-2">
+                        {/* The task's own inline note, when it has one. */}
                         {sop && <p className="text-xs text-dusk">{sop}</p>}
-                        {/* Links to the shared procedure rather than
-                            duplicating its text on the card. Only shown when
-                            the task actually references one -- sop_id is set
-                            on just 1 of 141 tasks today, which is the gap the
-                            SOP Library page exists to close. */}
-                        {task.sop_id && (
-                          <Link
-                            href={`/properties/${propertyId}/tools/sops`}
-                            className="inline-flex items-center gap-1 text-xs font-medium text-brass underline underline-offset-2"
-                          >
-                            <ClipboardList size={12} strokeWidth={1.75} aria-hidden="true" />
-                            {locale === 'es' ? 'Ver procedimiento completo' : 'View full procedure'}
-                          </Link>
+
+                        {/* SS-300: the full linked procedure, in full, right
+                            here. This used to be a one-line snippet plus a
+                            "View full procedure" link out to the SOP Library
+                            -- gated on task.sop_id, which is the legacy
+                            column and is set on 1 of 168 active tasks, so
+                            for 65 of the 66 tasks that DO have a real linked
+                            SOP the link never appeared at all. It now keys
+                            off the same master_task_sops join that feeds the
+                            poster, so it appears exactly when a real
+                            procedure exists.
+                            Inline, not a link: someone standing in a room
+                            mid-task should not have to navigate away from
+                            My Day -- and losing their place -- to read how
+                            to do the thing they are looking at. */}
+                        {linkedSop && (
+                          <div className="rounded-xl bg-card border border-cardBorder p-2.5 space-y-2">
+                            <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-brass">
+                              <ClipboardList size={11} strokeWidth={1.75} aria-hidden="true" />
+                              {locale === 'es' ? 'Procedimiento' : 'Procedure'}
+                            </p>
+                            {/* whitespace-pre-line: these are authored as
+                                multi-step instructions with real line breaks,
+                                and collapsing them into one paragraph is what
+                                makes a procedure unreadable. */}
+                            <p className="text-xs text-denim whitespace-pre-line leading-relaxed">
+                              {linkedSop}
+                            </p>
+                            {/* The poster belongs beside the words, not on a
+                                separate screen -- what finished should look
+                                like, next to how to get there. Bigger than
+                                the row thumbnail because here it is the
+                                reference, not an identifier. */}
+                            {posterByTaskId[task.id] && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={storageThumbnail(posterByTaskId[task.id], 640)}
+                                alt=""
+                                loading="lazy"
+                                decoding="async"
+                                className="w-full max-h-56 object-contain rounded-lg bg-mist"
+                              />
+                            )}
+                          </div>
                         )}
                         {passFail && <p className="text-xs text-brass">Pass/fail: {passFail}</p>}
                         <div>

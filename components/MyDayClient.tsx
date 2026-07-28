@@ -15,6 +15,8 @@ import CollapsibleCard from '@/components/CollapsibleCard';
 import StaffDutyChecklist from '@/components/StaffDutyChecklist';
 import StaffTasksClient from '@/components/StaffTasksClient';
 import ToolModal from '@/components/ToolModal';
+import ClockInOutButton from '@/components/ClockInOutButton';
+import TeamOnShiftBar from '@/components/TeamOnShiftBar';
 import KitchenOpsToolModal from '@/components/KitchenOpsToolModal';
 import { Camera, ShoppingCart, Timer, Info, PlayCircle } from 'lucide-react';
 import Pin from '@/components/PinAccent';
@@ -49,6 +51,19 @@ export default function MyDayClient({
       <p className="text-sm text-dusk mb-4">
         {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
       </p>
+
+      {/* SS-285. Top of the page and on its own line, because starting and
+          ending a shift is the first and last thing done here and should
+          never be hunted for. Renders nothing until it knows the current
+          state, so it can't flash the wrong label. */}
+      <div className="mb-5">
+        <ClockInOutButton propertyId={propertyId} />
+      </div>
+
+      {/* Who else is in the house right now. Sits under the clock control
+          because it's the same question in two halves -- am I on, and who
+          else is. Renders nothing when nobody is clocked in. */}
+      <TeamOnShiftBar propertyId={propertyId} />
 
       {/* SP_06 is the video about THIS page, so it belongs on this page --
           linked to the Training series rather than embedded, so there's one
