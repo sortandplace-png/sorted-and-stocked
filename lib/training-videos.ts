@@ -26,18 +26,29 @@ export type TrainingVideo = {
   captionPath?: string;
 };
 
-// captionPath is deliberately unset on all six: the bucket currently holds
-// the six .mp4s and nothing else, so pointing at a .vtt that does not exist
-// would sign to null and change nothing except to imply the file is there.
-// When a caption is produced, upload it and add one field here -- no other
-// code change is needed.
+// Three of the six have Spanish captions as of 28 Jul 2026, uploaded to the
+// same private bucket. The other three have none yet -- those videos keep
+// showing the English-only notice, and adding a caption later is still just
+// one more captionPath here.
 export const TRAINING_VIDEOS: TrainingVideo[] = [
-  { path: 'sp-01-welcome.mp4', order: 1, titleKey: 'v1' },
-  { path: 'sp-02-dashboard.mp4', order: 2, titleKey: 'v2', href: (p) => `/properties/${p}/dashboard` },
+  { path: 'sp-01-welcome.mp4', order: 1, titleKey: 'v1', captionPath: 'sp-01-welcome_es.vtt' },
+  {
+    path: 'sp-02-dashboard.mp4',
+    order: 2,
+    titleKey: 'v2',
+    href: (p) => `/properties/${p}/dashboard`,
+    captionPath: 'sp-02-dashboard_es.vtt',
+  },
   { path: 'sp-03-inventory.mp4', order: 3, titleKey: 'v3', href: (p) => `/properties/${p}/inventory` },
   { path: 'sp-04-shopping-lists.mp4', order: 4, titleKey: 'v4', href: (p) => `/properties/${p}/shopping-list` },
   { path: 'sp-05-recipes-meal-planning.mp4', order: 5, titleKey: 'v5', href: (p) => `/properties/${p}/recipes` },
-  { path: 'sp-06-staff-my-day.mp4', order: 6, titleKey: 'v6', href: (p) => `/properties/${p}/my-day` },
+  {
+    path: 'sp-06-staff-my-day.mp4',
+    order: 6,
+    titleKey: 'v6',
+    href: (p) => `/properties/${p}/my-day`,
+    captionPath: 'sp-06-staff-my-day_es.vtt',
+  },
 ];
 
 export const MY_DAY_VIDEO_PATH = 'sp-06-staff-my-day.mp4';

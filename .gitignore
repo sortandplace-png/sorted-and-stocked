@@ -2,11 +2,24 @@
 /node_modules
 
 # next.js
-/.next/
+# Glob rather than exact names: build dirs have appeared as .next, .next(1)
+# and .next-agent, and every one of them has been swept into a commit by a
+# stray `git add -A` at least once.
+/.next*/
 /out/
 # agent dev server's separate build dir (see "dev:agent" in package.json --
 # avoids EBUSY contention when a human and an agent run dev at the same time)
-/.next-agent/
+# -- covered by the glob above, kept for the explanation.
+
+# agent/tooling scratch and generated output, none of it source
+/.agents/
+/prototypes/
+/scripts/output/
+
+# Archives. sorted-and-stocked-code.zip.zip has sat untracked in the repo
+# root for weeks and was committed by accident on 28 Jul (reverted before
+# it could spread). A source repo has no reason to carry a zip of itself.
+*.zip
 
 # production
 /build

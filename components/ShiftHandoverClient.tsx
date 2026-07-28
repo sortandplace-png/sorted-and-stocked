@@ -39,7 +39,17 @@ type Handover = {
 const MAX_RECORDING_SECONDS = 20;
 const PHOTO_MAX_DIMENSION = 900; // px — keeps the base64 payload reasonable
 
-const QUICK_TEMPLATES = ['Dinner staged', 'Fridge restocked', 'Issue reported'] as const;
+// The VALUE is what lands in shift_handovers.template_tag and what every
+// past handover already carries; the LABEL is what the current viewer
+// reads. They are separate on purpose (SS-270): translating the stored
+// value would strand every existing row under a tag nobody matches, and
+// would mean a Spanish user's handover showed a Spanish tag to an English
+// reader. Store one language, display the viewer's.
+const QUICK_TEMPLATES = [
+  { value: 'Dinner staged', labelKey: 'templateDinnerStaged' },
+  { value: 'Fridge restocked', labelKey: 'templateFridgeRestocked' },
+  { value: 'Issue reported', labelKey: 'templateIssueReported' },
+] as const;
 
 function resizeImageFile(file: File): Promise<string> {
   return compressImageToDataUrl(file, { maxDimension: PHOTO_MAX_DIMENSION });
@@ -162,7 +172,7 @@ export default function ShiftHandoverClient({
       const dataUrls = await Promise.all(files.map(resizeImageFile));
       setPhotoDataUrls((prev) => [...prev, ...dataUrls]);
     } catch {
-      showToast('Could not read that photo.', { variant: 'error' });
+      showToast(t('errPhoto'), { variant: 'error' });
     } finally {
       if (galleryInputRef.current) galleryInputRef.current.value = '';
     }
@@ -178,7 +188,7 @@ export default function ShiftHandoverClient({
       const dataUrl = await resizeImageFile(file);
       setPhotoDataUrls((prev) => [...prev, dataUrl]);
     } catch {
-      showToast('Could not read that photo.', { variant: 'error' });
+      showToast(t('errPhoto'), { variant: 'error' });
     }
   }
 
@@ -214,7 +224,7 @@ export default function ShiftHandoverClient({
         });
       }, 1000);
     } catch {
-      showToast('Microphone access denied or unavailable.', { variant: 'error' });
+      showToast(t('errMic'), { variant: 'error' });
     }
   }
 
@@ -241,7 +251,7 @@ export default function ShiftHandoverClient({
     // also_did counts as real content -- someone whose whole handover is
     // "also picked up the dry cleaning" must be able to submit it.
     if (noteIsUnedited && !alsoDid.trim() && photoDataUrls.length === 0 && !audioDataUrl) {
-      showToast('Add a note, photo, or recording first.', { variant: 'error' });
+      showToast(t('errEmpty'), { variant: 'error' });
       return;
     }
     setSubmitting(true);
@@ -252,7 +262,7 @@ export default function ShiftHandoverClient({
 
     if (!user) {
       setSubmitting(false);
-      showToast('Not signed in.', { variant: 'error' });
+      showToast(t('errNotSignedIn'), { variant: 'error' });
       return;
     }
 
@@ -270,12 +280,12 @@ export default function ShiftHandoverClient({
     setSubmitting(false);
 
     if (!result.ok) {
-      showToast('Failed to save handover.', { variant: 'error' });
+      showToast(t('errSave'), { variant: 'error' });
       return;
     }
 
     showToast(
-      result.queued ? 'Saved — will sync when back online.' : 'Handover note left for the next shift.',
+      result.queued ? t('savedQueued') : t('savedOk'),
       { variant: 'success' }
     );
 
@@ -299,10 +309,13 @@ export default function ShiftHandoverClient({
 
   function timeAgo(iso: string) {
     const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-    if (mins < 1) return 'just now';
-    if (mins < 60) return `${mins}m ago`;
+    if (mins < 1) return t('justNow');
+    if (mins < 60) return t('minutesAgo', { n: mins });
     const hrs = Math.round(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
+    if (hrs < 24) return t('hoursAgo', { n: hrs });
+    // Past a day, the locale's own date format is more use than a
+    // translated "N days ago" -- and toLocaleDateString already follows
+    // the browser locale rather than needing a string of ours.
     return new Date(iso).toLocaleDateString();
   }
 
@@ -311,15 +324,15 @@ export default function ShiftHandoverClient({
       <div className="flex flex-wrap gap-1.5">
           {QUICK_TEMPLATES.map((template) => (
             <button
-              key={template}
-              onClick={() => applyTemplate(template)}
+              key={template.value}
+              onClick={() => applyTemplate(template.value)}
               className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
-                templateTag === template
+                templateTag === template.value
                   ? 'bg-denim text-white border-denim'
                   : 'bg-mist text-dusk border-brass/30'
               }`}
             >
-              {template}
+              {t(template.labelKey)}
             </button>
           ))}
         </div>
@@ -328,7 +341,7 @@ export default function ShiftHandoverClient({
           ref={noteTextareaRef}
           value={noteText}
           onChange={(e) => setNoteText(e.target.value)}
-          placeholder="e.g. Dinner prep is staged in the fridge, just needs reheating…"
+          placeholder={t('notePlaceholder')}
           rows={5}
           className="w-full border border-brass/30 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-4 py-3 bg-mist text-sm text-denim"
         />
@@ -382,7 +395,7 @@ export default function ShiftHandoverClient({
             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium"
           >
             <Camera className="h-4 w-4" />
-            {photoDataUrls.length > 0 ? `+ (${photoDataUrls.length})` : 'Photo'}
+            {photoDataUrls.length > 0 ? `+ (${photoDataUrls.length})` : t('photo')}
           </button>
           <label className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium cursor-pointer">
             <input
@@ -394,7 +407,7 @@ export default function ShiftHandoverClient({
               className="hidden"
             />
             <ImageIcon className="h-4 w-4" />
-            Library
+            {t('library')}
           </label>
 
           {!recording ? (
@@ -403,7 +416,7 @@ export default function ShiftHandoverClient({
               className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full bg-mist border border-brass/30 text-denim text-sm font-medium"
             >
               <Mic className="h-4 w-4" />
-              {audioDataUrl ? 'Re-record' : 'Record'}
+              {audioDataUrl ? t('reRecord') : t('record')}
             </button>
           ) : (
             <button
@@ -411,7 +424,7 @@ export default function ShiftHandoverClient({
               className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full bg-rust text-white text-sm font-medium animate-pulse"
             >
               <Square className="h-4 w-4" fill="currentColor" />
-              Stop ({MAX_RECORDING_SECONDS - recordSeconds}s left)
+              {t('stopRecording', { seconds: MAX_RECORDING_SECONDS - recordSeconds })}
             </button>
           )}
         </div>
@@ -425,7 +438,7 @@ export default function ShiftHandoverClient({
           disabled={submitting}
           className="w-full py-2.5 rounded-full bg-denim text-white font-medium disabled:opacity-40"
         >
-          {submitting ? 'Saving…' : 'Leave handover note'}
+          {submitting ? t('saving') : t('submit')}
         </button>
     </>
   );
@@ -436,12 +449,12 @@ export default function ShiftHandoverClient({
         <SkeletonList rows={3} />
       ) : handovers.length === 0 ? (
         <div className="text-center mt-4 py-6 bg-card rounded-xl2 shadow-card">
-          <p className="text-sm text-dusk mb-3">No handovers yet.</p>
+          <p className="text-sm text-dusk mb-3">{t('emptyTitle')}</p>
           <button
             onClick={() => noteTextareaRef.current?.focus()}
             className="text-sm font-medium text-white bg-denim px-4 py-2 rounded-full"
           >
-            Create end of day note
+            {t('emptyCta')}
           </button>
         </div>
       ) : (
@@ -452,7 +465,7 @@ export default function ShiftHandoverClient({
               <li key={h.id} className="bg-card rounded-xl2 shadow-card p-4">
                 <div className="flex items-center justify-between mb-2 flex-wrap gap-1.5">
                   <span className="text-sm font-medium text-denim">
-                    {h.created_by_name ?? 'Someone'}
+                    {h.created_by_name ?? t('someone')}
                   </span>
                   <div className="flex items-center gap-2">
                     {h.template_tag && (
@@ -495,7 +508,7 @@ export default function ShiftHandoverClient({
           cardId="staff-handover-form"
           pinSize="sm"
           className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden mb-6"
-          header={<CardHeader>Shift Handover</CardHeader>}
+          header={<CardHeader>{t('title')}</CardHeader>}
         >
           <div className="p-4 space-y-3">{formContent}</div>
         </CollapsibleCard>
@@ -504,7 +517,7 @@ export default function ShiftHandoverClient({
           cardId="staff-handover-recent"
           pinSize="sm"
           className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden"
-          header={<CardHeader>Recent Handovers</CardHeader>}
+          header={<CardHeader>{t('recentHeader')}</CardHeader>}
         >
           <div className="p-4">{recentContent}</div>
         </CollapsibleCard>
@@ -514,16 +527,14 @@ export default function ShiftHandoverClient({
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-display text-denim mb-1">Shift Handover</h1>
-      <p className="text-sm text-dusk mb-4">
-        Leave a quick note for whoever's coming on next — no long write-up needed.
-      </p>
+      <h1 className="text-2xl font-display text-denim mb-1">{t('title')}</h1>
+      <p className="text-sm text-dusk mb-4">{t('subtitle')}</p>
 
       <CameraCapture open={showCamera} onCapture={handleCameraFile} onClose={() => setShowCamera(false)} />
 
       <div className="bg-card rounded-xl2 shadow-card p-4 mb-6 space-y-3">{formContent}</div>
 
-      <h2 className="font-display text-lg text-denim mb-2">Recent handovers</h2>
+      <h2 className="font-display text-lg text-denim mb-2">{t('recentHeading')}</h2>
       {recentContent}
     </div>
   );

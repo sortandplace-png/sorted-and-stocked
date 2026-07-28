@@ -9,15 +9,22 @@
 // "mirrors each page's own server-side gate". For this route that was false.
 // Same pattern as staff/duty-roster/page.tsx, which did have the guard.
 //
-// SS-156 Phase 1: this route is now the single entry point for both Task
-// Center and Duty Roster, via tabs. The guard below is unchanged and still
-// correct for both -- staff/duty-roster/page.tsx enforces exactly the same
-// owner/manager gate, so nothing is newly exposed by putting them behind
-// one door. That route still exists and still works for anyone with it
-// bookmarked; it just no longer appears in the nav.
+// SS-156 Phase 2: one central page, not two tabs. The roster's own
+// structure IS the manager's view -- stat tiles, filters, tile grid by
+// room -- so it is the page, with Task Center's genuinely managerial
+// pieces folded onto the same grid (deploy-from-library, SOP panel, task
+// photos). "Roster" and "Tasks" are no longer separate concepts.
+//
+// What deliberately did NOT come across: the Due badge and the completion
+// checkbox. Staff complete work on My Day, which reads this same data
+// through scope="mine" and is untouched. This page is for assigning and
+// managing, not checking off.
+//
+// The guard below is unchanged and correct for both -- staff/duty-roster
+// enforces the identical owner/manager gate, so nothing is newly exposed.
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import TaskCenterTabs from '@/components/TaskCenterTabs';
+import DutyRosterClient from '@/components/DutyRosterClient';
 
 export default async function StaffTasksPage({
   params,
@@ -44,5 +51,14 @@ export default async function StaffTasksPage({
     redirect(`/properties/${id}/inventory`);
   }
 
-  return <TaskCenterTabs propertyId={id} />;
+  // Page owns the chrome: bg-linen and the 1240px container, the roster's
+  // real, correct frame. Same frame on staff/duty-roster, so the page looks
+  // identical whichever door you came through.
+  return (
+    <div className="bg-linen min-h-screen">
+      <div className="max-w-[1240px] mx-auto px-4 py-6">
+        <DutyRosterClient propertyId={id} />
+      </div>
+    </div>
+  );
 }
