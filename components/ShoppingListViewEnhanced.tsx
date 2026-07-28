@@ -108,19 +108,32 @@ const STORE_ICON_SRC: Record<string, string> = {
   Walmart: '/store-icons/walmart.png',
 };
 
-// Aisle/category tiles, same shape as STORE_ICON_SRC above. Keys are the
-// real inventory_items.category values (verified live), not guessed --
-// "Meat & Seafood" and "Dairy" are what the data actually says, so a map
-// keyed on "Meat" or "Dairy & Eggs" would silently match nothing.
+// Aisle/category tiles, same shape as STORE_ICON_SRC above.
 //
-// Only the categories that have art. Everything else falls through to the
-// lucide icon exactly as before -- a partial map is fine here, a wrong key
-// is not.
+// KEYS ARE DISPLAY TITLES, NOT RAW COLUMN VALUES. This map was previously
+// keyed on inventory_items.category ("Dairy", "Meat & Seafood") and those
+// two tiles silently fell through to Lucide, because
+// get_shopping_list_with_inventory RENAMES them on the way out:
+//
+//     when 'Bakery'         then 'Bakery / Dry'
+//     when 'Meat & Seafood' then 'Meat / Fish'
+//     when 'Dairy'          then 'Dairy / Eggs'
+//
+// Produce and Pantry pass through unchanged, which is exactly why those
+// two worked and hid the bug. Checking the table and the component was not
+// enough -- the rename lives in the RPC, and the group title is whatever
+// that function emits.
+//
+// "Staples" and "Other" are titles this view invents itself (the
+// staples-first bucket and the RPC's final coalesce fallback), so they
+// belong here too.
 const CATEGORY_ICON_SRC: Record<string, string> = {
   Produce: '/category-icons/produce.png',
   Pantry: '/category-icons/pantry.png',
-  'Meat & Seafood': '/category-icons/meat-fish.png',
-  Dairy: '/category-icons/dairy-eggs.png',
+  'Meat / Fish': '/category-icons/meat-fish.png',
+  'Dairy / Eggs': '/category-icons/dairy-eggs.png',
+  Staples: '/category-icons/staples.png',
+  Other: '/category-icons/other.png',
 };
 
 // The four grouping toggles. These were lucide components in a
