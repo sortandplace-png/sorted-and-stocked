@@ -7,6 +7,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientUpdate } from '@/lib/resilient-write';
@@ -35,7 +36,25 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
   const [error, setError] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState('');
   const [adding, setAdding] = useState(false);
-  const [activeTab, setActiveTab] = useState<'recipes' | 'staples'>('recipes');
+  // SS-278: the tab lives in the URL, not in component state. It was state
+  // only, so a refresh dropped you back on Recipe Ingredients no matter which
+  // tab you were reading -- and a service-worker reload did the same. In the
+  // URL it also survives the back button and makes the tab linkable.
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const activeTab: 'recipes' | 'staples' = searchParams.get('tab') === 'staples' ? 'staples' : 'recipes';
+
+  const setActiveTab = useCallback(
+    (tab: 'recipes' | 'staples') => {
+      const next = new URLSearchParams(searchParams.toString());
+      next.set('tab', tab);
+      // replace, not push -- switching tabs should not stack history entries
+      // that the back button then has to walk through one at a time.
+      router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+    },
+    [searchParams, router, pathname]
+  );
   const [pairingRules, setPairingRules] = useState<PairingRule[]>([]);
   const [dismissedPairingNudge, setDismissedPairingNudge] = useState(false);
   const [pesachModeEnabled, setPesachModeEnabled] = useState(false);
