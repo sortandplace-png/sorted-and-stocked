@@ -1951,7 +1951,7 @@ export default function InventoryClient({
                           {count} item{count === 1 ? '' : 's'}
                         </p>
                         {lowCount > 0 && (
-                          <span className="inline-flex items-center gap-1 mt-2 text-xs font-semibold bg-[#FDF2F2] border border-[#F8C4C4] text-[#9B2C2C] px-2.5 py-1 rounded-full">
+                          <span className="inline-flex items-center gap-1 mt-2 text-xs font-semibold bg-briar-bg border border-briar-border text-briar px-2.5 py-1 rounded-full">
                             <AlertTriangle className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
                             {lowCount} low
                           </span>

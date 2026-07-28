@@ -103,6 +103,9 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   // Which tile has its procedure open. One at a time -- a grid with every
   // panel expanded is not a grid any more.
   const [openSopTaskId, setOpenSopTaskId] = useState<string | null>(null);
+  // Retired (active=false) tasks are out of scope by default -- see the
+  // scopedTasks note below.
+  const [showRetired, setShowRetired] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -274,29 +277,49 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     return [x.task_en, x.task_es, roomLabel(x.room_id), x.job_type ?? ''].join(' ').toLowerCase().includes(q);
   };
 
+  // SS-309. `active` was selected into Task and then never read anywhere --
+  // not in the query, not client-side. So retired rows rendered as tiles
+  // and counted in every stat: five Childcare duplicates from a July 19
+  // batch insert, each pair already correctly one active + one inactive,
+  // inflating "Total" by five.
+  //
+  // Scoped ONCE here rather than filtered at each call site, so the stats,
+  // the dropdown option lists and the tile grid cannot disagree about what
+  // they are counting. Everything downstream reads scopedTasks.
+  //
+  // Not hidden outright: this page is owner/manager only, and an admin is
+  // exactly who might need to find a retired task to reactivate it.
+  // Hiding them with no way back would trade a visible wrong number for an
+  // invisible missing row.
+  const scopedTasks = useMemo(
+    () => (showRetired ? tasks : tasks.filter((x) => x.active)),
+    [tasks, showRetired]
+  );
+  const retiredCount = useMemo(() => tasks.filter((x) => !x.active).length, [tasks]);
+
   // Cross-narrowing: each dropdown is built from what the OTHER filters leave,
   // so no combination can be assembled that returns nothing.
   const freqOptions = useMemo(() => {
     const present = new Set(
-      tasks.filter((x) => matchRoom(x) && matchJob(x) && matchAssignment(x) && matchSearch(x)).map((x) => x.frequency_id)
+      scopedTasks.filter((x) => matchRoom(x) && matchJob(x) && matchAssignment(x) && matchSearch(x)).map((x) => x.frequency_id)
     );
     return frequencies.filter((f) => present.has(f.id));
-  }, [tasks, frequencies, room, job, assignment, search]);
+  }, [scopedTasks, frequencies, room, job, assignment, search]);
 
   const roomOptions = useMemo(() => {
-    const pool = tasks.filter((x) => matchJob(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x));
+    const pool = scopedTasks.filter((x) => matchJob(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x));
     const ids = new Set(pool.map((x) => x.room_id));
     return { hasNull: ids.has(null), list: rooms.filter((r) => ids.has(r.id)) };
-  }, [tasks, rooms, job, freq, assignment, search, passesFrequency]);
+  }, [scopedTasks, rooms, job, freq, assignment, search, passesFrequency]);
 
   const jobOptions = useMemo(() => {
-    const pool = tasks.filter((x) => matchRoom(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x));
+    const pool = scopedTasks.filter((x) => matchRoom(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x));
     return [...new Set(pool.map((x) => x.job_type).filter(Boolean))].sort() as string[];
-  }, [tasks, room, freq, assignment, search, passesFrequency]);
+  }, [scopedTasks, room, freq, assignment, search, passesFrequency]);
 
   const filtered = useMemo(
-    () => tasks.filter((x) => matchRoom(x) && matchJob(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x)),
-    [tasks, room, job, freq, assignment, search, passesFrequency]
+    () => scopedTasks.filter((x) => matchRoom(x) && matchJob(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x)),
+    [scopedTasks, room, job, freq, assignment, search, passesFrequency]
   );
 
   // Derived from `filtered`, so the tiles answer "of what I'm looking at
@@ -547,6 +570,22 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
           <option value="unassigned">{t('unassigned')}</option>
           <option value="assigned">{t('assigned')}</option>
         </select>
+
+        {/* The way back to retired tasks. Only offered when there are any --
+            a toggle that reveals nothing is just a question mark. Sits with
+            the other filters because that is what it is: a scope control,
+            not a setting. */}
+        {retiredCount > 0 && (
+          <label className="inline-flex items-center gap-2 text-[12px] text-denim cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showRetired}
+              onChange={(e) => setShowRetired(e.target.checked)}
+              className="h-4 w-4 accent-brass rounded"
+            />
+            {t('showRetired', { count: retiredCount })}
+          </label>
+        )}
       </div>
 
       <div className="relative bg-card border border-cardBorder rounded-xl3 shadow-card overflow-hidden">
@@ -639,6 +678,15 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                       </div>
 
                       <div className="flex items-center gap-2 mt-1.5">
+                        {/* Only ever visible when the retired filter is on,
+                            since inactive rows are otherwise out of scope --
+                            but then it must be unmistakable which tiles are
+                            the retired ones. */}
+                        {!x.active && (
+                          <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-dusk border border-cardBorder rounded-full px-2 py-0.5">
+                            {t('retiredBadge')}
+                          </span>
+                        )}
                         {sops > 0 && (
                           <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-brass">
                             {t('sopCount', { count: sops })}
