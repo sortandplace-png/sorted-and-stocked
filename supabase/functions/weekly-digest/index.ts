@@ -12,12 +12,21 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const RESEND_FROM = 'Sorted & Stocked <digest@sortandplace.com>';
-const INK = '#171512';
-const PAPER = '#FAF7F2';
-const STONE = '#F1ECE2';
-const LINE = '#DED5C4';
-const GOLD = '#C5A46D';
-const MUTED = '#8C8373';
+
+// Concept B palette, matching tailwind.config.ts exactly rather than
+// approximating it -- an email that is nearly the brand colour reads as a
+// different product, and these were the last live surface still on the
+// retired charcoal/gold/cream set.
+//
+// Names kept as-is (INK/PAPER/STONE/LINE/GOLD/MUTED) so this is purely a
+// value change: every interpolation below is untouched and the diff stays
+// readable. The names now describe roles, not hues -- GOLD is brass.
+const INK = '#2E4A62';    // denim -- headings/ink
+const PAPER = '#FFFEFC';  // card -- the email body surface
+const STONE = '#E8EEF6';  // mist -- fills and stat blocks
+const LINE = '#E8DDD0';   // cardBorder -- 1px rules
+const GOLD = '#C6A46E';   // brass -- accent only, never a fill (D-01)
+const MUTED = '#7A8A9C';  // dusk -- secondary text
 
 function fmtDate(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -82,10 +91,12 @@ function buildHtml(d: DigestData) {
   const activityLine = activityParts.length > 0 ? activityParts.join(' · ') + ' this week.' : 'No staff activity logged this week.';
 
   return `
-  <div style="background:#DDD6C8;padding:28px 0;font-family:Georgia,serif;">
+  <div style="background:${STONE};padding:28px 0;font-family:Georgia,serif;">
   <table role="presentation" width="100%" style="max-width:520px;margin:0 auto;background:${PAPER};border-collapse:collapse;">
     <tr><td style="background:${INK};padding:34px 30px 28px;text-align:center;">
-      <table role="presentation" align="center" style="margin:0 auto 14px;"><tr><td style="width:48px;height:48px;border-radius:11px;background:${GOLD};text-align:center;vertical-align:middle;font-size:20px;">🏠</td></tr></table>
+      <!-- Was a 48px brass-filled tile. D-01: brass is never a fill at any
+                 size, so the fill is mist and brass stays an accent. -->
+            <table role="presentation" align="center" style="margin:0 auto 14px;"><tr><td style="width:48px;height:48px;border-radius:11px;background:${STONE};text-align:center;vertical-align:middle;font-size:20px;">🏠</td></tr></table>
       <p style="font-family:Georgia,serif;font-weight:700;font-size:26px;color:${PAPER};margin:0;">The Sunday Sort</p>
       <p style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:${GOLD};font-weight:700;margin:8px 0 0;">${escapeHtml(d.propertyName)} · Week of ${fmtShort(new Date(`${d.weekStart}T00:00:00Z`))}</p>
     </td></tr>
