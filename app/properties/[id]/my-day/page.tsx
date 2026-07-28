@@ -55,41 +55,70 @@ function eastern(now: Date) {
 type DutyTask = { id: string; taskEn: string; taskEs: string; completed: boolean }
 type DutyArea = { areaEn: string; areaEs: string; tasks: DutyTask[] }
 
-// RLS on staff_duty_templates/staff_duty_completions already scopes every
-// row to the caller's own staff_roster_key (or lets owner/manager see
-// everything) -- see policies staff_duty_templates_select and
-// staff_duty_completions_select/insert/update, both keyed off
-// property_members.staff_roster_key for auth.uid(). No client-side
-// staff_roster_key filter added here on top of that; querying "for this
-// property, today's applicable day/time" is already "my tasks" once RLS
-// has run.
-async function getDutyAreas(propertyId: string, todayStr: string, isoWeekday: number, timeBlock: 'AM' | 'PM'): Promise<DutyArea[]> {
+// SS-242: master_tasks is the source of truth for staff work, reached through
+// task_assignments. This previously read staff_duty_templates -- 61 rows on
+// Main, 0 on Lax, 0 on Country -- which is why My Day was empty for every
+// staff member on every property. master_tasks carries 96 on Main and 78 on
+// Lax, is bilingual on every row, and is what the restricted tasks_read policy
+// already keys on.
+//
+// Assignment, not roster key, is what makes a task "mine": task_assignments
+// respects `active` and the effective_from/effective_to window, so a duty
+// that ended yesterday stops appearing without anything being deleted.
+async function getDutyAreas(
+  propertyId: string,
+  memberId: string,
+  todayStr: string,
+  isoWeekday: number,
+  timeBlock: 'AM' | 'PM'
+): Promise<DutyArea[]> {
   const supabase = await createClient()
-  const { data: templates } = await supabase
-    .from('staff_duty_templates')
-    .select('id, area_en, area_es, task_en, task_es, sort_order')
+
+  const { data: assignments } = await supabase
+    .from('task_assignments')
+    .select('task_id')
+    .eq('member_id', memberId)
+    .eq('active', true)
+    .lte('effective_from', todayStr)
+    .or(`effective_to.is.null,effective_to.gte.${todayStr}`)
+  const assignedIds = (assignments ?? []).map((a) => a.task_id).filter(Boolean)
+  if (assignedIds.length === 0) return []
+
+  const { data: tasks } = await supabase
+    .from('master_tasks')
+    .select('id, task_en, task_es, source_area_en, source_area_es, sort_order')
     .eq('property_id', propertyId)
+    .eq('active', true)
+    .in('id', assignedIds)
+    // day_of_week and time_of_day are null on almost every row, so a strict
+    // equality filter would hide nearly everything. Null means "any day/any
+    // time", which is the common case.
     .or(`day_of_week.is.null,day_of_week.eq.${isoWeekday}`)
     .or(`time_of_day.is.null,time_of_day.eq.${timeBlock}`)
     .order('sort_order')
-  if (!templates || templates.length === 0) return []
+  if (!tasks || tasks.length === 0) return []
 
-  const ids = templates.map((t) => t.id)
+  const ids = tasks.map((t) => t.id)
   const { data: completions } = await supabase
-    .from('staff_duty_completions')
-    .select('template_id, completed')
-    .eq('duty_date', todayStr)
-    .in('template_id', ids)
-  const completedSet = new Set((completions ?? []).filter((c) => c.completed).map((c) => c.template_id))
+    .from('task_completions')
+    .select('task_id, completed')
+    .eq('due_date', todayStr)
+    .in('task_id', ids)
+  const completedSet = new Set((completions ?? []).filter((c) => c.completed).map((c) => c.task_id))
 
+  // source_area_en/_es are the bilingual area labels already on master_tasks.
+  // Grouping by room was the alternative and would collapse to one bucket --
+  // most tasks still have no room_id.
   const areas: DutyArea[] = []
   const areaIndex = new Map<string, number>()
-  for (const t of templates) {
-    let idx = areaIndex.get(t.area_en)
+  for (const t of tasks) {
+    const areaEn = t.source_area_en ?? 'General'
+    const areaEs = t.source_area_es ?? 'General'
+    let idx = areaIndex.get(areaEn)
     if (idx === undefined) {
       idx = areas.length
-      areaIndex.set(t.area_en, idx)
-      areas.push({ areaEn: t.area_en, areaEs: t.area_es, tasks: [] })
+      areaIndex.set(areaEn, idx)
+      areas.push({ areaEn, areaEs, tasks: [] })
     }
     areas[idx].tasks.push({ id: t.id, taskEn: t.task_en, taskEs: t.task_es, completed: completedSet.has(t.id) })
   }
@@ -126,7 +155,7 @@ export default async function MyDayPage({
   // states worth telling apart, not one generic "nothing here."
   const { data: membership } = await supabase
     .from('property_members')
-    .select('role, staff_roster_key')
+    .select('id, role, staff_roster_key')
     .eq('property_id', id)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -135,8 +164,13 @@ export default async function MyDayPage({
   const isStaff = membership?.role === 'staff';
   const hasRosterKey = !!membership?.staff_roster_key;
   const { todayStr, isoWeekday, timeBlock } = eastern(new Date());
-  if (isStaff && hasRosterKey) {
-    dutyAreas = await getDutyAreas(id, todayStr, isoWeekday, timeBlock);
+  // Gated on having a membership row, not on role or roster key. Assignment is
+  // now what makes a task yours (SS-242), and an owner or manager can be
+  // assigned one too -- they simply usually have none. Keeping the old
+  // isStaff && hasRosterKey gate here would have left My Day empty for exactly
+  // the people the repoint was meant to fix.
+  if (membership?.id) {
+    dutyAreas = await getDutyAreas(id, membership.id, todayStr, isoWeekday, timeBlock);
   }
 
   // Parent layout already confirmed membership on this property — no
