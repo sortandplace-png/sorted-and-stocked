@@ -2,17 +2,11 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import AppHeader from '@/components/ui/AppHeader';
 import DesktopNav from '@/components/nav/DesktopNav';
 import MobileBottomNav from '@/components/nav/MobileBottomNav';
-import LogoutButton from '@/components/LogoutButton';
-import HeaderAvatarUpload from '@/components/HeaderAvatarUpload';
-import HeaderSearchClient from '@/components/HeaderSearchClient';
 import StaffOnboardingModal from '@/components/StaffOnboardingModal';
-import { LogoMark } from '@/components/Logo';
-import HeaderLogoLink from '@/components/HeaderLogoLink';
-import LocaleToggle from '@/components/LocaleToggle';
 import { PropertyRoleProvider, type PropertyRole } from '@/components/PropertyRoleContext';
-import PropertySwitcher from '@/components/PropertySwitcher';
 import Footer from '@/components/Footer';
 import { getNextObservance } from '@/lib/get-next-observance';
 
@@ -83,46 +77,18 @@ export default async function PropertyLayout({
             full-bleed background. Only the bars themselves, which carry
             their own explicit background regardless of what's behind them,
             move to Concept B in this pass. */}
-        <header className="flex items-center justify-between px-4 py-3 bg-denim text-white sticky top-0 z-30 print:hidden">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <HeaderLogoLink propertyId={id} className="flex items-center gap-2.5 shrink-0">
-              <LogoMark className="w-9 h-9 shrink-0" />
-              {/* Hidden below sm, same icon-only-on-mobile pattern as the
-                  header's other elements (the search trigger, the
-                  observance badge) -- the full wordmark was running
-                  straight into the property switcher next to it on narrow
-                  screens since nothing here was letting it shrink. */}
-              <span className="hidden sm:inline font-display text-lg whitespace-nowrap">Sorted &amp; Stocked</span>
-            </HeaderLogoLink>
-            <PropertySwitcher
-              currentPropertyId={id}
-              currentPropertyName={propertyName}
-              properties={switcherProperties}
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Compact, persistent, on every page -- hidden below sm: the
-                header is already tight on mobile (logo, switcher, and
-                icons), and this is a nice-to-have, not critical info. */}
-            {nextObservance && (
-              <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3 py-1 whitespace-nowrap">
-                <span className="font-display text-sm text-white">{nextObservance.name}</span>
-                <span className="text-xs text-white/60">
-                  {nextObservance.daysUntil === 0 ? 'today' : `${nextObservance.daysUntil}d`}
-                </span>
-              </div>
-            )}
-            <HeaderSearchClient propertyId={id} />
-            <LocaleToggle />
-            <HeaderAvatarUpload
-              userId={user.id}
-              fullName={profile?.full_name}
-              email={user.email}
-              avatarUrl={profile?.avatar_url}
-            />
-            <LogoutButton variant="dark" />
-          </div>
-        </header>
+        {/* Extracted to components/ui/AppHeader (SS-126) so routes outside
+            this segment can render the same chrome. One implementation. */}
+        <AppHeader
+          propertyId={id}
+          propertyName={propertyName}
+          properties={switcherProperties}
+          userId={user.id}
+          userEmail={user.email}
+          fullName={profile?.full_name}
+          avatarUrl={profile?.avatar_url}
+          observance={nextObservance}
+        />
         <div className="sticky top-[60px] z-20">
           <DesktopNav propertyId={id} role={membership.role as PropertyRole} />
         </div>

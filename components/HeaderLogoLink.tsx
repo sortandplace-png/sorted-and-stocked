@@ -16,19 +16,22 @@ export default function HeaderLogoLink({
   className,
   children,
 }: {
-  propertyId: string;
+  // Optional: cross-property pages have none, and the logo then points at
+  // the property picker rather than a dashboard that does not exist.
+  propertyId?: string;
   className?: string;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const onDashboard = pathname === `/properties/${propertyId}/dashboard`;
+  const href = propertyId ? `/properties/${propertyId}/dashboard` : '/properties';
+  const onDashboard = pathname === href;
 
   if (onDashboard) {
     return <span className={className}>{children}</span>;
   }
 
   return (
-    <Link href={`/properties/${propertyId}/dashboard`} className={className}>
+    <Link href={href} className={className}>
       {children}
     </Link>
   );

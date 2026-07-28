@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { ChevronDown, Check } from 'lucide-react';
 
 export type SwitcherProperty = { id: string; name: string };
@@ -15,10 +16,13 @@ export default function PropertySwitcher({
   currentPropertyName,
   properties,
 }: {
-  currentPropertyId: string;
-  currentPropertyName: string;
+  // Optional: cross-property pages (Procurement) have no current property.
+  // They show "All Properties", and the switcher becomes a way IN to one.
+  currentPropertyId?: string;
+  currentPropertyName?: string;
   properties: SwitcherProperty[];
 }) {
+  const t = useTranslations('nav');
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -41,14 +45,20 @@ export default function PropertySwitcher({
 
   // Nothing to switch to — render the plain label as before rather than a
   // dropdown with a single dead-end option.
+  const label = currentPropertyName ?? t('allProperties');
+
   if (properties.length <= 1) {
-    return <span className="block text-[11px] text-white/70 truncate">{currentPropertyName}</span>;
+    return <span className="block text-[11px] text-white/70 truncate">{label}</span>;
   }
 
   function switchTo(propertyId: string) {
     setOpen(false);
     if (propertyId === currentPropertyId) return;
-    const rest = pathname.split(`/properties/${currentPropertyId}`)[1] ?? '/dashboard';
+    // From a cross-property page there is no section to preserve -- land on
+    // the dashboard rather than carrying a path that has no property in it.
+    const rest = currentPropertyId
+      ? pathname.split(`/properties/${currentPropertyId}`)[1] ?? '/dashboard'
+      : '/dashboard';
     router.push(`/properties/${propertyId}${rest}`);
   }
 
@@ -64,7 +74,7 @@ export default function PropertySwitcher({
         aria-haspopup="menu"
         className="flex items-center gap-1 text-[11px] font-medium text-white/70 hover:text-white transition-colors -ml-0.5 pl-0.5 pr-1.5 py-0.5 rounded-full hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
       >
-        <span className="truncate max-w-[9rem]">{currentPropertyName}</span>
+        <span className="truncate max-w-[9rem]">{label}</span>
         <ChevronDown size={12} strokeWidth={2} className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
       </button>
 
