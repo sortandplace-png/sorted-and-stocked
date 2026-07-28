@@ -8,19 +8,81 @@ two tables are the authority.
 
 ## State
 
-- `main` at **`bf7f3cc`**. Working tree clean, no open PRs, nothing unmerged.
+- `main` at **`38d91a9`**.
+- **`feat/staff-completions` has 5 commits, pushed, no PR.** Typecheck clean,
+  **none of it seen in a browser.** See "Blocked" below before trusting it.
 - `feat/staff-cleanup` is behind `main` — start a new branch, don't reuse it.
 - `sop-posters` bucket: **76 objects**, no strays.
-- You have a GitHub token with Contents + Pull requests write.
-  **Standing instruction: finish visible work → open the PR → merge it.**
-  Don't leave it on a branch waiting for a word. "Shall I open a PR" is not a
-  decision worth asking about.
+- **Standing instruction: finish visible work → open the PR → merge it.**
+  "Shall I open a PR" is not a decision worth asking about.
+
+### Blocked (28 Jul) — both need a human
+
+1. **No PR could be opened.** There is no `gh` on this machine, no
+   `GITHUB_*` in the environment or `.env.local`, no `~/.git-credentials`,
+   no `gh/hosts.yml`, and `credential.helper` is unset — yet `git push`
+   authenticates fine. Whatever holds that credential is not reachable from
+   a shell. **Find out where the token lives and write it down here.** Five
+   commits are pushed and waiting.
+2. **No screenshot could be taken**, so R4 is unmet for all five commits.
+   Port 3000 is held by another chat's server and the preview tool refuses
+   to start a second one even against this repo's own `dev:agent` config.
+   Port 3100 was listening but returned **500** and belongs to another
+   process, so its logs were unreadable.
+
+   **The dual-checkout warning is now confirmed by measurement, not
+   inference.** Fetching `localhost:3000/login` and searching the payload:
+   `headsUp` is PRESENT, `alsoDid` — added directly beside it in the same
+   JSON block — is ABSENT. The server on 3000 is not serving this checkout.
+   Re-run that probe before trusting anything you see on :3000.
 
 ---
 
+## What was done on 28 July
+
+All on `feat/staff-completions`, all typecheck-clean, **none verified in a
+browser**. Reviewed in commit-message detail, summarised here:
+
+| Commit | Item | Note |
+|---|---|---|
+| `e8ba66a` | SS-274 "Also did" | **Superseded same day by SS-295 — see below** |
+| `7506325` | SS-244 + SS-291 | See the corrected premise below |
+| `5ae782d` | SS-287 Rosh Chodesh | Verified by execution, not inspection |
+| `20ff003` | Rooms Missing | Stat goes to **0** at both properties |
+| `5050ba9` | SS-293 captions | Ships dormant — no `.vtt` exists yet |
+| _(next)_ | SS-295 "Also did" field | Real column; **removed SS-274's line** |
+
+**SS-274 → SS-295 in one day.** SS-274 said "free text, no new table, and if
+it ever needs structure that's a separate decision", so it shipped as a
+fourth line in the note template. SS-295 *is* that separate decision:
+`shift_handovers.also_did` is live (verified), so it is now a real labelled
+field. **The template line was removed** — leaving both would have asked
+staff to type the same thing twice, in two places, only one of which is
+stored. The `shiftHandover.alsoDid` message key survived and was repurposed
+from a template line ("Also did:") to the field label ("Also did"), with a
+new `alsoDidPlaceholder` beside it. Both locales.
+
+**Three premises in the last handoff were wrong.** This is the fourth time
+running that register claims have not survived checking (see Traps):
+
+- **"`task_completions` — nothing writes to it" is FALSE.** `markDone` has
+  always upserted to it. The table is empty because nobody has used it. The
+  real bugs were that a ticked task *vanished* from My Day and there was no
+  way to untick — a different fix entirely from the one implied.
+- **"in late December `year + 1` may not reach the next Rosh Chodesh" does
+  not reproduce.** Checked from 2026-12-20, -12-28 and -12-31: the next
+  occurrence resolves every time. No change needed.
+- **`TrainingClient.tsx`'s own header comment was false** — it claimed the
+  `<video>` "already renders a `<track>` when a captions file exists". There
+  was no `<track>` in the file at all, so the long-standing note that Spanish
+  captions were "a content task, not a code change" was wrong. It is true
+  *now* (SS-293), and the comment is corrected.
+
 ## The queue, in order
 
-Nothing below waits on a decision. All five are fully specified.
+**Items 1–6 and both smaller items below are DONE except where marked.**
+Remaining: **SS-150 handbook**, **the nine PNGs**, **Recipe Ingredients →
+Staples**, **SS-156**. All four are visual work needing a browser.
 
 ### 1. SS-286 structural — Shop page
 An expanded category still renders **inside its 3-column grid cell**. That is
@@ -111,14 +173,17 @@ A third labelled field beside What's Done / In Progress / Heads Up:
 structure later that's a separate decision.
 
 ### Also open, smaller
-- **Rooms Missing stat** — Racquel ruled **exclude**, with a tooltip saying
-  area-level tasks are intentionally excluded:
-  ```ts
-  const NON_ROOM_AREAS = ['Maintenance', 'Childcare', 'Outdoors'];
-  ```
-  **Trap:** `source_area_en` is **not** in DutyRosterClient's select and not on
-  its `Task` type. Add it in both places first, or the filter silently matches
-  nothing and the count stays wrong while looking fixed.
+- ~~**Rooms Missing stat**~~ — **DONE (`20ff003`).** The trap was real:
+  `source_area_en` really was missing from the select and the `Task` type,
+  and was added first. But the outcome is bigger than the ticket:
+  **every single room-missing task at both properties is area-level.**
+  Lax **75 → 0**, Main **16 → 0**. That stat has never once pointed at a
+  real data gap — it was counting deliberate exclusions and showing them as
+  outstanding work. Because the tile now reads 0 everywhere, the
+  explanation is what makes the zero legible rather than looking like a
+  broken counter. **Deviation to confirm with Racquel:** she asked for a
+  tooltip; it renders as a caption *and* a `title` attribute, because a
+  hover-only tooltip tells a phone user nothing. Easy to drop the caption.
 - **Nine PNGs, zero wired.** `CATEGORY_ICON_SRC` beside the existing
   `STORE_ICON_SRC` (`ShoppingListViewEnhanced.tsx:97`), same `<img>`-or-fallback
   shape as line 948. Four toggles at **lines 880–884** currently use lucide
@@ -157,17 +222,45 @@ structure later that's a separate decision.
 - **Object keys can't carry an em dash.** A poster upload 400'd on it.
 - **Premises from the register have been wrong repeatedly** — `tasks_read` was
   over-granting not blocking; the Tools gate was already correct; SS-118's rule
-  already existed unwired in `lib/shabbos-validation.ts`. **Verify security and
-  "nothing reads it" claims before building on them.**
+  already existed unwired in `lib/shabbos-validation.ts`; and on 28 Jul,
+  "nothing writes to `task_completions`" was false while
+  `TrainingClient`'s own comment claimed a `<track>` that did not exist.
+  **Verify security, "nothing reads it" and "already handled" claims before
+  building on them.** Checking costs one query. Not checking cost a
+  rewrite of the wrong thing.
+- **Specs have arrived twice, byte-identical.** SS-291 was sent, worked, then
+  sent again unchanged. Check whether a "new" instruction is actually new
+  before redoing work; say so rather than silently redoing it.
+- **A `<track>` needs a CORS-enabled media element.** Cross-origin text
+  tracks are only fetched when the `<video>` carries `crossOrigin`. Set, but
+  **unverified** — no `.vtt` exists to test with. If the first uploaded
+  caption doesn't appear, look there and at Supabase's CORS headers before
+  suspecting the file.
+- **Two training pages exist.** `tools/training` is a redirect stub;
+  the real one is `app/properties/[id]/staff/training/page.tsx`. MyDayClient
+  still links to the `tools` path, so staff take a redirect every visit.
+  Harmless, worth tidying.
 
 ---
 
 ## Verified numbers — don't re-derive
 
-- `master_tasks`: 174 active. 24 have `photo_url`.
+- `master_tasks`: **168 active** (not 174 — recounted 28 Jul). 24 have `photo_url`.
 - `sop_library`: 55 SOPs, 47 with posters. `master_task_sops`: 77 links / 66 tasks.
+- **Task tile images now render for 67 of the 168** — 24 own photo, 43
+  poster-only. The other 101 render no element at all, so no placeholder gap.
+- **`deployedCountBySopId` undercounts, confirmed.** It keys off the legacy
+  `master_tasks.sop_id`, which is set on **exactly 1** active task, while the
+  real links live in `master_task_sops` (77 across 66 tasks). So the
+  "Deployed ×N" badge is missing on ~65 of 66. **Left unfixed deliberately**
+  — Racquel asked for a report, not a fix.
 - `task_assignments`: assignment round trip **tested and working**.
-- `task_completions`: 0 rows.
+- `task_completions`: **0 rows — but the write path works.** Unique
+  constraint `(task_id, due_date)` exists, RLS INSERT is
+  manager-or-assignee, UPDATE allows the assignee (so untick works without
+  policy changes). Empty because unused, *not* because it is unwired.
+- `training-videos` bucket: **the six .mp4s and nothing else.** No `.vtt`.
+  SS-293's caption plumbing is live but dormant until one is uploaded.
 - Inventory: Main 1,106 items / 1,023 never counted / 4 low. Country 467 / 467 / 0.
   **Lax has no inventory rows** and needs a deliberate empty state.
 - `meal_plan_entries`: 4,428 rows, all `dinner`. Migration 133 added the
