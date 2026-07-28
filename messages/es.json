@@ -843,7 +843,8 @@
     "addToList": "Agregar a la lista",
     "adding": "Agregando…",
     "showProcedure": "Ver procedimiento",
-    "hideProcedure": "Ocultar procedimiento"
+    "hideProcedure": "Ocultar procedimiento",
+    "viewFullProcedure": "Ver procedimiento completo →"
   },
   "staffHandbook": {
     "title": "Manual del Personal",

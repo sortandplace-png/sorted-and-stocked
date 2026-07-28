@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { storageThumbnail } from '@/lib/storage-image';
+import { routes } from '@/lib/app-routes';
 import { ChevronDown, ClipboardList, Library } from 'lucide-react';
 
 type Frequency = {
@@ -53,12 +54,13 @@ type Task = {
 // an array -- and guessing wrong there fails silently (no poster, no
 // text, no error), so both shapes are accepted.
 type SopEmbed = {
+  id: string;
   expected_appearance_url: string | null;
   sop_en: string | null;
   sop_es: string | null;
 } | null;
 type SopLinkRow = { master_task_id: string; sop_library: SopEmbed | SopEmbed[] };
-type LinkedSop = { sopEn: string | null; sopEs: string | null };
+type LinkedSop = { sopId: string; sopEn: string | null; sopEs: string | null };
 type SopLibraryRow = {
   id: string;
   sop_code: string | null;
@@ -134,7 +136,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
       // round trip. Ordered so the first row per task is its primary SOP.
       supabase
         .from('master_task_sops')
-        .select('master_task_id, sop_library(expected_appearance_url, sop_en, sop_es)')
+        .select('master_task_id, sop_library(id, expected_appearance_url, sop_en, sop_es)')
         .order('is_primary', { ascending: false })
         .order('sort_order', { ascending: true }),
       // Only live assignments. Ended ones stay on the table as history.
@@ -194,7 +196,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
         posters[r.master_task_id] = embed.expected_appearance_url;
       }
       if (!sopTexts[r.master_task_id]) {
-        sopTexts[r.master_task_id] = { sopEn: embed.sop_en, sopEs: embed.sop_es };
+        sopTexts[r.master_task_id] = { sopId: embed.id, sopEn: embed.sop_en, sopEs: embed.sop_es };
       }
     });
     setSopCounts(counts);
@@ -731,6 +733,25 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                                   decoding="async"
                                   className="w-full max-h-48 object-contain rounded-lg bg-mist"
                                 />
+                              )}
+                              {/* Opens the SOP Library scrolled to and
+                                  expanded on this exact SOP -- the
+                                  ?sop=<id> deep link added for this. New
+                                  tab on purpose: the inline text above
+                                  exists so nobody loses their place in the
+                                  roster, and a same-tab link would undo
+                                  that. rel is required with target _blank
+                                  so the opened page cannot reach back
+                                  through window.opener. */}
+                              {linked?.sopId && (
+                                <a
+                                  href={`${routes.sops(propertyId)}?sop=${linked.sopId}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-block text-[11px] font-medium text-brass underline-offset-2 hover:underline"
+                                >
+                                  {t('viewFullProcedure')}
+                                </a>
                               )}
                             </div>
                           )}

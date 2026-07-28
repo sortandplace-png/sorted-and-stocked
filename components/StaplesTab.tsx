@@ -52,6 +52,30 @@ function getStapleCategoryIcon(category: string): LucideIcon {
   return STAPLE_CATEGORY_ICONS[category] ?? Package;
 }
 
+// SS-226: the custom art, for the staple categories that have a matching
+// file. Keys are the live staples.category values (the RPC aliases that
+// column to staple_category, which is why the app-side field reads
+// differently) -- queried, not guessed:
+//
+//   Produce 40 · Pantry 23 · Spices & Seasonings 18 · Condiments 17 ·
+//   Baking 14 · Bakery 7 · Oils & Vinegars 7 · Meat 6 ·
+//   Liquids & Stock 5 · Dairy & Eggs 4 · Frozen 4 · Grains & Starches 3
+//
+// This is a DIFFERENT taxonomy from the Shopping List's, which is why the
+// two files need two maps: there the values are "Dairy" and
+// "Meat & Seafood"; here they are "Dairy & Eggs" and "Meat". A key copied
+// between the two matches nothing and falls silently back to Lucide --
+// which is exactly the bug this fixes.
+//
+// Only four have art today. Everything else keeps its Lucide icon rather
+// than being forced onto a nearest-fit picture.
+const STAPLE_CATEGORY_ICON_SRC: Record<string, string> = {
+  Produce: '/category-icons/produce.png',
+  Pantry: '/category-icons/pantry.png',
+  'Dairy & Eggs': '/category-icons/dairy-eggs.png',
+  Meat: '/category-icons/meat-fish.png',
+};
+
 type Staple = {
   staple_id: string;
   staple_name: string;
@@ -376,7 +400,18 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
                 >
                   <Pin size="sm" collapsed={collapsed} onToggle={() => toggleGroup(key)} />
                   <div className="flex-1 flex flex-col items-center justify-center gap-[11px] py-[14px] px-[18px] text-center">
-                    <Icon size={32} className="text-denim" aria-hidden="true" />
+                    {STAPLE_CATEGORY_ICON_SRC[key] ? (
+                      // Same img-or-fallback shape the Shopping List uses
+                      // for its store and aisle tiles.
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={STAPLE_CATEGORY_ICON_SRC[key]}
+                        alt=""
+                        className="w-9 h-9 object-contain"
+                      />
+                    ) : (
+                      <Icon size={32} className="text-denim" aria-hidden="true" />
+                    )}
                     <span className="font-display text-lg text-denim leading-tight text-balance">{key}</span>
                     <span className="text-xs text-dusk">
                       {groupStaples.length} {groupStaples.length === 1 ? 'item' : 'items'}

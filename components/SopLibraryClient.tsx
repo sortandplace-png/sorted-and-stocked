@@ -12,7 +12,7 @@
 // view rather than edit affordances that would fail at the database.
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
@@ -53,6 +53,26 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ sop_en: string; sop_es: string }>({ sop_en: '', sop_es: '' });
   const [saving, setSaving] = useState(false);
+
+  // Deep link: /staff/sops?sop=<id> opens that SOP directly. Added because
+  // the Task Center now links here per task, and a link that lands on a
+  // 55-row list without opening the one SOP you asked for is a link that
+  // only half works.
+  //
+  // Read from window.location on mount rather than useSearchParams(): that
+  // hook opts the whole page into client-side rendering unless it is
+  // wrapped in a Suspense boundary, which is a bigger change than this
+  // needs. One-shot on mount is enough -- the param only matters on
+  // arrival.
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get('sop');
+    if (!wanted) return;
+    setOpenId(wanted);
+    // Let the expanded card render before scrolling to it.
+    requestAnimationFrame(() => {
+      document.getElementById(`sop-${wanted}`)?.scrollIntoView({ block: 'center' });
+    });
+  }, []);
 
   const pick = (en: string | null, es: string | null) => (locale === 'es' ? es || en : en) ?? '';
 
@@ -147,6 +167,8 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
                   return (
                     <li
                       key={s.id}
+                      // Anchor for the ?sop=<id> deep link above.
+                      id={`sop-${s.id}`}
                       className="relative bg-card rounded-xl2 border border-cardBorder shadow-card hover:shadow-cardHover transition-shadow p-3.5"
                     >
                       <Pin size="sm" />
