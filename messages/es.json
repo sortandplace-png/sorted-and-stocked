@@ -751,7 +751,7 @@
     "viewPoster": "Ver el póster en tamaño completo",
     "closePoster": "Cerrar póster",
     "posterAlt": "Resultado esperado para {name}",
-    "noPoster": "Aún no hay póster para este SOP."
+    "noPoster": "Aún no hay póster para este procedimiento."
   },
   "training": {
     "title": "Capacitación",
@@ -803,11 +803,11 @@
     "cropButton": "Recortar"
   },
   "dutyRoster": {
-    "title": "Registro de Tareas del Personal",
-    "subtitle": "Cada plantilla de tarea, una sola lista. Solo dueña y gerente.",
-    "statTotal": "Plantillas Totales",
+    "title": "Centro de Tareas",
+    "subtitle": "Cada tarea, una sola lista. Solo dueña y gerente.",
+    "statTotal": "Tareas Totales",
     "statUnassigned": "Sin Asignar",
-    "statWithSop": "Con SOP",
+    "statWithSop": "Con Procedimientos",
     "statRoomsMissing": "Cuartos Faltantes",
     "statRoomsMissingHint": "El trabajo por área (Mantenimiento, Cuidado de niños, Exteriores) se excluye a propósito — no corresponde a un cuarto.",
     "searchPlaceholder": "Buscar tareas, cuartos, trabajos",
@@ -822,8 +822,8 @@
     "filterJobs": "Filtrar por trabajo",
     "filterFrequencies": "Filtrar por frecuencia",
     "filterAssignment": "Filtrar por asignación",
-    "stripSummary": "{count} plantillas · {scope} · Vista de mosaico",
-    "sopCount": "{count} SOP",
+    "stripSummary": "{count, plural, one {# tarea} other {# tareas}} · {scope} · Vista de mosaico",
+    "sopCount": "{count, plural, one {# procedimiento} other {# procedimientos}}",
     "needsScoping": "Falta definir alcance",
     "assignTo": "Asignar a",
     "emptyFiltered": "Ninguna fila coincide con estos filtros.",
