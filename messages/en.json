@@ -855,6 +855,12 @@
     "subtitle": "Clocked hours by person, by week. Corrections are made directly in Supabase for now.",
     "empty": "No shifts have been recorded at this property yet."
   },
+  "trainingVideos": {
+    "empty": "No training videos are available yet.",
+    "unavailable": "This video can't be loaded right now.",
+    "captionsEs": "Spanish captions",
+    "goThere": "Open this page"
+  },
   "batchScanner": {
     "title": "Batch Scan",
     "progress": "{scans} scanned · {items, plural, one {# item} other {# items}}",
@@ -898,6 +904,7 @@
     "empty": "The handbook has no entries yet.",
     "strip": "{count} questions · shift order",
     "tabGuide": "Household Guide",
+    "tabVideos": "Training Videos",
     "tabProcedures": "Procedures",
     "searchPlaceholder": "Search the handbook…",
     "noResults": "No questions match that search.",

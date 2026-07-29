@@ -27,8 +27,10 @@ const STAFF_LINKS: { segment: string; labelKey: string; managerOnly?: boolean; d
   // worse than either version alone. Both ROUTES are untouched (R21); see
   // DesktopNav for why neither is redirected yet.
   { segment: 'staff', labelKey: 'team', managerOnly: true },
-  { segment: 'staff/sops', labelKey: 'sopLibrary', dividerBefore: true, href: 'staff/handbook?tab=procedures' },
-  { segment: 'staff/handbook', labelKey: 'staffHandbook' },
+  // SOP Library removed here too, same reason as DesktopNav: the Handbook's
+  // Procedures tab is where it lives now, so a second nav item pointing into
+  // the same page was two doors to one room. Route untouched (R21).
+  { segment: 'staff/handbook', labelKey: 'staffHandbook', dividerBefore: true },
 ];
 
 export default function MobileBottomNav({

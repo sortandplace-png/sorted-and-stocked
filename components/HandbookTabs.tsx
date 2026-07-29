@@ -18,8 +18,10 @@ import { createClient } from '@/lib/supabase/client';
 import { SkeletonList } from '@/components/Skeleton';
 import StaffHandbookClient, { type HandbookArticle } from '@/components/StaffHandbookClient';
 import SopLibraryClient, { type Sop } from '@/components/SopLibraryClient';
+import TrainingVideosTab from '@/components/TrainingVideosTab';
+import type { TrainingVideo } from '@/lib/training-videos';
 
-type Tab = 'guide' | 'procedures';
+type Tab = 'guide' | 'videos' | 'procedures';
 
 export default function HandbookTabs({
   articles,
@@ -39,11 +41,12 @@ export default function HandbookTabs({
   const [tab, setTab] = useState<Tab>('guide');
   const [sops, setSops] = useState<Sop[] | null>(null);
   const [loadingSops, setLoadingSops] = useState(false);
+  const [videos, setVideos] = useState<TrainingVideo[] | null>(null);
+  const [loadingVideos, setLoadingVideos] = useState(false);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('tab') === 'procedures') {
-      setTab('procedures');
-    }
+    const wanted = new URLSearchParams(window.location.search).get('tab');
+    if (wanted === 'procedures' || wanted === 'videos') setTab(wanted);
   }, []);
 
   const loadSops = useCallback(async () => {
@@ -53,7 +56,7 @@ export default function HandbookTabs({
     const { data } = await supabase
       .from('sop_library')
       .select(
-        'id, sop_code, zone_type, task_en, task_es, sop_en, sop_es, pass_fail_en, pass_fail_es, estimated_minutes, expected_appearance_url'
+        'id, sop_code, zone_type, zone_type_es, task_en, task_es, sop_en, sop_es, pass_fail_en, pass_fail_es, estimated_minutes, expected_appearance_url'
       )
       .eq('active', true)
       .order('zone_type')
@@ -62,9 +65,30 @@ export default function HandbookTabs({
     setLoadingSops(false);
   }, [sops, loadingSops, supabase]);
 
+  // Videos come from an API route rather than a direct query: the objects
+  // are in a private bucket and need signed URLs, which can only be minted
+  // server-side. Same lazy rule as the SOPs -- fetched once per visit, on
+  // first switch, not on every page load.
+  const loadVideos = useCallback(async () => {
+    if (videos !== null || loadingVideos) return;
+    setLoadingVideos(true);
+    try {
+      const res = await fetch(`/api/training-videos?propertyId=${encodeURIComponent(propertyId)}`);
+      const json = res.ok ? await res.json() : null;
+      setVideos(json?.videos ?? []);
+    } catch {
+      // An empty list renders the tab's own empty state, which is a better
+      // outcome than an unhandled rejection blanking the whole page.
+      setVideos([]);
+    } finally {
+      setLoadingVideos(false);
+    }
+  }, [videos, loadingVideos, propertyId]);
+
   useEffect(() => {
     if (tab === 'procedures') loadSops();
-  }, [tab, loadSops]);
+    if (tab === 'videos') loadVideos();
+  }, [tab, loadSops, loadVideos]);
 
   function selectTab(next: Tab) {
     setTab(next);
@@ -72,13 +96,16 @@ export default function HandbookTabs({
     // without a navigation -- replaceState leaves history alone, so Back
     // still means "the page before this one", not "the other tab".
     const url = new URL(window.location.href);
-    if (next === 'procedures') url.searchParams.set('tab', 'procedures');
-    else url.searchParams.delete('tab');
+    if (next === 'guide') url.searchParams.delete('tab');
+    else url.searchParams.set('tab', next);
     window.history.replaceState({}, '', url);
   }
 
+  // Videos sit between the guide and the procedures: watching how the job is
+  // done comes before the written reference for it.
   const tabs: { key: Tab; label: string }[] = [
     { key: 'guide', label: t('tabGuide') },
+    { key: 'videos', label: t('tabVideos') },
     { key: 'procedures', label: t('tabProcedures') },
   ];
 
@@ -104,6 +131,12 @@ export default function HandbookTabs({
 
       {tab === 'guide' ? (
         <StaffHandbookClient articles={articles} propertyId={propertyId} />
+      ) : tab === 'videos' ? (
+        videos === null ? (
+          <SkeletonList rows={3} />
+        ) : (
+          <TrainingVideosTab videos={videos} />
+        )
       ) : sops === null ? (
         <SkeletonList rows={4} />
       ) : (

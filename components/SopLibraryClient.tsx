@@ -25,6 +25,7 @@ export type Sop = {
   id: string;
   sop_code: string | null;
   zone_type: string | null;
+  zone_type_es: string | null;
   task_en: string;
   task_es: string;
   sop_en: string | null;
@@ -87,7 +88,10 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
     const q = search.trim().toLowerCase();
     if (!q) return sops;
     return sops.filter((s) =>
-      [s.task_en, s.task_es, s.sop_en, s.sop_es, s.sop_code, s.zone_type]
+      // Both zone spellings are searchable regardless of UI language: a
+      // Spanish reader who knows the zone as "Baño" and one who typed
+      // "Bathroom" should both find it.
+      [s.task_en, s.task_es, s.sop_en, s.sop_es, s.sop_code, s.zone_type, s.zone_type_es]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(q))
     );
@@ -96,11 +100,18 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
   const byZone = useMemo(() => {
     const map = new Map<string, Sop[]>();
     for (const s of filtered) {
-      const key = s.zone_type ?? t('unzoned');
+      // Spanish when the toggle is ES and a translation exists, English
+      // otherwise. zone_type_es is nullable on purpose, so an untranslated
+      // zone degrades to the English name rather than to a blank eyebrow --
+      // this is the grouping key, so a null here would collapse every
+      // untranslated zone into one heading.
+      const key = (locale === 'es' && s.zone_type_es) || s.zone_type || t('unzoned');
       (map.get(key) ?? map.set(key, []).get(key)!).push(s);
     }
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [filtered, t]);
+    // Collated in the reader's own locale, so Spanish headings sort by
+    // Spanish rules rather than raw code points.
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0], locale));
+  }, [filtered, t, locale]);
 
   function startEdit(s: Sop) {
     setEditingId(s.id);

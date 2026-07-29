@@ -99,25 +99,17 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
         managerOnly: true,
         excludeFromActive: ['staff/duty-roster', 'staff/hours', 'staff/sops', 'staff/training', 'staff/handbook'],
       },
-      // Everything below the rule is what a housekeeper reads rather than
-      // does. These three used to live under Tools, where staff never go --
-      // SOPs and Training have moved here outright, the handbook is new.
-      // Points at the Handbook's Procedures tab, which is where the SOP
-      // Library now lives. `segment` stays 'staff/sops' so a direct visit to
-      // the old path still lights this item as active; href sends new clicks
-      // to the destination rather than through the redirect.
-      {
-        segment: 'staff/sops',
-        labelKey: 'sopLibrary',
-        dividerBefore: true,
-        href: 'staff/handbook?tab=procedures',
-      },
-      // Training Videos removed from the dropdown -- it is due to become a
-      // section of the Handbook page. Route untouched (R21) and NOT yet
-      // redirected: the combined page does not exist, so redirecting today
-      // would make the six training videos unreachable rather than moving
-      // them. Redirect belongs in the same change that builds the section.
-      { segment: 'staff/handbook', labelKey: 'staffHandbook' },
+      // Below the rule is what a housekeeper reads rather than does. The
+      // Handbook is now the single destination for all of it: the Guide, the
+      // Training Videos tab, and the Procedures tab that holds the SOP
+      // Library. Four items total.
+      //
+      // SOP Library and Training Videos are both gone from this dropdown --
+      // not deleted. /staff/sops and /staff/training still exist and still
+      // resolve (R21); they are simply no longer their own nav destinations
+      // now that the Handbook carries both. The Task Center's "View full
+      // procedure" deep link still lands on ?tab=procedures.
+      { segment: 'staff/handbook', labelKey: 'staffHandbook', dividerBefore: true },
     ],
   },
   {
