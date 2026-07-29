@@ -15,6 +15,7 @@ import { SkeletonList } from '@/components/Skeleton';
 import { SITE_URL } from '@/lib/site-url';
 import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
 import { storageThumbnail } from '@/lib/storage-image';
+import BackLink from '@/components/ui/BackLink';
 
 type Item = {
   id: string;
@@ -537,6 +538,10 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
 
   return (
     <div className="max-w-md lg:max-w-6xl mx-auto p-4">
+      {/* Falls back to Tools when there is no history -- this page is
+          reachable from a printed-label QR and a bookmark, both of which
+          open with nothing to go back to. */}
+      <BackLink fallbackHref={`/properties/${propertyId}/tools`} />
       <h1 className="text-2xl font-display text-denim mb-1">Print Item Labels</h1>
       <p className="text-sm text-dusk mb-1">
         Avery 22807 (2"×2" squares) · 20 labels per sheet · one label per item, with photo where available.

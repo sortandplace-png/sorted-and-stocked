@@ -12,9 +12,9 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import Pin from '@/components/ui/Pin';
+import BackLink from '@/components/ui/BackLink';
 import JumpToDatePanel from '@/components/JumpToDatePanel';
 import { isSecondDay } from '@/lib/yom-tov';
 import type { ObservanceKind } from '@/lib/yom-tov';
@@ -212,9 +212,7 @@ export default function YomTovYearViewClient({
 
   return (
     <div className="max-w-[1240px] mx-auto p-4">
-      <Link href={`/properties/${propertyId}/tools`} className="text-sm text-dusk mb-4 inline-block">
-        ← {t('backToTools')}
-      </Link>
+      <BackLink href={`/properties/${propertyId}/tools`} label={t('backToTools')} />
 
       <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
         <div>

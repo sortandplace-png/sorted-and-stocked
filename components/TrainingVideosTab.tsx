@@ -4,9 +4,9 @@
 // private bucket and are unreachable by public URL.
 //
 // Rendered by BOTH the Handbook tab and the standalone /staff/training
-// route, which now read the same table through the same helper. The older
-// TrainingClient is no longer mounted anywhere -- left in place rather than
-// deleted, but it is dead code and worth removing deliberately.
+// route, which now read the same table through the same helper. This
+// replaced TrainingClient, which was deleted once it was unmounted and
+// superseded.
 'use client';
 
 import Link from 'next/link';
