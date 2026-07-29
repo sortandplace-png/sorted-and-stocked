@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /properties/
+Disallow: /api/
+Sitemap: https://sortandplace.com/sitemap.xml
