@@ -221,6 +221,11 @@ const MIN_ROLE: Record<string, 'staff' | 'manager'> = {
   'kosher-type-tagging': 'manager',
   // Household-wide operational summary, not a shift tool.
   digest: 'manager',
+  // SS-025 fix: the page itself already redirects staff away
+  // (app/properties/[id]/tools/suppliers/page.tsx), but this tile-visibility
+  // list is separate from that page-level gate -- without an entry here the
+  // tile still showed for staff, who would then click through to a redirect.
+  suppliers: 'manager',
   // Third-party health data (guest allergies and sensitivities) and family
   // photos/milestones. Neither is a work tool -- confirmed by the owner.
   'taste-memory': 'manager',
@@ -266,7 +271,18 @@ const GROUPS: {
     subgroups: [
       // Location-based pair first (House Manual, Pantry Zone Map), then the
       // people/contact-based pair (Contacts & Vendors, Borrowed & Lent).
-      { key: 'reference', label: 'Reference', slugs: ['knowledge-base', 'pantry-zones', 'contacts', 'borrowed-items', 'digest'] },
+      {
+        key: 'reference',
+        label: 'Reference',
+        // SS-025 fix: 'suppliers' existed in the flat TOOLS list (and
+        // passed canSeeTile) but was in no GROUPS slugs array anywhere --
+        // groups is built by mapping THIS array, so a slug absent from
+        // every subgroup here never renders a tile regardless of whether
+        // it exists in TOOLS. Placed next to 'contacts' per that entry's
+        // own comment: both answer "who do we get this from," one for
+        // people, one for stores.
+        slugs: ['knowledge-base', 'pantry-zones', 'contacts', 'suppliers', 'borrowed-items', 'digest'],
+      },
       { key: 'capture-tools', label: 'Capture Tools', slugs: ['capture-inbox', 'capture-photo', 'identify-item', 'photo-review', 'photo-worklist'] },
       {
         key: 'admin-cleanup',
