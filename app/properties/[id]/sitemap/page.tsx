@@ -116,7 +116,11 @@ function buildSections(propertyId: string): Section[] {
       // build-or-kill decision (SS-318/SS-096) -- no backing table. Don't
       // "restore" this entry without resolving that decision first.
       entries: [
-        { href: p('/tools/knowledge-base'), label: 'Household Knowledge Base', subtitle: 'House know-how', icon: BookMarked },
+        // SS-143: the slug is still knowledge-base, but every surface that
+        // names this thing calls it the House Manual -- the tile on /tools,
+        // the page's own h1, staffHandbook.linkHouseManual, nav.kindKnowledge.
+        // The sitemap was the last place carrying the old name.
+        { href: p('/tools/knowledge-base'), label: 'House Manual', subtitle: 'House know-how', icon: BookMarked },
         { href: p('/tools/contacts'), label: 'Contacts & Vendors', subtitle: 'Who to call', icon: Contact },
         { href: p('/tools/takeout-directory'), label: 'Local Takeout Directory', subtitle: 'Nearby options', icon: UtensilsCrossed },
         { href: p('/tools/taste-memory'), label: 'Guest & Family Taste Memory', subtitle: 'Preferences & allergies', icon: Heart },
