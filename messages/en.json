@@ -884,6 +884,7 @@
     "changeRoom": "Change room",
     "reactivate": "Reactivate",
     "addTask": "Add Task",
+    "viewVerification": "Verify completions →",
     "addTaskTitle": "Add a task",
     "editTaskTitle": "Edit task",
     "editTask": "Edit",
@@ -907,6 +908,21 @@
     "formCancel": "Cancel",
     "formSave": "Save",
     "saving": "Saving…"
+  },
+  "taskVerification": {
+    "title": "Task Verification",
+    "subtitle": "Every completed task, with its photo, note, and pass/fail -- newest first.",
+    "loadFailed": "Could not load completions — try again.",
+    "windowDays": "{count} days",
+    "windowAll": "All time",
+    "outcomeAll": "All",
+    "outcomePassed": "Passed",
+    "outcomeIssues": "Issues",
+    "empty": "No completions in this window.",
+    "noPhoto": "No photo",
+    "passed": "Passed",
+    "issueLogged": "Issue logged",
+    "unknownTask": "Task no longer listed"
   },
   "hoursSection": {
     "title": "Hours",

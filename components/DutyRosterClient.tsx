@@ -14,6 +14,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { storageThumbnail } from '@/lib/storage-image';
@@ -792,12 +793,24 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
           <h1 className="font-display text-[34px] font-normal text-denim">{t('title')}</h1>
           <p className="text-[13px] text-dusk mb-5">{t('subtitle')}</p>
         </div>
-        <button
-          onClick={openAddTask}
-          className="shrink-0 bg-denim text-white text-[13px] font-medium px-4 py-2 rounded-full hover:opacity-90 transition-opacity"
-        >
-          + {t('addTask')}
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {/* SS-269: the one thing that made "photograph after" unverifiable
+              was there being nowhere to go look afterward -- this is that
+              destination, linked from the page managers already use to
+              manage tasks. */}
+          <Link
+            href={`/properties/${propertyId}/tools/task-verification`}
+            className="text-[13px] font-medium text-brass underline underline-offset-2"
+          >
+            {t('viewVerification')}
+          </Link>
+          <button
+            onClick={openAddTask}
+            className="bg-denim text-white text-[13px] font-medium px-4 py-2 rounded-full hover:opacity-90 transition-opacity"
+          >
+            + {t('addTask')}
+          </button>
+        </div>
       </div>
 
       {loadError && (

@@ -884,6 +884,7 @@
     "changeRoom": "Cambiar cuarto",
     "reactivate": "Reactivar",
     "addTask": "Agregar Tarea",
+    "viewVerification": "Verificar tareas completadas →",
     "addTaskTitle": "Agregar una tarea",
     "editTaskTitle": "Editar tarea",
     "editTask": "Editar",
@@ -907,6 +908,21 @@
     "formCancel": "Cancelar",
     "formSave": "Guardar",
     "saving": "Guardando…"
+  },
+  "taskVerification": {
+    "title": "Verificación de Tareas",
+    "subtitle": "Cada tarea completada, con su foto, nota y aprobado/con problema -- más recientes primero.",
+    "loadFailed": "No se pudieron cargar las tareas completadas — intenta de nuevo.",
+    "windowDays": "{count} días",
+    "windowAll": "Todo el tiempo",
+    "outcomeAll": "Todas",
+    "outcomePassed": "Aprobadas",
+    "outcomeIssues": "Con problema",
+    "empty": "No hay tareas completadas en este período.",
+    "noPhoto": "Sin foto",
+    "passed": "Aprobada",
+    "issueLogged": "Problema registrado",
+    "unknownTask": "Tarea ya no está en la lista"
   },
   "hoursSection": {
     "title": "Horas",

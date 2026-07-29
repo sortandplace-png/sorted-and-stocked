@@ -33,6 +33,7 @@ import {
   ListTodo,
   Store,
   DatabaseBackup,
+  CheckCircle2,
   Settings as SettingsIcon,
   type LucideIcon,
 } from 'lucide-react';
@@ -83,6 +84,10 @@ function buildSections(propertyId: string): Section[] {
         { href: p('/shift-handover'), label: 'Shift Handover', subtitle: 'Pass the baton', icon: RotateCcw },
         { href: p('/tools/reset-checklist'), label: 'Reset for Next', subtitle: 'Post-use checklist', icon: RotateCcw },
         { href: p('/tools/duty-roster'), label: 'Duty Roster', subtitle: 'Edit staff duties', icon: ListTodo },
+        // SS-269. Owner/manager only, like Duty Roster above -- the page
+        // redirects staff, so this line is a signpost for the people who
+        // can actually open it.
+        { href: p('/tools/task-verification'), label: 'Task Verification', subtitle: 'Review completions & photos', icon: CheckCircle2 },
       ],
     },
     {
@@ -177,6 +182,7 @@ const MANAGER_ONLY_HREFS = [
   '/tools/taste-memory',
   '/tools/memory-timeline',
   '/tools/duty-roster',
+  '/tools/task-verification',
   '/print-labels',
   '/settings',
 ];
