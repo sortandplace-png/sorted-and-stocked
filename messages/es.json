@@ -864,7 +864,17 @@
     "viewList": "Lista",
     "viewCalendar": "Calendario",
     "prevMonth": "Mes anterior",
-    "nextMonth": "Mes siguiente"
+    "nextMonth": "Mes siguiente",
+    "jumpToDate": "Ir a una fecha",
+    "tabGregorian": "Fecha inglesa",
+    "tabHebrew": "Fecha hebrea / תאריך עברי",
+    "labelMonth": "Mes",
+    "labelDay": "Día",
+    "labelYear": "Año",
+    "labelHebrewMonth": "Mes hebreo",
+    "go": "Ir",
+    "today": "Hoy",
+    "converting": "Convirtiendo…"
   },
   "staffHandbook": {
     "sectionStart": "Comenzando tu turno",

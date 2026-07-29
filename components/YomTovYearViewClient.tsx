@@ -11,10 +11,11 @@
 // carries the tier is denim / dusk / rust.
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import Pin from '@/components/ui/Pin';
+import JumpToDatePanel from '@/components/JumpToDatePanel';
 import type { ObservanceKind } from '@/lib/yom-tov';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -124,6 +125,51 @@ export default function YomTovYearViewClient({
 
   const cells = useMemo(() => monthMatrix(cursor), [cursor]);
 
+  // Jump-to-date highlight. Cleared on a timer rather than left on, so the
+  // ring marks the day you asked for and then gets out of the way.
+  const [highlightIso, setHighlightIso] = useState<string | null>(null);
+  useEffect(() => {
+    if (!highlightIso) return;
+    const id = setTimeout(() => setHighlightIso(null), 2000);
+    return () => clearTimeout(id);
+  }, [highlightIso]);
+
+  const jumpTo = useCallback((iso: string) => {
+    const d = new Date(`${iso}T00:00:00`);
+    setCursor(new Date(d.getFullYear(), d.getMonth(), 1));
+    setHighlightIso(iso);
+    // Jumping to a date only means something on the grid, so this switches
+    // views rather than silently moving a calendar the reader cannot see.
+    setView('calendar');
+    sessionStorage.setItem(VIEW_KEY, 'calendar');
+  }, []);
+
+  const goToday = useCallback(() => {
+    const now = new Date();
+    setCursor(new Date(now.getFullYear(), now.getMonth(), 1));
+    setHighlightIso(localIso(now));
+  }, []);
+
+  // The Hebrew half of the dual month header. Taken from the 15th rather
+  // than the 1st: a Hebrew month straddles two Gregorian ones, and mid-month
+  // is the one that actually covers most of what is on screen.
+  const [hebrewLabel, setHebrewLabel] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const y = cursor.getFullYear();
+    const m = cursor.getMonth() + 1;
+    fetch(`/api/hebcal/convert?mode=g2h&gy=${y}&gm=${m}&gd=15`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d?.heParts) return;
+        setHebrewLabel(`${d.heParts.m} ${d.heParts.y}`);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [cursor]);
+
   const weekdayLabels = useMemo(() => {
     // Derived from the locale rather than seven more translation keys --
     // a Sunday-start week starting from a known Sunday.
@@ -188,6 +234,8 @@ export default function YomTovYearViewClient({
         </div>
       </div>
 
+      <JumpToDatePanel cursor={cursor} onJump={jumpTo} onToday={goToday} />
+
       {observances.length === 0 ? (
         <p className="text-sm text-dusk text-center py-10 bg-card rounded-xl2 border border-cardBorder shadow-card">
           {t('empty')}
@@ -202,8 +250,12 @@ export default function YomTovYearViewClient({
             >
               <ChevronLeft size={18} strokeWidth={1.75} />
             </button>
-            <span className="text-[10px] font-semibold tracking-[0.17em] uppercase text-white">
+            {/* Dual format. The Hebrew half is omitted rather than faked
+                while the conversion is in flight -- a wrong Hebrew month is
+                worse than a missing one on this page. */}
+            <span className="text-[10px] font-semibold tracking-[0.17em] uppercase text-white text-center">
               {monthLabel}
+              {hebrewLabel && <span className="text-white/70"> / {hebrewLabel}</span>}
             </span>
             <button
               onClick={() => shiftMonth(1)}
@@ -237,6 +289,10 @@ export default function YomTovYearViewClient({
                     key={iso}
                     className={`min-h-[86px] rounded-lg border p-1.5 ${
                       isToday ? 'border-denim bg-mist' : 'border-cardBorder bg-card'
+                    } ${
+                      iso === highlightIso
+                        ? 'ring-2 ring-denim ring-offset-1 animate-pulse'
+                        : ''
                     }`}
                   >
                     <span

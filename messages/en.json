@@ -864,7 +864,17 @@
     "viewList": "List",
     "viewCalendar": "Calendar",
     "prevMonth": "Previous month",
-    "nextMonth": "Next month"
+    "nextMonth": "Next month",
+    "jumpToDate": "Jump to date",
+    "tabGregorian": "English date",
+    "tabHebrew": "Hebrew date / תאריך עברי",
+    "labelMonth": "Month",
+    "labelDay": "Day",
+    "labelYear": "Year",
+    "labelHebrewMonth": "Hebrew month",
+    "go": "Go",
+    "today": "Today",
+    "converting": "Converting…"
   },
   "staffHandbook": {
     "sectionStart": "Starting Your Shift",
