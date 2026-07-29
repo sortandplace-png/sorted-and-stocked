@@ -2412,6 +2412,31 @@ function groupByLetter(items: InventoryItem[]): [string, InventoryItem[]][] {
   });
 }
 
+// SS-020: Instacart links carry the actual retailer as ?retailerSlug=,
+// which is the real store (e.g. Costco) -- the hostname is just Instacart
+// itself, wrong for grouping purposes on both live examples in this data
+// (retailerSlug=costco, hostname would say "Instacart"). Checked first;
+// deriveRetailerName's hostname guess is the fallback for links that don't
+// carry it. Kept separate from deriveRetailerName rather than changing that
+// function, since its other call site (guessing a name for the create-item
+// form) has nothing to do with grouping and shouldn't shift behavior here.
+function deriveStoreNameFromLink(rawUrl: string): string {
+  try {
+    const withScheme = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+    const slug = new URL(withScheme).searchParams.get('retailerSlug');
+    if (slug) {
+      return slug
+        .split(/[-_]/)
+        .filter(Boolean)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+  } catch {
+    // falls through to the hostname guess below
+  }
+  return deriveRetailerName(rawUrl);
+}
+
 // SS-021. Same shape as groupByLetter so the render path does not care
 // which one produced the groups.
 //
@@ -2420,13 +2445,19 @@ function groupByLetter(items: InventoryItem[]): [string, InventoryItem[]][] {
 // not, and silently hiding the remainder would make "By Store" look like it
 // had lost inventory. `unassignedLabel` is passed in already translated --
 // this file has no next-intl access at module scope.
+//
+// SS-020: before falling back to unassignedLabel, try deriveStoreNameFromLink
+// on reorder_link. Only some supplier-less rows carry a link at all
+// (miscellaneous supplies like tape or a flashlight typically don't), so
+// unassignedLabel is still reachable, just for a smaller set than before.
 function groupByStore(
   items: InventoryItem[],
   unassignedLabel: string
 ): [string, InventoryItem[]][] {
   const map = new Map<string, InventoryItem[]>();
   for (const item of items) {
-    const key = item.supplier?.trim() || unassignedLabel;
+    const derived = item.reorder_link ? deriveStoreNameFromLink(item.reorder_link) : '';
+    const key = item.supplier?.trim() || derived || unassignedLabel;
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(item);
   }
