@@ -3,10 +3,11 @@
 // no state, and keeping it out of the client bundle means the crawler and
 // a cold first paint both get the nav as markup.
 //
-// "Get the App" points at /login rather than /properties. /properties is
-// behind the middleware and bounces a signed-out visitor to /login anyway,
-// so linking it would send every new visitor through a redirect to reach
-// the same place; a signed-in one still lands in the app from there.
+// "Get the App" points at /properties per spec. Functionally identical to
+// /login for a signed-out visitor either way -- /properties sits behind the
+// middleware and bounces to /login regardless -- but a signed-in visitor
+// (an existing client who bookmarked the marketing site) lands one hop
+// sooner this way.
 import Link from 'next/link';
 
 const NAV = [
@@ -39,7 +40,7 @@ export default function MarketingHeader() {
           ))}
           {/* Denim fill, not brass -- brass is an accent, never a fill (D-01). */}
           <Link
-            href="/login"
+            href="/properties"
             className="shrink-0 bg-denim text-white text-[12px] font-semibold uppercase tracking-[0.12em] px-4 py-2.5 rounded-full hover:opacity-90 transition-opacity"
           >
             Get the App

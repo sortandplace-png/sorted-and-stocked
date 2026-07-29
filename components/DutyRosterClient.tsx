@@ -18,7 +18,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { storageThumbnail } from '@/lib/storage-image';
 import { routes } from '@/lib/app-routes';
-import { ChevronDown, ClipboardList, Library } from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
 
 type Frequency = {
   id: string;
@@ -77,14 +77,6 @@ type SopEmbed = {
 } | null;
 type SopLinkRow = { master_task_id: string; sop_library: SopEmbed | SopEmbed[] };
 type LinkedSop = { sopId: string; sopEn: string | null; sopEs: string | null };
-type SopLibraryRow = {
-  id: string;
-  sop_code: string | null;
-  zone_type: string | null;
-  task_en: string;
-  task_es: string;
-  default_frequency_id: string | null;
-};
 
 const UNASSIGNED = 'Unassigned';
 const NO_ROOM = '__noroom__';
@@ -113,11 +105,6 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   const [sopCounts, setSopCounts] = useState<Record<string, number>>({});
   const [posterByTask, setPosterByTask] = useState<Record<string, string>>({});
   const [sopTextByTask, setSopTextByTask] = useState<Record<string, LinkedSop>>({});
-  const [sopLibrary, setSopLibrary] = useState<SopLibraryRow[]>([]);
-  const [showLibrary, setShowLibrary] = useState(false);
-  const [deployBusyId, setDeployBusyId] = useState<string | null>(null);
-  const [deployRoom, setDeployRoom] = useState<Record<string, string>>({});
-  const [deployMember, setDeployMember] = useState<Record<string, string>>({});
   // Which tile has its procedure open. One at a time -- a grid with every
   // panel expanded is not a grid any more.
   const [openSopTaskId, setOpenSopTaskId] = useState<string | null>(null);
@@ -165,14 +152,6 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
         .order('sort_order', { ascending: true }),
       // Only live assignments. Ended ones stay on the table as history.
       supabase.from('task_assignments').select('id, task_id, member_id').eq('active', true),
-      // Deploy-from-library, folded in from Task Center: adding tasks to a
-      // property is an admin action and belongs on the manager's page.
-      supabase
-        .from('sop_library')
-        .select('id, sop_code, zone_type, task_en, task_es, default_frequency_id')
-        .eq('active', true)
-        .order('zone_type')
-        .order('task_en'),
     ]);
 
     // One failing source must not blank the page, and an error must never be
@@ -227,7 +206,6 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     setPosterByTask(posters);
     setSopTextByTask(sopTexts);
     setAssignments(rows[5] as Assignment[]);
-    setSopLibrary(rows[6] as SopLibraryRow[]);
     setLoadError(failed.length > 0 ? t('loadPartial') : null);
     setLoading(false);
   }, [propertyId, supabase, t]);
@@ -457,28 +435,6 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   //
   // assigned_role is deliberately left alone. Not dropped, not cleared -- just
   // no longer written. It is null on every active task, so nothing is lost.
-  // Folded in from Task Center, unchanged in behaviour: the same
-  // deploy_sop_to_property RPC with the same arguments. Reloads on success
-  // because a deployed SOP becomes a new master_task and the grid, the
-  // filters and the stat tiles all have to see it.
-  async function deploySop(sop: SopLibraryRow) {
-    setDeployBusyId(sop.id);
-    const roomId = deployRoom[sop.id] ?? '';
-    const roomNameEn = roomId ? rooms.find((r) => r.id === roomId)?.name_en ?? null : null;
-    const { error } = await supabase.rpc('deploy_sop_to_property', {
-      p_sop_id: sop.id,
-      p_property_id: propertyId,
-      p_room_name_en: roomNameEn,
-      p_member_id: deployMember[sop.id] || null,
-    });
-    setDeployBusyId(null);
-    if (error) {
-      setLoadError(error.message || t('saveFailed'));
-      return;
-    }
-    load();
-  }
-
   // SS-130: the room eyebrow was display-only, which is what made
   // "Rooms Missing" a number you could read but not act on. Owner/manager
   // only by construction -- this whole page redirects staff out.
@@ -597,67 +553,15 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
         ))}
       </div>
 
-      {/* Deploy from the task library. Folded in from Task Center because
-          adding tasks to a property is an admin action and this is now the
-          only page a manager needs for the roster. Collapsed by default --
-          it is a periodic action, not the reason you opened the page. */}
-      <div className="mb-4 rounded-xl2 border border-cardBorder bg-card shadow-card overflow-hidden">
-        <button
-          onClick={() => setShowLibrary((v) => !v)}
-          className="w-full flex items-center gap-2 px-4 py-3 text-left"
-        >
-          <Library size={16} className="text-brass shrink-0" strokeWidth={1.75} aria-hidden="true" />
-          <span className="flex-1 font-display text-denim">{t('deployFromLibrary')}</span>
-          <span className="text-xs text-dusk">({sopLibrary.length})</span>
-          <ChevronDown
-            size={16}
-            className={`text-dusk transition-transform ${showLibrary ? 'rotate-180' : ''}`}
-            aria-hidden="true"
-          />
-        </button>
-        {showLibrary && (
-          <div className="border-t border-cardBorder p-4 space-y-2 max-h-[28rem] overflow-y-auto">
-            {sopLibrary.map((sop) => (
-              <div key={sop.id} className="rounded-xl bg-mist p-2.5">
-                <p className="text-sm text-denim mb-1.5">{es ? sop.task_es : sop.task_en}</p>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <select
-                    value={deployRoom[sop.id] ?? ''}
-                    onChange={(e) => setDeployRoom((p) => ({ ...p, [sop.id]: e.target.value }))}
-                    className={pill}
-                  >
-                    <option value="">{t('noRoom')}</option>
-                    {rooms.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {es ? r.name_es : r.name_en}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={deployMember[sop.id] ?? ''}
-                    onChange={(e) => setDeployMember((p) => ({ ...p, [sop.id]: e.target.value }))}
-                    className={pill}
-                  >
-                    <option value="">{t('unassigned')}</option>
-                    {members.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.full_name ?? t('unnamedMember')}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => deploySop(sop)}
-                    disabled={deployBusyId === sop.id}
-                    className="text-xs font-medium bg-denim text-white px-3 py-1.5 rounded-full disabled:opacity-40"
-                  >
-                    {deployBusyId === sop.id ? t('adding') : t('addToList')}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* SS-266/tools-cleanup: the "Deploy from the task library" panel that
+          used to sit here is removed, not hidden -- the SOP Library is
+          reachable from Tools, and this was a second door to the same
+          room. Its dedicated state (sopLibrary, showLibrary, deployBusyId,
+          deployRoom, deployMember), its own sop_library fetch, and
+          deploySop() were removed alongside it rather than left as dead
+          code with nothing left to render them. master_task_sops (the
+          query that feeds each tile's own SOP count/poster/procedure text)
+          is untouched -- a different query, still very much in use. */}
 
       {/* SS-273 floor tabs -- same bg-mist pill-strip treatment Inventory
           already uses for its own floor tabs (InventoryClient.tsx), so the
