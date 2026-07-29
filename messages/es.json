@@ -856,6 +856,9 @@
     "empty": "Todavía no hay turnos registrados en esta propiedad."
   },
   "staffHandbook": {
+    "sectionStart": "Comenzando tu turno",
+    "sectionDuring": "Durante tu turno",
+    "sectionEnd": "Al finalizar tu turno",
     "title": "Manual del Personal",
     "subtitle": "Diez preguntas, en el orden en que ocurre su turno.",
     "empty": "El manual aún no tiene entradas.",

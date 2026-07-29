@@ -97,6 +97,21 @@ const GUIDE: Record<
   'FAQ-110': { Icon: ClipboardList, links: [{ key: 'myDay', labelKey: 'linkMyDay' }] },
 };
 
+// The ten questions in three shift-phase groups (Racquel approved 2026-07-28).
+//
+// Static in the component rather than a column on help_articles: the IDs are
+// fixed, the grouping is presentation, and a three-row lookup does not earn a
+// migration. If sections ever become editable in-app, that is the moment it
+// becomes data -- not before.
+//
+// Keyed by id for the same reason GUIDE is: inserting FAQ-103a should not
+// silently push two questions into the wrong phase of the shift.
+const SECTIONS: { key: 'sectionStart' | 'sectionDuring' | 'sectionEnd'; ids: string[] }[] = [
+  { key: 'sectionStart', ids: ['FAQ-101', 'FAQ-102'] },
+  { key: 'sectionDuring', ids: ['FAQ-103', 'FAQ-104', 'FAQ-105', 'FAQ-106', 'FAQ-107', 'FAQ-108'] },
+  { key: 'sectionEnd', ids: ['FAQ-109', 'FAQ-110'] },
+];
+
 export default function StaffHandbookClient({
   articles,
   propertyId,
@@ -142,6 +157,32 @@ export default function StaffHandbookClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [articles, query, es]);
 
+  // The flat grid becomes three stacked groups. Two things this has to get
+  // right beyond the grouping itself:
+  //
+  // 1. The numeral stays global. These are "ten questions in shift order",
+  //    and the progress strip counts them the same way -- restarting at 1
+  //    inside each group would make the card labelled 1 ambiguous across
+  //    three places on one screen.
+  // 2. Nothing disappears. An article whose id this constant does not name
+  //    still renders, in a trailing unheaded group. SECTIONS is a hardcoded
+  //    list and help_articles is a table someone can insert into; the
+  //    failure mode of a stale constant should be an unsorted card, never a
+  //    silently missing instruction.
+  const grouped = useMemo(() => {
+    const order = new Map(articles.map((a, i) => [a.id, i]));
+    const claimed = new Set(SECTIONS.flatMap((s) => s.ids));
+    const groups: { key: string; items: HandbookArticle[] }[] = SECTIONS.map((s) => ({
+      key: s.key,
+      items: visible.filter((a) => s.ids.includes(a.id)),
+    }));
+    const unmapped = visible.filter((a) => !claimed.has(a.id));
+    if (unmapped.length > 0) groups.push({ key: '', items: unmapped });
+    // Search filters within groups, so a group with no match drops its
+    // header too rather than leaving a denim strip over empty space.
+    return { groups: groups.filter((g) => g.items.length > 0), order };
+  }, [articles, visible]);
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <h1 className="font-display text-[34px] font-normal text-denim mb-5">{t('title')}</h1>
@@ -167,10 +208,36 @@ export default function StaffHandbookClient({
         ) : visible.length === 0 ? (
           <p className="text-center italic text-dusk font-display text-lg py-10">{t('noResults')}</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-[14px] auto-rows-fr">
-            {visible.map((a, i) => {
+          <div className="space-y-[22px]">
+            {grouped.groups.map((g) => (
+              <div key={g.key || '__unmapped'}>
+                {/* Same denim strip as the Task Center's room headers --
+                    title left, count right, brass pin top-right. Not a
+                    button: these do not collapse, and a pin that toggles
+                    nothing would be a lie about D-21. The strip on
+                    PageShell above is decorative in exactly the same way. */}
+                {g.key && (
+                  <div className="relative bg-denim rounded-xl2 py-[11px] pl-5 pr-8 mb-[14px] flex items-center justify-between gap-3">
+                    <span className="text-[10px] font-semibold tracking-[0.17em] uppercase text-white truncate">
+                      {t(g.key)}
+                    </span>
+                    <span className="text-[10px] font-semibold tracking-[0.17em] uppercase text-white/70 shrink-0">
+                      {g.items.length}
+                    </span>
+                    <Pin size="sm" />
+                  </div>
+                )}
+
+                {/* D-20 still governs inside the group: bento, never list.
+                    The span index restarts per group so each group's rows
+                    stay flush -- SPANS pairs sum to 6, and 2/6/2 all land
+                    on pair boundaries. Indexing globally would start the
+                    six-question group mid-pair and leave a ragged row. */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-[14px] auto-rows-fr">
+            {g.items.map((a, gi) => {
               const open = openId === a.id;
               const guide = GUIDE[a.id];
+              const numeral = (grouped.order.get(a.id) ?? 0) + 1;
               return (
                 // The card is a div wrapping a real <button>, not one big
                 // button, because the "go to" links below are real <a>
@@ -182,7 +249,7 @@ export default function StaffHandbookClient({
                   key={a.id}
                   // No fixed height: Spanish runs 15-30% longer and would clip.
                   className={`relative bg-mist rounded-xl2 border border-brass/30 shadow-card hover:shadow-cardHover transition-shadow py-[14px] px-[18px] flex flex-col gap-[11px] ${
-                    open ? 'sm:col-span-2 lg:col-span-6' : SPANS[i % SPANS.length]
+                    open ? 'sm:col-span-2 lg:col-span-6' : SPANS[gi % SPANS.length]
                   }`}
                 >
                   {/* The pin is the control (D-21). Nothing else marks it. */}
@@ -198,7 +265,7 @@ export default function StaffHandbookClient({
                       brass is never a fill and a numeral is a label, not
                       display type (D-01). */}
                   <span className="flex items-center gap-2">
-                    <span className="font-display text-[15px] text-denim tabular-nums">{i + 1}</span>
+                    <span className="font-display text-[15px] text-denim tabular-nums">{numeral}</span>
                     {guide && (
                       <guide.Icon size={16} className="text-denim shrink-0" strokeWidth={1.75} aria-hidden="true" />
                     )}
@@ -246,6 +313,9 @@ export default function StaffHandbookClient({
                 </div>
               );
             })}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </PageShell>

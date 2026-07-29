@@ -856,6 +856,9 @@
     "empty": "No shifts have been recorded at this property yet."
   },
   "staffHandbook": {
+    "sectionStart": "Starting Your Shift",
+    "sectionDuring": "During Your Shift",
+    "sectionEnd": "Wrapping Up",
     "title": "Staff Handbook",
     "subtitle": "Ten questions, in the order your shift happens.",
     "empty": "The handbook has no entries yet.",
