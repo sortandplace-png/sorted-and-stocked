@@ -18,6 +18,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { storageThumbnail } from '@/lib/storage-image';
 import { routes } from '@/lib/app-routes';
+import { getEasternIsoWeekday } from '@/lib/eastern-weekday';
 import { ClipboardList } from 'lucide-react';
 
 type Frequency = {
@@ -44,6 +45,18 @@ const FLOOR_ES: Record<string, string> = {
 const FLOOR_ORDER = ['Basement', 'Main Floor', 'Upstairs'];
 
 type Room = { id: string; name_en: string; name_es: string; floor: string | null };
+
+// SS-273. Sunday-first display order, ISO weekday values (matching the
+// day_of_week column's own convention: 1=Mon..7=Sun) -- Saturday/6 is
+// deliberately absent, not an oversight.
+const DAY_PICKER_OPTIONS: { iso: number; key: string }[] = [
+  { iso: 7, key: 'daySun' },
+  { iso: 1, key: 'dayMon' },
+  { iso: 2, key: 'dayTue' },
+  { iso: 3, key: 'dayWed' },
+  { iso: 4, key: 'dayThu' },
+  { iso: 5, key: 'dayFri' },
+];
 // SS-131: assignment is to a PERSON. task_assignments.member_id is an FK to
 // property_members.id; there is no assigned_slot_id and staff_slots are not in
 // this path (SS-243 parked for exactly that reason).
@@ -63,6 +76,11 @@ type Task = {
   photo_url: string | null;
   active: boolean;
   sort_order: number;
+  // SS-273. ISO weekday (1=Mon..7=Sun), same convention my-day/page.tsx
+  // already reads this column with. NULL means "every day" -- confirmed
+  // live that 0 of 208 active tasks on Main have this set today, so that
+  // is the effective state of every task right now, not a hypothetical.
+  day_of_week: number | null;
 };
 
 // The linked SOP, embedded on master_task_sops. sop_id is a many-to-one
@@ -123,6 +141,17 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   // SS-273. 'all' is the default per spec -- distinct from `room`, which
   // narrows to one room; this narrows to a whole floor's worth of rooms.
   const [floor, setFloor] = useState('all');
+  // SS-273. Sun-Fri only in the picker (Shabbos excluded by design -- a
+  // frum household is not opening this app to plan Shabbos tasks), 'all'
+  // meaning every day. Defaults to today's real ISO weekday computed once
+  // on mount, EXCEPT when today is Shabbos itself: 6 (Saturday) is not a
+  // selectable option, so there is no valid "today" to default to and this
+  // falls back to 'all' rather than silently picking an adjacent day that
+  // is not actually today.
+  const [dayFilter, setDayFilter] = useState<number | 'all'>(() => {
+    const today = getEasternIsoWeekday(new Date());
+    return today === 6 ? 'all' : today;
+  });
   const [room, setRoom] = useState('all');
   const [job, setJob] = useState('all');
   const [freq, setFreq] = useState('all');
@@ -133,7 +162,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     const settled = await Promise.allSettled([
       supabase
         .from('master_tasks')
-        .select('id, task_number, room_id, frequency_id, task_en, task_es, job_type, assigned_role, source_area_en, source_area_es, photo_url, active, sort_order')
+        .select('id, task_number, room_id, frequency_id, task_en, task_es, job_type, assigned_role, source_area_en, source_area_es, photo_url, active, sort_order, day_of_week')
         .eq('property_id', propertyId)
         .order('sort_order'),
       supabase.from('frequencies').select('id, code, label_en, label_es, recurrence_kind, sort_order').order('sort_order'),
@@ -279,6 +308,16 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   // so these tasks correctly drop out of any specific floor and only
   // appear under "All floors".
   const matchFloor = (x: Task) => floor === 'all' || roomById.get(x.room_id ?? '')?.floor === floor;
+  // SS-273. NULL day_of_week means "every day" -- the same rule
+  // my-day/page.tsx's own query already applies (day_of_week.is.null OR
+  // day_of_week.eq.today), not a new one invented for this filter. That is
+  // what makes a Daily task always show regardless of which day is picked,
+  // and it is ALSO the effective behaviour for every Weekly/Monthly/
+  // Seasonal task today, since none of the 208 active tasks on Main have
+  // day_of_week set yet -- confirmed live before writing this. This filter
+  // narrows correctly the moment a task's day gets assigned; it does not
+  // retroactively invent a day for tasks that have none.
+  const matchDay = (x: Task) => dayFilter === 'all' || x.day_of_week === null || x.day_of_week === dayFilter;
   const matchJob = (x: Task) => job === 'all' || (x.job_type ?? '') === job;
   const matchSearch = (x: Task) => {
     const q = search.trim().toLowerCase();
@@ -311,26 +350,26 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   const freqOptions = useMemo(() => {
     const present = new Set(
       scopedTasks
-        .filter((x) => matchFloor(x) && matchRoom(x) && matchJob(x) && matchAssignment(x) && matchSearch(x))
+        .filter((x) => matchDay(x) && matchFloor(x) && matchRoom(x) && matchJob(x) && matchAssignment(x) && matchSearch(x))
         .map((x) => x.frequency_id)
     );
     return frequencies.filter((f) => present.has(f.id));
-  }, [scopedTasks, frequencies, floor, room, job, assignment, search]);
+  }, [scopedTasks, frequencies, dayFilter, floor, room, job, assignment, search]);
 
   const roomOptions = useMemo(() => {
-    const pool = scopedTasks.filter((x) => matchFloor(x) && matchJob(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x));
+    const pool = scopedTasks.filter((x) => matchDay(x) && matchFloor(x) && matchJob(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x));
     const ids = new Set(pool.map((x) => x.room_id));
     return { hasNull: ids.has(null), list: rooms.filter((r) => ids.has(r.id)) };
-  }, [scopedTasks, rooms, floor, job, freq, assignment, search, passesFrequency]);
+  }, [scopedTasks, rooms, dayFilter, floor, job, freq, assignment, search, passesFrequency]);
 
   const jobOptions = useMemo(() => {
-    const pool = scopedTasks.filter((x) => matchFloor(x) && matchRoom(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x));
+    const pool = scopedTasks.filter((x) => matchDay(x) && matchFloor(x) && matchRoom(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x));
     return [...new Set(pool.map((x) => x.job_type).filter(Boolean))].sort() as string[];
-  }, [scopedTasks, floor, room, freq, assignment, search, passesFrequency]);
+  }, [scopedTasks, dayFilter, floor, room, freq, assignment, search, passesFrequency]);
 
   const filtered = useMemo(
-    () => scopedTasks.filter((x) => matchFloor(x) && matchRoom(x) && matchJob(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x)),
-    [scopedTasks, floor, room, job, freq, assignment, search, passesFrequency]
+    () => scopedTasks.filter((x) => matchDay(x) && matchFloor(x) && matchRoom(x) && matchJob(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x)),
+    [scopedTasks, dayFilter, floor, room, job, freq, assignment, search, passesFrequency]
   );
 
   // Room sections. Label is the room name when room_id is set, otherwise the
@@ -600,6 +639,23 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
           placeholder={t('searchPlaceholder')}
           className="bg-card border border-cardBorder rounded-full px-4 py-2 text-[13px] text-denim placeholder:text-dusk"
         />
+        {/* SS-273. Sun-Fri only -- Shabbos (6/Saturday) is never an option,
+            by design, not an oversight. Displayed Sunday-first (US-week
+            convention), a separate concern from the ISO 1=Mon numbering
+            the underlying column and every predicate above use. */}
+        <select
+          className={pill}
+          value={dayFilter}
+          onChange={(e) => setDayFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+          aria-label={t('filterDay')}
+        >
+          <option value="all">{t('allDays')}</option>
+          {DAY_PICKER_OPTIONS.map(({ iso, key }) => (
+            <option key={iso} value={iso}>
+              {t(key)}
+            </option>
+          ))}
+        </select>
         <select className={pill} value={room} onChange={(e) => setRoom(e.target.value)} aria-label={t('filterRooms')}>
           <option value="all">{t('allRooms')}</option>
           {roomOptions.hasNull && <option value={NO_ROOM}>{t('noRoom')}</option>}
