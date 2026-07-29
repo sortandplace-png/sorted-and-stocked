@@ -103,10 +103,18 @@ export async function GET(request: Request) {
 
   const { data: property } = await supabase
     .from('properties')
-    .select('name, households(name)')
+    .select('name, household_id, households(name)')
     .eq('id', propertyId)
     .maybeSingle();
-  const propertyHouseholdName = (property?.households as unknown as { name: string } | null)?.name;
+  const propertyHouseholdInfo = (property?.households as unknown as { name: string } | null) ?? null;
+  let propertyLabel: string | null = property?.name ?? null;
+  if (property?.name && property.household_id && propertyHouseholdInfo?.name) {
+    const { count } = await supabase
+      .from('properties')
+      .select('id', { count: 'exact', head: true })
+      .eq('household_id', property.household_id);
+    propertyLabel = formatPropertyLabel(property.name, { name: propertyHouseholdInfo.name, propertyCount: count ?? 1 });
+  }
 
   const zip = new JSZip();
   const manifest: Record<string, { rows: number; error?: string }> = {};
@@ -176,7 +184,7 @@ export async function GET(request: Request) {
     JSON.stringify(
       {
         property_id: propertyId,
-        property_name: property?.name ? formatPropertyLabel(property.name, propertyHouseholdName) : null,
+        property_name: propertyLabel,
         exported_at: new Date().toISOString(),
         exported_by: user.id,
         tables: manifest,
@@ -203,7 +211,7 @@ export async function GET(request: Request) {
   const arrayBuffer = new ArrayBuffer(bytes.byteLength);
   new Uint8Array(arrayBuffer).set(bytes);
   const blob = new Blob([arrayBuffer], { type: 'application/zip' });
-  const filename = `sorted-and-stocked-backup-${property?.name ?? propertyId}-${new Date().toISOString().slice(0, 10)}.zip`;
+  const filename = `sorted-and-stocked-backup-${propertyLabel ?? propertyId}-${new Date().toISOString().slice(0, 10)}.zip`;
 
   return new NextResponse(blob, {
     headers: {

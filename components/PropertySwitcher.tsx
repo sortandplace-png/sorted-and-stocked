@@ -8,9 +8,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ChevronDown, Check } from 'lucide-react';
-import { formatPropertyLabel } from '@/lib/property-display';
 
-export type SwitcherProperty = { id: string; name: string; householdName?: string | null };
+// The household/property-count rule (SS-359) is applied once, server-side,
+// where the household's real property count is known -- see
+// app/properties/[id]/layout.tsx. This just renders whatever label it's given.
+export type SwitcherProperty = { id: string; label: string };
 
 export default function PropertySwitcher({
   currentPropertyId,
@@ -98,7 +100,7 @@ export default function PropertySwitcher({
                     : 'text-dusk hover:bg-mist/50 border-transparent'
                 }`}
               >
-                <span className="font-display truncate">{formatPropertyLabel(p.name, p.householdName)}</span>
+                <span className="font-display truncate">{p.label}</span>
                 {active && <Check size={14} strokeWidth={2} className="text-brass shrink-0" aria-hidden="true" />}
               </button>
             );

@@ -42,15 +42,27 @@ export default async function PropertyLayout({
 
   if (!membership) redirect('/properties');
 
+  // Whether a household's name is shown at all depends on how many
+  // properties it actually has -- not on whether this user happens to be a
+  // member of more than one of them. Counted against the whole table so the
+  // rule reflects the household's real shape, not this viewer's membership.
+  const { data: allHouseholdIds } = await supabase.from('properties').select('household_id').not('household_id', 'is', null);
+  const householdCounts = new Map<string, number>();
+  for (const row of allHouseholdIds ?? []) {
+    const hid = row.household_id as string;
+    householdCounts.set(hid, (householdCounts.get(hid) ?? 0) + 1);
+  }
+  function household(h: { household_id: string | null; households: { name: string } | null } | null) {
+    if (!h?.household_id || !h.households?.name) return null;
+    return { name: h.households.name, propertyCount: householdCounts.get(h.household_id) ?? 1 };
+  }
+
   const membershipProperty = membership.properties as unknown as {
     name: string;
     household_id: string | null;
     households: { name: string } | null;
   } | null;
-  const propertyName = formatPropertyLabel(
-    membershipProperty?.name ?? '',
-    membershipProperty?.households?.name
-  );
+  const propertyName = formatPropertyLabel(membershipProperty?.name ?? '', household(membershipProperty));
 
   // All properties this user belongs to, for the switcher -- not just the
   // one from the membership check above.
@@ -85,7 +97,7 @@ export default async function PropertyLayout({
       }
       return a.name.localeCompare(b.name);
     })
-    .map((p) => ({ id: p.id, name: p.name, householdName: p.households?.name ?? null }));
+    .map((p) => ({ id: p.id, label: formatPropertyLabel(p.name, household(p)) }));
 
   const { data: profile } = await supabase
     .from('profiles')

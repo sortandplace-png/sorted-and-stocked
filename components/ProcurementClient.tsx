@@ -8,9 +8,11 @@ import { resilientUpdate } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import { LogoMark } from '@/components/Logo';
-import { formatPropertyLabel } from '@/lib/property-display';
 
-type Property = { id: string; name: string; householdName?: string | null };
+// The household/property-count rule (SS-359) is applied once, server-side,
+// in app/procurement/page.tsx, where the household's real property count is
+// known -- this component just renders whatever label it's given.
+type Property = { id: string; label: string };
 
 type LowStockSummaryRow = {
   property: string;
@@ -158,7 +160,7 @@ export default function ProcurementClient({
         return (items ?? []).map((i) => ({
           ...i,
           property_id: property.id,
-          property_name: formatPropertyLabel(property.name, property.householdName),
+          property_name: property.label,
         })) as RawItem[];
       })
     );
@@ -229,7 +231,7 @@ export default function ProcurementClient({
           <p className="text-sm text-dusk">
             {properties
               .filter((p) => selectedIds.has(p.id))
-              .map((p) => formatPropertyLabel(p.name, p.householdName))
+              .map((p) => p.label)
               .join(', ')}{' '}
             —{' '}
             {new Date().toLocaleDateString()}
@@ -265,7 +267,7 @@ export default function ProcurementClient({
                     : 'px-3 py-1.5 rounded-full text-sm bg-mist border border-cardBorder text-denim'
                 }
               >
-                {formatPropertyLabel(p.name, p.householdName)}
+                {p.label}
               </button>
             ))}
           </div>

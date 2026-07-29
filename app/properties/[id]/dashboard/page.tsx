@@ -379,12 +379,17 @@ async function getPropertyName(propertyId: string): Promise<string | null> {
   const supabase = await createClient()
   const { data } = await supabase
     .from('properties')
-    .select('name, households(name)')
+    .select('name, household_id, households(name)')
     .eq('id', propertyId)
     .single()
   if (!data) return null
-  const householdName = (data.households as unknown as { name: string } | null)?.name
-  return formatPropertyLabel(data.name, householdName)
+  const householdInfo = data.households as unknown as { name: string } | null
+  if (!data.household_id || !householdInfo?.name) return data.name
+  const { count } = await supabase
+    .from('properties')
+    .select('id', { count: 'exact', head: true })
+    .eq('household_id', data.household_id)
+  return formatPropertyLabel(data.name, { name: householdInfo.name, propertyCount: count ?? 1 })
 }
 
 // recipes has no active/archived concept in the schema (confirmed directly
