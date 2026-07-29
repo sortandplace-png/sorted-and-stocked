@@ -28,7 +28,22 @@ type Frequency = {
   recurrence_kind: string;
   sort_order: number;
 };
-type Room = { id: string; name_en: string; name_es: string };
+// SS-273 floor filter. floor has no _es sibling in the schema (confirmed
+// live -- only one column) and only three real values exist, so a small
+// static display map covers it rather than a migration, same shape as the
+// staples category translation added earlier.
+const FLOOR_ES: Record<string, string> = {
+  Basement: 'Sótano',
+  'Main Floor': 'Planta Principal',
+  Upstairs: 'Piso Superior',
+};
+// Fixed order, not alphabetical -- alphabetical happens to match here
+// (Basement, Main Floor, Upstairs) but that is a coincidence of these
+// specific names, not something to depend on if a fourth floor is ever
+// added with a name that sorts oddly.
+const FLOOR_ORDER = ['Basement', 'Main Floor', 'Upstairs'];
+
+type Room = { id: string; name_en: string; name_es: string; floor: string | null };
 // SS-131: assignment is to a PERSON. task_assignments.member_id is an FK to
 // property_members.id; there is no assigned_slot_id and staff_slots are not in
 // this path (SS-243 parked for exactly that reason).
@@ -118,6 +133,9 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
+  // SS-273. 'all' is the default per spec -- distinct from `room`, which
+  // narrows to one room; this narrows to a whole floor's worth of rooms.
+  const [floor, setFloor] = useState('all');
   const [room, setRoom] = useState('all');
   const [job, setJob] = useState('all');
   const [freq, setFreq] = useState('all');
@@ -132,7 +150,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
         .eq('property_id', propertyId)
         .order('sort_order'),
       supabase.from('frequencies').select('id, code, label_en, label_es, recurrence_kind, sort_order').order('sort_order'),
-      supabase.from('rooms').select('id, name_en, name_es').eq('property_id', propertyId).order('sort_order'),
+      supabase.from('rooms').select('id, name_en, name_es, floor').eq('property_id', propertyId).order('sort_order'),
       supabase
         .from('property_members')
         .select('id, user_id, profiles(full_name)')
@@ -278,6 +296,11 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   const matchAssignment = (x: Task) =>
     assignment === 'all' || (assignment === 'unassigned' ? isUnassigned(x) : !isUnassigned(x));
   const matchRoom = (x: Task) => room === 'all' || (room === NO_ROOM ? x.room_id === null : x.room_id === room);
+  // A null-room task has no floor either -- roomById.get(null) misses and
+  // ?. short-circuits to undefined, which never equals a real floor name,
+  // so these tasks correctly drop out of any specific floor and only
+  // appear under "All floors".
+  const matchFloor = (x: Task) => floor === 'all' || roomById.get(x.room_id ?? '')?.floor === floor;
   const matchJob = (x: Task) => job === 'all' || (x.job_type ?? '') === job;
   const matchSearch = (x: Task) => {
     const q = search.trim().toLowerCase();
@@ -309,25 +332,27 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   // so no combination can be assembled that returns nothing.
   const freqOptions = useMemo(() => {
     const present = new Set(
-      scopedTasks.filter((x) => matchRoom(x) && matchJob(x) && matchAssignment(x) && matchSearch(x)).map((x) => x.frequency_id)
+      scopedTasks
+        .filter((x) => matchFloor(x) && matchRoom(x) && matchJob(x) && matchAssignment(x) && matchSearch(x))
+        .map((x) => x.frequency_id)
     );
     return frequencies.filter((f) => present.has(f.id));
-  }, [scopedTasks, frequencies, room, job, assignment, search]);
+  }, [scopedTasks, frequencies, floor, room, job, assignment, search]);
 
   const roomOptions = useMemo(() => {
-    const pool = scopedTasks.filter((x) => matchJob(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x));
+    const pool = scopedTasks.filter((x) => matchFloor(x) && matchJob(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x));
     const ids = new Set(pool.map((x) => x.room_id));
     return { hasNull: ids.has(null), list: rooms.filter((r) => ids.has(r.id)) };
-  }, [scopedTasks, rooms, job, freq, assignment, search, passesFrequency]);
+  }, [scopedTasks, rooms, floor, job, freq, assignment, search, passesFrequency]);
 
   const jobOptions = useMemo(() => {
-    const pool = scopedTasks.filter((x) => matchRoom(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x));
+    const pool = scopedTasks.filter((x) => matchFloor(x) && matchRoom(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x));
     return [...new Set(pool.map((x) => x.job_type).filter(Boolean))].sort() as string[];
-  }, [scopedTasks, room, freq, assignment, search, passesFrequency]);
+  }, [scopedTasks, floor, room, freq, assignment, search, passesFrequency]);
 
   const filtered = useMemo(
-    () => scopedTasks.filter((x) => matchRoom(x) && matchJob(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x)),
-    [scopedTasks, room, job, freq, assignment, search, passesFrequency]
+    () => scopedTasks.filter((x) => matchFloor(x) && matchRoom(x) && matchJob(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x)),
+    [scopedTasks, floor, room, job, freq, assignment, search, passesFrequency]
   );
 
   // Room sections. Label is the room name when room_id is set, otherwise the
@@ -402,6 +427,18 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     [filtered, sopCounts]
   );
 
+  // SS-273. Fixed order (not alphabetical, not sort_order) so the tab row
+  // reads Basement -> Main Floor -> Upstairs regardless of how individual
+  // rooms happen to be ordered within each floor. Only real, present floor
+  // values -- a property with no floor data on any room shows no tab row
+  // at all rather than an empty one.
+  const allFloorNames = FLOOR_ORDER.filter((f) => rooms.some((r) => r.floor === f));
+  const floorLabel = (f: string) => (es && FLOOR_ES[f] ? FLOOR_ES[f] : f);
+
+  // floor is deliberately excluded from filtersActive/clearFilters -- it is
+  // a top-level view tab, same role Inventory's own floor tabs play there,
+  // not one of the filter pills a person "clears." Persists across a clear
+  // the same way switching floors on Inventory does.
   const filtersActive =
     search.trim() !== '' || room !== 'all' || job !== 'all' || freq !== 'all' || assignment !== 'all';
 
@@ -621,6 +658,36 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
           </div>
         )}
       </div>
+
+      {/* SS-273 floor tabs -- same bg-mist pill-strip treatment Inventory
+          already uses for its own floor tabs (InventoryClient.tsx), so the
+          two pages read as the same pattern rather than two designs for
+          the same idea. Hidden when there is only one real floor value (or
+          none), same guard Inventory applies, since a single-option tab row
+          filters nothing. */}
+      {allFloorNames.length > 1 && (
+        <div className="flex items-center gap-1 bg-mist rounded-full p-1 flex-wrap mb-3 w-fit">
+          <button
+            onClick={() => setFloor('all')}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+              floor === 'all' ? 'bg-denim text-white' : 'text-dusk'
+            }`}
+          >
+            {t('allFloors')}
+          </button>
+          {allFloorNames.map((f) => (
+            <button
+              key={f}
+              onClick={() => setFloor(f)}
+              className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+                floor === f ? 'bg-denim text-white' : 'text-dusk'
+              }`}
+            >
+              {floorLabel(f)}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <input

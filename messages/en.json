@@ -832,6 +832,7 @@
     "statRoomsMissing": "Rooms Missing",
     "statRoomsMissingHint": "Area-level work (Maintenance, Childcare, Outdoors) is excluded on purpose — it isn't tied to a room.",
     "searchPlaceholder": "Search tasks, rooms, jobs",
+    "allFloors": "All Floors",
     "allRooms": "All Rooms",
     "allJobs": "All Jobs",
     "allFrequencies": "All Frequencies",
