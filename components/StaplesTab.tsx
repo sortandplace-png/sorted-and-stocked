@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useToast } from '@/components/Toast';
 import { fetchStaplesWithInventory, addStapleToList } from '@/lib/api/staples';
 import {
@@ -25,9 +25,9 @@ import Pin from '@/components/PinAccent';
 import { CardHeader } from '@/components/ShiftHandoverClient';
 import PhotoOrFallback from '@/components/PhotoOrFallback';
 
-// Real staple_category values, confirmed live via direct query (14 as of
-// 2026-07-21) -- not guessed from the task's example list, though that
-// list turned out to match exactly. Falls back to Package for anything
+// Real staple_category values, confirmed live via direct query (12 as of
+// 2026-07-29 -- the "14" this comment used to claim was stale) -- not
+// guessed from the task's example list, though that list matches exactly. Falls back to Package for anything
 // new; several categories deliberately share an icon where there's no
 // single obvious pick (Condiments/Oils & Vinegars both Droplet, Meat/
 // Proteins both Beef) -- easy to swap individually later.
@@ -69,6 +69,33 @@ function getStapleCategoryIcon(category: string): LucideIcon {
 //
 // Only four have art today. Everything else keeps its Lucide icon rather
 // than being forced onto a nearest-fit picture.
+// Spanish display names for the category tiles and headers.
+//
+// A static map rather than a column, because staples.category is an English
+// value used as a KEY -- it is what the RPC groups by, what categoryFilter
+// compares against, and what add_staple_to_shopping_list copies onto the
+// shopping row. Translating the stored value would break all three. This
+// translates only what is displayed.
+//
+// Verified against the live table: exactly these 12 categories exist, so
+// the map is complete today. It still falls back to the English name for
+// anything added later, which shows an untranslated tile rather than a
+// blank one.
+const STAPLE_CATEGORY_ES: Record<string, string> = {
+  Bakery: 'Panadería',
+  Baking: 'Repostería',
+  Condiments: 'Condimentos',
+  'Dairy & Eggs': 'Lácteos y huevos',
+  Frozen: 'Congelados',
+  'Grains & Starches': 'Granos y almidones',
+  'Liquids & Stock': 'Líquidos y caldos',
+  Meat: 'Carnes',
+  'Oils & Vinegars': 'Aceites y vinagres',
+  Pantry: 'Despensa',
+  Produce: 'Frutas y verduras',
+  'Spices & Seasonings': 'Especias y condimentos',
+};
+
 const STAPLE_CATEGORY_ICON_SRC: Record<string, string> = {
   Produce: '/category-icons/produce.png',
   Pantry: '/category-icons/pantry.png',
@@ -97,6 +124,14 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
   const ts = useTranslations('shopping');
   const [staples, setStaples] = useState<Staple[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const locale = useLocale();
+  // Only the DISPLAY name is translated; the stored English value stays the
+  // key everything else compares against. Group keys are category names
+  // under the Category sort and single letters under the Name sort, so an
+  // unmapped key (a letter) correctly passes through untouched.
+  const categoryLabel = (key: string) =>
+    (locale === 'es' && STAPLE_CATEGORY_ES[key]) || key;
+
   const [sortBy, setSortBy] = useState<'category' | 'name' | 'low-first'>('category');
   // Same category-dropdown + "Running low" pattern as the main
   // Inventory page's Rooms filter bar -- reused exactly, not a second
@@ -210,7 +245,7 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
           <h4 className="font-medium text-sm text-denim truncate">{staple.staple_name}</h4>
           <div className="flex items-center gap-2 mt-1 text-xs text-dusk">
             <span className="bg-mist px-2 py-0.5 rounded-full text-denim font-medium">
-              {staple.staple_category}
+              {categoryLabel(staple.staple_category)}
             </span>
             <span>{staple.default_unit}</span>
             {staple.hechsher && (
@@ -337,9 +372,11 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
               className="border border-cardBorder rounded-full px-3 py-2 bg-card text-sm text-denim"
             >
               <option value="">All categories</option>
+              {/* Value stays the stored English category -- that is what
+                  categoryFilter compares against. Only the label changes. */}
               {categorySuggestions.map((c) => (
                 <option key={c} value={c}>
-                  {c}
+                  {categoryLabel(c)}
                 </option>
               ))}
             </select>
@@ -396,10 +433,22 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
               return (
                 <div
                   key={key}
-                  className="relative h-full flex flex-col bg-mist border border-brass/30 rounded-xl2 shadow-card hover:shadow-cardHover transition-shadow overflow-hidden"
+                  className={`relative h-full flex flex-col bg-mist rounded-xl2 shadow-card hover:shadow-cardHover transition-shadow overflow-hidden border ${
+                    categoryFilter === key ? 'border-denim' : 'border-brass/30'
+                  }`}
                 >
                   <Pin size="sm" collapsed={collapsed} onToggle={() => toggleGroup(key)} />
-                  <div className="flex-1 flex flex-col items-center justify-center gap-[11px] py-[14px] px-[18px] text-center">
+                  {/* The tile body filters; the pin still collapses (D-21).
+                      Two controls, two jobs, and they do not overlap -- the
+                      pin is a sibling of this button, never nested inside
+                      it, so neither swallows the other's click.
+                      Tapping the engaged tile clears the filter. */}
+                  <button
+                    type="button"
+                    onClick={() => setCategoryFilter((cur) => (cur === key ? null : key))}
+                    aria-pressed={categoryFilter === key}
+                    className="w-full flex-1 flex flex-col items-center justify-center gap-[11px] py-[14px] px-[18px] text-center"
+                  >
                     {STAPLE_CATEGORY_ICON_SRC[key] ? (
                       // Same img-or-fallback shape the Shopping List uses
                       // for its store and aisle tiles.
@@ -412,7 +461,9 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
                     ) : (
                       <Icon size={32} className="text-denim" aria-hidden="true" />
                     )}
-                    <span className="font-display text-lg text-denim leading-tight text-balance">{key}</span>
+                    <span className="font-display text-lg text-denim leading-tight text-balance">
+                      {categoryLabel(key)}
+                    </span>
                     <span className="text-xs text-dusk">
                       {groupStaples.length} {groupStaples.length === 1 ? 'item' : 'items'}
                     </span>
@@ -423,7 +474,7 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
                     >
                       {lowCount > 0 ? `${lowCount} below par` : 'All stocked'}
                     </span>
-                  </div>
+                  </button>
                   {!collapsed && (
                     <div className="border-t border-brass/20 px-[18px] py-3 space-y-3">
                       {groupStaples.map(renderStapleCard)}
