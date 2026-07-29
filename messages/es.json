@@ -776,6 +776,10 @@
     "watchMyDayVideo": "Ver: Mi Día (2 min)"
   },
   "inventory": {
+    "groupByLabel": "Agrupar artículos por",
+    "groupByAZ": "A–Z",
+    "groupByStore": "Por tienda",
+    "noStore": "Sin tienda",
     "filterSearch": "Búsqueda",
     "filterExpiring7": "Vencen en 7 días",
     "filterExpiring30": "Vencen en 30 días",

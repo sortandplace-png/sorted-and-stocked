@@ -376,6 +376,13 @@ export default function InventoryClient({
     'inventory-filter-category',
     null
   );
+  // SS-021. How the All Items list is grouped: A-Z by name (the original
+  // behaviour, still the default) or by supplier. Persisted like every other
+  // filter on this page, so it survives a drawer open or a tab away.
+  const [groupMode, setGroupMode] = useSessionPersistedState<'letter' | 'store'>(
+    'inventory-group-mode',
+    'letter'
+  );
   const [belowParOnly, setBelowParOnly] = useSessionPersistedState('inventory-filter-belowPar', false);
   const [neverCountedOnly, setNeverCountedOnly] = useSessionPersistedState('inventory-filter-neverCounted', false);
   const [expiringSoonOnly, setExpiringSoonOnly] = useSessionPersistedState('inventory-filter-expiringSoon', false);
@@ -1264,9 +1271,15 @@ export default function InventoryClient({
     () => partitionByProduct(allItemsDisplay, masterProducts),
     [allItemsDisplay, masterProducts]
   );
+  // Both modes produce [heading, items][], so the render below is unchanged
+  // apart from the variable name -- there is one list implementation, not
+  // one per grouping.
   const allItemsByLetter = useMemo(
-    () => groupByLetter(allItemsGrouped.ungrouped),
-    [allItemsGrouped.ungrouped]
+    () =>
+      groupMode === 'store'
+        ? groupByStore(allItemsGrouped.ungrouped, ti('noStore'))
+        : groupByLetter(allItemsGrouped.ungrouped),
+    [allItemsGrouped.ungrouped, groupMode, ti]
   );
   const roomItemsByLetter = useMemo(() => groupByLetter(displayItems), [displayItems]);
 
@@ -1865,6 +1878,34 @@ export default function InventoryClient({
         // into collapsible A-Z letter sections (this is the longest list in
         // the app -- 698 items -- so collapsing actually helps here) ----
         <div className="space-y-3">
+          {/* SS-021. Grouping switch for this list only -- it does not touch
+              the room views, which are grouped by room by definition.
+              D-18: the selected side is bg-denim + white. */}
+          <div
+            role="group"
+            aria-label={ti('groupByLabel')}
+            className="flex items-center gap-1 bg-mist border border-cardBorder rounded-full p-1 w-fit mb-1"
+          >
+            <button
+              onClick={() => setGroupMode('letter')}
+              aria-pressed={groupMode === 'letter'}
+              className={`px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] rounded-full transition-colors ${
+                groupMode === 'letter' ? 'bg-denim text-white' : 'text-dusk'
+              }`}
+            >
+              {ti('groupByAZ')}
+            </button>
+            <button
+              onClick={() => setGroupMode('store')}
+              aria-pressed={groupMode === 'store'}
+              className={`px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] rounded-full transition-colors ${
+                groupMode === 'store' ? 'bg-denim text-white' : 'text-dusk'
+              }`}
+            >
+              {ti('groupByStore')}
+            </button>
+          </div>
+
           {/* Grouped products sit above the A-Z sections: a product isn't a
               letter, and burying "Trash Bags · 5 varieties" under T would
               lose the thing grouping exists to show. Renders nothing while
@@ -2367,6 +2408,34 @@ function groupByLetter(items: InventoryItem[]): [string, InventoryItem[]][] {
   return [...map.entries()].sort(([a], [b]) => {
     if (a === '#') return 1;
     if (b === '#') return -1;
+    return a.localeCompare(b);
+  });
+}
+
+// SS-021. Same shape as groupByLetter so the render path does not care
+// which one produced the groups.
+//
+// Items with no supplier are collected under one heading and pushed last
+// rather than dropped: 1,568 of the rows carry a supplier and the rest do
+// not, and silently hiding the remainder would make "By Store" look like it
+// had lost inventory. `unassignedLabel` is passed in already translated --
+// this file has no next-intl access at module scope.
+function groupByStore(
+  items: InventoryItem[],
+  unassignedLabel: string
+): [string, InventoryItem[]][] {
+  const map = new Map<string, InventoryItem[]>();
+  for (const item of items) {
+    const key = item.supplier?.trim() || unassignedLabel;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(item);
+  }
+  for (const list of map.values()) {
+    list.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  return [...map.entries()].sort(([a], [b]) => {
+    if (a === unassignedLabel) return 1;
+    if (b === unassignedLabel) return -1;
     return a.localeCompare(b);
   });
 }

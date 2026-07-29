@@ -776,6 +776,10 @@
     "watchMyDayVideo": "Watch: My Day (2 min)"
   },
   "inventory": {
+    "groupByLabel": "Group items by",
+    "groupByAZ": "A–Z",
+    "groupByStore": "By Store",
+    "noStore": "No store set",
     "filterSearch": "Search",
     "filterExpiring7": "Expiring in 7 days",
     "filterExpiring30": "Expiring in 30 days",
