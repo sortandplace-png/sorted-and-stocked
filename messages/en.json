@@ -874,7 +874,9 @@
     "labelHebrewMonth": "Hebrew month",
     "go": "Go",
     "today": "Today",
-    "converting": "Converting…"
+    "converting": "Converting…",
+    "dayTwo": "Day 2",
+    "emptyUpcoming": "Nothing further on the calendar."
   },
   "staffHandbook": {
     "sectionStart": "Starting Your Shift",

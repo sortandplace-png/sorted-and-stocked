@@ -874,7 +874,9 @@
     "labelHebrewMonth": "Mes hebreo",
     "go": "Ir",
     "today": "Hoy",
-    "converting": "Convirtiendo…"
+    "converting": "Convirtiendo…",
+    "dayTwo": "Día 2",
+    "emptyUpcoming": "No hay más fechas en el calendario."
   },
   "staffHandbook": {
     "sectionStart": "Comenzando tu turno",

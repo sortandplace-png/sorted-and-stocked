@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import Pin from '@/components/ui/Pin';
 import JumpToDatePanel from '@/components/JumpToDatePanel';
+import { isSecondDay } from '@/lib/yom-tov';
 import type { ObservanceKind } from '@/lib/yom-tov';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -104,14 +105,24 @@ export default function YomTovYearViewClient({
     sessionStorage.setItem(VIEW_KEY, next);
   }
 
-  // Calendar opens on the month of the next upcoming observance rather than
-  // today -- the dates run a year or two out, and landing on an empty current
-  // month would look broken. Falls back to today when everything is past.
+  // Opens on the current month, empty grid and all. It used to jump to the
+  // month of the next observance, which meant the calendar opened somewhere
+  // other than where the reader is -- "where am I" beats "where is the next
+  // busy month", and Jump to Date already covers getting elsewhere.
   const [cursor, setCursor] = useState<Date>(() => {
-    const upcoming = observances.find((o) => o.date >= localIso(new Date()));
-    const anchor = upcoming?.date;
-    return anchor ? new Date(`${anchor}T00:00:00`) : new Date();
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
   });
+
+  // The list is a "what's coming" surface, so a date that has passed drops
+  // off it entirely rather than sitting at the top greyed out -- it used to
+  // open on March 2026, months behind the reader. The CALENDAR keeps every
+  // date, including past ones: a month grid with holes where history should
+  // be would just look broken.
+  const upcoming = useMemo(
+    () => observances.filter((o) => o.date >= today),
+    [observances, today]
+  );
 
   const byDate = useMemo(() => {
     const map = new Map<string, Observance[]>();
@@ -308,8 +319,13 @@ export default function YomTovYearViewClient({
                         className="flex items-start gap-1 mb-0.5"
                         title={name(o)}
                       >
+                        {/* Same tier colour, smaller on day two (6px vs
+                            8px) -- the distinction is size, not colour, so
+                            the tier stays readable at a glance. */}
                         <span
-                          className={`mt-[5px] w-1.5 h-1.5 rounded-full shrink-0 ${DOT[o.kind]}`}
+                          className={`mt-[5px] rounded-full shrink-0 ${DOT[o.kind]} ${
+                            isSecondDay(o.name_en) ? 'w-1.5 h-1.5' : 'w-2 h-2'
+                          }`}
                           aria-hidden="true"
                         />
                         <span
@@ -335,8 +351,15 @@ export default function YomTovYearViewClient({
         // Tiles, not a list. Grouped by month so a year of dates has some
         // structure to it rather than 30 tiles running together.
         <div className="space-y-6">
-          {[...new Set(observances.map((o) => monthKey(o.date)))].map((mk) => {
-            const items = observances.filter((o) => monthKey(o.date) === mk);
+          {/* Distinct from "no dates at all": the table has rows, they are
+              simply all behind us. Says so rather than rendering blank. */}
+          {upcoming.length === 0 && (
+            <p className="text-sm text-dusk text-center py-10 bg-card rounded-xl2 border border-cardBorder shadow-card">
+              {t('emptyUpcoming')}
+            </p>
+          )}
+          {[...new Set(upcoming.map((o) => monthKey(o.date)))].map((mk) => {
+            const items = upcoming.filter((o) => monthKey(o.date) === mk);
             const label = new Date(`${mk}-01T00:00:00`).toLocaleDateString(locale, {
               month: 'long',
               year: 'numeric',
@@ -355,15 +378,25 @@ export default function YomTovYearViewClient({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[14px]">
                   {items.map((o) => {
-                    const isPast = o.date < today;
+                    // SS-078. Day two is lighter and carries a badge WHERE
+                    // THE PIN WOULD BE -- the badge replaces the pin rather
+                    // than joining it, so the corner says one thing. Lighter
+                    // only: day two is fully plannable, not disabled.
+                    const second = isSecondDay(o.name_en);
                     return (
                       <div
                         key={`${o.date}-${o.name_en}`}
                         className={`relative rounded-xl2 border border-cardBorder shadow-card hover:shadow-cardHover transition-shadow py-[14px] pl-[18px] pr-8 ${
                           TIER[o.kind]
-                        } ${isPast ? 'opacity-55' : ''}`}
+                        } ${second ? 'opacity-70' : ''}`}
                       >
-                        <Pin size="sm" />
+                        {second ? (
+                          <span className="absolute top-2 right-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-dusk border border-cardBorder rounded-full px-1.5 py-0.5 bg-card/80">
+                            {t('dayTwo')}
+                          </span>
+                        ) : (
+                          <Pin size="sm" />
+                        )}
                         <span className="block font-display text-[19px] text-denim leading-snug">
                           {name(o)}
                         </span>

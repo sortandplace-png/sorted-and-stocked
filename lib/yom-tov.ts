@@ -118,6 +118,23 @@ export function classifyObservance(name: string, fromFastDays = false): Observan
   return 'yomTov';
 }
 
+// SS-078. The second day of a two-day Yom Tov, which gets a lighter
+// treatment in the Year View -- lighter, never blacked out: day two is
+// fully plannable.
+//
+// Matched on the trailing numeral rather than a name list, so it holds for
+// any year's rows. The VIII case has to be spelled out: Pesach VII is day
+// one of the concluding pair and Pesach VIII is day two, and a bare /II$/
+// would catch both.
+//
+// Known gap, flagged rather than guessed: Simchat Torah is in practice the
+// second day of Shmini Atzeret but carries its own name, so it is not
+// matched here. Racquel's list named Rosh Hashana II, Sukkot II, Pesach
+// II/VIII and Shavuot II only.
+export function isSecondDay(name: string): boolean {
+  return /\s(II|VIII)$/.test(name.trim());
+}
+
 export function groupYomTovOccasions(rows: YomTovRow[], todayIso: string): YomTovOccasion[] {
   return clusterOccasions(rows)
     .map((c) => ({ name: c.name, date: c.dates[0] }))
