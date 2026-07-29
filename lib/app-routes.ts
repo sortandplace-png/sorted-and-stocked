@@ -29,7 +29,12 @@ export const routes = {
   // destinations, not the stubs those will become.
   taskCenter: (propertyId: string) => `/properties/${propertyId}/tools/tasks`,
   dutyRoster: (propertyId: string) => `/properties/${propertyId}/staff/duty-roster`,
-  sops: (propertyId: string) => `/properties/${propertyId}/staff/sops`,
+  // The SOP Library is the Handbook's Procedures tab now. Rule 1 of this
+  // file: return the DESTINATION, never a redirect stub -- /staff/sops
+  // still works but costs a hop, so nothing internal should point at it.
+  // Pass a sopId to open that procedure directly.
+  sops: (propertyId: string, sopId?: string) =>
+    `/properties/${propertyId}/staff/handbook?tab=procedures${sopId ? `&sop=${sopId}` : ''}`,
   training: (propertyId: string) => `/properties/${propertyId}/staff/training`,
 
   // --- Shop -----------------------------------------------------------------

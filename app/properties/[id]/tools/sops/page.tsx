@@ -10,5 +10,7 @@ export default async function ToolsSopsRedirect({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  redirect(`/properties/${id}/staff/sops`);
+  // Straight to the destination, not through /staff/sops -- that route is now
+  // itself a redirect, and chaining two of them is a hop nobody needs.
+  redirect(`/properties/${id}/staff/handbook?tab=procedures`);
 }

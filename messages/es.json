@@ -855,6 +855,8 @@
     "subtitle": "Diez preguntas, en el orden en que ocurre su turno.",
     "empty": "El manual aún no tiene entradas.",
     "strip": "{count} preguntas · orden del turno",
+    "tabGuide": "Guía del hogar",
+    "tabProcedures": "Procedimientos",
     "searchPlaceholder": "Buscar en el manual…",
     "noResults": "Ninguna pregunta coincide con esa búsqueda.",
     "progress": "{opened} de {total} abiertas",

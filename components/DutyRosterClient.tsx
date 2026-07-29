@@ -895,7 +895,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                                   through window.opener. */}
                               {linked?.sopId && (
                                 <a
-                                  href={`${routes.sops(propertyId)}?sop=${linked.sopId}`}
+                                  href={routes.sops(propertyId, linked.sopId)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="inline-block text-[11px] font-medium text-brass underline-offset-2 hover:underline"

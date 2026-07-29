@@ -1,21 +1,24 @@
 // app/properties/[id]/staff/sops/page.tsx
-// sop_library is a GLOBAL table (no property_id), so this fetches the whole
-// library regardless of which property the URL names -- the same shape as
-// help_articles and blog_posts. Staff-readable by design: sop_read is
-// `auth.uid() is not null`, and the SOPs are the reference staff need while
-// actually doing the work.
-import { createClient } from '@/lib/supabase/server';
-import SopLibraryClient, { type Sop } from '@/components/SopLibraryClient';
+// The SOP Library moved into the Staff Handbook as its Procedures tab.
+// This route is kept, not deleted (R21) -- it is linked from the nav, from
+// lib/app-routes.ts, and from anyone's bookmarks.
+//
+// ?sop=<id> is forwarded rather than dropped. The Task Center's "View full
+// procedure" link opens a specific SOP, and a redirect that discarded the
+// query would land everyone on the top of a 55-row list -- which is exactly
+// the half-working link that deep link was added to avoid.
+import { redirect } from 'next/navigation';
 
-export default async function SopLibraryPage() {
-  const supabase = await createClient();
-
-  const { data: sops } = await supabase
-    .from('sop_library')
-    .select('id, sop_code, zone_type, task_en, task_es, sop_en, sop_es, pass_fail_en, pass_fail_es, estimated_minutes, expected_appearance_url')
-    .eq('active', true)
-    .order('zone_type')
-    .order('task_en');
-
-  return <SopLibraryClient initialSops={(sops as Sop[]) ?? []} />;
+export default async function SopLibraryRedirect({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ sop?: string }>;
+}) {
+  const { id } = await params;
+  const { sop } = await searchParams;
+  const query = new URLSearchParams({ tab: 'procedures' });
+  if (sop) query.set('sop', sop);
+  redirect(`/properties/${id}/staff/handbook?${query.toString()}`);
 }

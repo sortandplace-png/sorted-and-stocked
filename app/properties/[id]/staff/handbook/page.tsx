@@ -8,9 +8,15 @@
 //
 // FAQ-101..110 were written in shift order, so id order IS reading order:
 // arrive, find things, report problems, house standards, finish the shift.
+//
+// The SOP Library lives here too now, as a second tab (?tab=procedures).
+// SOPs are NOT fetched here: HandbookTabs loads them lazily on first switch,
+// so the ten-question FAQ -- the reason most people open this page -- does
+// not wait on 55 procedure rows nobody asked for.
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import StaffHandbookClient, { type HandbookArticle } from '@/components/StaffHandbookClient';
+import { type HandbookArticle } from '@/components/StaffHandbookClient';
+import HandbookTabs from '@/components/HandbookTabs';
 
 export default async function StaffHandbookPage({
   params,
@@ -38,5 +44,5 @@ export default async function StaffHandbookPage({
     console.error('staff handbook fetch failed', error);
   }
 
-  return <StaffHandbookClient articles={(data ?? []) as HandbookArticle[]} propertyId={id} />;
+  return <HandbookTabs articles={(data ?? []) as HandbookArticle[]} propertyId={id} />;
 }

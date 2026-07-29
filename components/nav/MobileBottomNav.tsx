@@ -19,7 +19,7 @@ import type { PropertyRole } from '@/components/PropertyRoleContext';
 
 // Mirrors DesktopNav's staff group. managerOnly matches each page's own
 // server-side gate, so staff are never offered a link that redirects them out.
-const STAFF_LINKS: { segment: string; labelKey: string; managerOnly?: boolean; dividerBefore?: boolean }[] = [
+const STAFF_LINKS: { segment: string; labelKey: string; managerOnly?: boolean; dividerBefore?: boolean; href?: string }[] = [
   { segment: 'my-day', labelKey: 'myDay' },
   { segment: 'tools/tasks', labelKey: 'staffTasks', managerOnly: true },
   // Hours and Training Videos removed here too -- these two lists mirror
@@ -27,7 +27,7 @@ const STAFF_LINKS: { segment: string; labelKey: string; managerOnly?: boolean; d
   // worse than either version alone. Both ROUTES are untouched (R21); see
   // DesktopNav for why neither is redirected yet.
   { segment: 'staff', labelKey: 'team', managerOnly: true },
-  { segment: 'staff/sops', labelKey: 'sopLibrary', dividerBefore: true },
+  { segment: 'staff/sops', labelKey: 'sopLibrary', dividerBefore: true, href: 'staff/handbook?tab=procedures' },
   { segment: 'staff/handbook', labelKey: 'staffHandbook' },
 ];
 
@@ -142,7 +142,10 @@ export default function MobileBottomNav({
                 <li key={l.segment}>
                   {l.dividerBefore && <div className="my-1.5 border-t border-cardBorder" role="separator" />}
                   <Link
-                    href={`/properties/${propertyId}/${l.segment}`}
+                    // Same href override as DesktopNav -- these two lists
+                    // mirror each other, and SOP Library needs a query
+                    // string its segment cannot express.
+                    href={`/properties/${propertyId}/${l.href ?? l.segment}`}
                     onClick={() => setShowStaff(false)}
                     className="block px-5 py-3 text-[15px] text-denim min-h-[44px]"
                   >

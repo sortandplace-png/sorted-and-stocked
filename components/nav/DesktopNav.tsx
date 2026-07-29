@@ -102,7 +102,16 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // Everything below the rule is what a housekeeper reads rather than
       // does. These three used to live under Tools, where staff never go --
       // SOPs and Training have moved here outright, the handbook is new.
-      { segment: 'staff/sops', labelKey: 'sopLibrary', dividerBefore: true },
+      // Points at the Handbook's Procedures tab, which is where the SOP
+      // Library now lives. `segment` stays 'staff/sops' so a direct visit to
+      // the old path still lights this item as active; href sends new clicks
+      // to the destination rather than through the redirect.
+      {
+        segment: 'staff/sops',
+        labelKey: 'sopLibrary',
+        dividerBefore: true,
+        href: 'staff/handbook?tab=procedures',
+      },
       // Training Videos removed from the dropdown -- it is due to become a
       // section of the Handbook page. Route untouched (R21) and NOT yet
       // redirected: the combined page does not exist, so redirecting today
@@ -225,7 +234,17 @@ export default function DesktopNav({
                     <div key={item.segment}>
                       {item.dividerBefore && <div className="my-1.5 border-t border-cardBorder" role="separator" />}
                     <Link
-                      href={item.href ?? `/properties/${propertyId}/${item.segment}`}
+                      // An href starting with "/" is app-absolute (/procurement,
+                      // /help). Anything else is property-scoped, which lets an
+                      // override carry a query string -- the segment alone
+                      // cannot express ?tab=procedures.
+                      href={
+                        item.href
+                          ? item.href.startsWith('/')
+                            ? item.href
+                            : `/properties/${propertyId}/${item.href}`
+                          : `/properties/${propertyId}/${item.segment}`
+                      }
                       role="menuitem"
                       onClick={() => setOpenGroup(null)}
                       aria-current={active ? 'page' : undefined}
