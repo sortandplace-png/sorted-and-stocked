@@ -775,6 +775,17 @@
     "v6": "Staff — My Day",
     "watchMyDayVideo": "Watch: My Day (2 min)"
   },
+  "suppliers": {
+    "title": "Suppliers",
+    "subtitle": "{stores, plural, one {# store} other {# stores}} · {items, plural, one {# item} other {# items}}",
+    "searchPlaceholder": "Search a store or an item…",
+    "itemCount": "{count, plural, one {# item} other {# items}}",
+    "reorder": "Reorder",
+    "noReorderLink": "No reorder link",
+    "openInventory": "Open Inventory →",
+    "empty": "No suppliers recorded for this property yet.",
+    "noResults": "Nothing matches that search."
+  },
   "inventory": {
     "groupByLabel": "Group items by",
     "groupByAZ": "A–Z",

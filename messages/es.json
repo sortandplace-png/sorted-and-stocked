@@ -775,6 +775,17 @@
     "v6": "Personal — Mi Día",
     "watchMyDayVideo": "Ver: Mi Día (2 min)"
   },
+  "suppliers": {
+    "title": "Proveedores",
+    "subtitle": "{stores, plural, one {# tienda} other {# tiendas}} · {items, plural, one {# artículo} other {# artículos}}",
+    "searchPlaceholder": "Buscar una tienda o un artículo…",
+    "itemCount": "{count, plural, one {# artículo} other {# artículos}}",
+    "reorder": "Reordenar",
+    "noReorderLink": "Sin enlace de reorden",
+    "openInventory": "Abrir Inventario →",
+    "empty": "Aún no hay proveedores registrados para esta propiedad.",
+    "noResults": "Nada coincide con esa búsqueda."
+  },
   "inventory": {
     "groupByLabel": "Agrupar artículos por",
     "groupByAZ": "A–Z",

@@ -46,6 +46,14 @@ const TOOLS = [
     description: 'Everyone the household calls on — repairs, deliveries, help.',
   },
   {
+    // SS-025. Sits next to Contacts deliberately: both answer "who do we get
+    // this from" -- one for people, one for stores.
+    slug: 'suppliers',
+    icon: '🏪',
+    title: 'Suppliers',
+    description: 'Every store this property buys from, and what to reorder where.',
+  },
+  {
     slug: 'pantry-zones',
     icon: '🗺️',
     title: 'Pantry Zone Map',
