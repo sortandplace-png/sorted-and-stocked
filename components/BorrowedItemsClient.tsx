@@ -20,7 +20,11 @@ type Item = {
   expected_return: string | null;
   returned: boolean;
   notes: string | null;
+  // SS-266. NULL means no reminder is sent for this item.
+  notify_user_id: string | null;
 };
+
+type Member = { userId: string; name: string | null };
 
 export default function BorrowedItemsClient({ propertyId }: { propertyId: string }) {
   const role = usePropertyRole();
@@ -37,16 +41,34 @@ export default function BorrowedItemsClient({ propertyId }: { propertyId: string
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
+  // SS-266. Empty string means nobody, which means no reminder -- the
+  // deliberate default, not an unset field.
+  const [notifyUserId, setNotifyUserId] = useState('');
+  const [members, setMembers] = useState<Member[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('borrowed_items')
-      .select('id, item_name, direction, other_party, date_out, expected_return, returned, notes')
-      .eq('property_id', propertyId)
-      .order('returned')
-      .order('date_out', { ascending: false });
+    const [{ data }, { data: memberRows }] = await Promise.all([
+      supabase
+        .from('borrowed_items')
+        .select(
+          'id, item_name, direction, other_party, date_out, expected_return, returned, notes, notify_user_id'
+        )
+        .eq('property_id', propertyId)
+        .order('returned')
+        .order('date_out', { ascending: false }),
+      supabase
+        .from('property_members')
+        .select('user_id, profiles(full_name)')
+        .eq('property_id', propertyId),
+    ]);
     setItems(data ?? []);
+    setMembers(
+      (memberRows ?? []).map((m) => ({
+        userId: m.user_id,
+        name: (m.profiles as unknown as { full_name: string | null } | null)?.full_name ?? null,
+      }))
+    );
     setLoading(false);
   }, [propertyId, supabase]);
 
@@ -66,6 +88,10 @@ export default function BorrowedItemsClient({ propertyId }: { propertyId: string
       expected_return: expectedReturn || null,
       returned: false,
       notes: notes.trim() || null,
+      // Empty select -> NULL -> no reminder. Never coerce this to a
+      // fallback recipient: texting somebody who was not chosen is worse
+      // than sending nothing.
+      notify_user_id: notifyUserId || null,
     });
     setSaving(false);
 
@@ -78,6 +104,7 @@ export default function BorrowedItemsClient({ propertyId }: { propertyId: string
     setOtherParty('');
     setExpectedReturn('');
     setNotes('');
+    setNotifyUserId('');
     load();
   }
 
@@ -178,6 +205,27 @@ export default function BorrowedItemsClient({ propertyId }: { propertyId: string
               onChange={(e) => setExpectedReturn(e.target.value)}
               className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm"
             />
+          </div>
+          <div>
+            {/* SS-266. Empty option is "nobody" -- the real, intended
+                default, not a placeholder waiting to be filled in. Selecting
+                nobody means no SMS goes out at the 3-day mark. */}
+            <FieldLabel>Notify (optional)</FieldLabel>
+            <select
+              value={notifyUserId}
+              onChange={(e) => setNotifyUserId(e.target.value)}
+              className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm bg-white"
+            >
+              <option value="">Don&apos;t send a reminder</option>
+              {members.map((m) => (
+                <option key={m.userId} value={m.userId}>
+                  {m.name ?? 'Unnamed'}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-dusk mt-1">
+              They&apos;ll get a text reminder if this isn&apos;t marked returned after 3 days.
+            </p>
           </div>
           <div>
             <FieldLabel>Notes (optional)</FieldLabel>
