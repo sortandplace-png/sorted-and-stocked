@@ -161,7 +161,17 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
                 <span className="flex-1 border-t border-cardBorder" />
               </div>
 
-              <ul className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2.5">
+              {/* A lone card takes the full row rather than half of one with
+                  a hole beside it. Most zones here have exactly one SOP --
+                  Accessories, Bathroom, Charging Dock and nine others are all
+                  single -- so this was the common case, not the edge. */}
+              <ul
+                className={
+                  items.length === 1
+                    ? 'space-y-2.5'
+                    : 'space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2.5'
+                }
+              >
                 {items.map((s) => {
                   const open = openId === s.id;
                   const isEditing = editingId === s.id;
@@ -170,28 +180,45 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
                       key={s.id}
                       // Anchor for the ?sop=<id> deep link above.
                       id={`sop-${s.id}`}
-                      className="relative bg-card rounded-xl2 border border-cardBorder shadow-card hover:shadow-cardHover transition-shadow p-3.5"
+                      className="relative bg-mist rounded-xl2 border border-cardBorder shadow-card hover:shadow-cardHover transition-shadow p-3.5 pr-8"
                     >
                       <Pin size="sm" />
                       <button
                         onClick={() => setOpenId(open ? null : s.id)}
                         aria-expanded={open}
-                        className="w-full text-left flex items-start gap-2"
+                        className="w-full text-left flex items-start gap-3"
                       >
+                        {/* Poster on the left, at reading scale rather than a
+                            thumbnail crop -- contain, so nothing on the poster
+                            is cut off. Nothing renders when there is no poster:
+                            a grey placeholder box on the 8 SOPs without one
+                            would be a hole where the eye expects content. */}
+                        {s.expected_appearance_url && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={storageThumbnail(s.expected_appearance_url, 160, 'contain')}
+                            alt=""
+                            aria-hidden="true"
+                            loading="lazy"
+                            className="shrink-0 max-h-20 w-20 object-contain rounded-lg bg-card border border-cardBorder"
+                          />
+                        )}
                         <span className="flex-1 min-w-0">
-                          <span className="block font-medium text-denim">{pick(s.task_en, s.task_es)}</span>
-                          <span className="flex flex-wrap items-center gap-1.5 mt-1">
-                            {s.sop_code && (
-                              <span className="text-[10px] font-medium text-brass bg-brass/10 px-2 py-0.5 rounded-full">
-                                {s.sop_code}
-                              </span>
-                            )}
-                            {s.estimated_minutes && (
-                              <span className="text-[10px] text-dusk bg-mist px-2 py-0.5 rounded-full">
-                                ~{s.estimated_minutes} min
-                              </span>
-                            )}
+                          {/* Eyebrow: zone, then the SOP code as a secondary
+                              label rather than the brass pill it used to be.
+                              The code is an identifier, not a headline. */}
+                          <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-dusk truncate">
+                            {zone}
+                            {s.sop_code ? ` · ${s.sop_code}` : ''}
                           </span>
+                          <span className="block font-display text-[18px] text-denim leading-snug mt-0.5">
+                            {pick(s.task_en, s.task_es)}
+                          </span>
+                          {s.estimated_minutes && (
+                            <span className="inline-block mt-1.5 text-[10px] text-dusk bg-card border border-cardBorder px-2 py-0.5 rounded-full">
+                              ~{s.estimated_minutes} min
+                            </span>
+                          )}
                         </span>
                       </button>
 
