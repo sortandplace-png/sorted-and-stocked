@@ -1,5 +1,14 @@
 // app/api/batch-shopping-links/route.ts
-import { createClient } from '@supabase/supabase-js';
+// SS work_items Tier 0, item 0.1. This route (and its three batch-update-*
+// siblings) had no session or property-membership check at all -- any POST
+// with a truthy propertyId ran against the service-role client, which
+// bypasses RLS entirely. Gated the same way every other tools/* route in
+// this app already is: a real cookie-bound session, then owner/manager on
+// the specific propertyId requested. The service-role client below is kept
+// for the actual batch work (recipe_ingredients has no per-user write
+// policy shaped for this), but only ever reached after that gate passes.
+import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 import {
   buildShoppingLinkRecommendation,
   getAllAlternativeUrls,
@@ -23,8 +32,24 @@ export async function POST(request: Request) {
       return Response.json({ error: 'propertyId required' }, { status: 400 });
     }
 
+    const authClient = await createServerClient();
+    const {
+      data: { user },
+    } = await authClient.auth.getUser();
+    if (!user) return Response.json({ error: 'Not signed in.' }, { status: 401 });
+
+    const { data: membership } = await authClient
+      .from('property_members')
+      .select('role')
+      .eq('property_id', propertyId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (membership?.role !== 'owner' && membership?.role !== 'manager') {
+      return Response.json({ error: 'Owner or manager only.' }, { status: 403 });
+    }
+
     // Use service role key to bypass RLS for batch operations
-    const supabase = createClient(
+    const supabase = createServiceClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
@@ -130,8 +155,13 @@ export async function POST(request: Request) {
         affectedRows: context.recipeIds.length,
       });
 
-      // Queue update (unless dry-run)
-      // Update all recipe_ingredients with this name across all recipes
+      // Queue update (unless dry-run). Scoped to context.recipeIds -- the
+      // specific recipe_ingredients rows already confirmed to belong to
+      // this property's own recipes -- not .eq('name', name), which would
+      // update every row sharing that ingredient name across every
+      // property in the database (recipes are shared cross-property, so a
+      // name match alone says nothing about which property's data this
+      // request is authorized to touch).
       if (!dryRun) {
         updatePromises.push(
           supabase
@@ -142,7 +172,7 @@ export async function POST(request: Request) {
               alternative_stores: altStoreNames,
               is_strictly_kosher: recommendation.is_strictly_kosher,
             })
-            .eq('name', name)
+            .in('recipe_id', context.recipeIds)
         );
       }
     }

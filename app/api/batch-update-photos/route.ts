@@ -1,5 +1,20 @@
 // app/api/batch-update-photos/route.ts
-import { createClient } from '@supabase/supabase-js';
+// SS work_items Tier 0, item 0.1 -- see app/api/batch-shopping-links/route.ts
+// for the full rationale. Same gate: real session, owner/manager on the
+// specific propertyId requested, before the service-role client runs.
+//
+// Unlike batch-shopping-links, this route's actual query is NOT
+// property-scoped even after this fix -- it reads/writes recipe_ingredients
+// photo_url by ingredient name globally, with no property_id or recipe_id
+// filter at all, on both the read and the write. That looks like a
+// deliberate design (an ingredient photo is shared reference data, same as
+// recipes themselves are shared cross-property via recipe_property_links),
+// not the same read/write mismatch batch-shopping-links had. Left that
+// scoping alone -- only closing the auth gap here, since redesigning
+// whether photos should be per-property is a separate decision this finding
+// didn't ask for.
+import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 import { batchFetchPhotos, type ProductResult } from '@/lib/instacart-fetcher';
 import { persistPhoto } from '@/lib/persist-photo';
 
@@ -13,8 +28,24 @@ export async function POST(request: Request) {
       return Response.json({ error: 'propertyId required' }, { status: 400 });
     }
 
+    const authClient = await createServerClient();
+    const {
+      data: { user },
+    } = await authClient.auth.getUser();
+    if (!user) return Response.json({ error: 'Not signed in.' }, { status: 401 });
+
+    const { data: membership } = await authClient
+      .from('property_members')
+      .select('role')
+      .eq('property_id', propertyId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (membership?.role !== 'owner' && membership?.role !== 'manager') {
+      return Response.json({ error: 'Owner or manager only.' }, { status: 403 });
+    }
+
     // Use service role key to bypass RLS
-    const supabase = createClient(
+    const supabase = createServiceClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
