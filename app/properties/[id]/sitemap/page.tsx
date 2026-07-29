@@ -31,6 +31,7 @@ import {
   Layers,
   CalendarRange,
   ListTodo,
+  Store,
   Settings as SettingsIcon,
   type LucideIcon,
 } from 'lucide-react';
@@ -108,6 +109,10 @@ function buildSections(propertyId: string): Section[] {
         { href: p('/tools/needs-linking'), label: 'Needs Linking', subtitle: 'Unmatched items', icon: Link2 },
         { href: p('/tools/photo-review'), label: 'Room Photo Review', subtitle: 'Photo checkup', icon: Image },
         { href: p('/tools/capture-inbox'), label: 'Capture Inbox', subtitle: 'Pending approvals', icon: Inbox },
+        // SS-025. Owner/manager only, like the Duty Roster entry above --
+        // the page redirects staff, so this line is a signpost for the
+        // people who can actually open it.
+        { href: p('/tools/suppliers'), label: 'Suppliers', subtitle: 'Stores & reorder links', icon: Store },
       ],
     },
     {

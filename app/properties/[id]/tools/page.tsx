@@ -21,12 +21,13 @@ const TOOLS = [
     title: 'Recipe Scanner',
     description: 'Photograph a dish, get a home-cookable recipe.',
   },
-  {
-    slug: 'kitchen-timer',
-    icon: '⏱️',
-    title: 'Kitchen Timer',
-    description: 'Set multiple timers at once.',
-  },
+  // SS-271: Kitchen Timer tile removed from this grid. It belongs where it
+  // is used -- Recipe Detail already opens it inline as one of the Kitchen
+  // Ops quick actions, so a tile here was a second door to a tool nobody
+  // walks to Tools to find.
+  //
+  // The /tools/kitchen-timer ROUTE is untouched (R21) and still listed on
+  // the Sitemap, which is the complete index rather than a curated grid.
   {
     slug: 'knowledge-base',
     icon: '📚',
