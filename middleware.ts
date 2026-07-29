@@ -29,7 +29,22 @@ export const config = {
      *   what the line under it used to claim, so .txt and .xml were never
      *   covered by it.)
      * - image extensions
-     * - /api/diagnostic, /api/batch-* (public batch operations)
+     * - api/ (ALL of it, deliberately, not just diagnostic/batch-* --
+     *   SS-347 corrects this comment, which previously named only those
+     *   two as intentional. /api/diagnostic was never a real route
+     *   (confirmed: no such file exists anywhere under app/api) -- that
+     *   part of the old comment was simply wrong. But excluding the whole
+     *   prefix is still the right call, not an oversight: every route
+     *   under app/api implements its own auth check and returns a JSON
+     *   error response (401/403), which is what a fetch() caller is
+     *   written to parse. If middleware ran here too, an unauthenticated
+     *   call to any authenticated-only API route would get a 307 redirect
+     *   to /login instead of that JSON body -- res.json() would throw on
+     *   the redirect's HTML, not surface a clean error. The two genuinely
+     *   anonymous routes (request-access, consultation-request) plus
+     *   batch-* (see their own route files for the session/membership
+     *   checks they run internally) all handle "no session" themselves;
+     *   none of them need or want middleware's redirect behavior.
      */
     '/((?!_next/static|_next/image|favicon.ico|manifest.json|icons/|robots\\.txt|sitemap\\.xml|sw\\.js|workbox-.*\\.js|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
