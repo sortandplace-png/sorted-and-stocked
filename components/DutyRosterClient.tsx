@@ -81,6 +81,8 @@ type Task = {
   // live that 0 of 208 active tasks on Main have this set today, so that
   // is the effective state of every task right now, not a hypothetical.
   day_of_week: number | null;
+  time_of_day: 'AM' | 'PM' | null;
+  estimated_minutes: number | null;
 };
 
 // The linked SOP, embedded on master_task_sops. sop_id is a many-to-one
@@ -157,12 +159,144 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   const [freq, setFreq] = useState('all');
   const [assignment, setAssignment] = useState('all');
 
+  // Task CRUD. One form for both Add and Edit -- editing pre-fills the same
+  // fields Add starts blank, so there is one save path to keep correct
+  // rather than two.
+  //
+  // assigned_role is deliberately NOT a field in this form. The room-edit
+  // code above its own comment already documents why: "assigned_role is
+  // deliberately left alone. Not dropped, not cleared -- just no longer
+  // written. It is null on every active task." Confirmed still true (0 of
+  // 208 active tasks on Main have it set) before leaving it out -- adding a
+  // field for something the team already decided to stop writing would
+  // undo that decision by accident, not on purpose.
+  const [taskForm, setTaskForm] = useState<{ mode: 'add' | 'edit'; taskId: string | null } | null>(null);
+  const [formTaskEn, setFormTaskEn] = useState('');
+  const [formTaskEs, setFormTaskEs] = useState('');
+  const [formRoomId, setFormRoomId] = useState('');
+  const [formFrequencyId, setFormFrequencyId] = useState('');
+  const [formJobType, setFormJobType] = useState('');
+  const [formTimeOfDay, setFormTimeOfDay] = useState<'' | 'AM' | 'PM'>('');
+  // Optional. Not in the brief's own field list, but it is the one thing
+  // that gives the day-of-week filter added earlier tonight something real
+  // to demonstrate against -- confirmed live before adding it here that 0
+  // of 208 active tasks have this set, so the filter currently has nothing
+  // to narrow. This is the actual way that gets fixed.
+  const [formDayOfWeek, setFormDayOfWeek] = useState<'' | number>('');
+  const [formEstimatedMinutes, setFormEstimatedMinutes] = useState('');
+  const [formSaving, setFormSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  function openAddTask() {
+    setFormTaskEn('');
+    setFormTaskEs('');
+    setFormRoomId('');
+    setFormFrequencyId('');
+    setFormJobType('');
+    setFormTimeOfDay('');
+    setFormDayOfWeek('');
+    setFormEstimatedMinutes('');
+    setFormError(null);
+    setTaskForm({ mode: 'add', taskId: null });
+  }
+
+  function openEditTask(x: Task) {
+    setFormTaskEn(x.task_en);
+    setFormTaskEs(x.task_es);
+    setFormRoomId(x.room_id ?? '');
+    setFormFrequencyId(x.frequency_id ?? '');
+    setFormJobType(x.job_type ?? '');
+    setFormTimeOfDay(x.time_of_day ?? '');
+    setFormDayOfWeek(x.day_of_week ?? '');
+    setFormEstimatedMinutes(x.estimated_minutes?.toString() ?? '');
+    setFormError(null);
+    setTaskForm({ mode: 'edit', taskId: x.id });
+  }
+
+  function closeTaskForm() {
+    setTaskForm(null);
+  }
+
+  async function saveTask() {
+    // Bilingual at creation, not after (R19) -- the same gate
+    // IdentifyItemClient already enforces for the same reason: letting this
+    // save without both names just moves the failure to whoever notices the
+    // blank Spanish column later, with no obvious cause at that point.
+    if (!formTaskEn.trim() || !formTaskEs.trim()) {
+      setFormError(t('bothLanguagesRequired'));
+      return;
+    }
+    setFormSaving(true);
+    setFormError(null);
+
+    const payload = {
+      task_en: formTaskEn.trim(),
+      task_es: formTaskEs.trim(),
+      room_id: formRoomId || null,
+      frequency_id: formFrequencyId || null,
+      job_type: formJobType.trim() || null,
+      time_of_day: formTimeOfDay || null,
+      day_of_week: formDayOfWeek === '' ? null : formDayOfWeek,
+      estimated_minutes: formEstimatedMinutes.trim() ? Number(formEstimatedMinutes) : null,
+    };
+
+    if (taskForm?.mode === 'edit' && taskForm.taskId) {
+      const { error } = await supabase.from('master_tasks').update(payload).eq('id', taskForm.taskId);
+      setFormSaving(false);
+      if (error) {
+        setFormError(error.message || t('saveFailed'));
+        return;
+      }
+    } else {
+      // sort_order is NOT NULL with no default (confirmed against the
+      // schema before writing this) -- a new task without one would fail
+      // the insert outright. Placed after every task currently loaded so
+      // it lands at the end of its room's list rather than jumping to the
+      // top of whatever sort_order happens to be lowest.
+      const nextSortOrder = tasks.reduce((max, x) => Math.max(max, x.sort_order), 0) + 1;
+
+      // task_number is ALSO NOT NULL with no default and no generating
+      // trigger (confirmed against the schema and pg_trigger before writing
+      // this -- the one trigger on this table is the bilingual check, not a
+      // number generator). Existing rows are "T-" + a 5-digit zero-padded
+      // sequence (T-00305 is the current high mark). Queried fresh here
+      // rather than computed from whatever rows happen to already be
+      // loaded in this session, so two people adding a task around the same
+      // moment are working from a number each just looked up, not a stale
+      // one held in memory since page load.
+      const { data: maxRow } = await supabase
+        .from('master_tasks')
+        .select('task_number')
+        .order('task_number', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const lastNum = maxRow?.task_number ? parseInt(maxRow.task_number.replace(/\D/g, ''), 10) : 0;
+      const taskNumber = `T-${String(lastNum + 1).padStart(5, '0')}`;
+
+      const { error } = await supabase.from('master_tasks').insert({
+        ...payload,
+        property_id: propertyId,
+        active: true,
+        sort_order: nextSortOrder,
+        task_number: taskNumber,
+      });
+      setFormSaving(false);
+      if (error) {
+        setFormError(error.message || t('saveFailed'));
+        return;
+      }
+    }
+
+    closeTaskForm();
+    load();
+  }
+
   const load = useCallback(async () => {
     setLoading(true);
     const settled = await Promise.allSettled([
       supabase
         .from('master_tasks')
-        .select('id, task_number, room_id, frequency_id, task_en, task_es, job_type, assigned_role, source_area_en, source_area_es, photo_url, active, sort_order, day_of_week')
+        .select('id, task_number, room_id, frequency_id, task_en, task_es, job_type, assigned_role, source_area_en, source_area_es, photo_url, active, sort_order, day_of_week, time_of_day, estimated_minutes')
         .eq('property_id', propertyId)
         .order('sort_order'),
       supabase.from('frequencies').select('id, code, label_en, label_es, recurrence_kind, sort_order').order('sort_order'),
@@ -505,6 +639,20 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     }
   }
 
+  // The other direction of reactivateTask above, same optimistic-then-
+  // rollback shape. Soft-delete only (R21) -- active: false, never a real
+  // delete -- which is exactly what makes reactivateTask meaningful as a
+  // way back.
+  async function retireTask(taskId: string) {
+    const previous = tasks;
+    setTasks((prev) => prev.map((x) => (x.id === taskId ? { ...x, active: false } : x)));
+    const { error } = await supabase.from('master_tasks').update({ active: false }).eq('id', taskId);
+    if (error) {
+      setTasks(previous);
+      setLoadError(t('saveFailed'));
+    }
+  }
+
   async function assign(taskId: string, memberId: string) {
     const existing = assignmentByTask.get(taskId);
     if (existing && existing.member_id === memberId) return;
@@ -561,8 +709,18 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   // `filtered`) is still here and untouched -- see the note above it.
   return (
     <>
-      <h1 className="font-display text-[34px] font-normal text-denim">{t('title')}</h1>
-      <p className="text-[13px] text-dusk mb-5">{t('subtitle')}</p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="font-display text-[34px] font-normal text-denim">{t('title')}</h1>
+          <p className="text-[13px] text-dusk mb-5">{t('subtitle')}</p>
+        </div>
+        <button
+          onClick={openAddTask}
+          className="shrink-0 bg-denim text-white text-[13px] font-medium px-4 py-2 rounded-full hover:opacity-90 transition-opacity"
+        >
+          + {t('addTask')}
+        </button>
+      </div>
 
       {loadError && (
         <p className="mb-4 text-xs text-rust bg-rust/10 rounded-xl2 px-3 py-2">{loadError}</p>
@@ -866,6 +1024,32 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                             </button>
                           </>
                         )}
+                        {/* Symmetric with the retired-badge/reactivate pair
+                            above: Edit and Retire only make sense on an
+                            ACTIVE tile, the same way reactivate only makes
+                            sense on a retired one. Retire is a real confirm,
+                            not a bare click -- unlike reactivate (reversible
+                            in one tap either way), retiring is the one that
+                            removes a tile from the view someone is looking
+                            at right now. */}
+                        {x.active && (
+                          <>
+                            <button
+                              onClick={() => openEditTask(x)}
+                              className="text-[9px] font-semibold uppercase tracking-[0.15em] text-denim underline-offset-2 hover:underline"
+                            >
+                              {t('editTask')}
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(t('confirmRetire', { name: es ? x.task_es : x.task_en }))) retireTask(x.id);
+                              }}
+                              className="text-[9px] font-semibold uppercase tracking-[0.15em] text-dusk underline-offset-2 hover:underline hover:text-rust"
+                            >
+                              {t('retireTask')}
+                            </button>
+                          </>
+                        )}
                         {sops > 0 && (
                           <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-brass">
                             {t('sopCount', { count: sops })}
@@ -981,6 +1165,192 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
           )}
         </div>
       </div>
+
+      {/* Add/Edit task modal. One form for both -- see the state comment
+          above for why. Concept B: bg-card, PinDot, rounded-xl3, the same
+          blue-grey shadow every other card in this file uses, Cormorant for
+          the title, Inter (the page default) for every field label. */}
+      {taskForm && (
+        <div
+          className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+          onClick={closeTaskForm}
+        >
+          <div
+            className="relative w-full max-w-md bg-card rounded-xl3 shadow-card p-5 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <PinDot />
+            <h2 className="font-display text-[22px] text-denim mb-4">
+              {taskForm.mode === 'add' ? t('addTaskTitle') : t('editTaskTitle')}
+            </h2>
+
+            {formError && (
+              <p className="mb-3 text-xs text-rust bg-rust/10 rounded-xl2 px-3 py-2">{formError}</p>
+            )}
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-dusk mb-1">
+                  {t('formTaskEn')}
+                </label>
+                <input
+                  value={formTaskEn}
+                  onChange={(e) => setFormTaskEn(e.target.value)}
+                  className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm text-denim"
+                />
+              </div>
+              {/* Spanish is required, not optional -- the same
+                  trg_enforce_task_bilingual trigger that already guards
+                  every insert/update on this table would reject a save
+                  without it; this stops that failure here, where the
+                  person can actually see and fix it, rather than as a raw
+                  Postgres error after clicking Save. */}
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-dusk mb-1">
+                  {t('formTaskEs')}
+                </label>
+                <input
+                  value={formTaskEs}
+                  onChange={(e) => setFormTaskEs(e.target.value)}
+                  className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm text-denim"
+                />
+                {!formTaskEs.trim() && (
+                  <p className="text-[11px] text-brass mt-1">{t('bothLanguagesRequired')}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-dusk mb-1">
+                    {t('formRoom')}
+                  </label>
+                  <select
+                    value={formRoomId}
+                    onChange={(e) => setFormRoomId(e.target.value)}
+                    className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm text-denim bg-card"
+                  >
+                    <option value="">{t('noRoom')}</option>
+                    {roomOptionsAZ.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {es ? r.name_es || r.name_en : r.name_en}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-dusk mb-1">
+                    {t('formFrequency')}
+                  </label>
+                  <select
+                    value={formFrequencyId}
+                    onChange={(e) => setFormFrequencyId(e.target.value)}
+                    className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm text-denim bg-card"
+                  >
+                    <option value="">—</option>
+                    {frequencies.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {es ? f.label_es : f.label_en}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-dusk mb-1">
+                    {t('formJobType')}
+                  </label>
+                  {/* Free text, matching the column itself -- job_type has
+                      13 real distinct values on Main today and no fixed
+                      enum, confirmed before choosing a plain input with a
+                      datalist over a closed <select> that would have
+                      blocked a genuinely new value. */}
+                  <input
+                    list="job-type-options"
+                    value={formJobType}
+                    onChange={(e) => setFormJobType(e.target.value)}
+                    className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm text-denim"
+                  />
+                  <datalist id="job-type-options">
+                    {jobOptions.map((j) => (
+                      <option key={j} value={j} />
+                    ))}
+                  </datalist>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-dusk mb-1">
+                    {t('formTimeOfDay')}
+                  </label>
+                  <select
+                    value={formTimeOfDay}
+                    onChange={(e) => setFormTimeOfDay(e.target.value as '' | 'AM' | 'PM')}
+                    className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm text-denim bg-card"
+                  >
+                    <option value="">{t('formAnyTime')}</option>
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  {/* Not in the brief's own field list -- added because it
+                      is the one thing that gives the day-of-week filter
+                      built earlier tonight something real to demonstrate.
+                      Optional, defaulting to "every day" (NULL), same as
+                      every task already in this table today. */}
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-dusk mb-1">
+                    {t('formDayOfWeek')}
+                  </label>
+                  <select
+                    value={formDayOfWeek}
+                    onChange={(e) => setFormDayOfWeek(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm text-denim bg-card"
+                  >
+                    <option value="">{t('allDays')}</option>
+                    {DAY_PICKER_OPTIONS.map(({ iso, key }) => (
+                      <option key={iso} value={iso}>
+                        {t(key)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-dusk mb-1">
+                    {t('formMinutes')}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={formEstimatedMinutes}
+                    onChange={(e) => setFormEstimatedMinutes(e.target.value)}
+                    className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm text-denim"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={closeTaskForm}
+                disabled={formSaving}
+                className="flex-1 py-2.5 rounded-full border border-cardBorder text-denim text-sm disabled:opacity-40"
+              >
+                {t('formCancel')}
+              </button>
+              <button
+                onClick={saveTask}
+                disabled={formSaving || !formTaskEn.trim() || !formTaskEs.trim()}
+                className="flex-1 py-2.5 rounded-full bg-denim text-white text-sm font-medium disabled:opacity-40"
+              >
+                {formSaving ? t('saving') : t('formSave')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
