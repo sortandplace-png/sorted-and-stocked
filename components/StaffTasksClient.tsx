@@ -12,13 +12,22 @@
 // since dropping a real table is outside this task's scope.
 //
 // Default view shows every deployed task to every property member, not
-// just "assigned to me" -- with 0 real assignments today, an assigned-only
-// default would show every single person an empty list on day one. Any
-// property member can mark any task done (matches the real RLS: completion
-// insert/update has no role or assignment restriction), matching a
-// household where staff pitch in wherever needed, not a strict per-person
-// queue. Deploying from the library and assigning staff stays owner/
-// manager-only (also matches RLS).
+// just "assigned to me" -- so staff can see the whole property board, not
+// just their own slice, and so a property with 0 assignments doesn't show
+// everyone an empty list on day one.
+//
+// SS-244: completing a task does NOT match "any property member" though --
+// completions_member_insert (migration scope_task_completion_insert_to_
+// assignee_ss244) requires has_property_role(owner/manager) OR
+// is_assigned_to_task(task_id). A previous version of this comment claimed
+// the opposite ("no role or assignment restriction"), which was true
+// before that migration landed and was never updated after. Seeing every
+// task and being allowed to complete every task are two different things
+// now -- the UI below gates Mark done / Report an issue / note / photo on
+// the same canAct check the RLS itself enforces, so a task a viewer can see
+// but not act on doesn't render a button that will always fail with a
+// permission error. Deploying from the library and assigning staff stays
+// owner/manager-only (also matches RLS).
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -695,6 +704,11 @@ export default function StaffTasksClient({
             const assigned = (assignmentsByTask.get(task.id) ?? [])
               .map((a) => (a.member_id ? memberById.get(a.member_id)?.full_name : null))
               .filter(Boolean);
+            // SS-244: mirrors completions_member_insert's own check
+            // (has_property_role(owner/manager) OR is_assigned_to_task) so
+            // the UI never offers an action the RLS is going to refuse.
+            const canAct =
+              canManage(role) || (assignmentsByTask.get(task.id) ?? []).some((a) => a.member_id === myMemberId);
             const expanded = expandedTaskId === task.id;
             const sop = sopText(task);
             const passFail = passFailText(task);
@@ -726,11 +740,13 @@ export default function StaffTasksClient({
                 <div className="flex items-start gap-2">
                   <button
                     onClick={() => toggleDone(task.id, status === 'done')}
-                    disabled={busyTaskId === task.id}
+                    disabled={busyTaskId === task.id || !canAct}
                     className="shrink-0 mt-0.5 text-denim disabled:opacity-40"
                     aria-pressed={status === 'done'}
                     aria-label={
-                      status === 'done'
+                      !canAct
+                        ? `${taskName(task)} is not assigned to you`
+                        : status === 'done'
                         ? `Reopen ${taskName(task)}`
                         : `Mark ${taskName(task)} done`
                     }
@@ -870,7 +886,8 @@ export default function StaffTasksClient({
                             value={noteDrafts[task.id] ?? ''}
                             onChange={(e) => setNoteDrafts((p) => ({ ...p, [task.id]: e.target.value }))}
                             placeholder="e.g. Ran out of supplies, will finish tomorrow"
-                            className="w-full text-sm border border-cardBorder rounded-full px-3 py-1.5 bg-card"
+                            disabled={!canAct}
+                            className="w-full text-sm border border-cardBorder rounded-full px-3 py-1.5 bg-card disabled:opacity-40"
                           />
                         </div>
 
@@ -894,7 +911,7 @@ export default function StaffTasksClient({
                             )}
                             <button
                               onClick={() => setCameraTaskId(task.id)}
-                              disabled={photoBusyTaskId === task.id}
+                              disabled={photoBusyTaskId === task.id || !canAct}
                               className="inline-flex items-center gap-1.5 text-xs font-medium text-brass underline underline-offset-2 disabled:opacity-40"
                             >
                               <Camera size={13} strokeWidth={1.75} aria-hidden="true" />
@@ -910,6 +927,12 @@ export default function StaffTasksClient({
                         {status === 'done' ? (
                           <p className="text-xs text-dusk">
                             Logged for today. Tap the tick to reopen it.
+                          </p>
+                        ) : !canAct ? (
+                          <p className="text-xs text-dusk">
+                            {assigned.length > 0
+                              ? `Assigned to ${assigned.join(', ')} -- ask a manager if this should be yours.`
+                              : 'Not assigned to you -- ask a manager to assign this task.'}
                           </p>
                         ) : (
                           <div className="flex gap-2">
