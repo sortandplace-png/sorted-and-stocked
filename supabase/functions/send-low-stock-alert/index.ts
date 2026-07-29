@@ -47,11 +47,26 @@ serve(async (req) => {
       `• [${item.properties?.name || 'Main'}] ${item.name}: ${item.current_qty}/${item.min_qty} ${item.unit || ''}`
     ).join('\n')
 
-    // Get Twilio credentials
+    // Get Twilio credentials. TWILIO_PHONE_NUMBER, not the TWILIO_NUMBER
+    // this used to read -- aligned with the name every other Twilio call
+    // site in this codebase uses (lib/sms.ts, send-borrowed-item-reminder),
+    // per Racquel's Vercel screenshot confirming that name.
+    //
+    // That screenshot is Vercel's env vars, which is what lib/sms.ts (a
+    // Next.js route) reads -- it does NOT prove what this Supabase Edge
+    // Function secret is actually named. Edge Functions read
+    // Deno.env.get(), backed by Supabase's OWN secrets store (Dashboard ->
+    // Edge Functions -> Secrets), entirely separate from Vercel. This
+    // rename makes the NAME consistent across the codebase; it does not
+    // by itself confirm the Supabase secret exists under this name. If it
+    // is still saved as TWILIO_NUMBER there, this function will read an
+    // empty string and hit the "not configured" branch below -- silently,
+    // not a crash. Worth checking that Dashboard directly before relying on
+    // this function firing.
     const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID') ?? ''
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN') ?? ''
     const managerNumber = Deno.env.get('MANAGER_MOBILE_NUMBER') ?? ''
-    const twilioNumber = Deno.env.get('TWILIO_NUMBER') ?? ''
+    const twilioNumber = Deno.env.get('TWILIO_PHONE_NUMBER') ?? ''
 
     if (!accountSid || !authToken || !managerNumber || !twilioNumber) {
       return new Response(JSON.stringify({ warning: 'Twilio credentials not configured' }), {
