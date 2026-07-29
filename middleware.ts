@@ -20,9 +20,17 @@ export const config = {
      *   service worker when an update fetch doesn't return valid JS, so
      *   this could block a new service worker from ever being picked up,
      *   not just break the initial registration.)
-     * - anything with a file extension (images, etc.)
+     * - robots.txt, sitemap.xml (SS-284/SS-143. Same class of bug as sw.js
+     *   above: both were being matched and 307'd to /login, so the files
+     *   existed and were unreachable -- verified with curl, 307 to /login
+     *   on both. A crawler follows that redirect and indexes the sign-in
+     *   page as the site's robots policy, which is worse than having no
+     *   robots.txt at all. The extension list below is images only, despite
+     *   what the line under it used to claim, so .txt and .xml were never
+     *   covered by it.)
+     * - image extensions
      * - /api/diagnostic, /api/batch-* (public batch operations)
      */
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|icons/|sw\\.js|workbox-.*\\.js|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|icons/|robots\\.txt|sitemap\\.xml|sw\\.js|workbox-.*\\.js|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
