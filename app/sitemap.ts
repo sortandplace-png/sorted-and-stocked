@@ -1,12 +1,9 @@
 // app/sitemap.ts
 // The sitemap public/robots.txt has been pointing at since SS-284.
 //
-// The brief listed /services, /about, /faq and /contact. None of those routes
-// exist -- app/ has no page.tsx for any of them, and there are no route
-// groups hiding them. Listing URLs that 404 is worse than omitting them:
-// Google reports them as crawl errors against the domain, so this ships the
-// pages that actually exist and nothing else. If those four get built, they
-// are one line each here.
+// /services, /about, /faq and /contact were added below the day they went
+// live (2026-07-29) -- they did not exist when this file was first written,
+// which is why an earlier version of this comment explained their absence.
 //
 // Blog posts are included because they are the only public content that
 // grows -- that is what a sitemap is actually for. Same query shape as
@@ -21,6 +18,10 @@ export const revalidate = 3600;
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: BASE, lastModified: new Date(), changeFrequency: 'monthly', priority: 1 },
+    { url: `${BASE}/services`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.9 },
+    { url: `${BASE}/about`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/faq`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/contact`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE}/blog`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE}/help`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
   ];

@@ -9,11 +9,20 @@ import { createAdminClient } from '@/lib/supabase/admin';
 const RESEND_FROM = 'Sort + Place <invites@sortandplace.com>';
 const NOTIFY_TO = 'sortandplace@gmail.com';
 
+// Extended for /contact's fuller dropdown (SS: public marketing pages) --
+// the homepage's inline form still only ever sends its original 4, and
+// those 4 spellings are unchanged so existing submissions and this list
+// stay consistent.
 const VALID_SERVICES = new Set([
   'Full Home Organization',
   'Kitchen/Pantry Setup',
+  'Kitchen & Pantry Setup',
   'Newlywed Package',
   'Household Operations/Staff Management',
+  'Household Operations & Staff Management',
+  'Pesach Prep',
+  'Ongoing Management',
+  'Other',
 ]);
 
 function isValidEmail(email: string) {
@@ -21,7 +30,14 @@ function isValidEmail(email: string) {
 }
 
 export async function POST(request: Request) {
-  let body: { name?: string; phone?: string; email?: string; serviceInterest?: string[]; notes?: string };
+  let body: {
+    name?: string;
+    phone?: string;
+    email?: string;
+    serviceInterest?: string[];
+    notes?: string;
+    heardAbout?: string;
+  };
   const contentType = request.headers.get('content-type') ?? '';
 
   try {
@@ -35,6 +51,7 @@ export async function POST(request: Request) {
         email: form.get('email')?.toString(),
         serviceInterest: form.getAll('serviceInterest').map((v) => v.toString()),
         notes: form.get('notes')?.toString(),
+        heardAbout: form.get('heardAbout')?.toString(),
       };
     }
   } catch {
@@ -45,7 +62,8 @@ export async function POST(request: Request) {
   const phone = body.phone?.trim();
   const email = body.email?.trim();
   const notes = body.notes?.trim() || null;
-  // Only ever store the 4 known service options -- silently drops anything
+  const heardAbout = body.heardAbout?.trim() || null;
+  // Only ever store the known service options -- silently drops anything
   // else rather than erroring, since this is just belt-and-suspenders
   // against a tampered client request, not a real user-facing validation.
   const serviceInterest = (body.serviceInterest ?? []).filter((s) => VALID_SERVICES.has(s));
@@ -60,7 +78,7 @@ export async function POST(request: Request) {
 
   const { error: insertError } = await supabase
     .from('consultation_requests')
-    .insert({ name, phone, email, service_interest: serviceInterest, notes });
+    .insert({ name, phone, email, service_interest: serviceInterest, notes, heard_about: heardAbout });
   if (insertError) {
     console.error('consultation_requests insert failed:', insertError);
     return NextResponse.json({ error: "Couldn't save your request — try again in a moment." }, { status: 500 });
@@ -76,7 +94,7 @@ export async function POST(request: Request) {
           from: RESEND_FROM,
           to: NOTIFY_TO,
           subject: `New consultation request — ${name}`,
-          html: `<p>New consultation request from the marketing page:</p><ul><li><b>Name:</b> ${name}</li><li><b>Phone:</b> ${phone}</li><li><b>Email:</b> ${email}</li><li><b>Interested in:</b> ${serviceInterest.join(', ') || '(none selected)'}</li><li><b>Notes:</b> ${notes ?? '(none)'}</li></ul>`,
+          html: `<p>New consultation request from the marketing page:</p><ul><li><b>Name:</b> ${name}</li><li><b>Phone:</b> ${phone}</li><li><b>Email:</b> ${email}</li><li><b>Interested in:</b> ${serviceInterest.join(', ') || '(none selected)'}</li><li><b>Notes:</b> ${notes ?? '(none)'}</li><li><b>Heard about us via:</b> ${heardAbout ?? '(not given)'}</li></ul>`,
         }),
       });
     } catch (err) {

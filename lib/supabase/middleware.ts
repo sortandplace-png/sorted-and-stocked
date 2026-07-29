@@ -6,7 +6,14 @@ import { NextResponse, type NextRequest } from 'next/server';
 // definition not signed in yet, and the session it establishes is set
 // client-side (via the Supabase SDK reading the URL) a moment after the
 // initial navigation -- both need to be reachable before that lands.
-const PUBLIC_PATHS = ['/login', '/auth/callback', '/auth/confirm', '/forgot-password', '/reset-password', '/signup', '/welcome', '/entry', '/privacy.html', '/terms.html', '/cookie-policy.html', '/blog'];
+// /services, /about, /faq, /contact: the 4 public marketing pages added
+// alongside the root landing page (2026-07-29) -- same reasoning as root
+// itself, just via startsWith() rather than root's exact-match, since none
+// of these four collide with any existing route prefix in this app.
+// Without this, Googlebot (and every other signed-out visitor) would be
+// redirected to /login on all four, which is exactly the failure mode this
+// batch of pages exists to avoid.
+const PUBLIC_PATHS = ['/login', '/auth/callback', '/auth/confirm', '/forgot-password', '/reset-password', '/signup', '/welcome', '/entry', '/privacy.html', '/terms.html', '/cookie-policy.html', '/blog', '/services', '/about', '/faq', '/contact'];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });

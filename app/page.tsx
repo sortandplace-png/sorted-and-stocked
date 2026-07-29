@@ -31,17 +31,23 @@ import Pin from '@/components/PinAccent';
 import ConsultationForm from '@/components/ConsultationForm';
 import { ClipboardList, Users, Package } from 'lucide-react';
 import { TESTFLIGHT_URL } from '@/lib/testflight';
+import MarketingHeader from '@/components/marketing/MarketingHeader';
+import MarketingFooter from '@/components/marketing/MarketingFooter';
+import LocalBusinessJsonLd from '@/components/marketing/LocalBusinessJsonLd';
 
 const APP_HOSTNAME = 'app.sortandplace.com';
 
+// Exact copy from the SEO content package, pasted verbatim per the brief --
+// title/description differ from what shipped earlier tonight (that version
+// predates having the actual content package; this is the real, final copy).
 export const metadata: Metadata = {
-  title: 'Sort & Place | Professional Home Organization & Household Management',
+  title: 'Sort + Place | Professional Home Organization & Household Management — Lakewood NJ',
   description:
-    'Sort + Place runs the backend of your home -- weekly meal planning and grocery orders, vendor scheduling, and systems that actually stick. Book a consultation.',
+    'Sort + Place brings order to busy homes. Professional organization, household staff management, and meal planning systems — built to last, not just for the after photo. Serving Lakewood NJ and Ocean County.',
   openGraph: {
-    title: 'Sort & Place | Professional Home Organization & Household Management',
+    title: 'Sort + Place | Professional Home Organization & Household Management — Lakewood NJ',
     description:
-      'We take the mental load off your plate -- meal planning, grocery orders, vendor scheduling, and systems that stick.',
+      'Sort + Place brings order to busy homes. Professional organization, household staff management, and meal planning systems — built to last, not just for the after photo. Serving Lakewood NJ and Ocean County.',
     url: 'https://sortandplace.com',
     type: 'website',
   },
@@ -74,7 +80,12 @@ export default async function RootMarketingPage() {
 
   return (
     <div className="bg-mist min-h-screen font-interDisplay">
-      {/* Contact bar */}
+      <LocalBusinessJsonLd />
+
+      {/* Contact bar. Kept above the shared nav rather than folded into it
+          -- it carries a second phone line (916-2518) MarketingHeader has
+          no slot for, and it predates the 4-page nav this page did not
+          used to need. */}
       <div className="bg-denim text-white text-xs text-center py-2 px-4">
         <a href="tel:+17189384342" className="hover:underline">
           (718) 938-4342
@@ -87,15 +98,9 @@ export default async function RootMarketingPage() {
         </a>
       </div>
 
-      <div className="max-w-[1080px] mx-auto px-4">
-        {/* Nav */}
-        <nav className="flex items-center justify-between py-6">
-          <span className="font-display font-bold text-2xl text-denim">Sort + Place</span>
-          <a href="/login" className="text-sm font-semibold text-denim hover:text-brass transition-colors">
-            Client Portal
-          </a>
-        </nav>
+      <MarketingHeader />
 
+      <div className="max-w-[1080px] mx-auto px-4">
         {/* Hero */}
         <section className="py-14 md:py-20 text-center max-w-[820px] mx-auto">
           <h1 className="font-display font-bold text-4xl md:text-6xl text-denim leading-[1.08] mb-6">
@@ -193,18 +198,9 @@ export default async function RootMarketingPage() {
           </div>
         </section>
 
-        <footer className="border-t border-cardBorder py-7 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-dusk">
-          <span>© Sort + Place. All rights reserved.</span>
-          <span className="flex gap-4">
-            <a href="/privacy.html" className="hover:text-denim">
-              Privacy
-            </a>
-            <a href="/terms.html" className="hover:text-denim">
-              Terms
-            </a>
-          </span>
-        </footer>
       </div>
+
+      <MarketingFooter extraLinks={[{ href: '/terms.html', label: 'Terms' }]} />
     </div>
   );
 }

@@ -13,7 +13,15 @@ const LINKS = [
   { href: '/privacy.html', label: 'Privacy' },
 ];
 
-export default function MarketingFooter() {
+export default function MarketingFooter({
+  extraLinks = [],
+}: {
+  // The homepage's existing footer already linked Terms before this shared
+  // component existed -- an optional extra rather than baking Terms into
+  // every page, since only the homepage had it and removing it would be an
+  // unrequested regression.
+  extraLinks?: { href: string; label: string }[];
+}) {
   return (
     <footer className="bg-linen border-t border-cardBorder mt-16">
       <div className="max-w-[1100px] mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[13px] text-dusk">
@@ -28,7 +36,7 @@ export default function MarketingFooter() {
         </p>
 
         <nav className="flex items-center gap-x-4 gap-y-1 flex-wrap justify-center">
-          {LINKS.map((l) => (
+          {[...LINKS, ...extraLinks].map((l) => (
             <Link key={l.href} href={l.href} className="hover:text-denim transition-colors">
               {l.label}
             </Link>
