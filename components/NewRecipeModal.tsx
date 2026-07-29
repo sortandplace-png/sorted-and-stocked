@@ -242,6 +242,14 @@ export default function NewRecipeModal({
 
     // Photo upload happens after we have a real recipeId — a brand-new
     // recipe doesn't have one until the insert above completes.
+    //
+    // SS-104: the storage .upload() error was already caught below, but the
+    // follow-up .update({photo_url}) DB write's own error was not -- if the
+    // file reached storage fine but the row update failed (RLS, a stale
+    // session, a network blip), photoUploadError stayed null and the
+    // success toast fired anyway, silently losing the link between the
+    // uploaded file and the recipe. Both update() calls now feed the same
+    // photoUploadError the storage step already reports through.
     let photoUploadError: string | null = null;
     if (photoFile) {
       const path = `${propertyId}/${recipeId}-${Date.now()}.jpg`;
@@ -252,7 +260,11 @@ export default function NewRecipeModal({
           .upload(path, compressed, { contentType: 'image/jpeg' });
         if (!uploadError) {
           const { data } = supabase.storage.from('recipe-photos').getPublicUrl(path);
-          await supabase.from('recipes').update({ photo_url: data.publicUrl }).eq('id', recipeId);
+          const { error: updateError } = await supabase
+            .from('recipes')
+            .update({ photo_url: data.publicUrl })
+            .eq('id', recipeId);
+          if (updateError) photoUploadError = updateError.message;
         } else {
           photoUploadError = uploadError.message;
         }
@@ -260,7 +272,8 @@ export default function NewRecipeModal({
         photoUploadError = err instanceof Error ? err.message : 'Unknown error';
       }
     } else if (photoRemoved) {
-      await supabase.from('recipes').update({ photo_url: null }).eq('id', recipeId);
+      const { error: removeError } = await supabase.from('recipes').update({ photo_url: null }).eq('id', recipeId);
+      if (removeError) photoUploadError = removeError.message;
     }
 
     const validRows = ingredientRows.filter((r) => r.name.trim());
