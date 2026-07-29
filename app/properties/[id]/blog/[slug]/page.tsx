@@ -12,10 +12,16 @@ export async function generateMetadata({
   params: Promise<{ id: string; slug: string }>;
 }) {
   const { slug } = await params;
-  // Minimal metadata generation; consider fetching post for full title if needed.
+  const supabase = await createClient();
+  const { data: post } = await supabase
+    .from('blog_posts')
+    .select('title, excerpt')
+    .eq('slug', slug)
+    .single();
+
   return {
-    title: `Blog - Sorted & Stocked`,
-    description: 'Household management insights.',
+    title: post ? `${post.title} - Sorted & Stocked Blog` : 'Blog - Sorted & Stocked',
+    description: post?.excerpt ?? 'Household management insights.',
   };
 }
 

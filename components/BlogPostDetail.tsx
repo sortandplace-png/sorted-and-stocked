@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { Printer, Mail, MessageCircle } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import type { Components } from 'react-markdown';
 
 interface BlogPostDetailProps {
   propertyId: string;
@@ -47,6 +49,33 @@ export default function BlogPostDetail({
     window.open(whatsappUrl, '_blank');
   };
 
+  const markdownComponents: Components = {
+    h1: ({ children }) => (
+      <h2 className="font-display text-3xl font-semibold text-denim mt-8 mb-3">{children}</h2>
+    ),
+    h2: ({ children }) => (
+      <h3 className="font-display text-2xl font-semibold text-denim mt-8 mb-3">{children}</h3>
+    ),
+    h3: ({ children }) => (
+      <h4 className="font-display text-xl font-semibold text-denim mt-6 mb-2">{children}</h4>
+    ),
+    p: ({ children }) => (
+      <p className="font-interDisplay text-base text-denim leading-relaxed mb-4">{children}</p>
+    ),
+    strong: ({ children }) => <strong className="font-semibold text-denim">{children}</strong>,
+    ul: ({ children }) => (
+      <ul className="font-interDisplay list-disc pl-6 mb-4 space-y-1 text-denim">{children}</ul>
+    ),
+    ol: ({ children }) => (
+      <ol className="font-interDisplay list-decimal pl-6 mb-4 space-y-1 text-denim">{children}</ol>
+    ),
+    a: ({ children, href }) => (
+      <a href={href} className="text-brass underline underline-offset-2 hover:text-brass/80">
+        {children}
+      </a>
+    ),
+  };
+
   // Resolve CTA URL: handle bare paths, placeholders, and special cases
   const resolvedCtaUrl = ctaUrl ? (() => {
     // Already has /properties prefix → use as-is (with [id] replacement if present)
@@ -60,6 +89,10 @@ export default function BlogPostDetail({
     // Bare path (e.g., /shopping, /household-knowledge) → add property scope
     return `/properties/${propertyId}${ctaUrl}`;
   })() : null;
+
+  // body_markdown leads with "# <title>" -- already shown above as the page
+  // header, so drop that line here or it renders twice.
+  const bodyWithoutTitle = content.replace(/^#\s+.*\n+/, '');
 
   return (
     <article className="max-w-2xl mx-auto px-4 py-8">
@@ -111,11 +144,8 @@ export default function BlogPostDetail({
       </div>
 
       {/* Content */}
-      <div className="prose prose-sm max-w-none mb-8 text-denim leading-relaxed">
-        {/* Render markdown-like content or plain text for now */}
-        {content.split('\n').map((paragraph, idx) => (
-          paragraph.trim() && <p key={idx} className="mb-4">{paragraph}</p>
-        ))}
+      <div className="max-w-none mb-8">
+        <ReactMarkdown components={markdownComponents}>{bodyWithoutTitle}</ReactMarkdown>
       </div>
 
       {/* CTA Button */}
