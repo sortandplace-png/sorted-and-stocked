@@ -877,6 +877,22 @@
     "captionsEs": "Subtítulos en español",
     "goThere": "Abrir esta página"
   },
+  "pantryZoneScan": {
+    "scanAria": "Escanear {zone} con la cámara",
+    "scanning": "Escaneando…",
+    "close": "Cerrar",
+    "emptyResult": "Nada lo bastante claro para sugerir en esta foto.",
+    "uncategorized": "Sin categoría",
+    "notFood": "No es comida",
+    "cancel": "Cancelar",
+    "saving": "Guardando…",
+    "addChecked": "Agregar {count} a la Bandeja de Capturas",
+    "addCheckedEmpty": "Agregar a la Bandeja de Capturas",
+    "savedToast": "{count, plural, one {# artículo enviado} other {# artículos enviados}} a la Bandeja de Capturas para revisión.",
+    "errorGeneric": "No se pudo escanear esta foto.",
+    "errorUnreachable": "No se pudo conectar con el escáner.",
+    "errorSave": "No se pudo guardar — inténtalo de nuevo."
+  },
   "batchScanner": {
     "title": "Escaneo por lotes",
     "progress": "{scans} escaneados · {items, plural, one {# artículo} other {# artículos}}",

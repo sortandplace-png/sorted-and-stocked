@@ -877,6 +877,22 @@
     "captionsEs": "Spanish captions",
     "goThere": "Open this page"
   },
+  "pantryZoneScan": {
+    "scanAria": "Scan {zone} with camera",
+    "scanning": "Scanning…",
+    "close": "Close",
+    "emptyResult": "Nothing clear enough to suggest from this photo.",
+    "uncategorized": "Uncategorized",
+    "notFood": "Not food",
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "addChecked": "Add {count} to Capture Inbox",
+    "addCheckedEmpty": "Add to Capture Inbox",
+    "savedToast": "{count, plural, one {# item} other {# items}} sent to the Capture Inbox for review.",
+    "errorGeneric": "Couldn't scan this photo.",
+    "errorUnreachable": "Couldn't reach the scanner.",
+    "errorSave": "Couldn't save these — try again."
+  },
   "batchScanner": {
     "title": "Batch Scan",
     "progress": "{scans} scanned · {items, plural, one {# item} other {# items}}",
