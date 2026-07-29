@@ -457,6 +457,7 @@
     "clockInFailed": "No se pudo registrar la entrada.",
     "clockOutFailed": "No se pudo registrar la salida.",
     "clockNotSignedIn": "No ha iniciado sesión.",
+    "hoursThisWeek": "{total} esta semana",
     "duties": {
       "heading": "Tareas de Hoy",
       "noRoster": "Aún no se ha asignado una lista de tareas — pídale a su gerente que configure una.",
@@ -845,7 +846,9 @@
     "showProcedure": "Ver procedimiento",
     "hideProcedure": "Ocultar procedimiento",
     "viewFullProcedure": "Ver procedimiento completo →",
-    "removeAssignment": "Quitar asignación"
+    "removeAssignment": "Quitar asignación",
+    "changeRoom": "Cambiar cuarto",
+    "reactivate": "Reactivar"
   },
   "staffHandbook": {
     "title": "Manual del Personal",

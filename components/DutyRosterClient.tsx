@@ -369,6 +369,15 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
       .sort((a, b) => a.label.localeCompare(b.label, locale));
   }, [filtered, roomById, es, locale, t]);
 
+  // Every room for this property, A-Z, for the inline room editor. Distinct
+  // from `roomOptions` above, which is deliberately narrowed by the other
+  // filters -- you must be able to move a task INTO a room that the current
+  // filter would otherwise hide.
+  const roomOptionsAZ = useMemo(
+    () => [...rooms].sort((a, b) => (es ? a.name_es || a.name_en : a.name_en).localeCompare(es ? b.name_es || b.name_en : b.name_en, locale)),
+    [rooms, es, locale]
+  );
+
   function toggleSection(label: string) {
     setCollapsedSections((prev) => {
       const next = new Set(prev);
@@ -431,6 +440,37 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
       return;
     }
     load();
+  }
+
+  // SS-130: the room eyebrow was display-only, which is what made
+  // "Rooms Missing" a number you could read but not act on. Owner/manager
+  // only by construction -- this whole page redirects staff out.
+  //
+  // Optimistic: the tile (and the section it sits in) moves immediately,
+  // then rolls back to the loaded state if the write fails. Changing a room
+  // re-buckets the task, because `sections` derives from the same task list
+  // rather than caching its own copy.
+  async function setTaskRoom(taskId: string, roomId: string | null) {
+    const previous = tasks;
+    setTasks((prev) => prev.map((x) => (x.id === taskId ? { ...x, room_id: roomId } : x)));
+    const { error } = await supabase.from('master_tasks').update({ room_id: roomId }).eq('id', taskId);
+    if (error) {
+      setTasks(previous);
+      setLoadError(t('saveFailed'));
+    }
+  }
+
+  // Retired tasks are reachable behind the filter (SS-309) but there was no
+  // way back from there. R21 says deprecate rather than delete, which only
+  // works if un-deprecating is possible.
+  async function reactivateTask(taskId: string) {
+    const previous = tasks;
+    setTasks((prev) => prev.map((x) => (x.id === taskId ? { ...x, active: true } : x)));
+    const { error } = await supabase.from('master_tasks').update({ active: true }).eq('id', taskId);
+    if (error) {
+      setTasks(previous);
+      setLoadError(t('saveFailed'));
+    }
   }
 
   async function assign(taskId: string, memberId: string) {
@@ -722,8 +762,29 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                     <PinDot />
                     <div>
                       <div className="flex items-start justify-between gap-2 pr-4">
-                        <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-brass truncate">
-                          {roomLabel(x.room_id)} • {x.job_type ?? '—'}
+                        {/* SS-130: the room is editable in place now. Styled
+                            to read as the eyebrow it replaces -- no border,
+                            no chrome -- so the tile looks unchanged until
+                            you interact with it. appearance-none because a
+                            native caret here would read as decoration on an
+                            uppercase micro-label. */}
+                        <span className="flex items-center gap-1 min-w-0">
+                          <select
+                            value={x.room_id ?? ''}
+                            onChange={(e) => setTaskRoom(x.id, e.target.value || null)}
+                            aria-label={t('changeRoom')}
+                            className="appearance-none bg-transparent cursor-pointer text-[9px] font-semibold uppercase tracking-[0.2em] text-brass truncate max-w-[120px] hover:underline underline-offset-2"
+                          >
+                            <option value="">{t('noRoom')}</option>
+                            {roomOptionsAZ.map((r) => (
+                              <option key={r.id} value={r.id}>
+                                {es ? r.name_es || r.name_en : r.name_en}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-brass truncate">
+                            • {x.job_type ?? '—'}
+                          </span>
                         </span>
                         <span className="shrink-0 text-[8px] uppercase tracking-[0.15em] bg-card border border-cardBorder text-dusk px-2 py-0.5 rounded-full">
                           {freqLabel(f)}
@@ -763,9 +824,20 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                             but then it must be unmistakable which tiles are
                             the retired ones. */}
                         {!x.active && (
-                          <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-dusk border border-cardBorder rounded-full px-2 py-0.5">
-                            {t('retiredBadge')}
-                          </span>
+                          <>
+                            <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-dusk border border-cardBorder rounded-full px-2 py-0.5">
+                              {t('retiredBadge')}
+                            </span>
+                            {/* The way back. R21's "deprecate, don't delete"
+                                only holds up if un-deprecating is possible
+                                from the same screen that hid it. */}
+                            <button
+                              onClick={() => reactivateTask(x.id)}
+                              className="text-[9px] font-semibold uppercase tracking-[0.15em] text-denim underline-offset-2 hover:underline"
+                            >
+                              {t('reactivate')}
+                            </button>
+                          </>
                         )}
                         {sops > 0 && (
                           <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-brass">

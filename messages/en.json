@@ -457,6 +457,7 @@
     "clockInFailed": "Could not clock in.",
     "clockOutFailed": "Could not clock out.",
     "clockNotSignedIn": "Not signed in.",
+    "hoursThisWeek": "{total} this week",
     "duties": {
       "heading": "Today's Duties",
       "noRoster": "No task roster assigned yet — ask your manager to set one up.",
@@ -845,7 +846,9 @@
     "showProcedure": "Show procedure",
     "hideProcedure": "Hide procedure",
     "viewFullProcedure": "View full procedure →",
-    "removeAssignment": "Remove assignment"
+    "removeAssignment": "Remove assignment",
+    "changeRoom": "Change room",
+    "reactivate": "Reactivate"
   },
   "staffHandbook": {
     "title": "Staff Handbook",

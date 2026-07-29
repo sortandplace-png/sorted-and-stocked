@@ -39,6 +39,11 @@ export default function ClockInOutButton({ propertyId }: { propertyId: string })
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [openShift, setOpenShift] = useState<OpenShift | null>(null);
+  // Minutes completed this week, this person, this property. The /staff/hours
+  // page answers "everyone, by week" for a manager; this answers "me, this
+  // week" on the page the person actually opens, which is what Hours moving
+  // to My Day means.
+  const [weekMinutes, setWeekMinutes] = useState(0);
   // Ticks the elapsed label. Stored as a number rather than a formatted
   // string so the formatting stays in one place.
   const [now, setNow] = useState(() => Date.now());
@@ -64,6 +69,29 @@ export default function ClockInOutButton({ propertyId }: { propertyId: string })
       .order('clocked_in_at', { ascending: false })
       .limit(1);
     setOpenShift((data?.[0] as OpenShift) ?? null);
+
+    // Monday-start week, matching ShiftHoursClient so the two surfaces can
+    // never disagree about which week you are in.
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+    weekStart.setHours(0, 0, 0, 0);
+    const { data: weekRows } = await supabase
+      .from('shifts')
+      .select('clocked_in_at, clocked_out_at')
+      .eq('property_id', propertyId)
+      .eq('user_id', user.id)
+      .gte('clocked_in_at', weekStart.toISOString());
+    // Only closed shifts count. Counting the open one would make the weekly
+    // total tick upward on its own and turn a forgotten clock-out into
+    // hours nobody worked -- the same rule the manager view uses.
+    const mins = ((weekRows as { clocked_in_at: string; clocked_out_at: string | null }[]) ?? [])
+      .filter((s) => s.clocked_out_at)
+      .reduce(
+        (sum, s) =>
+          sum + Math.max(0, (new Date(s.clocked_out_at as string).getTime() - new Date(s.clocked_in_at).getTime()) / 60000),
+        0
+      );
+    setWeekMinutes(Math.round(mins));
     setLoading(false);
   }, [propertyId, supabase]);
 
@@ -165,6 +193,16 @@ export default function ClockInOutButton({ propertyId }: { propertyId: string })
           <LogIn size={28} className="text-denim" strokeWidth={1.75} aria-hidden="true" />
         )
       }
-    />
+    >
+      {/* Hidden at zero rather than showing "0h 0m" -- on a Monday morning a
+          zero total is noise, not information. */}
+      {weekMinutes > 0 && (
+        <span className={`text-[10px] ${clockedIn ? 'text-white/70' : 'text-dusk'}`}>
+          {t('hoursThisWeek', {
+            total: `${Math.floor(weekMinutes / 60)}h ${weekMinutes % 60}m`,
+          })}
+        </span>
+      )}
+    </Tile>
   );
 }
