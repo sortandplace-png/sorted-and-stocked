@@ -91,6 +91,33 @@ function clusterOccasions(rows: YomTovRow[]): { name: string; dates: string[] }[
   return clusters;
 }
 
+// Which of the three visual tiers a calendar row belongs to.
+//
+// yom_tov_dates has no type column -- only date, holiday_name,
+// holiday_name_es -- and it contains NO fast days at all: those live in the
+// separate fast_days table, which is why `fromFastDays` is a parameter
+// rather than another name pattern. get-next-observance.ts already merges
+// the two tables the same way.
+//
+// Yom Kippur is in yom_tov_dates AND is a fast. It reads as the Yom Tov
+// itself, matching the precedence calendar-trigger-type.ts already applies
+// (yom_kippur is checked ahead of fast_day there, deliberately).
+//
+// 'intermediate' extends isRealYomTov's exclusion set by one case: Erev
+// days. isRealYomTov excludes Chol Hamoed and Hoshana Rabbah but not "Erev
+// Yom Kippur", which is a preparation day, not Yom Tov proper -- it should
+// not carry the same weight as Yom Kippur itself on a wall of tiles.
+export type ObservanceKind = 'yomTov' | 'intermediate' | 'fast';
+
+export function classifyObservance(name: string, fromFastDays = false): ObservanceKind {
+  if (/^yom kippur/i.test(name)) return 'yomTov';
+  if (fromFastDays) return 'fast';
+  if (/^chol hamoed/i.test(name) || /^hoshana rabbah$/i.test(name) || /^erev /i.test(name)) {
+    return 'intermediate';
+  }
+  return 'yomTov';
+}
+
 export function groupYomTovOccasions(rows: YomTovRow[], todayIso: string): YomTovOccasion[] {
   return clusterOccasions(rows)
     .map((c) => ({ name: c.name, date: c.dates[0] }))

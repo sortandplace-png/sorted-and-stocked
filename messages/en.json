@@ -855,6 +855,17 @@
     "subtitle": "Clocked hours by person, by week. Corrections are made directly in Supabase for now.",
     "empty": "No shifts have been recorded at this property yet."
   },
+  "yomTovYearView": {
+    "title": "Yom Tov Year View",
+    "subtitle": "Every Yom Tov and fast day on the calendar, at a glance.",
+    "backToTools": "Tools",
+    "empty": "No dates on the calendar yet.",
+    "viewToggleLabel": "Choose a view",
+    "viewList": "List",
+    "viewCalendar": "Calendar",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month"
+  },
   "staffHandbook": {
     "sectionStart": "Starting Your Shift",
     "sectionDuring": "During Your Shift",

@@ -1,56 +1,48 @@
 // app/properties/[id]/tools/yom-tov-year-view/page.tsx
-import Link from 'next/link';
+// Fetches only. The view is a client component because the LIST/CALENDAR
+// toggle and month navigation are state, and because every string on the
+// page had to stop being hardcoded English (R19) -- this page shipped its
+// title, subtitle, empty state and en-US date formatting inline.
+//
+// Two tables, merged. yom_tov_dates has no fast days in it; fast_days is a
+// separate table, and the spec's third visual tier is entirely sourced from
+// it. get-next-observance.ts already merges the same two the same way.
 import { createClient } from '@/lib/supabase/server';
+import YomTovYearViewClient, { type Observance } from '@/components/YomTovYearViewClient';
+import { classifyObservance } from '@/lib/yom-tov';
 
 export default async function YomTovYearViewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
 
-  // yom_tov_dates isn't property-scoped (shared calendar data, same table
-  // the Dashboard's Erev Yom Tov check and header countdown pill already
-  // read) -- no property_id filter needed.
-  const { data } = await supabase.from('yom_tov_dates').select('date, holiday_name').order('date', { ascending: true });
-  const dates = data ?? [];
-  const today = new Date().toISOString().slice(0, 10);
+  // Neither table is property-scoped (shared calendar data, same tables the
+  // Dashboard's Erev Yom Tov check and header countdown pill already read).
+  const [{ data: yomTov }, { data: fasts }] = await Promise.all([
+    supabase.from('yom_tov_dates').select('date, holiday_name, holiday_name_es').order('date'),
+    supabase.from('fast_days').select('date, holiday_name, holiday_name_es').order('date'),
+  ]);
 
-  return (
-    <div className="max-w-md mx-auto p-4">
-      <Link href={`/properties/${id}/tools`} className="text-sm text-dusk mb-4 inline-block">
-        ← Tools
-      </Link>
-      <h1 className="text-2xl font-display text-denim mb-1">Yom Tov Year View</h1>
-      <p className="text-sm text-dusk mb-6">Every Yom Tov date on the calendar, at a glance.</p>
+  const yomTovRows: Observance[] = (yomTov ?? []).map((r) => ({
+    date: r.date,
+    name_en: r.holiday_name,
+    name_es: r.holiday_name_es,
+    kind: classifyObservance(r.holiday_name),
+  }));
 
-      {dates.length === 0 ? (
-        <p className="text-sm text-dusk">No dates on the calendar yet.</p>
-      ) : (
-        <ul className="space-y-2">
-          {dates.map((d) => {
-            const isPast = d.date < today;
-            return (
-              <li
-                key={`${d.date}-${d.holiday_name}`}
-                className={
-                  'flex items-center justify-between rounded-xl px-4 py-3 border ' +
-                  (isPast
-                    ? 'border-cardBorder bg-linen opacity-50'
-                    : 'border-cardBorder bg-white shadow-sm shadow-black/5')
-                }
-              >
-                <span className="font-medium text-denim">{d.holiday_name}</span>
-                <span className="text-sm text-dusk">
-                  {new Date(`${d.date}T00:00:00`).toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
-  );
+  // Yom Kippur appears in both tables. The yom_tov_dates row wins, matching
+  // the precedence calendar-trigger-type.ts already applies -- otherwise the
+  // same day renders twice, once denim and once rust.
+  const yomTovDates = new Set(yomTovRows.map((r) => r.date));
+  const fastRows: Observance[] = (fasts ?? [])
+    .filter((r) => !yomTovDates.has(r.date))
+    .map((r) => ({
+      date: r.date,
+      name_en: r.holiday_name,
+      name_es: r.holiday_name_es,
+      kind: classifyObservance(r.holiday_name, true),
+    }));
+
+  const observances = [...yomTovRows, ...fastRows].sort((a, b) => a.date.localeCompare(b.date));
+
+  return <YomTovYearViewClient propertyId={id} observances={observances} />;
 }

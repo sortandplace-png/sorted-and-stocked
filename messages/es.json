@@ -855,6 +855,17 @@
     "subtitle": "Horas registradas por persona, por semana. Las correcciones se hacen directamente en Supabase por ahora.",
     "empty": "Todavía no hay turnos registrados en esta propiedad."
   },
+  "yomTovYearView": {
+    "title": "Calendario Anual de Yom Tov",
+    "subtitle": "Todas las fechas de Yom Tov y días de ayuno, de un vistazo.",
+    "backToTools": "Herramientas",
+    "empty": "Aún no hay fechas en el calendario.",
+    "viewToggleLabel": "Elegir una vista",
+    "viewList": "Lista",
+    "viewCalendar": "Calendario",
+    "prevMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente"
+  },
   "staffHandbook": {
     "sectionStart": "Comenzando tu turno",
     "sectionDuring": "Durante tu turno",
