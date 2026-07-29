@@ -8,8 +8,9 @@ import { resilientUpdate } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import { LogoMark } from '@/components/Logo';
+import { formatPropertyLabel } from '@/lib/property-display';
 
-type Property = { id: string; name: string };
+type Property = { id: string; name: string; householdName?: string | null };
 
 type LowStockSummaryRow = {
   property: string;
@@ -157,7 +158,7 @@ export default function ProcurementClient({
         return (items ?? []).map((i) => ({
           ...i,
           property_id: property.id,
-          property_name: property.name,
+          property_name: formatPropertyLabel(property.name, property.householdName),
         })) as RawItem[];
       })
     );
@@ -226,7 +227,11 @@ export default function ProcurementClient({
         <div className="hidden print:block mb-4">
           <h1 className="font-display text-2xl text-denim">Combined Shopping Trip</h1>
           <p className="text-sm text-dusk">
-            {properties.filter((p) => selectedIds.has(p.id)).map((p) => p.name).join(', ')} —{' '}
+            {properties
+              .filter((p) => selectedIds.has(p.id))
+              .map((p) => formatPropertyLabel(p.name, p.householdName))
+              .join(', ')}{' '}
+            —{' '}
             {new Date().toLocaleDateString()}
           </p>
         </div>
@@ -260,7 +265,7 @@ export default function ProcurementClient({
                     : 'px-3 py-1.5 rounded-full text-sm bg-mist border border-cardBorder text-denim'
                 }
               >
-                {p.name}
+                {formatPropertyLabel(p.name, p.householdName)}
               </button>
             ))}
           </div>

@@ -12,6 +12,7 @@ import TodayCandleLightingRow from '@/components/TodayCandleLightingRow'
 import Pin from '@/components/PinAccent'
 import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
 import { getWidgetPrefs, getTodaysMealPlan, getLowStockAlerts } from '@/lib/dashboard-widgets-data'
+import { formatPropertyLabel } from '@/lib/property-display'
 import {
   getOmerStatus,
   getIsErevYomTov,
@@ -376,8 +377,14 @@ function getKashrut(kosherType: string | null | undefined): keyof typeof KASHRUT
 // down to this page, so it needs its own (tiny) lookup here.
 async function getPropertyName(propertyId: string): Promise<string | null> {
   const supabase = await createClient()
-  const { data } = await supabase.from('properties').select('name').eq('id', propertyId).single()
-  return data?.name ?? null
+  const { data } = await supabase
+    .from('properties')
+    .select('name, households(name)')
+    .eq('id', propertyId)
+    .single()
+  if (!data) return null
+  const householdName = (data.households as unknown as { name: string } | null)?.name
+  return formatPropertyLabel(data.name, householdName)
 }
 
 // recipes has no active/archived concept in the schema (confirmed directly

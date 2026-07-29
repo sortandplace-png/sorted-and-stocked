@@ -26,12 +26,19 @@ export default function HeaderLogoLink({
   const href = propertyId ? `/properties/${propertyId}/dashboard` : '/properties';
   const onDashboard = pathname === href;
 
+  // SS-022: the visible mark is 36px (LogoMark's w-9 h-9), below the 44px
+  // touch target this app uses everywhere else (e.g. MobileBottomNav's
+  // min-w-[44px] min-h-[44px]). p-1 + -m-1 pads the hit area to 44px without
+  // shifting layout -- the negative margin cancels the padding's effect on
+  // surrounding flex siblings (PropertySwitcher).
+  const hitArea = 'p-1 -m-1';
+
   if (onDashboard) {
-    return <span className={className}>{children}</span>;
+    return <span className={`${hitArea} ${className ?? ''}`}>{children}</span>;
   }
 
   return (
-    <Link href={href} className={className}>
+    <Link href={href} className={`${hitArea} ${className ?? ''}`}>
       {children}
     </Link>
   );

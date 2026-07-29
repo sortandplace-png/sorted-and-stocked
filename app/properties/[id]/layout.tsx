@@ -9,6 +9,7 @@ import StaffOnboardingModal from '@/components/StaffOnboardingModal';
 import { PropertyRoleProvider, type PropertyRole } from '@/components/PropertyRoleContext';
 import Footer from '@/components/Footer';
 import { getNextObservance } from '@/lib/get-next-observance';
+import { formatPropertyLabel } from '@/lib/property-display';
 
 export default async function PropertyLayout({
   params,
@@ -34,26 +35,57 @@ export default async function PropertyLayout({
 
   const { data: membership } = await supabase
     .from('property_members')
-    .select('role, properties(name)')
+    .select('role, properties(name, household_id, households(name))')
     .eq('property_id', id)
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (!membership) redirect('/properties');
 
-  const propertyName = (membership.properties as unknown as { name: string } | null)?.name ?? '';
+  const membershipProperty = membership.properties as unknown as {
+    name: string;
+    household_id: string | null;
+    households: { name: string } | null;
+  } | null;
+  const propertyName = formatPropertyLabel(
+    membershipProperty?.name ?? '',
+    membershipProperty?.households?.name
+  );
 
   // All properties this user belongs to, for the switcher -- not just the
   // one from the membership check above.
   const { data: allMemberships } = await supabase
     .from('property_members')
-    .select('properties(id, name)')
+    .select('properties(id, name, household_id, households(name))')
     .eq('user_id', user.id);
 
   const switcherProperties = (allMemberships ?? [])
-    .map((m) => m.properties as unknown as { id: string; name: string } | null)
-    .filter((p): p is { id: string; name: string } => p !== null)
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .map(
+      (m) =>
+        m.properties as unknown as {
+          id: string;
+          name: string;
+          household_id: string | null;
+          households: { name: string } | null;
+        } | null
+    )
+    .filter(
+      (p): p is { id: string; name: string; household_id: string | null; households: { name: string } | null } =>
+        p !== null
+    )
+    // Group by household so sibling properties sort adjacent; properties
+    // with no household sort after ones that have one, then by name.
+    .sort((a, b) => {
+      const aHousehold = a.households?.name ?? null;
+      const bHousehold = b.households?.name ?? null;
+      if (aHousehold !== bHousehold) {
+        if (aHousehold === null) return 1;
+        if (bHousehold === null) return -1;
+        return aHousehold.localeCompare(bHousehold);
+      }
+      return a.name.localeCompare(b.name);
+    })
+    .map((p) => ({ id: p.id, name: p.name, householdName: p.households?.name ?? null }));
 
   const { data: profile } = await supabase
     .from('profiles')

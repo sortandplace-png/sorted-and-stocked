@@ -26,6 +26,7 @@
 import { NextResponse } from 'next/server';
 import JSZip from 'jszip';
 import { createClient } from '@/lib/supabase/server';
+import { formatPropertyLabel } from '@/lib/property-display';
 
 // Tables with their own property_id column, confirmed live against
 // information_schema.columns before writing this list -- not guessed from
@@ -100,7 +101,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Owner-only.' }, { status: 403 });
   }
 
-  const { data: property } = await supabase.from('properties').select('name').eq('id', propertyId).maybeSingle();
+  const { data: property } = await supabase
+    .from('properties')
+    .select('name, households(name)')
+    .eq('id', propertyId)
+    .maybeSingle();
+  const propertyHouseholdName = (property?.households as unknown as { name: string } | null)?.name;
 
   const zip = new JSZip();
   const manifest: Record<string, { rows: number; error?: string }> = {};
@@ -170,7 +176,7 @@ export async function GET(request: Request) {
     JSON.stringify(
       {
         property_id: propertyId,
-        property_name: property?.name ?? null,
+        property_name: property?.name ? formatPropertyLabel(property.name, propertyHouseholdName) : null,
         exported_at: new Date().toISOString(),
         exported_by: user.id,
         tables: manifest,

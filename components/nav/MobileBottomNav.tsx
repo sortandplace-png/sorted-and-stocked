@@ -65,7 +65,11 @@ export default function MobileBottomNav({
         className="flex flex-col items-center justify-center gap-0.5 flex-1 min-w-[44px] min-h-[44px] py-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white rounded-lg"
       >
         <Icon size={20} strokeWidth={1.5} className={active ? 'text-brass' : 'text-white/50'} aria-hidden="true" />
-        <span className={`text-[10px] font-medium ${active ? 'text-white' : 'text-white/50'}`}>{t(labelKey)}</span>
+        <span
+          className={`text-[10px] font-medium leading-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-full [-webkit-text-size-adjust:100%] [text-size-adjust:100%] ${active ? 'text-white' : 'text-white/50'}`}
+        >
+          {t(labelKey)}
+        </span>
       </Link>
     );
   }
@@ -93,7 +97,7 @@ export default function MobileBottomNav({
             aria-hidden="true"
           />
           <span
-            className={`text-[10px] font-medium ${
+            className={`text-[10px] font-medium leading-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-full [-webkit-text-size-adjust:100%] [text-size-adjust:100%] ${
               pathname.includes('/staff') || pathname.includes('/my-day') ? 'text-white' : 'text-white/50'
             }`}
           >
