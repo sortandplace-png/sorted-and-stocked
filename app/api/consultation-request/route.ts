@@ -76,6 +76,20 @@ export async function POST(request: Request) {
   // has no signed-in user (prospective clients don't have accounts yet).
   const supabase = createAdminClient();
 
+  // IP-keyed, not auth.uid()-keyed -- there is no session here to key
+  // against. x-forwarded-for can carry a comma-separated chain (client,
+  // proxy, proxy...); the first entry is the original client.
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const { data: allowed, error: rateLimitError } = await supabase.rpc('check_and_record_anon_rate_limit', {
+    p_identifier: ip,
+    p_action: 'consultation_request',
+    p_max_count: 5,
+    p_window_seconds: 3600,
+  });
+  if (rateLimitError || !allowed) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+  }
+
   const { error: insertError } = await supabase
     .from('consultation_requests')
     .insert({ name, phone, email, service_interest: serviceInterest, notes, heard_about: heardAbout });
