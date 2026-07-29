@@ -13,13 +13,15 @@
 //    hiding them is why the old roster showed "no rows" on an empty filter.
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { storageThumbnail } from '@/lib/storage-image';
 import { routes } from '@/lib/app-routes';
 import { getEasternIsoWeekday } from '@/lib/eastern-weekday';
-import { ClipboardList } from 'lucide-react';
+import { compressImageToBlob } from '@/lib/compress-image';
+import CameraCapture from '@/components/CameraCapture';
+import { ClipboardList, Camera as CameraIcon, Image as ImageIcon, X as XIcon } from 'lucide-react';
 
 type Frequency = {
   id: string;
@@ -186,6 +188,19 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   const [formEstimatedMinutes, setFormEstimatedMinutes] = useState('');
   const [formSaving, setFormSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  // SS-312: master_tasks.photo_url had no upload path anywhere in the app --
+  // the only way to set it was asking Code to do it by hand. Deferred
+  // upload (file held in state, uploaded inside saveTask), same pattern
+  // NewRecipeModal already uses -- a brand-new task has no id to build a
+  // storage path from until the insert below completes, so a path keyed on
+  // a fresh UUID instead of the task id avoids that ordering problem for
+  // both add and edit.
+  const [formExistingPhotoUrl, setFormExistingPhotoUrl] = useState<string | null>(null);
+  const [formPhotoFile, setFormPhotoFile] = useState<File | null>(null);
+  const [formPhotoPreview, setFormPhotoPreview] = useState<string | null>(null);
+  const [formPhotoRemoved, setFormPhotoRemoved] = useState(false);
+  const [showTaskCamera, setShowTaskCamera] = useState(false);
+  const taskGalleryInputRef = useRef<HTMLInputElement>(null);
 
   function openAddTask() {
     setFormTaskEn('');
@@ -197,6 +212,10 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     setFormDayOfWeek('');
     setFormEstimatedMinutes('');
     setFormError(null);
+    setFormExistingPhotoUrl(null);
+    setFormPhotoFile(null);
+    setFormPhotoPreview(null);
+    setFormPhotoRemoved(false);
     setTaskForm({ mode: 'add', taskId: null });
   }
 
@@ -210,11 +229,31 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     setFormDayOfWeek(x.day_of_week ?? '');
     setFormEstimatedMinutes(x.estimated_minutes?.toString() ?? '');
     setFormError(null);
+    setFormExistingPhotoUrl(x.photo_url ?? null);
+    setFormPhotoFile(null);
+    setFormPhotoPreview(null);
+    setFormPhotoRemoved(false);
     setTaskForm({ mode: 'edit', taskId: x.id });
   }
 
   function closeTaskForm() {
+    if (formPhotoPreview) URL.revokeObjectURL(formPhotoPreview);
     setTaskForm(null);
+  }
+
+  function handleTaskPhotoFile(file: File) {
+    if (formPhotoPreview) URL.revokeObjectURL(formPhotoPreview);
+    setFormPhotoFile(file);
+    setFormPhotoPreview(URL.createObjectURL(file));
+    setFormPhotoRemoved(false);
+    setShowTaskCamera(false);
+  }
+
+  function removeTaskPhoto() {
+    if (formPhotoPreview) URL.revokeObjectURL(formPhotoPreview);
+    setFormPhotoFile(null);
+    setFormPhotoPreview(null);
+    setFormPhotoRemoved(true);
   }
 
   async function saveTask() {
@@ -229,6 +268,33 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     setFormSaving(true);
     setFormError(null);
 
+    // SS-312/SS-104: a photo failure must not block the rest of the task
+    // from saving, and must not fail silently either -- same lesson SS-104
+    // just fixed for the recipe photo path. photoErrorMessage is reported
+    // after a successful task save rather than swallowed or treated as
+    // reason to abandon the whole save.
+    let photoUrl = formExistingPhotoUrl;
+    let photoErrorMessage: string | null = null;
+    if (formPhotoRemoved) {
+      photoUrl = null;
+    } else if (formPhotoFile) {
+      try {
+        const compressed = await compressImageToBlob(formPhotoFile);
+        const path = `${propertyId}/task-${crypto.randomUUID()}.jpg`;
+        const { error: uploadError } = await supabase.storage
+          .from('sop-posters')
+          .upload(path, compressed, { contentType: 'image/jpeg' });
+        if (uploadError) {
+          photoErrorMessage = uploadError.message;
+        } else {
+          const { data } = supabase.storage.from('sop-posters').getPublicUrl(path);
+          photoUrl = data.publicUrl;
+        }
+      } catch (err) {
+        photoErrorMessage = err instanceof Error ? err.message : 'Unknown error';
+      }
+    }
+
     const payload = {
       task_en: formTaskEn.trim(),
       task_es: formTaskEs.trim(),
@@ -238,6 +304,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
       time_of_day: formTimeOfDay || null,
       day_of_week: formDayOfWeek === '' ? null : formDayOfWeek,
       estimated_minutes: formEstimatedMinutes.trim() ? Number(formEstimatedMinutes) : null,
+      photo_url: photoUrl,
     };
 
     if (taskForm?.mode === 'edit' && taskForm.taskId) {
@@ -285,6 +352,17 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
         setFormError(error.message || t('saveFailed'));
         return;
       }
+    }
+
+    if (photoErrorMessage) {
+      // The task itself saved fine -- only the photo failed. Left open with
+      // the error visible rather than auto-closing, same as every other
+      // formError path in this modal, so the failure isn't hidden the
+      // instant it happens.
+      setFormError(t('photoUploadFailed', { error: photoErrorMessage }));
+      setFormPhotoFile(null);
+      load();
+      return;
     }
 
     closeTaskForm();
@@ -1330,6 +1408,66 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                   />
                 </div>
               </div>
+
+              {/* SS-312: the tile's reference photo -- what this task looks
+                  like, shown on the tile itself (see tileImage above). Not
+                  the "after" evidence photo staff attach on completion
+                  (task_completions.photo_url, a separate field, separate
+                  meaning) -- this one identifies the task, that one proves
+                  it was done. */}
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-dusk mb-1">
+                  {t('formPhoto')}
+                </label>
+                {formPhotoPreview || (formExistingPhotoUrl && !formPhotoRemoved) ? (
+                  <div className="flex items-center gap-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={formPhotoPreview ?? storageThumbnail(formExistingPhotoUrl!, 96)}
+                      alt=""
+                      className="h-14 w-14 rounded-lg object-cover bg-mist"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeTaskPhoto}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-rust"
+                    >
+                      <XIcon size={13} strokeWidth={1.75} aria-hidden="true" />
+                      {t('formRemovePhoto')}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowTaskCamera(true)}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-brass underline underline-offset-2"
+                    >
+                      <CameraIcon size={13} strokeWidth={1.75} aria-hidden="true" />
+                      {t('formTakePhoto')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => taskGalleryInputRef.current?.click()}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-brass underline underline-offset-2"
+                    >
+                      <ImageIcon size={13} strokeWidth={1.75} aria-hidden="true" />
+                      {t('formChoosePhoto')}
+                    </button>
+                    <input
+                      ref={taskGalleryInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleTaskPhotoFile(file);
+                        e.target.value = '';
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-2 mt-5">
@@ -1351,6 +1489,8 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
           </div>
         </div>
       )}
+
+      <CameraCapture open={showTaskCamera} onCapture={handleTaskPhotoFile} onClose={() => setShowTaskCamera(false)} />
     </>
   );
 }

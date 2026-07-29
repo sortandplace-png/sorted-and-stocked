@@ -899,6 +899,11 @@
     "formAnyTime": "Any time",
     "formDayOfWeek": "Day of week",
     "formMinutes": "Estimated minutes",
+    "formPhoto": "Photo",
+    "formTakePhoto": "Take photo",
+    "formChoosePhoto": "Choose photo",
+    "formRemovePhoto": "Remove",
+    "photoUploadFailed": "Task saved, but the photo failed to upload: {error}",
     "formCancel": "Cancel",
     "formSave": "Save",
     "saving": "Saving…"

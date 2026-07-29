@@ -899,6 +899,11 @@
     "formAnyTime": "Cualquier hora",
     "formDayOfWeek": "Día de la semana",
     "formMinutes": "Minutos estimados",
+    "formPhoto": "Foto",
+    "formTakePhoto": "Tomar foto",
+    "formChoosePhoto": "Elegir foto",
+    "formRemovePhoto": "Quitar",
+    "photoUploadFailed": "Tarea guardada, pero la foto no se pudo subir: {error}",
     "formCancel": "Cancelar",
     "formSave": "Guardar",
     "saving": "Guardando…"
