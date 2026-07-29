@@ -30,6 +30,7 @@ import type { Metadata } from 'next';
 import Pin from '@/components/PinAccent';
 import ConsultationForm from '@/components/ConsultationForm';
 import { ClipboardList, Users, Package } from 'lucide-react';
+import { TESTFLIGHT_URL } from '@/lib/testflight';
 
 const APP_HOSTNAME = 'app.sortandplace.com';
 
@@ -129,7 +130,7 @@ export default async function RootMarketingPage() {
               The word "beta" appears nowhere, per the brief. */}
           <div className="mt-6 flex flex-col items-center">
             <a
-              href="https://testflight.apple.com/join/n5gZbpa5"
+              href={TESTFLIGHT_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2.5 border-2 border-denim text-denim font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-full hover:bg-denim hover:text-white transition-colors"

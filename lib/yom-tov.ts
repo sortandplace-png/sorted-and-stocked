@@ -127,12 +127,13 @@ export function classifyObservance(name: string, fromFastDays = false): Observan
 // one of the concluding pair and Pesach VIII is day two, and a bare /II$/
 // would catch both.
 //
-// Known gap, flagged rather than guessed: Simchat Torah is in practice the
-// second day of Shmini Atzeret but carries its own name, so it is not
-// matched here. Racquel's list named Rosh Hashana II, Sukkot II, Pesach
-// II/VIII and Shavuot II only.
+// Simchat Torah is the one second day that carries its own name rather than
+// a numeral -- it is the second day of Shmini Atzeret in practice. Racquel
+// confirmed 2026-07-29 that it should shade the same, so it is matched by
+// name alongside the numeral rule.
 export function isSecondDay(name: string): boolean {
-  return /\s(II|VIII)$/.test(name.trim());
+  const n = name.trim();
+  return /\s(II|VIII)$/.test(n) || /^simchat torah$/i.test(n);
 }
 
 export function groupYomTovOccasions(rows: YomTovRow[], todayIso: string): YomTovOccasion[] {

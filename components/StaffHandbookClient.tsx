@@ -106,10 +106,22 @@ const GUIDE: Record<
 //
 // Keyed by id for the same reason GUIDE is: inserting FAQ-103a should not
 // silently push two questions into the wrong phase of the shift.
-const SECTIONS: { key: 'sectionStart' | 'sectionDuring' | 'sectionEnd'; ids: string[] }[] = [
-  { key: 'sectionStart', ids: ['FAQ-101', 'FAQ-102'] },
-  { key: 'sectionDuring', ids: ['FAQ-103', 'FAQ-104', 'FAQ-105', 'FAQ-106', 'FAQ-107', 'FAQ-108'] },
-  { key: 'sectionEnd', ids: ['FAQ-109', 'FAQ-110'] },
+// `image` is a screenshot of the app page that section is about. The files
+// are supplied separately -- until one exists the slot renders nothing
+// rather than a broken image, so shipping the markup ahead of the assets
+// costs the reader nothing.
+const SECTIONS: {
+  key: 'sectionStart' | 'sectionDuring' | 'sectionEnd';
+  ids: string[];
+  image: string;
+}[] = [
+  { key: 'sectionStart', ids: ['FAQ-101', 'FAQ-102'], image: '/handbook/starting-shift.jpg' },
+  {
+    key: 'sectionDuring',
+    ids: ['FAQ-103', 'FAQ-104', 'FAQ-105', 'FAQ-106', 'FAQ-107', 'FAQ-108'],
+    image: '/handbook/during-shift.jpg',
+  },
+  { key: 'sectionEnd', ids: ['FAQ-109', 'FAQ-110'], image: '/handbook/wrapping-up.jpg' },
 ];
 
 export default function StaffHandbookClient({
@@ -172,12 +184,15 @@ export default function StaffHandbookClient({
   const grouped = useMemo(() => {
     const order = new Map(articles.map((a, i) => [a.id, i]));
     const claimed = new Set(SECTIONS.flatMap((s) => s.ids));
-    const groups: { key: string; items: HandbookArticle[] }[] = SECTIONS.map((s) => ({
-      key: s.key,
-      items: visible.filter((a) => s.ids.includes(a.id)),
-    }));
+    const groups: { key: string; image: string | null; items: HandbookArticle[] }[] = SECTIONS.map(
+      (s) => ({
+        key: s.key,
+        image: s.image,
+        items: visible.filter((a) => s.ids.includes(a.id)),
+      })
+    );
     const unmapped = visible.filter((a) => !claimed.has(a.id));
-    if (unmapped.length > 0) groups.push({ key: '', items: unmapped });
+    if (unmapped.length > 0) groups.push({ key: '', image: null, items: unmapped });
     // Search filters within groups, so a group with no match drops its
     // header too rather than leaving a denim strip over empty space.
     return { groups: groups.filter((g) => g.items.length > 0), order };
@@ -226,6 +241,32 @@ export default function StaffHandbookClient({
                     </span>
                     <Pin size="sm" />
                   </div>
+                )}
+
+                {/* A contained thumbnail of the app page this section is
+                    about, not a banner. It carries no caption and no link:
+                    it is orientation for someone who has not used the app
+                    yet, and the article cards below are the real content.
+
+                    aria-hidden with an empty alt -- the section header
+                    already names it, so a screen reader announcing the
+                    screenshot too would just be repetition.
+
+                    onError removes the element rather than leaving a broken
+                    image icon: the three files are supplied separately, and
+                    the handbook has to look finished before they land. */}
+                {g.image && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={g.image}
+                    alt=""
+                    aria-hidden="true"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                    className="w-full max-h-[140px] object-cover rounded-xl2 border border-cardBorder mb-[14px]"
+                  />
                 )}
 
                 {/* D-20 still governs inside the group: bento, never list.

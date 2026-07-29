@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkRateLimit } from '@/lib/rate-limit';
-import { emailShell, escapeHtml } from '@/lib/email-template';
+import { inviteEmailHtml } from '@/lib/invite-email';
 import { getEmailLinkOrigin } from '@/lib/site-url';
 
 const RESEND_FROM = 'Sorted & Stocked <invites@sortandplace.com>';
@@ -20,33 +20,7 @@ async function sendInviteEmail(opts: {
     return { sent: false, reason: 'RESEND_API_KEY not configured' as const };
   }
 
-  // Two separate label strings, not one combined "staff / personal" --
-  // that combined string was previously reused verbatim in BOTH the
-  // English and Spanish lines, so each line showed both languages at
-  // once instead of just its own.
-  const roleLabelEn = opts.role === 'manager' ? 'manager' : 'staff';
-  const roleLabelEs = opts.role === 'manager' ? 'gerente' : 'personal';
-  const html = emailShell(
-    'You’ve been invited / Has sido invitado',
-    `
-    <p style="color:#2B2B2B;font-size:15px;">
-      ${escapeHtml(opts.inviterName)} invited you to join <strong>${escapeHtml(opts.propertyName)}</strong>
-      on Sorted &amp; Stocked as <strong>${roleLabelEn}</strong>.<br/>
-      <em>${escapeHtml(opts.inviterName)} te invitó a unirte a <strong>${escapeHtml(
-      opts.propertyName
-    )}</strong> en Sorted &amp; Stocked como <strong>${roleLabelEs}</strong>.</em>
-    </p>
-    <p style="margin:24px 0;">
-      <a href="${opts.actionLink}" style="display:inline-block;background:#2E4A62;color:#FFFFFF;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:600;text-align:center;">
-        <span style="display:block;">Accept &amp; set up account</span>
-        <span style="display:block;font-size:13px;font-weight:500;opacity:.9;">Aceptar y configurar cuenta</span>
-      </a>
-    </p>
-    <p style="color:#2B2B2B99;font-size:12px;">
-      If the button doesn't work, copy this link: ${opts.actionLink}<br/>
-      Si el botón no funciona, copia este enlace: ${opts.actionLink}
-    </p>`
-  );
+  const html = inviteEmailHtml(opts);
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
