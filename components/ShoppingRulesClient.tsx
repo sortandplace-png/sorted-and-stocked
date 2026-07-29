@@ -68,7 +68,7 @@ export default function ShoppingRulesClient({ propertyId }: { propertyId: string
             <div className="min-w-0">
               <p className="text-sm font-medium text-denim">Auto-restock</p>
               <p className="text-xs text-dusk">
-                When an item drops below its par level, add it to the shopping list automatically.
+                When an item drops below its minimum, add it to the shopping list automatically.
               </p>
             </div>
             <button

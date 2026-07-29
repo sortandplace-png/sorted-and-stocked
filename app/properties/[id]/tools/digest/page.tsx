@@ -67,9 +67,9 @@ export default async function DigestPreviewPage({ params }: { params: Promise<{ 
           </Link>
         </div>
 
-        <Card title="Low Stock & Par Level Alerts">
+        <Card title="Low Stock & Minimum Alerts">
           {lowStockByVendor.length === 0 ? (
-            <p className="text-sm text-dusk py-2">Nothing below par right now.</p>
+            <p className="text-sm text-dusk py-2">Nothing below minimum right now.</p>
           ) : (
             <div className="space-y-4">
               {lowStockByVendor.map((group) => (

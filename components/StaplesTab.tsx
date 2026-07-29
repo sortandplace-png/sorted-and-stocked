@@ -472,7 +472,7 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
                         lowCount > 0 ? 'bg-rust/15 text-rust' : 'bg-sage/10 text-sage'
                       }`}
                     >
-                      {lowCount > 0 ? `${lowCount} below par` : 'All stocked'}
+                      {lowCount > 0 ? `${lowCount} below minimum` : 'All stocked'}
                     </span>
                   </button>
                   {!collapsed && (

@@ -72,7 +72,7 @@ serve(async (req) => {
         body: new URLSearchParams({
           To: managerNumber,
           From: twilioNumber,
-          Body: `🚨 Sorted & Stocked Alert:\n\nThe following staples are below par:\n${alertSummary}`
+          Body: `🚨 Sorted & Stocked Alert:\n\nThe following staples are below minimum:\n${alertSummary}`
         }).toString()
       }
     )

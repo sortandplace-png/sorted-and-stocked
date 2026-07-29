@@ -2532,7 +2532,7 @@ function ItemFormSheet({
                 />
               </div>
               <div>
-                <FieldLabel>Minimum / Par Level</FieldLabel>
+                <FieldLabel>Minimum</FieldLabel>
                 <input
                   type="number"
                   className={fieldClass}
