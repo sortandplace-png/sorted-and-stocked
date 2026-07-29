@@ -55,6 +55,15 @@ const TOOLS = [
     description: 'Every store this property buys from, and what to reorder where.',
   },
   {
+    // SS-092. Owner-only (see MIN_ROLE below) -- a full data export is a
+    // different class of action than the other Admin Cleanup tools it sits
+    // alongside, all of which are manager-level.
+    slug: 'backup',
+    icon: '💾',
+    title: 'Full Backup',
+    description: 'Download every table this property owns as a zip.',
+  },
+  {
     slug: 'pantry-zones',
     icon: '🗺️',
     title: 'Pantry Zone Map',
@@ -205,7 +214,7 @@ const TASTE_MEMORY_TOOL = {
 // still only half the job -- each manager-only ROUTE needs its own guard,
 // since RLS does not block most of these (Translation Worklist, for example,
 // reads recipes a staff member can legitimately select).
-const MIN_ROLE: Record<string, 'staff' | 'manager'> = {
+const MIN_ROLE: Record<string, 'staff' | 'manager' | 'owner'> = {
   // Named manager-only in the spec.
   tasks: 'manager',
   'capture-inbox': 'manager',
@@ -230,10 +239,19 @@ const MIN_ROLE: Record<string, 'staff' | 'manager'> = {
   // photos/milestones. Neither is a work tool -- confirmed by the owner.
   'taste-memory': 'manager',
   'memory-timeline': 'manager',
+  // SS-092. A stricter third tier than 'manager' -- a full data export is a
+  // different class of action than assigning a task, and the page/route
+  // both enforce role === 'owner' exactly, not manager. Without a real
+  // 'owner' tier here, a manager would have seen this tile and hit the same
+  // dead-click-then-redirect the Suppliers fix above exists to prevent.
+  backup: 'owner',
 };
 
 function canSeeTile(slug: string, role: string): boolean {
-  return MIN_ROLE[slug] === 'manager' ? role === 'owner' || role === 'manager' : true;
+  const need = MIN_ROLE[slug];
+  if (need === 'owner') return role === 'owner';
+  if (need === 'manager') return role === 'owner' || role === 'manager';
+  return true;
 }
 
 // Grouped per the finalized nav restructure spec (2026-07-14): Kitchen and
@@ -287,7 +305,7 @@ const GROUPS: {
       {
         key: 'admin-cleanup',
         label: 'Admin Cleanup',
-        slugs: ['duplicate-ingredients', 'needs-linking', 'link-captured-photos', 'hechsher-verification', 'kosher-type-tagging', 'translation-worklist'],
+        slugs: ['duplicate-ingredients', 'needs-linking', 'link-captured-photos', 'hechsher-verification', 'kosher-type-tagging', 'translation-worklist', 'backup'],
         lockIcon: true,
       },
     ],

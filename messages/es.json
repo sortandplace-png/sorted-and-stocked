@@ -775,6 +775,15 @@
     "v6": "Personal — Mi Día",
     "watchMyDayVideo": "Ver: Mi Día (2 min)"
   },
+  "backup": {
+    "title": "Respaldo Completo",
+    "subtitle": "Cada tabla que pertenece a esta propiedad, exportada como un archivo JSON por tabla dentro de un zip. Solo dueño.",
+    "body": "Esto puede tardar un momento en una propiedad con mucho historial — la descarga comienza automáticamente cuando esté lista.",
+    "downloadButton": "Descargar Respaldo Completo (.zip)",
+    "preparing": "Preparando respaldo…",
+    "error": "No se pudo preparar el respaldo — inténtalo de nuevo en un momento.",
+    "fallbackFilename": "respaldo.zip"
+  },
   "suppliers": {
     "title": "Proveedores",
     "subtitle": "{stores, plural, one {# tienda} other {# tiendas}} · {items, plural, one {# artículo} other {# artículos}}",

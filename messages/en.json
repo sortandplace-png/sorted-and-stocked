@@ -775,6 +775,15 @@
     "v6": "Staff — My Day",
     "watchMyDayVideo": "Watch: My Day (2 min)"
   },
+  "backup": {
+    "title": "Full Backup",
+    "subtitle": "Every table this property owns, exported as one JSON file per table inside a zip. Owner only.",
+    "body": "This can take a moment on a property with a lot of history — the download starts automatically once it's ready.",
+    "downloadButton": "Download Full Backup (.zip)",
+    "preparing": "Preparing backup…",
+    "error": "Couldn't prepare the backup — try again in a moment.",
+    "fallbackFilename": "backup.zip"
+  },
   "suppliers": {
     "title": "Suppliers",
     "subtitle": "{stores, plural, one {# store} other {# stores}} · {items, plural, one {# item} other {# items}}",

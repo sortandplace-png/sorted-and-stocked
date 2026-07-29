@@ -32,6 +32,7 @@ import {
   CalendarRange,
   ListTodo,
   Store,
+  DatabaseBackup,
   Settings as SettingsIcon,
   type LucideIcon,
 } from 'lucide-react';
@@ -113,6 +114,11 @@ function buildSections(propertyId: string): Section[] {
         // the page redirects staff, so this line is a signpost for the
         // people who can actually open it.
         { href: p('/tools/suppliers'), label: 'Suppliers', subtitle: 'Stores & reorder links', icon: Store },
+        // SS-092. Owner-only, stricter than the manager gate everything
+        // else on this page uses -- the page itself redirects anyone who
+        // is not the owner, so this line is a signpost for the one role
+        // that can actually open it.
+        { href: p('/tools/backup'), label: 'Full Backup', subtitle: 'Export everything, owner only', icon: DatabaseBackup },
       ],
     },
     {
