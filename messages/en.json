@@ -850,6 +850,11 @@
     "changeRoom": "Change room",
     "reactivate": "Reactivate"
   },
+  "hoursSection": {
+    "title": "Hours",
+    "subtitle": "Clocked hours by person, by week. Corrections are made directly in Supabase for now.",
+    "empty": "No shifts have been recorded at this property yet."
+  },
   "staffHandbook": {
     "title": "Staff Handbook",
     "subtitle": "Ten questions, in the order your shift happens.",

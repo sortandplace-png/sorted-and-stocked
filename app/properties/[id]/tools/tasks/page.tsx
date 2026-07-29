@@ -25,6 +25,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import DutyRosterClient from '@/components/DutyRosterClient';
+import ShiftHoursClient from '@/components/ShiftHoursClient';
 
 export default async function StaffTasksPage({
   params,
@@ -58,6 +59,18 @@ export default async function StaffTasksPage({
     <div className="bg-linen min-h-screen">
       <div className="max-w-[1240px] mx-auto px-4 py-6">
         <DutyRosterClient propertyId={id} />
+
+        {/* Hours moved here from its own nav destination. This is the right
+            home for it: "everyone, by week" is a manager question, and this
+            page already carries the owner/manager gate that answer needs --
+            the guard above is what makes a second one unnecessary.
+            My Day keeps the staff-facing half ("me, this week") on the Time
+            Clock tile; the two read the same shifts table and use the same
+            Monday-start week, so they cannot disagree.
+            The id is the anchor /staff/hours redirects to. */}
+        <section id="hours" className="mt-8 scroll-mt-6">
+          <ShiftHoursClient propertyId={id} showHeading />
+        </section>
       </div>
     </div>
   );

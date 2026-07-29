@@ -850,6 +850,11 @@
     "changeRoom": "Cambiar cuarto",
     "reactivate": "Reactivar"
   },
+  "hoursSection": {
+    "title": "Horas",
+    "subtitle": "Horas registradas por persona, por semana. Las correcciones se hacen directamente en Supabase por ahora.",
+    "empty": "Todavía no hay turnos registrados en esta propiedad."
+  },
   "staffHandbook": {
     "title": "Manual del Personal",
     "subtitle": "Diez preguntas, en el orden en que ocurre su turno.",

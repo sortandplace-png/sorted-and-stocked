@@ -11,7 +11,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { SkeletonList } from '@/components/Skeleton';
 import Pin from '@/components/PinAccent';
@@ -45,9 +45,18 @@ function formatHours(h: number): string {
   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 }
 
-export default function ShiftHoursClient({ propertyId }: { propertyId: string }) {
+export default function ShiftHoursClient({
+  propertyId,
+  // The heading lives here rather than in the page because the page is a
+  // server component and these strings have to go through next-intl (R19).
+  showHeading = false,
+}: {
+  propertyId: string;
+  showHeading?: boolean;
+}) {
   const supabase = createClient();
   const locale = useLocale();
+  const t = useTranslations('hoursSection');
   const es = locale === 'es';
 
   const [shifts, setShifts] = useState<ShiftRow[]>([]);
@@ -111,20 +120,33 @@ export default function ShiftHoursClient({ propertyId }: { propertyId: string })
     return `${fmt(start)} – ${fmt(end)}`;
   }
 
-  if (loading) return <SkeletonList rows={3} />;
+  const heading = showHeading ? (
+    <>
+      <h2 className="text-2xl font-display text-denim mb-1">{t('title')}</h2>
+      <p className="text-sm text-dusk mb-5">{t('subtitle')}</p>
+    </>
+  ) : null;
+
+  if (loading)
+    return (
+      <>
+        {heading}
+        <SkeletonList rows={3} />
+      </>
+    );
 
   if (byWeek.length === 0) {
     return (
-      <p className="text-sm text-dusk text-center py-8 bg-card rounded-2xl shadow-card">
-        {es
-          ? 'Todavía no hay turnos registrados en esta propiedad.'
-          : 'No shifts have been recorded at this property yet.'}
-      </p>
+      <>
+        {heading}
+        <p className="text-sm text-dusk text-center py-8 bg-card rounded-2xl shadow-card">{t('empty')}</p>
+      </>
     );
   }
 
   return (
     <div className="space-y-4">
+      {heading}
       {byWeek.map(([week, perUser]) => {
         const rows = [...perUser.entries()].sort((a, b) => b[1].hours - a[1].hours);
         const weekTotal = rows.reduce((sum, [, v]) => sum + v.hours, 0);

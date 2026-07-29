@@ -1,50 +1,23 @@
 // app/properties/[id]/staff/hours/page.tsx
-// SS-285 manager view: hours by person by week. Owner/manager only --
-// staff clock themselves in and out on My Day, they don't review the
-// property's timesheet.
+// Hours moved into the Task Center as its own section. "Everyone, by week"
+// is a manager question, and that page already carries the owner/manager
+// gate the answer needs -- so this route no longer needs its own copy of
+// the guard, only the redirect.
 //
-// Same belt-and-suspenders gate as Duty Roster: shifts_read RLS actually
-// allows any property member to read the property's shifts, so this
-// redirect is what stops a staff member landing on a screen showing
-// everyone's hours. Worth knowing if that policy is ever revisited --
-// the restriction lives here, not in the database.
+// Route kept, not deleted (R21): it was in the nav until recently and is
+// the kind of page people bookmark.
+//
+// The #hours fragment lands on the section rather than the top of a long
+// roster. Fragments are client-side, so this is a hint rather than a
+// guarantee -- but the section carries scroll-mt so it isn't tucked under
+// the header when it does apply.
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import ShiftHoursClient from '@/components/ShiftHoursClient';
 
-export default async function ShiftHoursPage({
+export default async function StaffHoursRedirect({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
-
-  const { data: membership } = await supabase
-    .from('property_members')
-    .select('role')
-    .eq('property_id', id)
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (!membership || membership.role === 'staff') {
-    redirect(`/properties/${id}/inventory`);
-  }
-
-  return (
-    <div className="bg-mist min-h-screen p-4 lg:p-6">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-2xl font-display text-denim mb-1">Hours</h1>
-        <p className="text-sm text-dusk mb-5">
-          Clocked hours by person, by week. Corrections are made directly in Supabase for now.
-        </p>
-        <ShiftHoursClient propertyId={id} />
-      </div>
-    </div>
-  );
+  redirect(`/properties/${id}/tools/tasks#hours`);
 }
