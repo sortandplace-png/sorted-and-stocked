@@ -9,7 +9,8 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
-import { X, Pause, Play, Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { Pause, Play, Check } from 'lucide-react';
 import QRScanner from '@/components/QRScanner';
 import { createClient } from '@/lib/supabase/client';
 import { resilientUpdate } from '@/lib/resilient-write';
@@ -38,6 +39,7 @@ export default function ContinuousQrScanner({
   // list, wherever) -- this component just reports that the batch is done.
   onFinish?: (batch: { itemId: string; scannedCount: number }[]) => void;
 }) {
+  const t = useTranslations('batchScanner');
   const [paused, setPaused] = useState(false);
   const [batch, setBatch] = useState<BatchEntry[]>([]);
   const [notFoundCode, setNotFoundCode] = useState<string | null>(null);
@@ -119,14 +121,20 @@ export default function ContinuousQrScanner({
     <div className="fixed inset-0 z-50 bg-black flex flex-col">
       <div className="flex items-center justify-between p-3">
         <span className="text-white text-sm font-medium">
-          {totalScans > 0 ? `${totalScans} scanned · ${batch.length} item${batch.length === 1 ? '' : 's'}` : 'Batch Scan'}
+          {/* Pluralised through ICU rather than string-concatenating an "s".
+              The old `item${n === 1 ? '' : 's'}` had no Spanish form at all,
+              and Spanish needs its own rule, not an English suffix. */}
+          {totalScans > 0 ? t('progress', { scans: totalScans, items: batch.length }) : t('title')}
         </span>
+        {/* R9: a text link, not an icon button. The X in a circle read as a
+            generic dismiss on a full-screen black overlay where nothing else
+            is labelled -- this says what it closes. Keeps the 44px touch
+            target via padding rather than a fixed square. */}
         <button
           onClick={onClose}
-          aria-label="Close batch scanner"
-          className="w-11 h-11 flex items-center justify-center rounded-full bg-white/10 text-white"
+          className="-mr-1 px-3 py-3 text-white text-sm font-medium underline underline-offset-4 decoration-white/40 hover:decoration-white"
         >
-          <X size={20} aria-hidden="true" />
+          {t('close')}
         </button>
       </div>
 
@@ -143,13 +151,13 @@ export default function ContinuousQrScanner({
           <QRScanner onScan={handleScan} active={open && !paused} debounceMs={1500} />
         </div>
         {notFoundCode && (
-          <p className="text-center text-rust text-xs mt-2">No item matches this code ({notFoundCode}).</p>
+          <p className="text-center text-rust text-xs mt-2">{t('notFound', { code: notFoundCode })}</p>
         )}
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3">
         {batch.length === 0 ? (
-          <p className="text-center text-white/50 text-sm mt-8">Scan an item's QR code to add it to this batch.</p>
+          <p className="text-center text-white/50 text-sm mt-8">{t('empty')}</p>
         ) : (
           <ul className="space-y-2">
             {batch.map((b) => (
@@ -159,7 +167,7 @@ export default function ContinuousQrScanner({
                   <p className="text-sm text-denim truncate">{b.name}</p>
                   <p className="text-xs text-dusk">
                     {b.qtyBefore} → {b.qtyAfter}
-                    {b.scannedCount > 1 ? ` (scanned ${b.scannedCount}×)` : ''}
+                    {b.scannedCount > 1 ? ` ${t('scannedTimes', { count: b.scannedCount })}` : ''}
                   </p>
                 </div>
                 <Check size={16} className="text-sage shrink-0" aria-hidden="true" />
@@ -175,7 +183,7 @@ export default function ContinuousQrScanner({
           className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-full bg-white/10 text-white text-sm font-medium"
         >
           {paused ? <Play size={16} aria-hidden="true" /> : <Pause size={16} aria-hidden="true" />}
-          {paused ? 'Resume Camera' : 'Pause Camera'}
+          {paused ? t('resume') : t('pause')}
         </button>
         <button
           onClick={() => {
@@ -184,7 +192,7 @@ export default function ContinuousQrScanner({
           }}
           className="flex-1 py-3 rounded-full bg-denim text-white text-sm font-medium"
         >
-          Finish Batch & Review
+          {t('finish')}
         </button>
       </div>
     </div>

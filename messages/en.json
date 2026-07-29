@@ -855,6 +855,17 @@
     "subtitle": "Clocked hours by person, by week. Corrections are made directly in Supabase for now.",
     "empty": "No shifts have been recorded at this property yet."
   },
+  "batchScanner": {
+    "title": "Batch Scan",
+    "progress": "{scans} scanned · {items, plural, one {# item} other {# items}}",
+    "close": "Close Scanner",
+    "notFound": "No item matches this code ({code}).",
+    "empty": "Scan an item's QR code to add it to this batch.",
+    "pause": "Pause Camera",
+    "resume": "Resume Camera",
+    "finish": "Finish Batch & Review",
+    "scannedTimes": "(scanned {count}×)"
+  },
   "yomTovYearView": {
     "title": "Yom Tov Year View",
     "subtitle": "Every Yom Tov and fast day on the calendar, at a glance.",

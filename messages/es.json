@@ -855,6 +855,17 @@
     "subtitle": "Horas registradas por persona, por semana. Las correcciones se hacen directamente en Supabase por ahora.",
     "empty": "Todavía no hay turnos registrados en esta propiedad."
   },
+  "batchScanner": {
+    "title": "Escaneo por lotes",
+    "progress": "{scans} escaneados · {items, plural, one {# artículo} other {# artículos}}",
+    "close": "Cerrar escáner",
+    "notFound": "Ningún artículo coincide con este código ({code}).",
+    "empty": "Escanea el código QR de un artículo para agregarlo a este lote.",
+    "pause": "Pausar cámara",
+    "resume": "Reanudar cámara",
+    "finish": "Finalizar lote y revisar",
+    "scannedTimes": "(escaneado {count}×)"
+  },
   "yomTovYearView": {
     "title": "Calendario Anual de Yom Tov",
     "subtitle": "Todas las fechas de Yom Tov y días de ayuno, de un vistazo.",
