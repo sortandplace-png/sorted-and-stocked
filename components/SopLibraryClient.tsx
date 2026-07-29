@@ -18,6 +18,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import Pin from '@/components/PinAccent';
+import { storageThumbnail } from '@/lib/storage-image';
 import { Search, X } from 'lucide-react';
 
 export type Sop = {
@@ -155,7 +156,7 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
             <div key={zone}>
               <div className="relative flex items-center gap-2 mb-2 pr-6">
                 <Pin size="sm" />
-                <span className="text-xs font-medium uppercase tracking-wider text-brass">{zone}</span>
+                <span className="text-xs font-medium uppercase tracking-wider text-dusk">{zone}</span>
                 <span className="text-xs text-dusk">({items.length})</span>
                 <span className="flex-1 border-t border-cardBorder" />
               </div>
@@ -199,7 +200,7 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
                           {isEditing ? (
                             <>
                               <div>
-                                <label className="block text-xs font-medium uppercase tracking-wider text-brass mb-1">
+                                <label className="block text-xs font-medium uppercase tracking-wider text-dusk mb-1">
                                   {t('methodEn')}
                                 </label>
                                 <textarea
@@ -210,7 +211,7 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs font-medium uppercase tracking-wider text-brass mb-1">
+                                <label className="block text-xs font-medium uppercase tracking-wider text-dusk mb-1">
                                   {t('methodEs')}
                                 </label>
                                 <textarea
@@ -221,7 +222,11 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
                                 />
                               </div>
                               {(!draft.sop_en.trim() || !draft.sop_es.trim()) && (
-                                <p className="text-[11px] text-brass">{t('bothRequired')}</p>
+                                // A validation block, not a label -- dusk would
+                                // read as a hint when it is the reason the
+                                // save button is disabled. briar is the token
+                                // that exists for this now.
+                                <p className="text-[11px] text-briar">{t('bothRequired')}</p>
                               )}
                               <div className="flex gap-2">
                                 <button
@@ -245,7 +250,19 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
                                   have one hosted in Supabase Storage; the
                                   other 8 get a plain line, never a broken
                                   image. Tap to open full size -- these are
-                                  posters, meant to be looked at. */}
+                                  posters, meant to be looked at.
+
+                                  The card draws it through the render
+                                  endpoint: as stored these are ~800KB and
+                                  the card shows them at 256px tall. Open a
+                                  zone with a dozen SOPs on staff mobile data
+                                  and the original URLs would pull ~10MB to
+                                  fill a column. 'contain' rather than the
+                                  default crop -- a poster with its edge cut
+                                  off is a poster missing a step. The
+                                  lightbox below still loads the original,
+                                  which is the one place full size is the
+                                  point. */}
                               {s.expected_appearance_url ? (
                                 <button
                                   type="button"
@@ -258,7 +275,7 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
                                 >
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
                                   <img
-                                    src={s.expected_appearance_url}
+                                    src={storageThumbnail(s.expected_appearance_url, 640, 'contain')}
                                     alt={t('posterAlt', { name: pick(s.task_en, s.task_es) })}
                                     loading="lazy"
                                     className="w-full max-h-64 object-contain"
@@ -273,7 +290,7 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
                               </p>
                               {pick(s.pass_fail_en, s.pass_fail_es) && (
                                 <p className="text-xs text-dusk">
-                                  <span className="font-medium text-brass uppercase tracking-wider">
+                                  <span className="font-medium text-dusk uppercase tracking-wider">
                                     {t('passFail')}
                                   </span>{' '}
                                   {pick(s.pass_fail_en, s.pass_fail_es)}
