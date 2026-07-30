@@ -56,7 +56,7 @@ export default function HandbookTabs({
     const { data } = await supabase
       .from('sop_library')
       .select(
-        'id, sop_code, zone_type, zone_type_es, task_en, task_es, sop_en, sop_es, pass_fail_en, pass_fail_es, estimated_minutes, expected_appearance_url'
+        'id, sop_code, zone_type, zone_type_es, task_en, task_es, sop_en, sop_es, pass_fail_en, pass_fail_es, estimated_minutes, expected_appearance_url, photo_verification'
       )
       .eq('active', true)
       .order('zone_type')

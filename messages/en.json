@@ -757,7 +757,14 @@
     "viewPoster": "View poster full size",
     "closePoster": "Close poster",
     "posterAlt": "Expected result for {name}",
-    "noPoster": "No poster for this procedure yet."
+    "noPoster": "No poster for this procedure yet.",
+    "posterUpload": "Add poster",
+    "posterReplace": "Replace poster",
+    "posterRemove": "Remove poster",
+    "posterSaving": "Saving…",
+    "posterSaved": "Poster updated.",
+    "posterUploadFailed": "Could not save the poster — try again.",
+    "photoVerification": "Require a completion photo"
   },
   "training": {
     "title": "Training",

@@ -20,6 +20,7 @@ import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import Pin from '@/components/PinAccent';
 import { storageThumbnail } from '@/lib/storage-image';
 import { Search, X } from 'lucide-react';
+import SopPosterUpload from '@/components/SopPosterUpload';
 
 export type Sop = {
   id: string;
@@ -35,6 +36,7 @@ export type Sop = {
   estimated_minutes: number | null;
   /** Public Storage URL, or null for the 8 SOPs with no poster yet. */
   expected_appearance_url: string | null;
+  photo_verification: boolean;
 };
 
 const FIELD =
@@ -116,6 +118,17 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
   function startEdit(s: Sop) {
     setEditingId(s.id);
     setDraft({ sop_en: s.sop_en ?? '', sop_es: s.sop_es ?? '' });
+  }
+
+  // SopPosterUpload writes directly to sop_library itself (upload, remove,
+  // and the verification toggle all commit immediately, unlike the text
+  // fields above which stage into `draft` until Save) -- this just syncs
+  // that already-saved result into local state.
+  function handlePosterUpdated(
+    sopId: string,
+    patch: { expected_appearance_url: string | null; photo_verification: boolean }
+  ) {
+    setSops((prev) => prev.map((x) => (x.id === sopId ? { ...x, ...patch } : x)));
   }
 
   async function save(s: Sop) {
@@ -242,6 +255,12 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
                         <div className="mt-2.5 pt-2.5 border-t border-cardBorder space-y-2">
                           {isEditing ? (
                             <>
+                              <SopPosterUpload
+                                sopId={s.id}
+                                expectedAppearanceUrl={s.expected_appearance_url}
+                                photoVerification={s.photo_verification}
+                                onUpdated={(patch) => handlePosterUpdated(s.id, patch)}
+                              />
                               <div>
                                 <label className="block text-xs font-medium uppercase tracking-wider text-dusk mb-1">
                                   {t('methodEn')}

@@ -757,7 +757,14 @@
     "viewPoster": "Ver el póster en tamaño completo",
     "closePoster": "Cerrar póster",
     "posterAlt": "Resultado esperado para {name}",
-    "noPoster": "Aún no hay póster para este procedimiento."
+    "noPoster": "Aún no hay póster para este procedimiento.",
+    "posterUpload": "Agregar póster",
+    "posterReplace": "Reemplazar póster",
+    "posterRemove": "Quitar póster",
+    "posterSaving": "Guardando…",
+    "posterSaved": "Póster actualizado.",
+    "posterUploadFailed": "No se pudo guardar el póster — inténtelo de nuevo.",
+    "photoVerification": "Requerir una foto de finalización"
   },
   "training": {
     "title": "Capacitación",
