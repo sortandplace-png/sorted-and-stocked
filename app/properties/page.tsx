@@ -20,15 +20,25 @@ export default async function PropertiesPage() {
 
   const { data: memberships, error } = await supabase
     .from('property_members')
-    .select('role, properties(id, name, household_id, households(name))')
+    .select('role, properties(id, name, household_id, archived_at, households(name))')
     .eq('user_id', user.id);
+
+  // Archived properties (soft-archived test/throwaway fixtures -- see
+  // migration 142) are excluded from every decision this page makes, not
+  // just hidden visually: a member whose only real property is archived
+  // should still see the picker (and "Add a property"), not get redirected
+  // into a fixture that was deliberately taken off the selector.
+  const activeMemberships = (memberships ?? []).filter((m) => {
+    const property = m.properties as unknown as { archived_at: string | null } | null;
+    return property && !property.archived_at;
+  });
 
   // Single-property households shouldn't have to pick — skip straight in.
   // Dashboard, not Inventory -- the universal post-login landing spot,
   // except staff, who land on their dedicated My Day page instead.
-  if (memberships && memberships.length === 1 && memberships[0].properties) {
-    const propertyId = (memberships[0].properties as any).id;
-    const destination = memberships[0].role === 'staff' ? 'my-day' : 'dashboard';
+  if (activeMemberships.length === 1 && activeMemberships[0].properties) {
+    const propertyId = (activeMemberships[0].properties as any).id;
+    const destination = activeMemberships[0].role === 'staff' ? 'my-day' : 'dashboard';
     redirect(`/properties/${propertyId}/${destination}`);
   }
 
@@ -38,7 +48,7 @@ export default async function PropertiesPage() {
   // singleton group) for the rare property not yet assigned to a household,
   // so this never crashes on missing data, just degrades to a flat entry.
   const groupsByKey = new Map<string, HouseholdGroup>();
-  for (const m of memberships ?? []) {
+  for (const m of activeMemberships) {
     const property = m.properties as unknown as {
       id: string;
       name: string;
@@ -82,7 +92,7 @@ export default async function PropertiesPage() {
             trailing grid cell, not a separate element. */}
         <PropertiesPickerList groups={groups} />
 
-        {memberships && memberships.length > 1 && (
+        {activeMemberships.length > 1 && (
           <Link
             href="/procurement"
             className="block text-center py-2.5 rounded-full bg-denim text-white text-sm font-medium mb-2"

@@ -32,7 +32,7 @@ export default function NewPropertyForm() {
 
       const { data } = await supabase
         .from('property_members')
-        .select('role, properties(household_id, households(id, name))')
+        .select('role, properties(household_id, archived_at, households(id, name))')
         .eq('user_id', user.id)
         .in('role', ['owner', 'manager']);
 
@@ -40,8 +40,13 @@ export default function NewPropertyForm() {
       for (const row of data ?? []) {
         const property = row.properties as unknown as {
           household_id: string | null;
+          archived_at: string | null;
           households: { id: string; name: string } | null;
         } | null;
+        // A household stays offered as long as at least one of the
+        // caller's properties in it is still active -- an archived
+        // property alone shouldn't be enough to surface it.
+        if (property?.archived_at) continue;
         const household = property?.households;
         if (household && !seen.has(household.id)) seen.set(household.id, household.name);
       }
