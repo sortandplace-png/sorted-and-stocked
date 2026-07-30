@@ -27,9 +27,11 @@ type Tab = 'guide' | 'videos' | 'procedures';
 export default function HandbookTabs({
   articles,
   propertyId,
+  userId,
 }: {
   articles: HandbookArticle[];
   propertyId: string;
+  userId: string;
 }) {
   const t = useTranslations('staffHandbook');
   const supabase = createClient();
@@ -151,7 +153,7 @@ export default function HandbookTabs({
         videos === null ? (
           <SkeletonList rows={3} />
         ) : (
-          <TrainingVideosTab videos={videos} />
+          <TrainingVideosTab videos={videos} userId={userId} />
         )
       ) : sops === null ? (
         <SkeletonList rows={4} />

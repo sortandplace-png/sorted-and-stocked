@@ -942,6 +942,12 @@
     "captionsEs": "Subtítulos en español",
     "goThere": "Abrir esta página"
   },
+  "trainingOnboarding": {
+    "close": "Cerrar",
+    "dismiss": "Ahora no",
+    "dontShowAgain": "No mostrar esto de nuevo",
+    "captionsEs": "Subtítulos en español"
+  },
   "pantryZoneScan": {
     "scanAria": "Escanear {zone} con la cámara",
     "scanning": "Escaneando…",

@@ -44,5 +44,5 @@ export default async function StaffHandbookPage({
     console.error('staff handbook fetch failed', error);
   }
 
-  return <HandbookTabs articles={(data ?? []) as HandbookArticle[]} propertyId={id} />;
+  return <HandbookTabs articles={(data ?? []) as HandbookArticle[]} propertyId={id} userId={user.id} />;
 }

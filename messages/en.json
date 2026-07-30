@@ -942,6 +942,12 @@
     "captionsEs": "Spanish captions",
     "goThere": "Open this page"
   },
+  "trainingOnboarding": {
+    "close": "Close",
+    "dismiss": "Not now",
+    "dontShowAgain": "Don't show these again",
+    "captionsEs": "Spanish captions"
+  },
   "pantryZoneScan": {
     "scanAria": "Scan {zone} with camera",
     "scanning": "Scanning…",

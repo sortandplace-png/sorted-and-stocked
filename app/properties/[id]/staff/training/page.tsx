@@ -12,6 +12,7 @@
 //
 // The route is unchanged and still reachable (R21) even though it is no
 // longer in the nav -- the Handbook's Videos tab is where people are sent.
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getSignedTrainingVideos } from '@/lib/training-videos';
 import TrainingVideosTab from '@/components/TrainingVideosTab';
@@ -19,12 +20,20 @@ import TrainingVideosTab from '@/components/TrainingVideosTab';
 export default async function TrainingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
+  // Not a new gate -- the parent property layout already redirects a
+  // signed-out visitor before this page renders. Fetched fresh here anyway
+  // (Server Components don't inherit a parent layout's already-computed
+  // values) because SS-364's completion tracking needs the user id.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
   const videos = await getSignedTrainingVideos(supabase, id);
 
   return (
     <div className="bg-linen min-h-screen">
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <TrainingVideosTab videos={videos} />
+        <TrainingVideosTab videos={videos} userId={user.id} />
       </div>
     </div>
   );

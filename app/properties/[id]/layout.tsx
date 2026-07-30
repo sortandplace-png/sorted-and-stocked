@@ -6,6 +6,7 @@ import AppHeader from '@/components/ui/AppHeader';
 import DesktopNav from '@/components/nav/DesktopNav';
 import MobileBottomNav from '@/components/nav/MobileBottomNav';
 import StaffOnboardingModal from '@/components/StaffOnboardingModal';
+import TrainingVideoOnboardingModal from '@/components/TrainingVideoOnboardingModal';
 import { PropertyRoleProvider, type PropertyRole } from '@/components/PropertyRoleContext';
 import Footer from '@/components/Footer';
 import { getNextObservance } from '@/lib/get-next-observance';
@@ -143,6 +144,14 @@ export default async function PropertyLayout({
         <MobileBottomNav propertyId={id} role={membership.role as PropertyRole} />
         {showStaffOnboarding && (
           <StaffOnboardingModal propertyId={id} propertyName={propertyName} userId={user.id} />
+        )}
+        {/* SS-364: not shown alongside the staff welcome tour above -- a
+            brand-new staff member's first session is that tour, not a
+            second competing modal on top of it. Starts from their next
+            session, once staff_onboarding_seen_at is set. Owner/manager,
+            who never see the tour, get it from their very first session. */}
+        {!showStaffOnboarding && (
+          <TrainingVideoOnboardingModal userId={user.id} role={membership.role as PropertyRole} />
         )}
       </div>
     </PropertyRoleProvider>

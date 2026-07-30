@@ -13,6 +13,8 @@ import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import Pin from '@/components/ui/Pin';
 import type { TrainingVideo } from '@/lib/training-videos';
+import { createClient } from '@/lib/supabase/client';
+import { markVideoCompleted } from '@/lib/training-video-views';
 
 function runtime(seconds: number | null): string | null {
   if (!seconds) return null;
@@ -21,10 +23,11 @@ function runtime(seconds: number | null): string | null {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-export default function TrainingVideosTab({ videos }: { videos: TrainingVideo[] }) {
+export default function TrainingVideosTab({ videos, userId }: { videos: TrainingVideo[]; userId: string }) {
   const t = useTranslations('trainingVideos');
   const locale = useLocale();
   const es = locale === 'es';
+  const supabase = createClient();
 
   // Falls back to English rather than rendering an empty title when a
   // Spanish field is blank -- readable, never missing.
@@ -64,6 +67,12 @@ export default function TrainingVideosTab({ videos }: { videos: TrainingVideo[] 
               <video
                 controls
                 preload="none"
+                // SS-364: a video watched to the end here must not resurface
+                // in the onboarding modal -- both write the same
+                // training_video_views row (unique on user_id+video_id), so
+                // this is the one place "watched" gets recorded from the
+                // real Training page.
+                onEnded={() => markVideoCompleted(supabase, userId, v.id)}
                 className="w-full mt-3 rounded-xl2 border border-cardBorder bg-mist"
               >
                 <source src={v.signedUrl} type="video/mp4" />
