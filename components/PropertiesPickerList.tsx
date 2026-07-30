@@ -22,16 +22,20 @@ export default function PropertiesPickerList({ groups }: { groups: HouseholdGrou
     <div className="grid grid-cols-2 gap-2.5 mb-6">
       {groups.map((group) => (
         <Fragment key={group.key}>
-          {/* Heading only for a household that actually holds more than one
-              property -- Lax/Low style single-property households whose
-              household name already equals the property name would just
-              print the same word twice. D-24: compose from Tile/Pin, not
-              hand-rolled -- this one row is plain layout, not a tile, so it
-              intentionally isn't one. */}
-          {group.properties.length > 1 && (
+          {/* Every household gets a heading now, including single-property
+              ones (SS-372 correction, Racquel 30 Jul screenshot) -- the
+              earlier 2+-only rule left Lax/Low/Henderson with no heading of
+              their own, so without one to interrupt the flow they read as
+              continuing whatever household's heading appeared above them
+              (Strauss). Only a genuinely household-less property (no
+              household_id at all, householdName null) still gets no
+              heading -- there's nothing real to label. D-24: compose from
+              Tile/Pin, not hand-rolled -- this one row is plain layout, not
+              a tile, so it intentionally isn't one. */}
+          {group.householdName && (
             <div key={`${group.key}-heading`} className="col-span-2 flex items-center gap-2 mt-2 first:mt-0">
               <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-brass whitespace-nowrap">
-                {group.householdName ?? 'Household'}
+                {group.householdName}
               </span>
               <span className="flex-1 border-t border-cardBorder" aria-hidden="true" />
             </div>

@@ -1,5 +1,4 @@
 // app/properties/page.tsx
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import LogoutButton from '@/components/LogoutButton';
@@ -91,15 +90,6 @@ export default async function PropertiesPage() {
         {/* Renders even with zero groups -- "Add a property" is always its
             trailing grid cell, not a separate element. */}
         <PropertiesPickerList groups={groups} />
-
-        {activeMemberships.length > 1 && (
-          <Link
-            href="/procurement"
-            className="block text-center py-2.5 rounded-full bg-denim text-white text-sm font-medium mb-2"
-          >
-            Shop for multiple properties at once
-          </Link>
-        )}
 
         <Footer />
       </div>

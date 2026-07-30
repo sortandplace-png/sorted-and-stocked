@@ -18,7 +18,7 @@ export default async function ProcurementPage() {
   // multi-property view.
   const { data: memberships, error } = await supabase
     .from('property_members')
-    .select('role, properties(id, name, household_id, feature_flags, households(name))')
+    .select('role, properties(id, name, household_id, feature_flags, archived_at, households(name))')
     .eq('user_id', user.id)
     .in('role', ['owner', 'manager']);
 
@@ -30,11 +30,12 @@ export default async function ProcurementPage() {
           name: string;
           household_id: string | null;
           feature_flags: Record<string, unknown> | null;
+          archived_at: string | null;
           households: { name: string } | null;
         } | null
     )
     .filter(
-      (p): p is { id: string; name: string; household_id: string | null; feature_flags: Record<string, unknown> | null; households: { name: string } | null } =>
+      (p): p is { id: string; name: string; household_id: string | null; feature_flags: Record<string, unknown> | null; archived_at: string | null; households: { name: string } | null } =>
         p !== null
     )
     // SS-373 follow-up: this is a cross-property surface, which the
@@ -42,7 +43,10 @@ export default async function ProcurementPage() {
     // reaches -- confirmed live, Low (module_shopping: false) still showed
     // up here, stitched into a combined shopping trip that property's own
     // nav no longer offers a way to reach directly.
-    .filter((p) => isModuleEnabled(p.feature_flags, 'module_shopping'));
+    .filter((p) => isModuleEnabled(p.feature_flags, 'module_shopping'))
+    // Archived test/throwaway properties (migration 142) stay out of every
+    // cross-property surface, not just the picker.
+    .filter((p) => !p.archived_at);
 
   // Household size counted against the whole table, not just this user's
   // own memberships -- see app/properties/[id]/layout.tsx for why.

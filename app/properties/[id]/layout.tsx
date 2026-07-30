@@ -87,7 +87,7 @@ export default async function PropertyLayout({
   // one from the membership check above.
   const { data: allMemberships } = await supabase
     .from('property_members')
-    .select('properties(id, name, household_id, households(name))')
+    .select('properties(id, name, household_id, archived_at, households(name))')
     .eq('user_id', user.id);
 
   const switcherProperties = (allMemberships ?? [])
@@ -97,12 +97,13 @@ export default async function PropertyLayout({
           id: string;
           name: string;
           household_id: string | null;
+          archived_at: string | null;
           households: { name: string } | null;
         } | null
     )
     .filter(
-      (p): p is { id: string; name: string; household_id: string | null; households: { name: string } | null } =>
-        p !== null
+      (p): p is { id: string; name: string; household_id: string | null; archived_at: string | null; households: { name: string } | null } =>
+        p !== null && !p.archived_at
     )
     // Group by household so sibling properties sort adjacent; properties
     // with no household sort after ones that have one, then by name.

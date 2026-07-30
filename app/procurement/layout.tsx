@@ -22,7 +22,7 @@ export default async function ProcurementLayout({ children }: { children: React.
 
   const { data: allMemberships } = await supabase
     .from('property_members')
-    .select('properties(id, name, household_id, households(name))')
+    .select('properties(id, name, household_id, archived_at, households(name))')
     .eq('user_id', user.id);
 
   // Household size counted against the whole table, not just this user's
@@ -41,12 +41,13 @@ export default async function ProcurementLayout({ children }: { children: React.
           id: string;
           name: string;
           household_id: string | null;
+          archived_at: string | null;
           households: { name: string } | null;
         } | null
     )
     .filter(
-      (p): p is { id: string; name: string; household_id: string | null; households: { name: string } | null } =>
-        p !== null
+      (p): p is { id: string; name: string; household_id: string | null; archived_at: string | null; households: { name: string } | null } =>
+        p !== null && !p.archived_at
     )
     .sort((a, b) => {
       const aHousehold = a.households?.name ?? null;
