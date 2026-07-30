@@ -148,7 +148,8 @@
     "title": "Recetas",
     "newRecipe": "Nueva Receta",
     "searchPlaceholder": "Buscar recetas...",
-    "noResults": "No se encontraron recetas."
+    "noResults": "No se encontraron recetas.",
+    "emptyCollection": "Aún no hay recetas — toca \"Nueva Receta\" para agregar la primera."
   },
   "recipe": {
     "ingredients": "Ingredientes",
@@ -816,6 +817,8 @@
     "clearOne": "Quitar {label}",
     "emptyFiltered": "Ningún artículo coincide con estos filtros.",
     "emptyFilteredHint": "Los filtros se mantienen entre visitas — alguno puede ser de una sesión anterior.",
+    "noRoomsYet": "Aún no hay habitaciones.",
+    "noRoomsYetHint": "Agrega una habitación para empezar a organizar el inventario según dónde vive cada cosa.",
     "emptyNoneInArea": "Aún no hay artículos en esta área.",
     "emptyNone": "Aún no hay artículos. Toque “Agregar artículo” para empezar.",
     "emptyNoFavorites": "Aún no hay favoritos — toque la estrella en cualquier artículo.",

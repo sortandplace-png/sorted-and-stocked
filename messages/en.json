@@ -148,7 +148,8 @@
     "title": "Recipes",
     "newRecipe": "New Recipe",
     "searchPlaceholder": "Search recipes...",
-    "noResults": "No recipes found."
+    "noResults": "No recipes found.",
+    "emptyCollection": "No recipes yet — tap \"New Recipe\" to add your first one."
   },
   "recipe": {
     "ingredients": "Ingredients",
@@ -816,6 +817,8 @@
     "clearOne": "Clear {label}",
     "emptyFiltered": "No items match these filters.",
     "emptyFilteredHint": "Filters stay on between visits — one of these may be from an earlier session.",
+    "noRoomsYet": "No rooms yet.",
+    "noRoomsYetHint": "Add a room to start organizing inventory by where things live.",
     "emptyNoneInArea": "No items in this area yet.",
     "emptyNone": "No items yet. Tap “Add item” to get started.",
     "emptyNoFavorites": "No favorites yet — tap the star on any item.",

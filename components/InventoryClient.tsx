@@ -2022,6 +2022,17 @@ export default function InventoryClient({
               </div>
             </div>
           ))}
+          {roomSummaries.length === 0 && (
+            // A brand-new property lands here with nothing but the dashed
+            // tile below and zero context -- reads as broken/empty rather
+            // than "not set up yet." Only shown on the true zero-rooms case,
+            // not a filtered-to-zero one (this branch already requires
+            // !locationFilter && !hasActiveFilter above).
+            <div className="mb-1">
+              <p className="font-display text-lg text-denim">{ti('noRoomsYet')}</p>
+              <p className="text-sm text-dusk mt-1">{ti('noRoomsYetHint')}</p>
+            </div>
+          )}
           <button
             onClick={() => setShowNewRoom(true)}
             className="text-left border-2 border-dashed border-cardBorder rounded-xl2 p-4 text-dusk hover:bg-mist transition-colors w-full md:w-auto"

@@ -1034,7 +1034,12 @@ export default function RecipesGridView({
       )}
 
       {filtered.length === 0 ? (
-        <p className="text-sm text-dusk">{t('noResults')}</p>
+        // "No matches for this filter" and "you've never added a recipe"
+        // are different problems -- the old copy ("No recipes found.") read
+        // like a failed search even on a brand-new property with every
+        // filter's own count sitting at 0, which is what actually made this
+        // page look broken rather than just empty.
+        <p className="text-sm text-dusk">{recipes.length === 0 ? t('emptyCollection') : t('noResults')}</p>
       ) : (
         <div className="space-y-3">
           {groups.map(([letter, groupRecipes]) => {
