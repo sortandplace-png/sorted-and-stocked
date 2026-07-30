@@ -13,7 +13,7 @@ import ShiftHandoverClient, { CardHeader } from '@/components/ShiftHandoverClien
 import CollapsibleCard from '@/components/CollapsibleCard';
 import StaffDutyOverview from '@/components/StaffDutyOverview';
 
-// Concept B role-badge tiering (SS-202): owner solid bg-denim per Racquel's
+// Concept B role-badge tiering: owner solid bg-denim per Racquel's
 // explicit instruction, manager/staff step down through the same denim/mist
 // pairing ShiftHandoverClient already uses for selected/unselected pills --
 // preserves the 3-tier scan hierarchy the old gold-dark/gold-light/charcoal
@@ -498,7 +498,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
         </div>
       )}
 
-      {/* SS-202 bento overhaul: left column is Operations & Handover (the
+      {/* Bento overhaul: left column is Operations & Handover (the
           form and the recent-activity feed as two separate cards, via
           ShiftHandoverClient's layout="split"), right column is the Team
           Roster. Stacks to one column below lg -- there's no room for a

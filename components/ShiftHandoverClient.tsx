@@ -72,7 +72,7 @@ export default function ShiftHandoverClient({
   // 'stacked' (default) is the original, unchanged single-column render --
   // used by the standalone /properties/[id]/shift-handover page, which
   // still exists and is still directly reachable even though SS-214
-  // dropped its nav link. 'split' is SS-202's Staff dashboard embed: same
+  // dropped its nav link. 'split' is the Staff dashboard embed: same
   // state/handlers, just the form and the recent-handovers list each get
   // their own bento card instead of one stacked column.
   layout?: 'stacked' | 'split';
