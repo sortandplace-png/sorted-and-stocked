@@ -20,7 +20,6 @@ import {
   ArrowLeftRight,
   Copy,
   Link2,
-  Image,
   Inbox,
   BookMarked,
   ClipboardList,
@@ -113,7 +112,6 @@ function buildSections(propertyId: string): Section[] {
         { href: p('/tools/borrowed-items'), label: 'Borrowed & Lent', subtitle: 'Track loaned items', icon: ArrowLeftRight },
         { href: p('/tools/duplicate-ingredients'), label: 'Duplicate Ingredients', subtitle: 'Find overlaps', icon: Copy },
         { href: p('/tools/needs-linking'), label: 'Needs Linking', subtitle: 'Unmatched items', icon: Link2 },
-        { href: p('/tools/photo-review'), label: 'Room Photo Review', subtitle: 'Photo checkup', icon: Image },
         { href: p('/tools/capture-inbox'), label: 'Capture Inbox', subtitle: 'Pending approvals', icon: Inbox },
         // SS-025. Owner/manager only, like the Duty Roster entry above --
         // the page redirects staff, so this line is a signpost for the

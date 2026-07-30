@@ -47,7 +47,6 @@ Enumeration of every route, page title, user-facing control, what it does, and w
 - Chametz Countdown card (whole card is a link) — links to `/inventory`; only in the 30-day pre-Pesach window — all
 - "Tools" (mobile footer) — `/tools` — all (module_tools)
 - "Staff" (mobile footer) — `/staff` — all (module_staff)
-- "Photo Review" (mobile footer) — `/tools/photo-review` — owner+manager
 - "Procurement" (mobile footer) — `/procurement` — owner+manager
 - "Settings" / "Help" (mobile footer) — all
 - Floating Scan button (desktop) — opens inventory QR/barcode ScanModal — all (module_inventory)
@@ -73,7 +72,8 @@ Enumeration of every route, page title, user-facing control, what it does, and w
 - Grouped product card expand/collapse + By Variety/By Location pivot — all
 - Favorites tile, Low stock first toggle (room grid) — all
 - Room/location card (tap) — all
-- Room photo add/replace — owner+manager
+- Room photo add/replace (single room, quick flow) — owner+manager
+- "📸 Bulk upload photos" (opens the same bulk-upload-and-assign flow folded in from the former standalone Room Photo Review page/tile — SS-375/SS-271) — owner+manager
 - + Add room — opens New Room modal — all
 - ← Rooms back, sub-location chip (single-room view) — all
 - Favorite (star) toggle — all
@@ -229,7 +229,7 @@ Removed 2026-07-30 (SS-375/SS-271 pattern) -- folded into the Shopping page abov
 
 ### /properties/[id]/sitemap
 **Page title:** Sitemap
-Every tile navigates somewhere; visibility of manager-only tiles is filtered server-side via a `MANAGER_ONLY_HREFS` allowlist. Full tile list (all navigate, role as noted): Dashboard, Recipes, Meal Plan, Shopping List, Inventory, My Day, Staff, Shift Handover, Reset for Next (all); Print Labels, Staff Task Center, Duty Roster, Task Verification, Duplicate Ingredients, Needs Linking, Capture Inbox, Guest & Family Taste Memory, Settings (owner+manager only, hidden from staff); Price Scanner, Ingredient Scanner, Recipe Scanner, Kitchen Timer, Scale Servings, Prep Timeline, Pantry Zone Map, Borrowed & Lent, Room Photo Review, House Manual, Contacts & Vendors, Local Takeout Directory, Blog & Articles, Scan, Bulk Photo Upload, Batch Operations, Yom Tov Year View (all).
+Every tile navigates somewhere; visibility of manager-only tiles is filtered server-side via a `MANAGER_ONLY_HREFS` allowlist. Full tile list (all navigate, role as noted): Dashboard, Recipes, Meal Plan, Shopping List, Inventory, My Day, Staff, Shift Handover, Reset for Next (all); Print Labels, Staff Task Center, Duty Roster, Task Verification, Duplicate Ingredients, Needs Linking, Capture Inbox, Guest & Family Taste Memory, Settings (owner+manager only, hidden from staff); Price Scanner, Ingredient Scanner, Recipe Scanner, Kitchen Timer, Scale Servings, Prep Timeline, Pantry Zone Map, Borrowed & Lent, House Manual, Contacts & Vendors, Local Takeout Directory, Blog & Articles, Scan, Bulk Photo Upload, Batch Operations, Yom Tov Year View (all). Room Photo Review removed from this list 2026-07-30 -- no longer a standalone page (see /properties/[id]/tools/photo-review below).
 **Note:** Suppliers and Full Backup tiles show for everyone on this page even though their destination pages are owner+manager/owner-gated — they're not in this page's own `MANAGER_ONLY_HREFS` list, a discrepancy from the code comment's claim.
 
 ### /properties/[id]/settings
@@ -340,9 +340,10 @@ Every tile navigates somewhere; visibility of manager-only tiles is filtered ser
 **Controls:**
 - Group header pin (Scanners / Kitchen / House) — collapse/expand — all
 - Subgroup header pin (Prep & Reset / Calendar / Reference / Capture Tools / Admin Cleanup) — collapse/expand — all ("Admin Cleanup" subgroup itself is owner+manager only — staff never see it exists)
-- Every tool tile navigates to (or opens a modal for) its own tool — see below for the role each destination actually enforces. Tile visibility itself: Staff Task Center, Suppliers, Full Backup (owner only), Needs Linking, Duplicate Ingredients, Capture Inbox, Room Photo Review, Photo Worklist, Hechsher Verification, Kosher Type Tagging, Translation Worklist, Household Digest, Guest & Family Taste Memory (also gated on the `guest_taste_memory` flag) are hidden from staff at the tile level; everything else is visible to all.
+- Every tool tile navigates to (or opens a modal for) its own tool — see below for the role each destination actually enforces. Tile visibility itself: Staff Task Center, Suppliers, Full Backup (owner only), Needs Linking, Duplicate Ingredients, Capture Inbox, Photo Worklist, Hechsher Verification, Kosher Type Tagging, Translation Worklist, Household Digest, Guest & Family Taste Memory (also gated on the `guest_taste_memory` flag) are hidden from staff at the tile level; everything else is visible to all.
 - "Home Memory Timeline" tile: defined in code but not wired into any group — no tile actually renders (route still works by direct link).
 - "Kitchen Timer" tile: deliberately removed from the grid (still reachable via `/tools/kitchen-timer` and from Recipes' floating timer).
+- "Room Photo Review" tile: removed 2026-07-30 (SS-375/SS-271) -- folded into Inventory as a bulk action instead.
 
 ### /properties/[id]/tools/backup
 **Page title:** (next-intl `backup.title`)
@@ -431,9 +432,7 @@ Every tile navigates somewhere; visibility of manager-only tiles is filtered ser
 - Delete zone (✕) — owner+manager
 
 ### /properties/[id]/tools/photo-review
-**Page title:** Room Photo Review
-**Whole page:** owner/manager only, staff redirected to `/inventory`.
-**Controls:** "Choose photos to upload"; per-photo room dropdown; Assign; Skip — owner+manager
+Removed 2026-07-30 (SS-375/SS-271 pattern) -- had two separate entry points into the same flow (this standalone page + a Tools Hub modal tile), same defect as SS-114 resolved for Handover. Folded into Inventory's Browse-by-Room view as a bulk action ("📸 Bulk upload photos"); standalone page, Tools Hub tile, and nav shortcuts all removed. Controls unchanged (choose photos, per-photo room dropdown, Assign, Skip) -- owner+manager only, now reached from Inventory alone.
 
 ### /properties/[id]/tools/photo-worklist
 **Page title:** (next-intl `photoWorklist.title`)

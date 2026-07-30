@@ -35,14 +35,14 @@ export function isModuleEnabled(flags: Record<string, unknown> | null | undefine
 // app/properties/[id]/sitemap/page.tsx already group these same routes
 // (Staff Task Center, Duty Roster, Reset for Next and Task Verification all
 // live under /tools/* by URL but are presented as Staff destinations, not
-// Tools ones; Room Photo Review is presented as an Inventory-ops tool, not
-// a generic Tools one) -- this list is the same grouping, not a new one.
+// Tools ones) -- this list is the same grouping, not a new one. Room Photo
+// Review no longer has an entry here at all -- folded into Inventory as a
+// bulk action, no standalone route left to gate.
 const ROUTE_MODULES: { prefix: string; module: ModuleKey }[] = [
   { prefix: 'tools/tasks', module: 'module_staff' },
   { prefix: 'tools/duty-roster', module: 'module_staff' },
   { prefix: 'tools/reset-checklist', module: 'module_staff' },
   { prefix: 'tools/task-verification', module: 'module_staff' },
-  { prefix: 'tools/photo-review', module: 'module_inventory' },
   { prefix: 'tools', module: 'module_tools' },
   { prefix: 'recipes', module: 'module_recipes' },
   { prefix: 'meal-plan', module: 'module_meal_plan' },

@@ -126,14 +126,13 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // Shift Handover moved to their own Staff group above -- excluded
       // here so this doesn't ALSO light up "More" while on those pages.
       { segment: 'tools', labelKey: 'tools', module: 'module_tools', excludeFromActive: ['tools/tasks'] },
-      // Both exist and work today -- Room Photo Review sits inside the
-      // Tools grid already, Procurement is its own top-level page -- but
-      // neither had a direct entry point, which read as "hard to find"
-      // even though nothing was actually missing. managerOnly on both
-      // matches the role gate each page already enforces server-side
-      // (staff get redirected out), so this doesn't offer a link staff
-      // would just bounce off of.
-      { segment: 'tools/photo-review', labelKey: 'photoReview', managerOnly: true, module: 'module_inventory' },
+      // Room Photo Review's direct entry point removed from here (folded
+      // into Inventory as a bulk action instead -- SS-375/SS-271, same
+      // "collapse to one entry point" fix already applied to Handover per
+      // SS-114). Procurement is its own top-level page; managerOnly
+      // matches the gate it already enforces server-side (staff get
+      // redirected out), so this doesn't offer a link staff would just
+      // bounce off of.
       { segment: 'procurement', labelKey: 'procurement', managerOnly: true, href: '/procurement' },
       // Not managerOnly -- every role needs this for their own SMS opt-in;
       // the Invite Codes/Broadcast sections inside are what's actually

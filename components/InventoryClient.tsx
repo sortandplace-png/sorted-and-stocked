@@ -37,6 +37,7 @@ import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle, Packag
 import QRCode from 'qrcode';
 import { SITE_URL } from '@/lib/site-url';
 import BackLink from '@/components/ui/BackLink';
+import ToolModal from '@/components/ToolModal';
 
 // SS-012: html5-qrcode touches `navigator.mediaDevices`/DOM APIs that don't
 // exist during SSR -- dynamic + ssr:false is required here, not optional,
@@ -349,6 +350,7 @@ export default function InventoryClient({
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [showNewRoom, setShowNewRoom] = useState(false);
+  const [showPhotoReview, setShowPhotoReview] = useState(false);
   const [photoUploadLocation, setPhotoUploadLocation] = useState<StorageLocation | null>(null);
   const [duplicateMatches, setDuplicateMatches] = useState<
     {
@@ -2039,6 +2041,21 @@ export default function InventoryClient({
           >
             <p className="font-display text-lg">+ Add room</p>
           </button>
+          {/* Folded in from its own standalone Room Photo Review page/tile
+              (SS-375/SS-271 pattern) -- that page had two separate entry
+              points into the exact same flow (a direct nav link and a
+              Tools Hub modal tile), same defect as SS-114, resolved for
+              Handover the same way: collapse to one. This is now the only
+              door in, reusing the identical ToolModal shell the Tools Hub
+              tile used to open. */}
+          {canManage(role) && (
+            <button
+              onClick={() => setShowPhotoReview(true)}
+              className="text-left border-2 border-dashed border-cardBorder rounded-xl2 p-4 text-dusk hover:bg-mist transition-colors w-full md:w-auto"
+            >
+              <p className="font-display text-lg">📸 Bulk upload photos</p>
+            </button>
+          )}
         </div>
       ) : !locationFilter && hasActiveFilter ? (
         // ---- Search/filter results across every room ----
@@ -2398,6 +2415,20 @@ export default function InventoryClient({
             </div>
           </div>
         </div>
+      )}
+
+      {showPhotoReview && (
+        <ToolModal
+          slug="photo-review"
+          propertyId={propertyId}
+          onClose={() => {
+            setShowPhotoReview(false);
+            // Assignments happen inside the modal against its own copy of
+            // `locations` -- reload so newly-assigned room photos actually
+            // show up in this page's room grid without a manual refresh.
+            loadData();
+          }}
+        />
       )}
     </div>
   );

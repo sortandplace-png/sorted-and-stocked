@@ -1312,16 +1312,12 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               {t('mobileFooter.staff')}
             </Link>
           )}
-          {/* Both exist and work already -- Room Photo Review lives inside
-              the Tools grid, Procurement is its own top-level page -- this
-              is purely a findability fix, matching the same two shortcuts
-              added to the desktop "More" dropdown. managerOnly-equivalent
-              gate here since both pages already redirect staff server-side. */}
-          {isOwnerOrManager && isModuleEnabled(moduleFlags, 'module_inventory') && (
-            <Link href={`/properties/${propertyId}/tools/photo-review`} className="text-dusk hover:text-denim underline underline-offset-2">
-              {t('mobileFooter.photoReview')}
-            </Link>
-          )}
+          {/* Room Photo Review's shortcut removed from here -- folded into
+              Inventory as a bulk action (SS-375/SS-271); reachable from
+              there now instead of its own standalone page. Procurement:
+              still its own top-level page, findability-only shortcut,
+              matching the desktop "More" dropdown. managerOnly-equivalent
+              gate here since the page already redirects staff server-side. */}
           {isOwnerOrManager && (
             <Link href="/procurement" className="text-dusk hover:text-denim underline underline-offset-2">
               {t('mobileFooter.procurement')}

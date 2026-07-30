@@ -106,12 +106,6 @@ const TOOLS = [
     description: 'Review submitted recipe, inventory, and meal plan captures before they go live.',
   },
   {
-    slug: 'photo-review',
-    icon: '🖼️',
-    title: 'Room Photo Review',
-    description: 'Bulk-upload house photos and match each to a real room.',
-  },
-  {
     slug: 'photo-worklist',
     icon: '📷',
     title: 'Photo Worklist',
@@ -301,7 +295,7 @@ const GROUPS: {
         // people, one for stores.
         slugs: ['knowledge-base', 'pantry-zones', 'contacts', 'suppliers', 'borrowed-items', 'digest'],
       },
-      { key: 'capture-tools', label: 'Capture Tools', slugs: ['capture-inbox', 'capture-photo', 'identify-item', 'photo-review', 'photo-worklist'] },
+      { key: 'capture-tools', label: 'Capture Tools', slugs: ['capture-inbox', 'capture-photo', 'identify-item', 'photo-worklist'] },
       {
         key: 'admin-cleanup',
         label: 'Admin Cleanup',

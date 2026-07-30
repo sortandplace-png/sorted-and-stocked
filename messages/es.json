@@ -99,7 +99,6 @@
     "shop": "Comprar",
     "more": "Más",
     "home": "Inicio",
-    "photoReview": "Revisión de Fotos",
     "procurement": "Abastecimiento",
     "help": "Ayuda",
     "scanAriaLabel": "Escanear artículo al inventario",
@@ -599,8 +598,7 @@
       "tools": "Herramientas",
       "staff": "Personal",
       "settings": "Configuración",
-      "photoReview": "Revisión de Fotos",
-      "procurement": "Abastecimiento",
+        "procurement": "Abastecimiento",
       "help": "Ayuda"
     },
     "shabbosModeBanner": "Modo Shabat • Edición desactivada",

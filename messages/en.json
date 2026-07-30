@@ -99,7 +99,6 @@
     "shop": "Shop",
     "more": "More",
     "home": "Home",
-    "photoReview": "Photo Review",
     "procurement": "Procurement",
     "help": "Help",
     "scanAriaLabel": "Scan item to inventory",
@@ -599,8 +598,7 @@
       "tools": "Tools",
       "staff": "Staff",
       "settings": "Settings",
-      "photoReview": "Photo Review",
-      "procurement": "Procurement",
+        "procurement": "Procurement",
       "help": "Help"
     },
     "shabbosModeBanner": "Shabbos Mode • Editing disabled",
