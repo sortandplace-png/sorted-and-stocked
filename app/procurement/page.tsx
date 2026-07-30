@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import ProcurementClient from '@/components/ProcurementClient';
 import { formatPropertyLabel } from '@/lib/property-display';
+import { isModuleEnabled } from '@/lib/module-flags';
 
 export default async function ProcurementPage() {
   const supabase = await createClient();
@@ -17,7 +18,7 @@ export default async function ProcurementPage() {
   // multi-property view.
   const { data: memberships, error } = await supabase
     .from('property_members')
-    .select('role, properties(id, name, household_id, households(name))')
+    .select('role, properties(id, name, household_id, feature_flags, households(name))')
     .eq('user_id', user.id)
     .in('role', ['owner', 'manager']);
 
@@ -28,13 +29,20 @@ export default async function ProcurementPage() {
           id: string;
           name: string;
           household_id: string | null;
+          feature_flags: Record<string, unknown> | null;
           households: { name: string } | null;
         } | null
     )
     .filter(
-      (p): p is { id: string; name: string; household_id: string | null; households: { name: string } | null } =>
+      (p): p is { id: string; name: string; household_id: string | null; feature_flags: Record<string, unknown> | null; households: { name: string } | null } =>
         p !== null
-    );
+    )
+    // SS-373 follow-up: this is a cross-property surface, which the
+    // per-property module gate in app/properties/[id]/layout.tsx never
+    // reaches -- confirmed live, Low (module_shopping: false) still showed
+    // up here, stitched into a combined shopping trip that property's own
+    // nav no longer offers a way to reach directly.
+    .filter((p) => isModuleEnabled(p.feature_flags, 'module_shopping'));
 
   // Household size counted against the whole table, not just this user's
   // own memberships -- see app/properties/[id]/layout.tsx for why.

@@ -177,6 +177,18 @@ export default function ProcurementClient({
   const visible = hidePurchased ? stitched.filter((i) => !i.allPurchased) : stitched;
   const grouped = useMemo(() => groupByCategory(visible), [visible]);
 
+  // How many properties the *remaining* items actually come from -- not
+  // how many properties are toggled on. selectedIds.size answers "how many
+  // chips are lit," which reads as real distribution ("79 items across 4
+  // properties") even when 3 of those 4 have nothing pending -- confirmed
+  // live on Low/Lax, both selected but with zero inventory_items, so every
+  // one of the 79 came from Main alone.
+  const remainingItems = stitched.filter((i) => !i.allPurchased);
+  const propertiesWithRemainingItems = useMemo(
+    () => new Set(remainingItems.flatMap((i) => i.fromProperties.map((p) => p.propertyId))).size,
+    [remainingItems]
+  );
+
   function toggleProperty(id: string) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -209,7 +221,18 @@ export default function ProcurementClient({
 
   return (
     <div className="min-h-screen bg-mist">
-      <header className="flex items-center justify-between px-4 py-3 bg-denim text-white sticky top-0 z-30 print:hidden">
+      {/* SS-257: this header and app/procurement/layout.tsx's AppHeader
+          were both `sticky top-0 z-30` -- identical positioning, so on
+          scroll they fought for the same spot instead of stacking, and
+          whichever painted second clipped the other. AppHeader (added by
+          SS-126 for the "no header, stranded" fix) sits above this one in
+          the DOM and is the taller, primary chrome -- top-[60px] sticks
+          this one directly beneath it instead of on top of it, same
+          pattern app/properties/[id]/layout.tsx already uses for the
+          property nav bar stacked under the same AppHeader. z-20, not 30,
+          so AppHeader always wins if they ever do overlap during the
+          sticky transition. */}
+      <header className="flex items-center justify-between px-4 py-3 bg-denim text-white sticky top-[60px] z-20 print:hidden">
         <div className="flex items-center gap-2.5 min-w-0">
           {/* SS-021: Procurement isn't scoped to a single property (it
               combines shopping across several), so there's no one dashboard
@@ -279,8 +302,8 @@ export default function ProcurementClient({
 
         <div className="flex items-center justify-between mb-3 px-1 print:hidden">
           <span className="text-sm text-dusk">
-            {stitched.filter((i) => !i.allPurchased).length} items left across{' '}
-            {selectedIds.size} propert{selectedIds.size === 1 ? 'y' : 'ies'}
+            {remainingItems.length} items left across{' '}
+            {propertiesWithRemainingItems} propert{propertiesWithRemainingItems === 1 ? 'y' : 'ies'}
           </span>
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2 text-sm text-dusk">
