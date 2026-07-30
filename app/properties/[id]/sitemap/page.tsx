@@ -181,6 +181,8 @@ const MANAGER_ONLY_HREFS = [
   '/tools/memory-timeline',
   '/tools/duty-roster',
   '/tools/task-verification',
+  '/tools/suppliers',
+  '/tools/backup',
   '/print-labels',
   '/settings',
 ];
