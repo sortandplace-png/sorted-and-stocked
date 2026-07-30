@@ -1,0 +1,51 @@
+-- 145_reconcile_lax_tasks_to_main.sql
+-- Reconciles a change already applied live by direct SQL, not a migration
+-- (same reasoning as 138_reconcile_low_household.sql): the 79 maintenance
+-- tasks in block T-00064..T-00142 were moved from Lax to Strauss Main,
+-- confirmed by Racquel as always having been Main's. Lax now holds zero
+-- tasks and reads cleanly as the operator console.
+--
+-- Three of the 79 carried a room_id. Those were REMAPPED to Main's own
+-- rooms rather than carried across -- "Clean the washing machine filter"
+-- and "Replace the washing machine hoses" to Main's Laundry Room, "Clean
+-- dishwasher filter and spray arms" to Main's Kitchen. Verified live after
+-- the fact: zero master_tasks anywhere now have a room_id belonging to a
+-- different property than the task itself.
+--
+-- Written as a no-op against current data (both sides already match), so
+-- schema history is not silently missing a real change.
+update master_tasks
+set property_id = (select id from properties where name = 'Main')
+where task_number between 'T-00064' and 'T-00142'
+  and property_id = (select id from properties where name = 'Lax');
+
+-- ---------------------------------------------------------------------
+-- NOT FIXED HERE, DELIBERATELY -- FLAGGED FOR RACQUEL'S DECISION.
+--
+-- task_assignments references master_tasks(id), NOT property_id, so every
+-- assignment followed its task across to Main silently. The room ids were
+-- caught and remapped; the assignment member ids were not, because nothing
+-- surfaces them.
+--
+-- Verified live after the move: 156 ACTIVE assignments on Main tasks point
+-- at property_members rows belonging to LAX.
+--
+--   jessicahndrsn5@gmail.com -- 78 assignments, via her Lax membership,
+--     and she is NOT a member of Main at all. Main tasks are currently
+--     assigned to somebody with no access to Main. My Day matches on the
+--     viewer's membership id for THAT property, so she will not see them
+--     either -- they are assigned to nobody reachable.
+--   sortandplace@gmail.com -- 78 assignments, also via her Lax membership.
+--     She IS a Main member, so this one is recoverable by repointing to her
+--     Main property_members row rather than clearing it.
+--
+-- This also carries forward the pre-existing duplicate documented in
+-- SS-401: these are TWO complete sets of 78 for 78 tasks, both active,
+-- because they were inserted by direct SQL bypassing assignTask(), which
+-- deactivates prior assignments before inserting.
+--
+-- Three options, none applied: (1) deactivate all 156 and reassign in-app;
+-- (2) deactivate Jessica's 78 and repoint the owner's 78 to her Main
+-- membership; (3) leave as-is. Not chosen here because clearing 156 live
+-- assignment rows is a data decision, not a reconciliation.
+-- ---------------------------------------------------------------------
