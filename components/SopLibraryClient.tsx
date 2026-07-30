@@ -20,6 +20,8 @@ import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import Pin from '@/components/PinAccent';
 import { Search, X } from 'lucide-react';
 import SopPosterUpload from '@/components/SopPosterUpload';
+import TaskSuppliesList from '@/components/TaskSuppliesList';
+import { fetchSuppliesForSop, type TaskSupply } from '@/lib/task-supplies';
 
 export type Sop = {
   id: string;
@@ -50,7 +52,17 @@ export type Sop = {
 const FIELD =
   'w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-3 py-2 text-sm text-denim';
 
-export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }) {
+export default function SopLibraryClient({
+  initialSops,
+  propertyId,
+}: {
+  initialSops: Sop[];
+  /** Needed only for the supplies list. sop_library itself stays global --
+   *  per the SS-382 model, property specificity lives on the task, so a
+   *  procedure's supplies are this property's tasks' supplies, never every
+   *  property's. */
+  propertyId: string;
+}) {
   const t = useTranslations('sopLibrary');
   const locale = useLocale();
   const role = usePropertyRole();
@@ -65,6 +77,30 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ sop_en: string; sop_es: string }>({ sop_en: '', sop_es: '' });
   const [saving, setSaving] = useState(false);
+  // Fetched lazily, per SOP, when a card is opened -- there are 83 SOPs and
+  // only the open one's supplies are ever on screen, so loading all of them
+  // up front would be 83 rows of work to display at most one. Keyed by sop
+  // id; a key present with an empty array means "checked, none" and stops a
+  // refetch on every reopen.
+  const [suppliesBySop, setSuppliesBySop] = useState<Map<string, TaskSupply[]>>(new Map());
+
+  useEffect(() => {
+    if (!openId || suppliesBySop.has(openId)) return;
+    let cancelled = false;
+    fetchSuppliesForSop(supabase, openId, propertyId)
+      .then((rows) => {
+        if (cancelled) return;
+        setSuppliesBySop((prev) => new Map(prev).set(openId, rows));
+      })
+      .catch(() => {
+        // Non-fatal: the procedure itself still reads fine without its
+        // supply list, same principle as the Task Center's own handling.
+        if (!cancelled) setSuppliesBySop((prev) => new Map(prev).set(openId, []));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [openId, propertyId, supabase, suppliesBySop]);
 
   // Deep link: /staff/sops?sop=<id> opens that SOP directly. Added because
   // the Task Center now links here per task, and a link that lands on a
@@ -373,6 +409,14 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
                                   {pick(s.pass_fail_en, s.pass_fail_es)}
                                 </p>
                               )}
+                              {/* Read-only here on purpose -- no onRemove.
+                                  A supply belongs to a TASK, and this card
+                                  is a global procedure that several
+                                  properties' tasks can share, so the place
+                                  to add or remove one is the Task Center,
+                                  where it's unambiguous which task is being
+                                  changed. */}
+                              <TaskSuppliesList supplies={suppliesBySop.get(s.id) ?? []} />
                               {editable && (
                                 <button
                                   onClick={() => startEdit(s)}

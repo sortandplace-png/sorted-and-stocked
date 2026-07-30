@@ -944,6 +944,27 @@
     "subtitle": "Horas registradas por persona, por semana. Para corregir una entrada, hable con su gerente.",
     "empty": "Todavía no hay turnos registrados en esta propiedad."
   },
+  "taskSupplies": {
+    "heading": "Suministros",
+    "itemMissing": "El artículo ya no está en el inventario",
+    "removeSupply": "Quitar {name}",
+    "addSupply": "+ Agregar suministro",
+    "addSupplyTitle": "Agregar un suministro",
+    "searchPlaceholder": "Buscar en el inventario…",
+    "noMatches": "Ningún artículo del inventario coincide con esa búsqueda.",
+    "selectedItem": "Artículo seleccionado",
+    "noteEn": "Nota (inglés)",
+    "noteEs": "Nota (español)",
+    "notePlaceholder": "p. ej. Use guantes antes de vaciar el tanque.",
+    "bothLanguagesRequired": "Ambos idiomas son obligatorios.",
+    "pickAnItem": "Primero elija un artículo del inventario.",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "saveFailed": "No se pudo guardar — inténtelo de nuevo.",
+    "removeFailed": "No se pudo quitar — inténtelo de nuevo.",
+    "alreadyAdded": "Ese artículo ya es un suministro para esta tarea."
+  },
   "trainingVideos": {
     "empty": "Aún no hay videos de capacitación disponibles.",
     "unavailable": "Este video no se puede cargar en este momento.",

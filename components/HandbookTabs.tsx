@@ -158,7 +158,7 @@ export default function HandbookTabs({
       ) : sops === null ? (
         <SkeletonList rows={4} />
       ) : (
-        <SopLibraryClient initialSops={sops} />
+        <SopLibraryClient initialSops={sops} propertyId={propertyId} />
       )}
     </div>
   );

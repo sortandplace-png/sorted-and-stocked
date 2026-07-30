@@ -944,6 +944,27 @@
     "subtitle": "Clocked hours by person, by week. To correct an entry, speak to your manager.",
     "empty": "No shifts have been recorded at this property yet."
   },
+  "taskSupplies": {
+    "heading": "Supplies",
+    "itemMissing": "Item no longer in inventory",
+    "removeSupply": "Remove {name}",
+    "addSupply": "+ Add supply",
+    "addSupplyTitle": "Add a supply",
+    "searchPlaceholder": "Search inventory…",
+    "noMatches": "No inventory items match that search.",
+    "selectedItem": "Selected item",
+    "noteEn": "Note (English)",
+    "noteEs": "Note (Spanish)",
+    "notePlaceholder": "e.g. Wear gloves before emptying the tank.",
+    "bothLanguagesRequired": "Both languages are required.",
+    "pickAnItem": "Choose an inventory item first.",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "saveFailed": "Could not save — try again.",
+    "removeFailed": "Could not remove — try again.",
+    "alreadyAdded": "That item is already a supply for this task."
+  },
   "trainingVideos": {
     "empty": "No training videos are available yet.",
     "unavailable": "This video can't be loaded right now.",

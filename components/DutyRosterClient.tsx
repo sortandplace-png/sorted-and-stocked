@@ -22,6 +22,9 @@ import { routes } from '@/lib/app-routes';
 import { getEasternIsoWeekday } from '@/lib/eastern-weekday';
 import { compressImageToBlob } from '@/lib/compress-image';
 import CameraCapture from '@/components/CameraCapture';
+import TaskSuppliesList from '@/components/TaskSuppliesList';
+import AddSupplyModal from '@/components/AddSupplyModal';
+import { fetchSuppliesByTask, type TaskSupply } from '@/lib/task-supplies';
 import { ClipboardList, Camera as CameraIcon, Image as ImageIcon, X as XIcon } from 'lucide-react';
 
 type Frequency = {
@@ -116,6 +119,7 @@ const NON_ROOM_AREAS = ['Maintenance', 'Childcare', 'Outdoors'];
 
 export default function DutyRosterClient({ propertyId }: { propertyId: string }) {
   const t = useTranslations('dutyRoster');
+  const tSupplies = useTranslations('taskSupplies');
   const locale = useLocale();
   const es = locale === 'es';
   const supabase = createClient();
@@ -154,6 +158,12 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   const [newRoomFloor, setNewRoomFloor] = useState('');
   const [newRoomError, setNewRoomError] = useState<string | null>(null);
   const [newRoomSaving, setNewRoomSaving] = useState(false);
+
+  // task_supplies -- the "products with links" join. Loaded per visible
+  // task set alongside everything else in load(), keyed by task_id.
+  const [suppliesByTask, setSuppliesByTask] = useState<Map<string, TaskSupply[]>>(new Map());
+  const [addSupplyTaskId, setAddSupplyTaskId] = useState<string | null>(null);
+  const [removingSupplyId, setRemovingSupplyId] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
   // SS-273. 'all' is the default per spec -- distinct from `room`, which
@@ -428,6 +438,25 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     load();
   }
 
+  async function removeSupply(supplyId: string) {
+    setRemovingSupplyId(supplyId);
+    const { error } = await supabase.from('task_supplies').delete().eq('id', supplyId);
+    setRemovingSupplyId(null);
+    if (error) {
+      setLoadError(error.message);
+      return;
+    }
+    // Drop it locally rather than refetching the whole page for one row.
+    setSuppliesByTask((prev) => {
+      const next = new Map(prev);
+      for (const [taskId, list] of next) {
+        const filtered = list.filter((s) => s.id !== supplyId);
+        if (filtered.length !== list.length) next.set(taskId, filtered);
+      }
+      return next;
+    });
+  }
+
   const load = useCallback(async () => {
     setLoading(true);
     const settled = await Promise.allSettled([
@@ -473,6 +502,16 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     setTasks(rows[0] as Task[]);
     setFrequencies(rows[1] as Frequency[]);
     setRooms(rows[2] as Room[]);
+
+    // Supplies ride on a follow-up query rather than the Promise.allSettled
+    // batch above: it needs the task ids, which only exist once that batch
+    // has resolved. Failure here is deliberately non-fatal -- a task list
+    // that renders without its supply rows is far better than one that
+    // doesn't render at all, same principle as the failed[] handling above.
+    const taskIdsForSupplies = (rows[0] as Task[]).map((x) => x.id);
+    fetchSuppliesByTask(supabase, taskIdsForSupplies)
+      .then(setSuppliesByTask)
+      .catch(() => setSuppliesByTask(new Map()));
     setMembers(
       (rows[3] as { id: string; user_id: string; profiles: unknown }[]).map((m) => ({
         id: m.id,
@@ -1205,6 +1244,14 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                             </button>
                           </>
                         )}
+                        {x.active && (
+                          <button
+                            onClick={() => setAddSupplyTaskId(x.id)}
+                            className="text-[9px] font-semibold uppercase tracking-[0.15em] text-denim underline-offset-2 hover:underline"
+                          >
+                            {tSupplies('addSupply')}
+                          </button>
+                        )}
                         {sops > 0 && (
                           <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-brass">
                             {t('sopCount', { count: sops })}
@@ -1216,6 +1263,19 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                           </span>
                         )}
                       </div>
+
+                      {/* Always visible, not hidden behind the procedure
+                          toggle -- "which products do I need for this job"
+                          is a before-you-start question, and burying it one
+                          tap deep is how task_supplies stayed invisible in
+                          the first place. Renders nothing at all when a task
+                          has no supplies, so tiles without them are
+                          unchanged. */}
+                      <TaskSuppliesList
+                        supplies={suppliesByTask.get(x.id) ?? []}
+                        onRemove={removeSupply}
+                        removingId={removingSupplyId}
+                      />
 
                       {/* The full procedure, inline. Collapsed by default so
                           the grid stays a grid; open one and it expands in
@@ -1639,6 +1699,22 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
             </div>
           </div>
         </div>
+      )}
+
+      {addSupplyTaskId && (
+        <AddSupplyModal
+          propertyId={propertyId}
+          taskId={addSupplyTaskId}
+          existingItemIds={(suppliesByTask.get(addSupplyTaskId) ?? [])
+            .map((s) => s.item?.id)
+            .filter((id): id is string => !!id)}
+          onClose={() => setAddSupplyTaskId(null)}
+          onSaved={() => {
+            setAddSupplyTaskId(null);
+            // Refetch just the supplies, not the whole page.
+            fetchSuppliesByTask(supabase, tasks.map((x) => x.id)).then(setSuppliesByTask).catch(() => {});
+          }}
+        />
       )}
 
       <CameraCapture open={showTaskCamera} onCapture={handleTaskPhotoFile} onClose={() => setShowTaskCamera(false)} />
