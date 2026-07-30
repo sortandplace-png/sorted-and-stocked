@@ -1,16 +1,20 @@
 // components/PropertiesPickerList.tsx
-// SS-372. Regrouped per Racquel's screenshot feedback: households were
-// rendering as their own card (chevron-expand, "N PROPERTIES" eyebrow),
-// visually indistinguishable from a property card except for that one
-// label -- and on expand, the household's properties dropped into the next
-// available grid cells rather than under their parent, so Main/Country
-// visually sat under Low. Households are now a heading (D-01/D-11 label +
-// hairline), never a card of their own -- D-21 (no arrows/chevrons, ever)
-// and D-03 (every real card gets a pin dot) follow from that. One flat
-// grid, not one grid per household, so headings can sit inline as
-// full-width separator rows and "Add a property" can be the grid's own
-// last cell (D-22) instead of a separate full-width strip below it.
-import { Fragment } from 'react';
+// SS-372, third pass. History matters here because this has now swung twice:
+// households began as their own expandable CARD (chevron, "N PROPERTIES"
+// eyebrow), became HEADING ROWS with hairlines, and are now neither -- the
+// household name simply is each card's eyebrow. Five properties did not
+// need four heading rows and four rules drawn around them; that was more
+// structure than the content justified.
+//
+// The eyebrow therefore carries the household, not the role. That reverses
+// the "eyebrow is the role only" line in the original SS-372 ticket, on
+// Racquel's explicit call -- so role is no longer displayed anywhere on
+// this screen. It still DRIVES behaviour (staff land on My Day, everyone
+// else on Dashboard), it is just no longer shown.
+//
+// Grouping is retained even with the headings gone: it is what keeps a
+// household's properties adjacent in the grid, which is the whole reason
+// the grouping existed before the headings were ever drawn.
 import { Home, Plus } from 'lucide-react';
 import Tile from '@/components/ui/Tile';
 
@@ -18,45 +22,34 @@ export type PropertyEntry = { id: string; name: string; role: string };
 export type HouseholdGroup = { key: string; householdName: string | null; properties: PropertyEntry[] };
 
 export default function PropertiesPickerList({ groups }: { groups: HouseholdGroup[] }) {
+  // Flattened so the grid is one continuous run of cards with nothing
+  // structural interrupting it -- the ordering still comes from the groups.
+  const cards = groups.flatMap((group) =>
+    group.properties.map((property) => ({ property, householdName: group.householdName }))
+  );
+
   return (
     <div className="grid grid-cols-2 gap-2.5 mb-6">
-      {groups.map((group) => (
-        <Fragment key={group.key}>
-          {/* Every household gets a heading now, including single-property
-              ones (SS-372 correction, Racquel 30 Jul screenshot) -- the
-              earlier 2+-only rule left Lax/Low/Henderson with no heading of
-              their own, so without one to interrupt the flow they read as
-              continuing whatever household's heading appeared above them
-              (Strauss). Only a genuinely household-less property (no
-              household_id at all, householdName null) still gets no
-              heading -- there's nothing real to label. D-24: compose from
-              Tile/Pin, not hand-rolled -- this one row is plain layout, not
-              a tile, so it intentionally isn't one. */}
-          {group.householdName && (
-            <div key={`${group.key}-heading`} className="col-span-2 flex items-center gap-2 mt-2 first:mt-0">
-              <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-brass whitespace-nowrap">
-                {group.householdName}
-              </span>
-              <span className="flex-1 border-t border-cardBorder" aria-hidden="true" />
-            </div>
-          )}
-          {group.properties.map((property) => {
-            // Staff land on their dedicated My Day page instead of
-            // Dashboard -- owner/manager's landing page is unchanged.
-            const destination = property.role === 'staff' ? 'my-day' : 'dashboard';
-            return (
-              <Tile
-                key={property.id}
-                href={`/properties/${property.id}/${destination}`}
-                eyebrow={property.role}
-                label={property.name}
-                icon={<Home size={20} className="text-denim" aria-hidden="true" />}
-                centered
-              />
-            );
-          })}
-        </Fragment>
-      ))}
+      {cards.map(({ property, householdName }) => {
+        // Staff land on their dedicated My Day page instead of Dashboard --
+        // owner/manager's landing page is unchanged.
+        const destination = property.role === 'staff' ? 'my-day' : 'dashboard';
+        return (
+          <Tile
+            key={property.id}
+            href={`/properties/${property.id}/${destination}`}
+            // Undefined rather than a role fallback when a property has no
+            // household at all: Tile omits the eyebrow entirely for
+            // undefined, and putting a role in the slot for just those
+            // cards would put two different kinds of thing in one place --
+            // which is the exact complaint that started SS-372.
+            eyebrow={householdName ?? undefined}
+            label={property.name}
+            icon={<Home size={20} className="text-denim" aria-hidden="true" />}
+            centered
+          />
+        );
+      })}
       <Tile href="/properties/new" label="Add a property" icon={<Plus size={20} className="text-denim" aria-hidden="true" />} centered />
     </div>
   );
