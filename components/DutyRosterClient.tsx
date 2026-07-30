@@ -142,6 +142,19 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // Room creation: rooms was seeded by SQL only, with no in-app path to add
+  // one at all -- confirmed while investigating SS-374's empty states. A
+  // property with zero rooms has zero assignable tasks, since every task
+  // here organizes by room. Kept deliberately minimal (name EN/ES + an
+  // optional floor) rather than a full rooms-management screen -- this
+  // unblocks task assignment, it isn't a rewrite of how rooms work.
+  const [showAddRoom, setShowAddRoom] = useState(false);
+  const [newRoomEn, setNewRoomEn] = useState('');
+  const [newRoomEs, setNewRoomEs] = useState('');
+  const [newRoomFloor, setNewRoomFloor] = useState('');
+  const [newRoomError, setNewRoomError] = useState<string | null>(null);
+  const [newRoomSaving, setNewRoomSaving] = useState(false);
+
   const [search, setSearch] = useState('');
   // SS-273. 'all' is the default per spec -- distinct from `room`, which
   // narrows to one room; this narrows to a whole floor's worth of rooms.
@@ -367,6 +380,51 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     }
 
     closeTaskForm();
+    load();
+  }
+
+  function openAddRoom() {
+    setNewRoomEn('');
+    setNewRoomEs('');
+    setNewRoomFloor('');
+    setNewRoomError(null);
+    setShowAddRoom(true);
+  }
+
+  async function saveRoom() {
+    // Bilingual at creation (R19), same gate every other create-a-thing
+    // form in this app enforces -- rooms.name_es is NOT NULL with no
+    // default, so an English-only row would fail the insert outright
+    // anyway; this just gives that failure a real message instead of a
+    // raw Postgres error.
+    if (!newRoomEn.trim() || !newRoomEs.trim()) {
+      setNewRoomError(t('bothLanguagesRequired'));
+      return;
+    }
+    setNewRoomSaving(true);
+    setNewRoomError(null);
+
+    // sort_order is NOT NULL with no default (confirmed against the
+    // schema) -- placed after every room already loaded, same convention
+    // saveTask above uses for master_tasks.sort_order.
+    const nextSortOrder = rooms.length;
+
+    const { error } = await supabase.from('rooms').insert({
+      property_id: propertyId,
+      name_en: newRoomEn.trim(),
+      name_es: newRoomEs.trim(),
+      floor: newRoomFloor.trim() || null,
+      sort_order: nextSortOrder,
+      active: true,
+    });
+
+    setNewRoomSaving(false);
+    if (error) {
+      setNewRoomError(error.message || t('saveFailed'));
+      return;
+    }
+
+    setShowAddRoom(false);
     load();
   }
 
@@ -804,6 +862,12 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
           >
             {t('viewVerification')}
           </Link>
+          <button
+            onClick={openAddRoom}
+            className="bg-card border border-cardBorder text-denim text-[13px] font-medium px-4 py-2 rounded-full hover:bg-mist transition-colors"
+          >
+            + {t('addRoom')}
+          </button>
           <button
             onClick={openAddTask}
             className="bg-denim text-white text-[13px] font-medium px-4 py-2 rounded-full hover:opacity-90 transition-opacity"
@@ -1497,6 +1561,80 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                 className="flex-1 py-2.5 rounded-full bg-denim text-white text-sm font-medium disabled:opacity-40"
               >
                 {formSaving ? t('saving') : t('formSave')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add room modal -- deliberately minimal (name EN/ES + optional
+          floor), same shell as the task modal above. There is no edit/
+          deactivate UI here yet; this closes the "zero rooms, zero
+          assignable tasks" gap, not a full rooms-management screen. */}
+      {showAddRoom && (
+        <div
+          className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+          onClick={() => setShowAddRoom(false)}
+        >
+          <div
+            className="relative w-full max-w-md bg-card rounded-xl3 shadow-card p-5 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <PinDot />
+            <h2 className="font-display text-[22px] text-denim mb-4">{t('addRoomTitle')}</h2>
+
+            {newRoomError && (
+              <p className="mb-3 text-xs text-rust bg-rust/10 rounded-xl2 px-3 py-2">{newRoomError}</p>
+            )}
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-dusk mb-1">
+                  {t('roomNameEn')}
+                </label>
+                <input
+                  value={newRoomEn}
+                  onChange={(e) => setNewRoomEn(e.target.value)}
+                  className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm text-denim"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-dusk mb-1">
+                  {t('roomNameEs')}
+                </label>
+                <input
+                  value={newRoomEs}
+                  onChange={(e) => setNewRoomEs(e.target.value)}
+                  className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm text-denim"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-dusk mb-1">
+                  {t('roomFloorOptional')}
+                </label>
+                <input
+                  value={newRoomFloor}
+                  onChange={(e) => setNewRoomFloor(e.target.value)}
+                  placeholder="Main Floor"
+                  className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm text-denim"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={() => setShowAddRoom(false)}
+                className="flex-1 py-2.5 rounded-full bg-linen border border-brass/30 text-denim text-sm font-medium"
+              >
+                {t('formCancel')}
+              </button>
+              <button
+                onClick={saveRoom}
+                disabled={newRoomSaving || !newRoomEn.trim() || !newRoomEs.trim()}
+                className="flex-1 py-2.5 rounded-full bg-denim text-white text-sm font-medium disabled:opacity-40"
+              >
+                {newRoomSaving ? t('saving') : t('formSave')}
               </button>
             </div>
           </div>
