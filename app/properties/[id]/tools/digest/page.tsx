@@ -5,8 +5,10 @@
 // the Asset Custody Tracker or anything reading borrowed_items (dormant,
 // zero rows, no activation decision made), or anything depending on SOP
 // completion data (not confirmed live).
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Pencil } from 'lucide-react';
+import { createClient } from '@/lib/supabase/server';
 import Pin from '@/components/PinAccent';
 import { CardHeader } from '@/components/ShiftHandoverClient';
 import OrderLink from '@/components/OrderLink';
@@ -43,6 +45,27 @@ function easternTodayStr(): string {
 
 export default async function DigestPreviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: propertyId } = await params;
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  // Reachable and fully functional for any role by direct URL despite the
+  // Tools Hub tile already being hidden from staff -- that hid the
+  // discovery path, not the route itself.
+  const { data: membership } = await supabase
+    .from('property_members')
+    .select('role')
+    .eq('property_id', propertyId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (!membership || membership.role === 'staff') {
+    redirect(`/properties/${propertyId}/inventory`);
+  }
+
   const todayStr = easternTodayStr();
 
   const [lowStockByVendor, gaps] = await Promise.all([

@@ -74,6 +74,20 @@ export async function POST(request: Request) {
     // Update recipe_ingredients table with photos
     let updateCount = 0;
     const updateErrors: { ingredient: string; error: string }[] = [];
+    // Audit trail (batch-operations UI requirement). old_value is always
+    // null here by construction -- the source query above only ever
+    // selects rows where photo_url IS NULL, so there's nothing to diff
+    // against.
+    const historyRows: {
+      property_id: string;
+      inventory_item_id: null;
+      item_name_snapshot: string;
+      action_type: string;
+      actor_user_id: string;
+      field_name: string;
+      old_value: null;
+      new_value: string;
+    }[] = [];
 
     for (const result of photos) {
       if (result.photo_url) {
@@ -103,7 +117,24 @@ export async function POST(request: Request) {
         } else {
           updateCount++;
           console.log(`[PHOTO SUCCESS] Updated ${result.name}`);
+          historyRows.push({
+            property_id: propertyId,
+            inventory_item_id: null,
+            item_name_snapshot: result.name,
+            action_type: 'batch_photo_update',
+            actor_user_id: user.id,
+            field_name: 'photo_url',
+            old_value: null,
+            new_value: permanentUrl,
+          });
         }
+      }
+    }
+
+    if (historyRows.length > 0) {
+      const { error: historyError } = await supabase.from('inventory_item_history').insert(historyRows);
+      if (historyError) {
+        console.error('[batch-update-photos] history logging failed:', historyError.message);
       }
     }
 

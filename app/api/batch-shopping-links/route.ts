@@ -21,6 +21,7 @@ interface RecipeIngredientRow {
   id: string;
   name: string;
   recipe_id: string;
+  reorder_link: string | null;
   recipes?: { kosher_type?: string };
 }
 
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
       while (allIngredients.length < limit) {
         const { data: page, error: fetchError } = await supabase
           .from('recipe_ingredients')
-          .select('id, name, recipe_id')
+          .select('id, name, recipe_id, reorder_link')
           .in('recipe_id', recipeIds)
           .range(from, from + pageSize - 1);
 
@@ -102,6 +103,10 @@ export async function POST(request: Request) {
 
     // Group ingredients by name and collect their recipes' kosher types
     const ingredientMap = new Map<string, IngredientWithContext>();
+    // First-seen reorder_link per ingredient name -- an audit "before"
+    // value. Rows sharing a name can already disagree (never batch-applied
+    // before), so this is a representative sample, not a per-row diff.
+    const priorReorderLink = new Map<string, string | null>();
 
     for (const ing of allIngredients as any[]) {
       if (!ingredientMap.has(ing.name)) {
@@ -110,6 +115,7 @@ export async function POST(request: Request) {
           recipeIds: [],
           recipeKosherTypes: [],
         });
+        priorReorderLink.set(ing.name, ing.reorder_link ?? null);
       }
 
       const ctx = ingredientMap.get(ing.name)!;
@@ -191,6 +197,28 @@ export async function POST(request: Request) {
           },
           { status: 207 } // Multi-status
         );
+      }
+
+      // Audit trail (batch-operations UI requirement) -- one row per
+      // ingredient actually written, not per recipe_ingredients row, same
+      // granularity as `updates` above. inventory_item_id is left null:
+      // this table's usual subject, but nullable, and there's no more
+      // fitting existing log for a recipe_ingredients change than the one
+      // built for property-level item history with the acting user already
+      // wired in.
+      const historyRows = updates.map((u) => ({
+        property_id: propertyId,
+        inventory_item_id: null,
+        item_name_snapshot: u.ingredientName,
+        action_type: 'batch_shopping_link_update',
+        actor_user_id: user.id,
+        field_name: 'reorder_link',
+        old_value: priorReorderLink.get(u.ingredientName) ?? null,
+        new_value: u.reorder_link,
+      }));
+      const { error: historyError } = await supabase.from('inventory_item_history').insert(historyRows);
+      if (historyError) {
+        console.error('[batch-shopping-links] history logging failed:', historyError.message);
       }
     }
 

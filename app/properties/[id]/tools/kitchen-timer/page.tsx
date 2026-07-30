@@ -1,4 +1,11 @@
 // app/properties/[id]/tools/kitchen-timer/page.tsx
+// Deliberately ungated (chosen, not an oversight, per the route-gating pass
+// that added a server-side check to every other previously-open tools/*
+// route): zero persistence, zero mutation -- these timers exist only in
+// component state -- and every role already reaches the identical
+// KitchenTimerClient with no restriction via the floating widget on the
+// Recipes page. Gating the standalone route here would make it reachable
+// from one surface but not another for the exact same component.
 import KitchenTimerClient from '@/components/KitchenTimerClient';
 
 export default async function KitchenTimerPage() {
