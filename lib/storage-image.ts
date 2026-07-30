@@ -42,3 +42,21 @@ export function storageThumbnail(
   const rendered = url.replace(marker, '/storage/v1/render/image/public/');
   return `${rendered}?width=${size}&height=${size}&resize=${resize}&quality=70`;
 }
+
+/**
+ * Extract the bare storage path out of a stored "public-style" object URL,
+ * for a bucket that has since gone private (SS-363).
+ *
+ * `expected_appearance_url` and similar columns still hold URLs shaped like
+ * .../object/public/<bucket>/<path> from when the bucket was public -- that
+ * exact string no longer resolves once public=false, but it still reliably
+ * encodes the real path, so treating it as a path-carrying convention
+ * (rather than backfilling every row to a bare-path format) is the lower-risk
+ * change. Returns null for anything not shaped like this bucket's URLs --
+ * callers should treat that as "no image", not throw.
+ */
+export function storagePathFromPublicUrl(url: string, bucket: string): string | null {
+  const marker = `/storage/v1/object/public/${bucket}/`;
+  const idx = url.indexOf(marker);
+  return idx === -1 ? null : url.slice(idx + marker.length);
+}

@@ -18,7 +18,6 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import Pin from '@/components/PinAccent';
-import { storageThumbnail } from '@/lib/storage-image';
 import { Search, X } from 'lucide-react';
 import SopPosterUpload from '@/components/SopPosterUpload';
 
@@ -34,8 +33,17 @@ export type Sop = {
   pass_fail_en: string | null;
   pass_fail_es: string | null;
   estimated_minutes: number | null;
-  /** Public Storage URL, or null for the 8 SOPs with no poster yet. */
+  /** SS-363: stored public-style path reference, not a directly usable URL
+   *  -- sop-posters is a private bucket now. Null for the SOPs with no
+   *  poster yet. Kept for SopPosterUpload, which re-signs it independently
+   *  when a manager opens the editor. */
   expected_appearance_url: string | null;
+  /** Freshly signed, per-size-tier URLs (lib/sop-posters.ts), minted by
+   *  HandbookTabs alongside the fetch. Null exactly when
+   *  expected_appearance_url is null. */
+  posterThumbUrl: string | null;
+  posterDetailUrl: string | null;
+  posterFullUrl: string | null;
   photo_verification: boolean;
 };
 
@@ -126,7 +134,13 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
   // that already-saved result into local state.
   function handlePosterUpdated(
     sopId: string,
-    patch: { expected_appearance_url: string | null; photo_verification: boolean }
+    patch: Partial<{
+      expected_appearance_url: string | null;
+      photo_verification: boolean;
+      posterThumbUrl: string | null;
+      posterDetailUrl: string | null;
+      posterFullUrl: string | null;
+    }>
   ) {
     setSops((prev) => prev.map((x) => (x.id === sopId ? { ...x, ...patch } : x)));
   }
@@ -222,10 +236,10 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
                             is cut off. Nothing renders when there is no poster:
                             a grey placeholder box on the 8 SOPs without one
                             would be a hole where the eye expects content. */}
-                        {s.expected_appearance_url && (
+                        {s.posterThumbUrl && (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={storageThumbnail(s.expected_appearance_url, 160, 'contain')}
+                            src={s.posterThumbUrl}
                             alt=""
                             aria-hidden="true"
                             loading="lazy"
@@ -258,6 +272,7 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
                               <SopPosterUpload
                                 sopId={s.id}
                                 expectedAppearanceUrl={s.expected_appearance_url}
+                                posterDetailUrl={s.posterDetailUrl}
                                 photoVerification={s.photo_verification}
                                 onUpdated={(patch) => handlePosterUpdated(s.id, patch)}
                               />
@@ -325,19 +340,19 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
                                   lightbox below still loads the original,
                                   which is the one place full size is the
                                   point. */}
-                              {s.expected_appearance_url ? (
+                              {s.posterDetailUrl ? (
                                 <button
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setLightbox({ url: s.expected_appearance_url!, label: pick(s.task_en, s.task_es) });
+                                    setLightbox({ url: s.posterFullUrl ?? s.posterDetailUrl!, label: pick(s.task_en, s.task_es) });
                                   }}
                                   className="block w-full rounded-xl2 overflow-hidden border border-cardBorder bg-mist"
                                   aria-label={t('viewPoster')}
                                 >
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
                                   <img
-                                    src={storageThumbnail(s.expected_appearance_url, 640, 'contain')}
+                                    src={s.posterDetailUrl}
                                     alt={t('posterAlt', { name: pick(s.task_en, s.task_es) })}
                                     loading="lazy"
                                     className="w-full max-h-64 object-contain"

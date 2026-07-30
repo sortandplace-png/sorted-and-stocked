@@ -20,6 +20,7 @@ import StaffHandbookClient, { type HandbookArticle } from '@/components/StaffHan
 import SopLibraryClient, { type Sop } from '@/components/SopLibraryClient';
 import TrainingVideosTab from '@/components/TrainingVideosTab';
 import type { TrainingVideo } from '@/lib/training-videos';
+import { signSopPosters } from '@/lib/sop-posters';
 
 type Tab = 'guide' | 'videos' | 'procedures';
 
@@ -61,7 +62,22 @@ export default function HandbookTabs({
       .eq('active', true)
       .order('zone_type')
       .order('task_en');
-    setSops((data as Sop[]) ?? []);
+    const rows = (data as Sop[]) ?? [];
+    // SS-363: sop-posters is a private bucket now -- expected_appearance_url
+    // is a stored public-style path reference, not a directly usable URL
+    // anymore. Signed once here, batched across every row.
+    const signed = await signSopPosters(
+      supabase,
+      rows.map((r) => r.expected_appearance_url)
+    );
+    setSops(
+      rows.map((r) => ({
+        ...r,
+        posterThumbUrl: r.expected_appearance_url ? signed.get(r.expected_appearance_url)?.thumbUrl ?? null : null,
+        posterDetailUrl: r.expected_appearance_url ? signed.get(r.expected_appearance_url)?.detailUrl ?? null : null,
+        posterFullUrl: r.expected_appearance_url ? signed.get(r.expected_appearance_url)?.fullUrl ?? null : null,
+      }))
+    );
     setLoadingSops(false);
   }, [sops, loadingSops, supabase]);
 

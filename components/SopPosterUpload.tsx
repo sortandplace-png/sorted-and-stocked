@@ -16,20 +16,33 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import PhotoCropper from '@/components/PhotoCropper';
 import { compressImageToBlob } from '@/lib/compress-image';
-import { storageThumbnail } from '@/lib/storage-image';
+import { signSopPosters } from '@/lib/sop-posters';
+
+type PosterUpdate = Partial<{
+  expected_appearance_url: string | null;
+  photo_verification: boolean;
+  posterThumbUrl: string | null;
+  posterDetailUrl: string | null;
+  posterFullUrl: string | null;
+}>;
 
 export default function SopPosterUpload({
   sopId,
   expectedAppearanceUrl,
+  posterDetailUrl,
   photoVerification,
   onUpdated,
 }: {
   sopId: string;
   expectedAppearanceUrl: string | null;
+  /** Already-signed, from the parent's own fetch (lib/sop-posters.ts) --
+   *  this component only re-signs after a NEW upload, not for its own
+   *  initial preview. */
+  posterDetailUrl: string | null;
   photoVerification: boolean;
   /** Called after a successful write so the parent list can update its own
    *  copy -- this component holds no list state of its own. */
-  onUpdated: (patch: { expected_appearance_url: string | null; photo_verification: boolean }) => void;
+  onUpdated: (patch: PosterUpdate) => void;
 }) {
   const t = useTranslations('sopLibrary');
   const supabase = createClient();
@@ -67,6 +80,11 @@ export default function SopPosterUpload({
         showToast(t('posterUploadFailed'), { variant: 'error' });
         return;
       }
+      // getPublicUrl makes no network call -- it's a pure string template,
+      // so this still works to construct a path-encoding value even though
+      // the bucket is private and the string itself no longer resolves
+      // directly (see lib/storage-image.ts's storagePathFromPublicUrl,
+      // which reads this same shape back out).
       const { data } = supabase.storage.from('sop-posters').getPublicUrl(path);
       const { error: updateError } = await supabase
         .from('sop_library')
@@ -76,7 +94,14 @@ export default function SopPosterUpload({
         showToast(t('posterUploadFailed'), { variant: 'error' });
         return;
       }
-      onUpdated({ expected_appearance_url: data.publicUrl, photo_verification: photoVerification });
+      const signed = await signSopPosters(supabase, [data.publicUrl]);
+      const urls = signed.get(data.publicUrl);
+      onUpdated({
+        expected_appearance_url: data.publicUrl,
+        posterThumbUrl: urls?.thumbUrl ?? null,
+        posterDetailUrl: urls?.detailUrl ?? null,
+        posterFullUrl: urls?.fullUrl ?? null,
+      });
       showToast(t('posterSaved'), { variant: 'success' });
     } catch {
       showToast(t('posterUploadFailed'), { variant: 'error' });
@@ -101,7 +126,7 @@ export default function SopPosterUpload({
       showToast(t('posterUploadFailed'), { variant: 'error' });
       return;
     }
-    onUpdated({ expected_appearance_url: null, photo_verification: photoVerification });
+    onUpdated({ expected_appearance_url: null, posterThumbUrl: null, posterDetailUrl: null, posterFullUrl: null });
   }
 
   async function handleToggleVerification(next: boolean) {
@@ -110,7 +135,7 @@ export default function SopPosterUpload({
       showToast(t('posterUploadFailed'), { variant: 'error' });
       return;
     }
-    onUpdated({ expected_appearance_url: expectedAppearanceUrl, photo_verification: next });
+    onUpdated({ photo_verification: next });
   }
 
   return (
@@ -134,10 +159,10 @@ export default function SopPosterUpload({
         />
       )}
 
-      {expectedAppearanceUrl && (
+      {posterDetailUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={storageThumbnail(expectedAppearanceUrl, 320, 'contain')}
+          src={posterDetailUrl}
           alt=""
           className="w-full max-h-48 object-contain rounded-xl2 border border-cardBorder bg-mist"
         />
