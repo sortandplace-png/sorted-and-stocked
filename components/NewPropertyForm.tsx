@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import FieldLabel from '@/components/FieldLabel';
+import BackLink from '@/components/ui/BackLink';
 
 type ManageableHousehold = { id: string; name: string };
 
@@ -82,12 +83,16 @@ export default function NewPropertyForm() {
       return;
     }
 
-    router.push(`/properties/${propertyId}/inventory`);
+    router.push(`/properties/${propertyId}/dashboard`);
   }
 
   return (
     <div className="min-h-screen bg-linen flex items-center justify-center px-6">
       <div className="max-w-sm w-full">
+        {/* Same defect class as SS-261: this screen had no way out at all --
+            not even browser Back, since it's the same route you'd land back
+            on after following a link here. Every page needs an escape. */}
+        <BackLink href="/properties" label="Properties" />
         <h1 className="font-display text-2xl text-denim mb-1">Add a property</h1>
         <p className="text-sm text-dusk mb-6">
           You'll be set as the owner and can invite staff afterward.
