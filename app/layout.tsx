@@ -4,7 +4,7 @@ import { Cormorant_Garamond, Nunito_Sans, Playfair_Display, Inter } from 'next/f
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import OfflineSyncProvider from '@/components/OfflineSyncProvider';
-import ServiceWorkerUpdater from '@/components/ServiceWorkerUpdater';
+import AppUpdateChecker from '@/components/AppUpdateChecker';
 import { ToastProvider } from '@/components/Toast';
 import './globals.css';
 
@@ -23,9 +23,21 @@ const body = Nunito_Sans({ subsets: ['latin'], variable: '--font-body', display:
 const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfair', display: 'swap' });
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 
+// SS-339: App Router does not expose Pages Router's window.__NEXT_DATA__,
+// so there is no built-in client-readable "what build is this" value --
+// this is deliberately baked in here as a plain <meta> tag instead. `other`
+// is evaluated once, at build time (this whole object is a static module
+// constant, not generateMetadata), so it's fixed per-deploy without
+// needing a request-time read anywhere. VERCEL_GIT_COMMIT_SHA is set
+// automatically by Vercel's build environment; falls back to 'development'
+// locally, matching the same fallback in app/api/build-id/route.ts so the
+// two always agree and dev never shows a false-positive mismatch.
+const APP_BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA ?? 'development';
+
 export const metadata: Metadata = {
   title: 'Sorted & Stocked',
   manifest: '/manifest.json',
+  other: { 'app-build-id': APP_BUILD_ID },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -72,7 +84,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <NextIntlClientProvider messages={messages}>
           <OfflineSyncProvider>
             <ToastProvider>
-              <ServiceWorkerUpdater />
+              <AppUpdateChecker />
               {children}
             </ToastProvider>
           </OfflineSyncProvider>
