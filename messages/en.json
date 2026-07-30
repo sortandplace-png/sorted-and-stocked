@@ -106,7 +106,7 @@
     "scanAriaLabel": "Scan item to inventory",
     "dutyRoster": "Duty Roster",
     "hours": "Hours",
-    "sopLibrary": "SOP Library",
+    "sopLibrary": "Procedures",
     "trainingVideos": "Training Videos",
     "staffHandbook": "Staff Handbook",
     "close": "Close",
@@ -737,7 +737,7 @@
     "roshChodeshUnavailable": "Rosh Chodesh dates are unavailable right now."
   },
   "sopLibrary": {
-    "title": "SOP Library",
+    "title": "Procedures",
     "description": "{count} standard procedures, in English and Spanish.",
     "searchPlaceholder": "Search procedures…",
     "unzoned": "Unzoned",
@@ -1002,7 +1002,7 @@
     "strip": "{count} questions · shift order",
     "tabGuide": "Household Guide",
     "tabVideos": "Training Videos",
-    "tabProcedures": "SOP Library",
+    "tabProcedures": "Procedures",
     "searchPlaceholder": "Search the handbook…",
     "noResults": "No questions match that search.",
     "progress": "{opened} of {total} opened",
@@ -1011,7 +1011,7 @@
     "linkInventory": "Inventory",
     "linkShoppingList": "Shopping List",
     "linkHouseManual": "House Manual",
-    "linkSops": "SOP Library",
+    "linkSops": "Procedures",
     "linkTraining": "Training"
   }
 }

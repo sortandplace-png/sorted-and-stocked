@@ -106,7 +106,7 @@
     "scanAriaLabel": "Escanear artículo al inventario",
     "dutyRoster": "Lista de Deberes",
     "hours": "Horas",
-    "sopLibrary": "Biblioteca de SOP",
+    "sopLibrary": "Procedimientos",
     "trainingVideos": "Videos de Capacitación",
     "staffHandbook": "Manual del Personal",
     "close": "Cerrar",
@@ -737,7 +737,7 @@
     "roshChodeshUnavailable": "Las fechas de Rosh Jodesh no están disponibles en este momento."
   },
   "sopLibrary": {
-    "title": "Biblioteca de SOP",
+    "title": "Procedimientos",
     "description": "{count} procedimientos estándar, en inglés y español.",
     "searchPlaceholder": "Buscar procedimientos…",
     "unzoned": "Sin zona",
@@ -1002,7 +1002,7 @@
     "strip": "{count} preguntas · orden del turno",
     "tabGuide": "Guía del hogar",
     "tabVideos": "Videos de capacitación",
-    "tabProcedures": "Biblioteca de SOP",
+    "tabProcedures": "Procedimientos",
     "searchPlaceholder": "Buscar en el manual…",
     "noResults": "Ninguna pregunta coincide con esa búsqueda.",
     "progress": "{opened} de {total} abiertas",
@@ -1011,7 +1011,7 @@
     "linkInventory": "Inventario",
     "linkShoppingList": "Lista de Compras",
     "linkHouseManual": "Manual de la Casa",
-    "linkSops": "Biblioteca de Procedimientos",
+    "linkSops": "Procedimientos",
     "linkTraining": "Capacitación"
   }
 }
