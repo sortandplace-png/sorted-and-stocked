@@ -47,7 +47,6 @@ const ROUTE_MODULES: { prefix: string; module: ModuleKey }[] = [
   { prefix: 'recipes', module: 'module_recipes' },
   { prefix: 'meal-plan', module: 'module_meal_plan' },
   { prefix: 'shopping-list', module: 'module_shopping' },
-  { prefix: 'shopping-rules', module: 'module_shopping' },
   { prefix: 'batch-operations', module: 'module_shopping' },
   { prefix: 'inventory', module: 'module_inventory' },
   { prefix: 'print-labels', module: 'module_inventory' },

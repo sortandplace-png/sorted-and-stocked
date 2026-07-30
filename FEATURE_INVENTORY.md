@@ -146,15 +146,14 @@ Enumeration of every route, page title, user-facing control, what it does, and w
 **Controls:**
 - Back link — all
 - Tab switch (Recipe Ingredients / Household Staples) — all
+- Settings toggle (collapsed by default) — owner+manager only
+- Auto-restock switch (inside Settings) — writes `properties.feature_flags.auto_restock`; read live by the `handle_low_stock()` trigger to auto-add a dropped-below-minimum item to the active shopping list — owner+manager
 - Pull-to-refresh — all
 - Pairing-nudge "Add {item}" / dismiss (✕) — all
 - Add-item text input + Add button (Recipe Ingredients tab) — all
 
 ### /properties/[id]/shopping-rules
-**Whole page:** owner/manager only, staff redirected to `/inventory`.
-**Page title:** Shopping Rules
-**Controls:**
-- Auto-restock toggle — writes `feature_flags.auto_restock` — owner+manager
+Removed 2026-07-30 (SS-375/SS-271 pattern) -- folded into the Shopping page above as a single setting, standalone page and nav entry deleted.
 
 ### /properties/[id]/scan
 **Page title:** Scan a label

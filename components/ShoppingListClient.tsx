@@ -19,6 +19,8 @@ import { SkeletonList } from '@/components/Skeleton';
 import Pin from '@/components/PinAccent';
 import { usePullToRefresh } from '@/lib/use-pull-to-refresh';
 import BackLink from '@/components/ui/BackLink';
+import { usePropertyRole, canManage } from '@/components/PropertyRoleContext';
+import { Settings2 } from 'lucide-react';
 
 export type ShoppingListItem = {
   id: string;
@@ -59,14 +61,26 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
   const [pairingRules, setPairingRules] = useState<PairingRule[]>([]);
   const [dismissedPairingNudge, setDismissedPairingNudge] = useState(false);
   const [pesachModeEnabled, setPesachModeEnabled] = useState(false);
+  const [autoRestockEnabled, setAutoRestockEnabled] = useState(false);
+  const [savingAutoRestock, setSavingAutoRestock] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const supabase = createClient();
   const showToast = useToast();
   const t = useTranslations('shopping');
+  const role = usePropertyRole();
 
   // Same feature_flags.pesach_mode toggled on the Inventory page -- when
   // on, ShoppingListViewEnhanced flags (not silently includes) items
-  // sourced from a Pesach recipe that aren't cleared yet.
+  // sourced from a Pesach recipe that aren't cleared yet. auto_restock read
+  // in the same round trip -- it used to live on its own Shopping Rules
+  // page (components/ShoppingRulesClient.tsx, since removed); folded in
+  // here per SS-375/SS-271 (a whole page for one boolean was the pattern
+  // being removed). Confirmed live-consumed before folding it: it's read by
+  // the handle_low_stock() trigger (trg_inventory_low_stock on
+  // inventory_items) that auto-adds a dropped-below-minimum item to the
+  // active shopping list -- a real, working switch, just never turned on
+  // for any property yet, which is why it read as unfamiliar.
   useEffect(() => {
     supabase
       .from('properties')
@@ -76,9 +90,31 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
       .then(({ data }) => {
         const flags = (data?.feature_flags ?? {}) as Record<string, boolean>;
         setPesachModeEnabled(!!flags.pesach_mode);
+        setAutoRestockEnabled(!!flags.auto_restock);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId]);
+
+  async function toggleAutoRestock() {
+    setSavingAutoRestock(true);
+    const next = !autoRestockEnabled;
+    // Read-then-merge -- feature_flags is a single jsonb column shared by
+    // every flag on this property (pesach_mode, guest_taste_memory, etc.),
+    // never blind-overwrite.
+    const { data: current } = await supabase.from('properties').select('feature_flags').eq('id', propertyId).single();
+    const flags = (current?.feature_flags ?? {}) as Record<string, boolean>;
+    const { error: flagError } = await supabase
+      .from('properties')
+      .update({ feature_flags: { ...flags, auto_restock: next } })
+      .eq('id', propertyId);
+    setSavingAutoRestock(false);
+    if (flagError) {
+      showToast('Failed to update auto-restock setting.', { variant: 'error' });
+      return;
+    }
+    setAutoRestockEnabled(next);
+    showToast(next ? 'Auto-restock enabled.' : 'Auto-restock disabled.', { variant: 'success' });
+  }
 
   // Reference table, not property-scoped -- fetched once, same pattern as
   // other curated reference data elsewhere in this app.
@@ -281,6 +317,48 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
           </button>
         </div>
       </div>
+
+      {/* Auto-restock: folded in from its own standalone Shopping Rules page
+          (SS-375/SS-271 -- a whole page for one boolean was the pattern
+          being removed). Owner/manager only, matching that page's own gate
+          -- this is a property-level rule, not something staff should be
+          changing. Collapsed by default so it doesn't compete with the
+          list itself for attention on every visit. */}
+      {canManage(role) && (
+        <div className="max-w-6xl mx-auto px-4 mb-3">
+          <button
+            onClick={() => setShowSettings((v) => !v)}
+            className="flex items-center gap-1.5 text-xs font-medium text-dusk hover:text-denim transition-colors"
+          >
+            <Settings2 size={13} strokeWidth={2.25} aria-hidden="true" />
+            {t('settingsToggle')}
+          </button>
+          {showSettings && (
+            <div className="mt-2 bg-card rounded-xl2 border border-cardBorder shadow-card p-4 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-denim">{t('autoRestockLabel')}</p>
+                <p className="text-xs text-dusk">{t('autoRestockDescription')}</p>
+              </div>
+              <button
+                onClick={toggleAutoRestock}
+                disabled={savingAutoRestock}
+                role="switch"
+                aria-checked={autoRestockEnabled}
+                aria-label={t('autoRestockLabel')}
+                className={`relative shrink-0 w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${
+                  autoRestockEnabled ? 'bg-denim' : 'bg-mist border border-cardBorder'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
+                    autoRestockEnabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {(pullDistance > 0 || refreshing) && (
         <div

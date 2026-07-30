@@ -126,7 +126,6 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // Shift Handover moved to their own Staff group above -- excluded
       // here so this doesn't ALSO light up "More" while on those pages.
       { segment: 'tools', labelKey: 'tools', module: 'module_tools', excludeFromActive: ['tools/tasks'] },
-      { segment: 'shopping-rules', labelKey: 'shoppingRules', managerOnly: true, module: 'module_shopping' },
       // Both exist and work today -- Room Photo Review sits inside the
       // Tools grid already, Procurement is its own top-level page -- but
       // neither had a direct entry point, which read as "hard to find"
