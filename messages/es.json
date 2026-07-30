@@ -737,7 +737,7 @@
     "roshChodeshUnavailable": "Las fechas de Rosh Jodesh no están disponibles en este momento."
   },
   "sopLibrary": {
-    "title": "Biblioteca de Procedimientos",
+    "title": "Biblioteca de SOP",
     "description": "{count} procedimientos estándar, en inglés y español.",
     "searchPlaceholder": "Buscar procedimientos…",
     "unzoned": "Sin zona",
@@ -995,7 +995,7 @@
     "strip": "{count} preguntas · orden del turno",
     "tabGuide": "Guía del hogar",
     "tabVideos": "Videos de capacitación",
-    "tabProcedures": "Procedimientos",
+    "tabProcedures": "Biblioteca de SOP",
     "searchPlaceholder": "Buscar en el manual…",
     "noResults": "Ninguna pregunta coincide con esa búsqueda.",
     "progress": "{opened} de {total} abiertas",

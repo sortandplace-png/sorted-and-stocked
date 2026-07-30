@@ -140,7 +140,12 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
   }
 
   return (
-    <div className="max-w-md lg:max-w-4xl mx-auto p-4">
+    // No own max-w/mx-auto here -- this only ever mounts inside
+    // HandbookTabs' Procedures tab now (both /tools/sops and /staff/sops
+    // are redirect stubs into it), which already provides max-w-5xl
+    // centering. A second, narrower max-w-4xl here was clamping the grid
+    // below what the page actually has room for.
+    <div className="pb-4">
       <h1 className="text-2xl font-display text-denim mb-1">{t('title')}</h1>
       <p className="text-sm text-dusk mb-4">{t('description', { count: sops.length })}</p>
 
@@ -180,7 +185,7 @@ export default function SopLibraryClient({ initialSops }: { initialSops: Sop[] }
                 className={
                   items.length === 1
                     ? 'space-y-2.5'
-                    : 'space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2.5'
+                    : 'space-y-2.5 md:space-y-0 md:grid md:grid-cols-2 xl:grid-cols-4 md:gap-2.5'
                 }
               >
                 {items.map((s) => {
