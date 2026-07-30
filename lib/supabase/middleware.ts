@@ -16,7 +16,19 @@ import { NextResponse, type NextRequest } from 'next/server';
 const PUBLIC_PATHS = ['/login', '/auth/callback', '/auth/confirm', '/forgot-password', '/reset-password', '/signup', '/welcome', '/entry', '/privacy.html', '/terms.html', '/cookie-policy.html', '/blog', '/services', '/about', '/faq', '/contact'];
 
 export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  // request.headers (the incoming request's own Headers object) is
+  // immutable -- .set() on it directly is a silent no-op, not a throw, so
+  // this needs its own mutable copy. Passed as { request: { headers } }
+  // (the documented shape), not the raw `request` object itself, at every
+  // NextResponse.next() call below so it survives the cookies.setAll
+  // reassignment too -- the only way a downstream Server Component can
+  // recover the matched pathname via next/headers' headers(), since
+  // layouts don't receive it as a prop the way page.tsx's
+  // searchParams/params do. Read by app/properties/[id]/layout.tsx for
+  // module-flag route gating.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-pathname', request.nextUrl.pathname);
+  let response = NextResponse.next({ request: { headers: requestHeaders } });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,7 +48,7 @@ export async function updateSession(request: NextRequest) {
         },
         setAll(cookiesToSet: Parameters<SetAllCookies>[0]) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
+          response = NextResponse.next({ request: { headers: requestHeaders } });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           );

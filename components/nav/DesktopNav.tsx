@@ -14,6 +14,7 @@ import { useTranslations } from 'next-intl';
 import { ChevronDown, Scan as ScanIcon } from 'lucide-react';
 import type { PropertyRole } from '@/components/PropertyRoleContext';
 import ScanModal from '@/components/nav/ScanModal';
+import { isModuleEnabled, type ModuleKey } from '@/lib/module-flags';
 
 type GroupKey = 'plan' | 'shop' | 'staff' | 'more';
 
@@ -21,6 +22,10 @@ type NavItem = {
   segment: string;
   labelKey: string;
   managerOnly?: boolean;
+  // Hides the item entirely when this property has turned the module off
+  // (properties.feature_flags, see lib/module-flags.ts) -- independent of
+  // managerOnly, which governs role, not the property's own on/off switch.
+  module?: ModuleKey;
   // A segment that's a sub-path of another group's own segment (here,
   // 'tools/tasks' is a sub-path of the More group's 'tools') would
   // otherwise highlight both groups active at once on that page — this
@@ -44,16 +49,16 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
     key: 'plan',
     labelKey: 'plan',
     items: [
-      { segment: 'recipes', labelKey: 'recipes' },
-      { segment: 'meal-plan', labelKey: 'mealPlan' },
+      { segment: 'recipes', labelKey: 'recipes', module: 'module_recipes' },
+      { segment: 'meal-plan', labelKey: 'mealPlan', module: 'module_meal_plan' },
     ],
   },
   {
     key: 'shop',
     labelKey: 'shop',
     items: [
-      { segment: 'shopping-list', labelKey: 'shopping' },
-      { segment: 'inventory', labelKey: 'inventory' },
+      { segment: 'shopping-list', labelKey: 'shopping', module: 'module_shopping' },
+      { segment: 'inventory', labelKey: 'inventory', module: 'module_inventory' },
     ],
   },
   {
@@ -64,7 +69,7 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // member's home" but had zero entry points anywhere in the app
       // (confirmed: no reference in this file or MobileBottomNav.tsx
       // before this).
-      { segment: 'my-day', labelKey: 'myDay' },
+      { segment: 'my-day', labelKey: 'myDay', module: 'module_staff' },
       // Staff Task Center is manager-only now (2026-07-20, Racquel):
       // task_assignments RLS locks task visibility to own-assignments-only
       // per staff member, so a shared team task board no longer makes
@@ -77,7 +82,7 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // bookmark keeps working -- it just isn't offered as a second door to
       // the same place. Kept in excludeFromActive below so a direct visit to
       // that URL doesn't light up Team.
-      { segment: 'tools/tasks', labelKey: 'staffTasks', managerOnly: true },
+      { segment: 'tools/tasks', labelKey: 'staffTasks', managerOnly: true, module: 'module_staff' },
       // Hours removed from the dropdown: it belongs inside My Day, not as
       // its own destination. The /staff/hours ROUTE is untouched and still
       // enforces its own owner/manager gate (R21) -- it is simply no longer
@@ -97,6 +102,7 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
         segment: 'staff',
         labelKey: 'team',
         managerOnly: true,
+        module: 'module_staff',
         excludeFromActive: ['staff/duty-roster', 'staff/hours', 'staff/sops', 'staff/training', 'staff/handbook'],
       },
       // Below the rule is what a housekeeper reads rather than does. The
@@ -109,7 +115,7 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // resolve (R21); they are simply no longer their own nav destinations
       // now that the Handbook carries both. The Task Center's "View full
       // procedure" deep link still lands on ?tab=procedures.
-      { segment: 'staff/handbook', labelKey: 'staffHandbook', dividerBefore: true },
+      { segment: 'staff/handbook', labelKey: 'staffHandbook', dividerBefore: true, module: 'module_staff' },
     ],
   },
   {
@@ -119,8 +125,8 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // print-labels now lives inside Inventory. Staff Task Center and
       // Shift Handover moved to their own Staff group above -- excluded
       // here so this doesn't ALSO light up "More" while on those pages.
-      { segment: 'tools', labelKey: 'tools', excludeFromActive: ['tools/tasks'] },
-      { segment: 'shopping-rules', labelKey: 'shoppingRules', managerOnly: true },
+      { segment: 'tools', labelKey: 'tools', module: 'module_tools', excludeFromActive: ['tools/tasks'] },
+      { segment: 'shopping-rules', labelKey: 'shoppingRules', managerOnly: true, module: 'module_shopping' },
       // Both exist and work today -- Room Photo Review sits inside the
       // Tools grid already, Procurement is its own top-level page -- but
       // neither had a direct entry point, which read as "hard to find"
@@ -128,7 +134,7 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // matches the role gate each page already enforces server-side
       // (staff get redirected out), so this doesn't offer a link staff
       // would just bounce off of.
-      { segment: 'tools/photo-review', labelKey: 'photoReview', managerOnly: true },
+      { segment: 'tools/photo-review', labelKey: 'photoReview', managerOnly: true, module: 'module_inventory' },
       { segment: 'procurement', labelKey: 'procurement', managerOnly: true, href: '/procurement' },
       // Not managerOnly -- every role needs this for their own SMS opt-in;
       // the Invite Codes/Broadcast sections inside are what's actually
@@ -150,9 +156,11 @@ function segmentIsActive(pathname: string, item: NavItem): boolean {
 export default function DesktopNav({
   propertyId,
   role,
+  flags,
 }: {
   propertyId: string;
   role: PropertyRole;
+  flags: Record<string, unknown>;
 }) {
   const pathname = usePathname();
   const t = useTranslations('nav');
@@ -193,7 +201,9 @@ export default function DesktopNav({
       </Link>
 
       {GROUPS.map((group) => {
-        const visibleItems = group.items.filter((i) => !i.managerOnly || role === 'owner' || role === 'manager');
+        const visibleItems = group.items.filter(
+          (i) => (!i.managerOnly || role === 'owner' || role === 'manager') && (!i.module || isModuleEnabled(flags, i.module))
+        );
         if (visibleItems.length === 0) return null;
         const groupActive = visibleItems.some((i) => segmentIsActive(pathname, i));
         const isOpen = openGroup === group.key;
@@ -255,13 +265,15 @@ export default function DesktopNav({
         );
       })}
 
-      <button
-        onClick={() => setShowScan(true)}
-        aria-label={t('scanAriaLabel')}
-        className="rounded-full p-2 text-white/70 hover:bg-white/10 hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-      >
-        <ScanIcon size={18} strokeWidth={1.5} />
-      </button>
+      {isModuleEnabled(flags, 'module_inventory') && (
+        <button
+          onClick={() => setShowScan(true)}
+          aria-label={t('scanAriaLabel')}
+          className="rounded-full p-2 text-white/70 hover:bg-white/10 hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        >
+          <ScanIcon size={18} strokeWidth={1.5} />
+        </button>
+      )}
 
       {showScan && <ScanModal propertyId={propertyId} onClose={() => setShowScan(false)} />}
     </nav>

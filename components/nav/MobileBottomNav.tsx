@@ -16,9 +16,12 @@ import { useTranslations } from 'next-intl';
 import { Home, BookOpen, Scan as ScanIcon, ShoppingCart, Package, Users, X } from 'lucide-react';
 import ScanModal from '@/components/nav/ScanModal';
 import type { PropertyRole } from '@/components/PropertyRoleContext';
+import { isModuleEnabled } from '@/lib/module-flags';
 
 // Mirrors DesktopNav's staff group. managerOnly matches each page's own
-// server-side gate, so staff are never offered a link that redirects them out.
+// server-side gate, so staff are never offered a link that redirects them
+// out. Every entry here is module_staff -- the whole sheet is a single
+// Staff destination, so it's gated as one unit below rather than per-item.
 const STAFF_LINKS: { segment: string; labelKey: string; managerOnly?: boolean; dividerBefore?: boolean; href?: string }[] = [
   { segment: 'my-day', labelKey: 'myDay' },
   { segment: 'tools/tasks', labelKey: 'staffTasks', managerOnly: true },
@@ -36,24 +39,27 @@ const STAFF_LINKS: { segment: string; labelKey: string; managerOnly?: boolean; d
 export default function MobileBottomNav({
   propertyId,
   role,
+  flags,
 }: {
   propertyId: string;
   role: PropertyRole;
+  flags: Record<string, unknown>;
 }) {
   const pathname = usePathname();
   const t = useTranslations('nav');
   const [showScan, setShowScan] = useState(false);
   const [showStaff, setShowStaff] = useState(false);
 
+  const staffModuleOn = isModuleEnabled(flags, 'module_staff');
   const staffLinks = STAFF_LINKS.filter((l) => !l.managerOnly || role === 'owner' || role === 'manager');
 
   const items = [
     { segment: 'dashboard', labelKey: 'home', Icon: Home },
-    { segment: 'recipes', labelKey: 'recipes', Icon: BookOpen },
+    ...(isModuleEnabled(flags, 'module_recipes') ? [{ segment: 'recipes', labelKey: 'recipes', Icon: BookOpen }] : []),
   ];
   const itemsRight = [
-    { segment: 'shopping-list', labelKey: 'shopping', Icon: ShoppingCart },
-    { segment: 'inventory', labelKey: 'inventory', Icon: Package },
+    ...(isModuleEnabled(flags, 'module_shopping') ? [{ segment: 'shopping-list', labelKey: 'shopping', Icon: ShoppingCart }] : []),
+    ...(isModuleEnabled(flags, 'module_inventory') ? [{ segment: 'inventory', labelKey: 'inventory', Icon: Package }] : []),
   ];
 
   function NavItem({ segment, labelKey, Icon }: { segment: string; labelKey: string; Icon: typeof Home }) {
@@ -84,35 +90,39 @@ export default function MobileBottomNav({
           <NavItem key={i.segment} {...i} />
         ))}
 
-        <button
-          onClick={() => setShowStaff(true)}
-          aria-haspopup="dialog"
-          aria-expanded={showStaff}
-          className="flex flex-col items-center justify-center gap-0.5 flex-1 min-w-[44px] min-h-[44px] py-1.5 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-        >
-          <Users
-            size={20}
-            strokeWidth={1.5}
-            className={pathname.includes('/staff') || pathname.includes('/my-day') ? 'text-brass' : 'text-white/50'}
-            aria-hidden="true"
-          />
-          <span
-            className={`text-[10px] font-medium leading-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-full [-webkit-text-size-adjust:100%] [text-size-adjust:100%] ${
-              pathname.includes('/staff') || pathname.includes('/my-day') ? 'text-white' : 'text-white/50'
-            }`}
+        {staffModuleOn && (
+          <button
+            onClick={() => setShowStaff(true)}
+            aria-haspopup="dialog"
+            aria-expanded={showStaff}
+            className="flex flex-col items-center justify-center gap-0.5 flex-1 min-w-[44px] min-h-[44px] py-1.5 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
-            {t('staff')}
-          </span>
-        </button>
+            <Users
+              size={20}
+              strokeWidth={1.5}
+              className={pathname.includes('/staff') || pathname.includes('/my-day') ? 'text-brass' : 'text-white/50'}
+              aria-hidden="true"
+            />
+            <span
+              className={`text-[10px] font-medium leading-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-full [-webkit-text-size-adjust:100%] [text-size-adjust:100%] ${
+                pathname.includes('/staff') || pathname.includes('/my-day') ? 'text-white' : 'text-white/50'
+              }`}
+            >
+              {t('staff')}
+            </span>
+          </button>
+        )}
 
         <div className="flex-1 flex items-center justify-center">
-          <button
-            onClick={() => setShowScan(true)}
-            aria-label={t('scanAriaLabel')}
-            className="-mt-5 w-14 h-14 min-w-[44px] min-h-[44px] rounded-full bg-denim text-white shadow-md shadow-black/20 flex items-center justify-center hover:opacity-90 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-          >
-            <ScanIcon size={24} strokeWidth={1.5} />
-          </button>
+          {isModuleEnabled(flags, 'module_inventory') && (
+            <button
+              onClick={() => setShowScan(true)}
+              aria-label={t('scanAriaLabel')}
+              className="-mt-5 w-14 h-14 min-w-[44px] min-h-[44px] rounded-full bg-denim text-white shadow-md shadow-black/20 flex items-center justify-center hover:opacity-90 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
+              <ScanIcon size={24} strokeWidth={1.5} />
+            </button>
+          )}
         </div>
 
         {itemsRight.map((i) => (

@@ -13,6 +13,7 @@ import Pin from '@/components/PinAccent'
 import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
 import { getWidgetPrefs, getTodaysMealPlan, getLowStockAlerts } from '@/lib/dashboard-widgets-data'
 import { formatPropertyLabel } from '@/lib/property-display'
+import { isModuleEnabled } from '@/lib/module-flags'
 import {
   getOmerStatus,
   getOmerOutlook,
@@ -583,6 +584,16 @@ async function getPrepAheadEnabled(propertyId: string): Promise<boolean> {
   return flags.prep_ahead_assistant !== false
 }
 
+// Same feature_flags column, same default-true convention as
+// getPrepAheadEnabled above -- separate query rather than threading it
+// through that one since the two are unrelated flags read for different
+// reasons (per-property optional widget vs. whole-module visibility).
+async function getModuleFlags(propertyId: string): Promise<Record<string, unknown>> {
+  const supabase = await createClient()
+  const { data } = await supabase.from('properties').select('feature_flags').eq('id', propertyId).single()
+  return (data?.feature_flags ?? {}) as Record<string, unknown>
+}
+
 async function getUserRole(propertyId: string): Promise<string | null> {
   const supabase = await createClient()
   const {
@@ -619,7 +630,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const { id: propertyId } = await params
   const t = await getTranslations('dashboard')
   const locale = await getLocale()
-  const [{ meals, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount, pantryCount, widgetPrefs, todaysMeals, lowStockItems] = await Promise.all([
+  const [{ meals, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount, pantryCount, widgetPrefs, todaysMeals, lowStockItems, moduleFlags] = await Promise.all([
     getData(propertyId),
     getHebcal(),
     getHebrewInfo(),
@@ -635,6 +646,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     getWidgetPrefs(propertyId),
     getTodaysMealPlan(propertyId),
     getLowStockAlerts(propertyId),
+    getModuleFlags(propertyId),
   ])
   const isOwnerOrManager = userRole === 'owner' || userRole === 'manager'
   const tehillim = await getTehillim(hebrewInfo.day)
@@ -1067,12 +1079,14 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               as a broken toggle affordance per Racquel's RULE 1. */}
           <div className="col-span-12 grid grid-cols-2 sm:grid-cols-5 gap-[14px]">
             {([
-              [`/properties/${propertyId}/meal-plan`, Calendar, t('quickActions.planMeal'), t('quickActions.planMealSubtitle'), undefined] as const,
-              [`/properties/${propertyId}/recipes`, BookOpen, t('quickActions.recipesTile'), `${recipeCount} ${recipeCount === 1 ? t('recipe') : t('recipes')}`, undefined] as const,
-              [`/properties/${propertyId}/recipes`, Plus, t('quickActions.addRecipe'), t('quickActions.addRecipeSubtitle'), undefined] as const,
-              [`/properties/${propertyId}/shopping-list`, ShoppingCart, t('quickActions.shoppingList'), t('quickActions.shoppingListSubtitle'), undefined] as const,
-              [`/properties/${propertyId}/inventory`, Package, t('quickActions.inventory'), t('quickActions.inventorySubtitle'), undefined] as const,
-            ]).map(([href, Icon, label, subtitle, ariaLabel]) => (
+              [`/properties/${propertyId}/meal-plan`, Calendar, t('quickActions.planMeal'), t('quickActions.planMealSubtitle'), undefined, 'module_meal_plan'] as const,
+              [`/properties/${propertyId}/recipes`, BookOpen, t('quickActions.recipesTile'), `${recipeCount} ${recipeCount === 1 ? t('recipe') : t('recipes')}`, undefined, 'module_recipes'] as const,
+              [`/properties/${propertyId}/recipes`, Plus, t('quickActions.addRecipe'), t('quickActions.addRecipeSubtitle'), undefined, 'module_recipes'] as const,
+              [`/properties/${propertyId}/shopping-list`, ShoppingCart, t('quickActions.shoppingList'), t('quickActions.shoppingListSubtitle'), undefined, 'module_shopping'] as const,
+              [`/properties/${propertyId}/inventory`, Package, t('quickActions.inventory'), t('quickActions.inventorySubtitle'), undefined, 'module_inventory'] as const,
+            ])
+              .filter(([, , , , , module]) => isModuleEnabled(moduleFlags, module))
+              .map(([href, Icon, label, subtitle, ariaLabel]) => (
               <Link
                 key={label}
                 href={href}
@@ -1094,6 +1108,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               full-width pass. Real photos still live in Supabase Storage
               (dashboard-photos/pantry.jpeg, mealplan.jpg); a mist fallback
               fill shows if either ever fails to load. */}
+          {isModuleEnabled(moduleFlags, 'module_inventory') && (
           <CollapsibleCard
             cardId="pantry"
             href={`/properties/${propertyId}/inventory?category=Pantry`}
@@ -1121,7 +1136,9 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               </div>
             </div>
           </CollapsibleCard>
+          )}
 
+          {isModuleEnabled(moduleFlags, 'module_meal_plan') && (
           <CollapsibleCard
             cardId="meal-plan-this-week"
             href={`/properties/${propertyId}/meal-plan`}
@@ -1149,6 +1166,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               </div>
             </div>
           </CollapsibleCard>
+          )}
         </div>
 
         {/* Quick-glance overview -- 3 real counts, restored (was briefly 2
@@ -1158,24 +1176,30 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             Recipes order, not the original Total Inventory / Active
             Recipes / Meals Planned order). */}
         <div className="grid grid-cols-3 gap-3 mb-4">
+          {isModuleEnabled(moduleFlags, 'module_inventory') && (
           <div className="relative rounded-xl2 border border-brass/30 shadow-card bg-mist p-4 text-center">
             <Pin size="sm" />
             <Package size={18} strokeWidth={1.5} className="text-brass mx-auto mb-1" aria-hidden="true" />
             <div className="text-2xl font-display text-denim">{inventoryCount.toLocaleString('en-US')}</div>
             <div className="text-xs text-dusk">{t('stats.totalInventory')}</div>
           </div>
+          )}
+          {isModuleEnabled(moduleFlags, 'module_meal_plan') && (
           <div className="relative rounded-xl2 border border-brass/30 shadow-card bg-mist p-4 text-center">
             <Pin size="sm" />
             <Calendar size={18} strokeWidth={1.5} className="text-brass mx-auto mb-1" aria-hidden="true" />
             <div className="text-2xl font-display text-denim">{distinctMealCount}</div>
             <div className="text-xs text-dusk">{t('stats.mealsPlanned')}</div>
           </div>
+          )}
+          {isModuleEnabled(moduleFlags, 'module_recipes') && (
           <div className="relative rounded-xl2 border border-brass/30 shadow-card bg-mist p-4 text-center">
             <Pin size="sm" />
             <BookOpen size={18} strokeWidth={1.5} className="text-brass mx-auto mb-1" aria-hidden="true" />
             <div className="text-2xl font-display text-denim">{recipeCount}</div>
             <div className="text-xs text-dusk">{t('stats.activeRecipes')}</div>
           </div>
+          )}
         </div>
 
         <DashboardWidgets
@@ -1189,6 +1213,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           prepAheadEnabled={prepAheadEnabled}
           canManagePrepAhead={isOwnerOrManager}
           isShabbosOrYomTovDinner={isShabbosOrYomTovDinner}
+          flags={moduleFlags}
         />
 
         {prepReminders.length > 0 && (
@@ -1277,18 +1302,22 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             entry point here anymore. Desktop already has these in the
             nav's "More" dropdown, so this block is mobile-only. */}
         <div className="md:hidden mt-6 pt-4 border-t border-cardBorder flex flex-wrap gap-x-4 gap-y-2 text-sm">
-          <Link href={`/properties/${propertyId}/tools`} className="text-dusk hover:text-denim underline underline-offset-2">
-            {t('mobileFooter.tools')}
-          </Link>
-          <Link href={`/properties/${propertyId}/staff`} className="text-dusk hover:text-denim underline underline-offset-2">
-            {t('mobileFooter.staff')}
-          </Link>
+          {isModuleEnabled(moduleFlags, 'module_tools') && (
+            <Link href={`/properties/${propertyId}/tools`} className="text-dusk hover:text-denim underline underline-offset-2">
+              {t('mobileFooter.tools')}
+            </Link>
+          )}
+          {isModuleEnabled(moduleFlags, 'module_staff') && (
+            <Link href={`/properties/${propertyId}/staff`} className="text-dusk hover:text-denim underline underline-offset-2">
+              {t('mobileFooter.staff')}
+            </Link>
+          )}
           {/* Both exist and work already -- Room Photo Review lives inside
               the Tools grid, Procurement is its own top-level page -- this
               is purely a findability fix, matching the same two shortcuts
               added to the desktop "More" dropdown. managerOnly-equivalent
               gate here since both pages already redirect staff server-side. */}
-          {isOwnerOrManager && (
+          {isOwnerOrManager && isModuleEnabled(moduleFlags, 'module_inventory') && (
             <Link href={`/properties/${propertyId}/tools/photo-review`} className="text-dusk hover:text-denim underline underline-offset-2">
               {t('mobileFooter.photoReview')}
             </Link>
@@ -1319,7 +1348,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           </div>
         )}
       </div>
-      <FloatingScanButton propertyId={propertyId} />
+      {isModuleEnabled(moduleFlags, 'module_inventory') && <FloatingScanButton propertyId={propertyId} />}
     </div>
   )
 }

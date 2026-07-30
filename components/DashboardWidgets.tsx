@@ -31,6 +31,7 @@ import { updateShoppingItemStatus } from '@/lib/api/shoppingList';
 import { markLowStockItemPurchased } from '@/lib/shopping-list-actions';
 import type { ReorderSource } from '@/lib/reorder-sources';
 import OrderLink from '@/components/OrderLink';
+import { isModuleEnabled } from '@/lib/module-flags';
 
 type PrepAheadReminder = { recipeId: string | null; recipeName: string; planDate: string; prepLeadDays: number | null };
 
@@ -45,6 +46,7 @@ export default function DashboardWidgets({
   prepAheadEnabled,
   canManagePrepAhead,
   isShabbosOrYomTovDinner,
+  flags,
 }: {
   propertyId: string;
   initialPrefs: WidgetPrefs;
@@ -56,6 +58,7 @@ export default function DashboardWidgets({
   prepAheadEnabled: boolean;
   canManagePrepAhead: boolean;
   isShabbosOrYomTovDinner: boolean;
+  flags: Record<string, unknown>;
 }) {
   const t = useTranslations('dashboard.widgets');
   const WIDGET_LABELS: Record<WidgetKey, string> = {
@@ -68,7 +71,18 @@ export default function DashboardWidgets({
   const supabase = createClient();
   const showToast = useToast();
 
-  const orderedKeys = (Object.keys(prefs) as WidgetKey[]).sort((a, b) => prefs[a].sortOrder - prefs[b].sortOrder);
+  const mealPlanOn = isModuleEnabled(flags, 'module_meal_plan');
+  const inventoryOn = isModuleEnabled(flags, 'module_inventory');
+  const shoppingOn = isModuleEnabled(flags, 'module_shopping');
+
+  // Today's Meal Plan is dropped from the show/hide/reorder set entirely
+  // (not just hidden while visible) when the property has Meal Plan turned
+  // off -- the property-level switch overrides whatever this user's own
+  // dashboard_widget_prefs row says, same as the fixed Low Stock/Shopping
+  // List row below being conditionally rendered rather than user-toggleable.
+  const orderedKeys = (Object.keys(prefs) as WidgetKey[])
+    .filter((k) => k !== 'todays_meal_plan' || mealPlanOn)
+    .sort((a, b) => prefs[a].sortOrder - prefs[b].sortOrder);
   const visibleKeys = orderedKeys.filter((k) => prefs[k].isVisible);
 
   async function persist(next: WidgetPrefs) {
@@ -190,13 +204,16 @@ export default function DashboardWidgets({
           </div>
         )}
 
-        {/* Fixed row -- always shown, not part of the show/hide/reorder
-            system above (Low Stock Alerts and the shopping-list count are
-            operational, not optional). */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 items-stretch">
-          <LowStockAlertsCard title={t('labelLowStockAlerts')} propertyId={propertyId} items={lowStockItems} />
-          <ShoppingListSummaryCard propertyId={propertyId} count={shoppingListCount} preview={shoppingListPreview} />
-        </div>
+        {/* Fixed row -- always shown when its module is on, not part of the
+            show/hide/reorder system above (Low Stock Alerts and the
+            shopping-list count are operational, not optional -- only the
+            property-level module switch can hide either). */}
+        {(inventoryOn || shoppingOn) && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 items-stretch">
+            {inventoryOn && <LowStockAlertsCard title={t('labelLowStockAlerts')} propertyId={propertyId} items={lowStockItems} />}
+            {shoppingOn && <ShoppingListSummaryCard propertyId={propertyId} count={shoppingListCount} preview={shoppingListPreview} />}
+          </div>
+        )}
       </div>
     </div>
   );

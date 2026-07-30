@@ -1,5 +1,6 @@
 // app/properties/[id]/layout.tsx
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import AppHeader from '@/components/ui/AppHeader';
@@ -11,6 +12,7 @@ import { PropertyRoleProvider, type PropertyRole } from '@/components/PropertyRo
 import Footer from '@/components/Footer';
 import { getNextObservance } from '@/lib/get-next-observance';
 import { formatPropertyLabel } from '@/lib/property-display';
+import { isModuleEnabled, moduleForSegment } from '@/lib/module-flags';
 
 export default async function PropertyLayout({
   params,
@@ -36,12 +38,28 @@ export default async function PropertyLayout({
 
   const { data: membership } = await supabase
     .from('property_members')
-    .select('role, properties(name, household_id, households(name))')
+    .select('role, properties(name, household_id, feature_flags, households(name))')
     .eq('property_id', id)
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (!membership) redirect('/properties');
+
+  const featureFlags = ((membership.properties as unknown as { feature_flags: Record<string, unknown> | null } | null)
+    ?.feature_flags ?? {}) as Record<string, unknown>;
+
+  // x-pathname is stamped by lib/supabase/middleware.ts -- layouts don't
+  // get the matched pathname as a prop the way page.tsx gets params, so
+  // this is the only way to know which child route is actually being
+  // rendered from here. Falls back to gating nothing if it's ever missing
+  // (a stricter default would risk bouncing every page on a header that
+  // failed to propagate for an unrelated reason).
+  const pathname = (await headers()).get('x-pathname') ?? '';
+  const afterPropertyId = pathname.split(`/properties/${id}/`)[1]?.split('?')[0] ?? '';
+  const requiredModule = moduleForSegment(afterPropertyId);
+  if (requiredModule && !isModuleEnabled(featureFlags, requiredModule)) {
+    redirect(`/properties/${id}/dashboard`);
+  }
 
   // Whether a household's name is shown at all depends on how many
   // properties it actually has -- not on whether this user happens to be a
@@ -135,13 +153,13 @@ export default async function PropertyLayout({
           observance={nextObservance}
         />
         <div className="sticky top-[60px] z-20">
-          <DesktopNav propertyId={id} role={membership.role as PropertyRole} />
+          <DesktopNav propertyId={id} role={membership.role as PropertyRole} flags={featureFlags} />
         </div>
         <main className="pb-20 md:pb-0">
           {children}
           <Footer propertyId={id} />
         </main>
-        <MobileBottomNav propertyId={id} role={membership.role as PropertyRole} />
+        <MobileBottomNav propertyId={id} role={membership.role as PropertyRole} flags={featureFlags} />
         {showStaffOnboarding && (
           <StaffOnboardingModal propertyId={id} propertyName={propertyName} userId={user.id} />
         )}
