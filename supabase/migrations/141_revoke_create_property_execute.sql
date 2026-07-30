@@ -1,0 +1,13 @@
+-- 141_revoke_create_property_execute.sql
+-- SS-371. CREATE FUNCTION grants EXECUTE to PUBLIC by default unless
+-- explicitly revoked -- migrations 139 and 140 both added an explicit
+-- `grant ... to authenticated` on top of that default, but never revoked
+-- the default itself, so anon (which has no direct grant of its own, only
+-- inherits through PUBLIC) has held EXECUTE on this SECURITY DEFINER
+-- function since it was first created. Not currently exploitable -- the
+-- function's own body raises on a null auth.uid(), which is exactly what
+-- an anon caller has -- but there's no reason the internal guard should be
+-- the only thing standing between an unauthenticated caller and a
+-- definer-rights function. Same tightening already applied to
+-- get_user_id_by_email.
+revoke execute on function create_property_with_household(text, uuid) from anon, public;
