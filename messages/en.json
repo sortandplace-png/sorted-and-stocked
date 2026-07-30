@@ -941,7 +941,7 @@
   },
   "hoursSection": {
     "title": "Hours",
-    "subtitle": "Clocked hours by person, by week. Corrections are made directly in Supabase for now.",
+    "subtitle": "Clocked hours by person, by week. To correct an entry, speak to your manager.",
     "empty": "No shifts have been recorded at this property yet."
   },
   "trainingVideos": {

@@ -941,7 +941,7 @@
   },
   "hoursSection": {
     "title": "Horas",
-    "subtitle": "Horas registradas por persona, por semana. Las correcciones se hacen directamente en Supabase por ahora.",
+    "subtitle": "Horas registradas por persona, por semana. Para corregir una entrada, hable con su gerente.",
     "empty": "Todavía no hay turnos registrados en esta propiedad."
   },
   "trainingVideos": {
