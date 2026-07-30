@@ -19,60 +19,35 @@ export default function NewPropertyForm() {
     setSaving(true);
     setError(null);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setError('Your session expired — please sign in again.');
-      setSaving(false);
-      return;
-    }
-
-    // The 003_auto_owner_membership.sql trigger enrolls `user.id` as
-    // 'owner' in property_members automatically — no separate insert
-    // needed here. Deliberately no .select() on this insert: INSERT ...
-    // RETURNING re-checks the properties SELECT RLS policy against the
-    // new row (is_property_member), which 403s here because that check
-    // races the trigger's property_members insert. Fetch the new
-    // property's id from property_members afterward instead.
-    const { error: insertError } = await supabase
-      .from('properties')
-      .insert({ name: name.trim(), created_by: user.id });
-
-    if (insertError) {
-      setSaving(false);
-      setError(insertError.message);
-      return;
-    }
-
-    // Retry fetching the new property_members row (trigger may not have fired yet)
-    let membership = null;
-    let membershipError = null;
-    for (let attempt = 0; attempt < 5; attempt++) {
-      if (attempt > 0) await new Promise(r => setTimeout(r, 100 * attempt));
-      const result = await supabase
-        .from('property_members')
-        .select('property_id')
-        .eq('user_id', user.id)
-        .order('joined_at', { ascending: false })
-        .limit(1)
-        .single();
-      if (!result.error) {
-        membership = result.data;
-        break;
-      }
-      membershipError = result.error;
-    }
+    // create_property_with_household (migration 139) creates the property
+    // AND a new household for it in one security-definer transaction --
+    // households has no INSERT policy of its own (confirmed: the only
+    // policy, households_select_member, requires a property already linked
+    // to see a household, which doesn't exist yet for a brand-new one), so
+    // a plain client-side insert here could never have set household_id.
+    // That gap is what left "Low" and "QA Demo" as orphans (SS-368).
+    //
+    // Named after the property, matching the display convention elsewhere
+    // (a single-property household with a matching name reads as just the
+    // bare name, same as "Lax" already does) -- this form has never asked
+    // about a household concept, and still doesn't need to.
+    //
+    // The 003_auto_owner_membership.sql trigger fires synchronously inside
+    // the same INSERT the function runs, so property_members already has
+    // the owner row by the time this call returns -- no polling/retry
+    // needed the way the old direct-insert version required.
+    const { data: propertyId, error: rpcError } = await supabase.rpc('create_property_with_household', {
+      p_property_name: name.trim(),
+    });
 
     setSaving(false);
 
-    if (membershipError || !membership) {
-      setError(membershipError?.message ?? 'Property created, but could not find it afterward.');
+    if (rpcError || !propertyId) {
+      setError(rpcError?.message ?? 'Property created, but could not find it afterward.');
       return;
     }
 
-    router.push(`/properties/${membership.property_id}/inventory`);
+    router.push(`/properties/${propertyId}/inventory`);
   }
 
   return (
