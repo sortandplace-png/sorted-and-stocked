@@ -85,7 +85,7 @@ export default function PrepTimelineClient({ propertyId }: { propertyId: string 
   if (loading) return <SkeletonList />;
 
   return (
-    <div className="max-w-md mx-auto p-4">
+    <div className="max-w-md lg:max-w-4xl mx-auto p-4">
       <h1 className="text-2xl font-display text-denim mb-1">Prep Timeline</h1>
       <p className="text-sm text-dusk mb-4">Working backward from when you want dinner ready.</p>
 

@@ -44,30 +44,15 @@ const ALLOWLIST = new Set([
 const BASELINE = new Set([
   'components/BackupDownloadClient.tsx',
   'components/BorrowedItemsClient.tsx',
-  'components/CaptureInboxClient.tsx',
-  'components/DuplicateIngredientsClient.tsx',
   'components/GuestScalerClient.tsx',
-  'components/GuestTasteMemoryClient.tsx',
   'components/HechsherVerificationClient.tsx',
   'components/HomeMemoryTimelineClient.tsx',
-  'components/HouseholdContactsClient.tsx',
-  'components/HouseholdKnowledgeClient.tsx',
   'components/KosherTypeTaggingClient.tsx',
   'components/LinkCapturedPhotosClient.tsx',
-  'components/LocalFoodDirectoryClient.tsx',
   // Found by the rule itself, not the original grep -- see SS-400 note.
   'components/MealPlanViewer.tsx',
-  'components/NeedsLinkingClient.tsx',
   'components/PantryZonesClient.tsx',
-  'components/PhotoWorklistClient.tsx',
-  'components/PrepTimelineClient.tsx',
-  'components/RecipeDetailClient.tsx',
-  'components/ResetChecklistClient.tsx',
-  'components/SettingsClient.tsx',
   'components/ShelfAuditorView.tsx',
-  'components/ShiftHandoverClient.tsx',
-  'components/TranslationWorklistClient.tsx',
-  'app/properties/page.tsx',
 ]);
 
 // A page-level container is max-w-{xs,sm,md} together with mx-auto.
@@ -124,7 +109,12 @@ if (newOnes.length > 0) {
   process.exit(1);
 }
 
+// Counted in occurrences AND files, because they differ -- a single file
+// can hold several offending containers (a loaded state, a loading state,
+// a permission-denied state), and "13 known" against a 10-entry baseline
+// otherwise reads like a bug.
+const knownFiles = new Set(known.map((o) => o.rel)).size;
 console.log(
   `✓ SS-400 desktop-layout check: no new violations` +
-    (known.length ? ` (${known.length} known, from the audit baseline)` : '')
+    (known.length ? ` (${known.length} known occurrence(s) across ${knownFiles} baselined file(s))` : '')
 );

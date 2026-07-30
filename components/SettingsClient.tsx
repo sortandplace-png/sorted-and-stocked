@@ -271,7 +271,7 @@ export default function SettingsClient({
   }
 
   return (
-    <div className="max-w-md mx-auto p-4 space-y-6">
+    <div className="max-w-md lg:max-w-4xl mx-auto p-4 space-y-6">
       <h1 className="text-2xl font-display text-denim mb-1">Settings</h1>
 
       <section>

@@ -113,7 +113,7 @@ export default function DuplicateIngredientsClient({ propertyId }: { propertyId:
     : clusters;
 
   return (
-    <div className="max-w-md mx-auto p-4">
+    <div className="max-w-md lg:max-w-4xl mx-auto p-4">
       <h1 className="text-2xl font-display text-denim mb-1">Duplicate Ingredients</h1>
       <p className="text-sm text-dusk mb-4">
         Likely the same ingredient, spelled differently across recipes. Pick which spelling to keep.

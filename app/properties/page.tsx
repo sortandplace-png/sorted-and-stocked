@@ -72,7 +72,11 @@ export default async function PropertiesPage() {
 
   return (
     <div className="min-h-screen bg-linen px-6 pt-12">
-      <div className="max-w-sm mx-auto">
+      {/* SS-400: was max-w-sm at every width, so five cards sat in a 384px
+          column centred in an empty 1280px page. Widens on desktop and the
+          grid gains columns to match -- a wider container alone would just
+          have stretched two columns. */}
+      <div className="max-w-sm lg:max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
             <LogoMark className="w-8 h-8" />

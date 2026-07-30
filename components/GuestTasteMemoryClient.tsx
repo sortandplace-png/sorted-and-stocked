@@ -230,7 +230,7 @@ export default function GuestTasteMemoryClient({ propertyId }: { propertyId: str
     lookupList?.filter((l) => l.name.toLowerCase().includes(linkSearch.toLowerCase())).slice(0, 20) ?? [];
 
   return (
-    <div className="max-w-md mx-auto p-4">
+    <div className="max-w-md lg:max-w-4xl mx-auto p-4">
       <h1 className="text-2xl font-display text-denim mb-1">Guest &amp; Family Taste Memory</h1>
       <p className="text-sm text-dusk mb-4">
         Likes, dislikes, allergies, and sensitivities — kept with the person, not just the meal.

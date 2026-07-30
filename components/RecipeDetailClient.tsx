@@ -619,12 +619,14 @@ export default function RecipeDetailClient({
   }
 
   if (loading) {
-    return <div className="max-w-md mx-auto p-4 text-sm text-dusk">Loading recipe…</div>;
+    // Loading and error states match the loaded container (lg:max-w-6xl)
+    // so the page does not jump width once the recipe arrives.
+    return <div className="max-w-md lg:max-w-6xl mx-auto p-4 text-sm text-dusk">Loading recipe…</div>;
   }
 
   if (error || !recipe) {
     return (
-      <div className="max-w-md mx-auto p-4">
+      <div className="max-w-md lg:max-w-6xl mx-auto p-4">
         <p className="text-sm text-rust">{error ?? 'Recipe not found.'}</p>
         <Link href={`/properties/${propertyId}/meal-plan`} className="text-sm text-denim mt-2 inline-block">
           ← Back to meal plan

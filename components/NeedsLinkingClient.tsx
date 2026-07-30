@@ -270,7 +270,7 @@ export default function NeedsLinkingClient({ propertyId }: { propertyId: string 
   const active = groups.find((g) => g.name === activeName) ?? null;
 
   return (
-    <div className="max-w-md mx-auto p-4">
+    <div className="max-w-md lg:max-w-4xl mx-auto p-4">
       <h1 className="text-2xl font-display text-denim mb-1">Needs Linking</h1>
       <p className={`text-sm text-dusk ${autoLinkResult && autoLinkResult.linked > 0 ? 'mb-1' : 'mb-4'}`}>
         {groups.length} ingredient{groups.length === 1 ? '' : 's'} still need a real inventory link.

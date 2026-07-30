@@ -133,14 +133,14 @@ export default function HouseholdKnowledgeClient({ propertyId }: { propertyId: s
   // manager-only page, not a new pattern.
   if (!canManage(role)) {
     return (
-      <div className="max-w-md mx-auto p-4">
+      <div className="max-w-md lg:max-w-4xl mx-auto p-4">
         <p className="text-sm text-dusk text-center py-8">Only an owner or manager can view the house manual.</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto p-4">
+    <div className="max-w-md lg:max-w-4xl mx-auto p-4">
       <h1 className="text-2xl font-display text-denim mb-1">House Manual</h1>
       <p className="text-sm text-dusk mb-4">
         The answers staff and family keep asking for — where things are, how things are done.

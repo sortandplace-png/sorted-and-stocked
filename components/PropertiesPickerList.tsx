@@ -29,7 +29,7 @@ export default function PropertiesPickerList({ groups }: { groups: HouseholdGrou
   );
 
   return (
-    <div className="grid grid-cols-2 gap-2.5 mb-6">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 mb-6">
       {cards.map(({ property, householdName }) => {
         // Staff land on their dedicated My Day page instead of Dashboard --
         // owner/manager's landing page is unchanged.

@@ -262,7 +262,9 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
   );
 
   if (!canManage(role)) {
-    return <p className="max-w-md mx-auto p-4 text-sm text-dusk">Only an owner or manager can review captures.</p>;
+    // Matches the real container below (lg:max-w-3xl) so the page does not
+    // change width depending on whether you are allowed to see it.
+    return <p className="max-w-md lg:max-w-3xl mx-auto p-4 text-sm text-dusk">Only an owner or manager can review captures.</p>;
   }
 
   if (loading) return <SkeletonList />;

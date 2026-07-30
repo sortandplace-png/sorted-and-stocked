@@ -198,7 +198,7 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
   if (loading) return <SkeletonList />;
 
   return (
-    <div className="max-w-md mx-auto p-4">
+    <div className="max-w-md lg:max-w-4xl mx-auto p-4">
       <div className="flex items-start justify-between gap-2 mb-1">
         <h1 className="text-2xl font-display text-denim">Local Takeout Directory</h1>
         {canManage(role) && !formOpen && (

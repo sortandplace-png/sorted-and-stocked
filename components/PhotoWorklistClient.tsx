@@ -100,7 +100,7 @@ export default function PhotoWorklistClient({ propertyId }: { propertyId: string
   }
 
   return (
-    <div className="max-w-md mx-auto p-4">
+    <div className="max-w-md lg:max-w-4xl mx-auto p-4">
       <h1 className="text-2xl font-display text-denim mb-1">{t('title')}</h1>
       <p className="text-sm text-dusk mb-5">{t('subtitle')}</p>
 
