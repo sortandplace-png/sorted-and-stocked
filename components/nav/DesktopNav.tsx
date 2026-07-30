@@ -59,6 +59,9 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
     items: [
       { segment: 'shopping-list', labelKey: 'shopping', module: 'module_shopping' },
       { segment: 'inventory', labelKey: 'inventory', module: 'module_inventory' },
+      // SS-399. Manager-tier like the page's own gate -- staff are
+      // redirected out, so this doesn't offer a link they'd bounce off.
+      { segment: 'all-houses', labelKey: 'allHouses', managerOnly: true, module: 'module_inventory' },
     ],
   },
   {

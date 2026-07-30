@@ -83,6 +83,7 @@
   "nav": {
     "dashboard": "Panel",
     "inventory": "Inventario",
+    "allHouses": "Todas las Casas",
     "recipes": "Recetas",
     "mealPlan": "Plan de comidas",
     "shopping": "Compras",
@@ -943,6 +944,21 @@
     "title": "Horas",
     "subtitle": "Horas registradas por persona, por semana. Para corregir una entrada, hable con su gerente.",
     "empty": "Todavía no hay turnos registrados en esta propiedad."
+  },
+  "allHouses": {
+    "title": "Inventario en todas las casas",
+    "subtitle": "{products} productos en {houses} casas. Solo lectura — edite un artículo en su propia casa.",
+    "searchPlaceholder": "Buscar productos…",
+    "allCategories": "Todas las categorías",
+    "lowOnly": "Poco stock",
+    "multiHouseOnly": "En 2+ casas",
+    "empty": "Nada coincide con estos filtros.",
+    "neverCounted": "sin contar",
+    "rows": "filas",
+    "colProduct": "Producto",
+    "colCategory": "Categoría",
+    "colHouses": "Casas",
+    "colOrder": "Pedir"
   },
   "taskSupplies": {
     "heading": "Suministros",

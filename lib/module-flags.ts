@@ -49,6 +49,7 @@ const ROUTE_MODULES: { prefix: string; module: ModuleKey }[] = [
   { prefix: 'shopping-list', module: 'module_shopping' },
   { prefix: 'batch-operations', module: 'module_shopping' },
   { prefix: 'inventory', module: 'module_inventory' },
+  { prefix: 'all-houses', module: 'module_inventory' },
   { prefix: 'print-labels', module: 'module_inventory' },
   { prefix: 'scan', module: 'module_inventory' },
   { prefix: 'bulk-photos', module: 'module_inventory' },

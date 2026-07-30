@@ -83,6 +83,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "inventory": "Inventory",
+    "allHouses": "All Houses",
     "recipes": "Recipes",
     "mealPlan": "Meal Plan",
     "shopping": "Shopping",
@@ -943,6 +944,21 @@
     "title": "Hours",
     "subtitle": "Clocked hours by person, by week. To correct an entry, speak to your manager.",
     "empty": "No shifts have been recorded at this property yet."
+  },
+  "allHouses": {
+    "title": "Inventory across houses",
+    "subtitle": "{products} products across {houses} houses. Read-only — edit an item in its own house.",
+    "searchPlaceholder": "Search products…",
+    "allCategories": "All categories",
+    "lowOnly": "Low stock",
+    "multiHouseOnly": "In 2+ houses",
+    "empty": "Nothing matches these filters.",
+    "neverCounted": "not counted",
+    "rows": "rows",
+    "colProduct": "Product",
+    "colCategory": "Category",
+    "colHouses": "Houses",
+    "colOrder": "Order"
   },
   "taskSupplies": {
     "heading": "Supplies",
