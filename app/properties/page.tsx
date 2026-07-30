@@ -2,7 +2,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { Plus } from 'lucide-react';
 import LogoutButton from '@/components/LogoutButton';
 import { LogoMark } from '@/components/Logo';
 import Footer from '@/components/Footer';
@@ -63,7 +62,7 @@ export default async function PropertiesPage() {
   const groups = [...groupsByKey.values()];
 
   return (
-    <div className="min-h-screen bg-mist px-6 pt-12">
+    <div className="min-h-screen bg-linen px-6 pt-12">
       <div className="max-w-sm mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
@@ -75,13 +74,13 @@ export default async function PropertiesPage() {
 
         {error && <p className="text-sm text-rust mb-4">{error.message}</p>}
 
-        {groups.length > 0 ? (
-          <PropertiesPickerList groups={groups} />
-        ) : (
-          <p className="text-sm text-dusk mb-6">
-            You're not part of any property yet.
-          </p>
+        {groups.length === 0 && (
+          <p className="text-sm text-dusk mb-4">You're not part of any property yet.</p>
         )}
+
+        {/* Renders even with zero groups -- "Add a property" is always its
+            trailing grid cell, not a separate element. */}
+        <PropertiesPickerList groups={groups} />
 
         {memberships && memberships.length > 1 && (
           <Link
@@ -91,18 +90,6 @@ export default async function PropertiesPage() {
             Shop for multiple properties at once
           </Link>
         )}
-
-        {/* Same /sitemap tile language the property tiles above use
-            (bg-mist, border-brass/30, rounded-xl2, shadow-card) instead of
-            a plain outlined pill -- was the one element on this page still
-            reading as text-on-a-rectangle rather than a real tile. */}
-        <Link
-          href="/properties/new"
-          className="flex flex-col items-center justify-center gap-[6px] rounded-xl2 bg-mist border border-brass/30 shadow-card hover:shadow-cardHover transition-shadow text-center min-h-[80px] py-[10px] px-[14px] mb-2"
-        >
-          <Plus size={20} className="text-denim" aria-hidden="true" />
-          <span className="font-display font-normal text-[14px] text-denim">Add a property</span>
-        </Link>
 
         <Footer />
       </div>
