@@ -1,43 +1,73 @@
 // components/NewPropertyForm.tsx
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import FieldLabel from '@/components/FieldLabel';
 
+type ManageableHousehold = { id: string; name: string };
+
 export default function NewPropertyForm() {
   const [name, setName] = useState('');
+  const [mode, setMode] = useState<'new' | 'existing'>('new');
+  const [households, setHouseholds] = useState<ManageableHousehold[]>([]);
+  const [householdId, setHouseholdId] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
+  useEffect(() => {
+    // Only households the caller could plausibly join -- purely what
+    // populates the picker, not the real authorization boundary. The RPC
+    // (migration 140) re-checks owner/manager membership itself server-side
+    // regardless of what this query returns, so there's nothing to exploit
+    // by tampering with it client-side.
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('property_members')
+        .select('role, properties(household_id, households(id, name))')
+        .eq('user_id', user.id)
+        .in('role', ['owner', 'manager']);
+
+      const seen = new Map<string, string>();
+      for (const row of data ?? []) {
+        const property = row.properties as unknown as {
+          household_id: string | null;
+          households: { id: string; name: string } | null;
+        } | null;
+        const household = property?.households;
+        if (household && !seen.has(household.id)) seen.set(household.id, household.name);
+      }
+      setHouseholds(Array.from(seen, ([id, householdName]) => ({ id, name: householdName })).sort((a, b) => a.name.localeCompare(b.name)));
+    })();
+  }, [supabase]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
+    if (mode === 'existing' && !householdId) return;
     setSaving(true);
     setError(null);
 
-    // create_property_with_household (migration 139) creates the property
-    // AND a new household for it in one security-definer transaction --
+    // create_property_with_household (migration 139, extended in 140) --
     // households has no INSERT policy of its own (confirmed: the only
     // policy, households_select_member, requires a property already linked
-    // to see a household, which doesn't exist yet for a brand-new one), so
-    // a plain client-side insert here could never have set household_id.
-    // That gap is what left "Low" and "QA Demo" as orphans (SS-368).
-    //
-    // Named after the property, matching the display convention elsewhere
-    // (a single-property household with a matching name reads as just the
-    // bare name, same as "Lax" already does) -- this form has never asked
-    // about a household concept, and still doesn't need to.
-    //
-    // The 003_auto_owner_membership.sql trigger fires synchronously inside
-    // the same INSERT the function runs, so property_members already has
-    // the owner row by the time this call returns -- no polling/retry
-    // needed the way the old direct-insert version required.
+    // to see a household), so this has to run as a security-definer RPC
+    // either way. p_household_id null mints a new household named after the
+    // property (matches formatPropertyLabel's single-property-household
+    // convention, same as "Lax"); set, it links to that household instead --
+    // the RPC re-checks owner/manager membership itself, so this can't be
+    // used to attach a property to a household the caller doesn't manage.
     const { data: propertyId, error: rpcError } = await supabase.rpc('create_property_with_household', {
       p_property_name: name.trim(),
+      p_household_id: mode === 'existing' ? householdId : null,
     });
 
     setSaving(false);
@@ -71,10 +101,58 @@ export default function NewPropertyForm() {
               required
             />
           </div>
+
+          {/* Only shown once the caller already manages at least one
+              property -- a first-time user has nothing to join, so the
+              toggle would just be a confusing extra step in the common
+              case of setting up their very first property. */}
+          {households.length > 0 && (
+            <div>
+              <FieldLabel>Household</FieldLabel>
+              <div className="flex gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => setMode('new')}
+                  className={`flex-1 py-2 rounded-full text-sm font-medium border transition-colors ${
+                    mode === 'new' ? 'bg-denim text-white border-denim' : 'text-dusk border-cardBorder bg-white'
+                  }`}
+                >
+                  New household
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('existing')}
+                  className={`flex-1 py-2 rounded-full text-sm font-medium border transition-colors ${
+                    mode === 'existing' ? 'bg-denim text-white border-denim' : 'text-dusk border-cardBorder bg-white'
+                  }`}
+                >
+                  Existing household
+                </button>
+              </div>
+              {mode === 'existing' && (
+                <select
+                  value={householdId}
+                  onChange={(e) => setHouseholdId(e.target.value)}
+                  className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-full px-4 py-2.5 bg-white"
+                  required
+                >
+                  <option value="" disabled>
+                    Choose a household…
+                  </option>
+                  {households.map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
+
           {error && <p className="text-sm text-rust">{error}</p>}
           <button
             type="submit"
-            disabled={saving || !name.trim()}
+            disabled={saving || !name.trim() || (mode === 'existing' && !householdId)}
             className="w-full py-2.5 rounded-full bg-denim text-white font-medium disabled:opacity-40"
           >
             {saving ? 'Creating…' : 'Create property'}
