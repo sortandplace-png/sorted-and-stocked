@@ -15,6 +15,7 @@ import { getWidgetPrefs, getTodaysMealPlan, getLowStockAlerts } from '@/lib/dash
 import { formatPropertyLabel } from '@/lib/property-display'
 import {
   getOmerStatus,
+  getOmerOutlook,
   getIsErevYomTov,
   getIsFastDayToday,
   getRoshChodeshStatus,
@@ -203,23 +204,58 @@ async function getDaysUntilPesach(): Promise<number | null> {
 
 type DailyContent = { title: string; body: string } | null
 
-// calendar_content is empty except for a handful of obviously-fake
-// PLACEHOLDER rows (see migration 094 + the session that added this) --
-// Racquel writes the real tips/reflections later; this only proves the
-// trigger-matching + fallback + rotation mechanism itself works. Picks one
-// active row matching today's real trigger_type, falling back to a random
-// 'general' row when nothing calendar-specific applies -- never both, and
-// never more than one, so this stays a small aside, not a second content
-// block competing with the date.
-async function getDailyContent(propertyId: string, locale: string, triggerType: string): Promise<DailyContent> {
+// SS-065/SS-064: calendar_content is NOT the handful of placeholder rows
+// the old version of this comment claimed -- it carries 24 real per-month
+// rosh_chodesh rows and 49 real per-day omer rows (confirmed live). Without
+// filtering on hebrew_month/omer_day, "specific" below matched on
+// trigger_type alone, so a Rosh Chodesh Elul request pulled in all 24
+// rosh_chodesh rows from every month and picked one at random -- about a
+// 1-in-12 chance of actually landing on Elul's content. Same shape of bug
+// for omer (1-in-49). This is likely also SS-287's underlying complaint,
+// independent of the byTitle grouping bug already fixed there.
+//
+// Three-tier fallback, most to least specific:
+//   1. trigger_type + the real month/day match
+//   2. trigger_type with hebrew_month/omer_day IS NULL (a generic row for
+//      that trigger, e.g. "Rosh Chodesh Heads-Up" -- exists in the data for
+//      exactly this purpose)
+//   3. 'general'
+// Picks one active row at random only within whichever tier actually has
+// rows, never across tiers.
+async function getDailyContent(
+  propertyId: string,
+  locale: string,
+  triggerType: string,
+  matchColumn: 'hebrew_month' | 'omer_day' | null,
+  matchValue: string | number | null
+): Promise<DailyContent> {
   const supabase = await createClient()
-  const { data: specific } = await supabase
-    .from('calendar_content')
-    .select('title_en, title_es, body_en, body_es')
-    .eq('property_id', propertyId)
-    .eq('trigger_type', triggerType)
-    .eq('active', true)
-  let rows = specific ?? []
+  const base = () =>
+    supabase
+      .from('calendar_content')
+      .select('title_en, title_es, body_en, body_es')
+      .eq('property_id', propertyId)
+      .eq('trigger_type', triggerType)
+      .eq('active', true)
+
+  let rows: { title_en: string; title_es: string | null; body_en: string; body_es: string | null }[] = []
+
+  if (matchColumn && matchValue !== null) {
+    // Month/day-specific first, then this trigger's generic (column IS
+    // NULL) row -- most trigger types have no such column populated at
+    // all, so this tier only ever fires for rosh_chodesh/omer.
+    const { data } = await base().eq(matchColumn, matchValue)
+    rows = data ?? []
+    if (rows.length === 0) {
+      const { data: genericForTrigger } = await base().is(matchColumn, null)
+      rows = genericForTrigger ?? []
+    }
+  } else {
+    // Every other trigger type (chanukah, purim, fast_day, ...) has no
+    // month/day column to match on -- unchanged from before this fix.
+    const { data } = await base()
+    rows = data ?? []
+  }
   if (rows.length === 0 && triggerType !== 'general') {
     const { data: general } = await supabase
       .from('calendar_content')
@@ -686,8 +722,9 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const tomorrowUTC = new Date(easternTodayUTC + 24 * 60 * 60 * 1000)
   const easternTomorrowStr = `${tomorrowUTC.getUTCFullYear()}-${String(tomorrowUTC.getUTCMonth() + 1).padStart(2, '0')}-${String(tomorrowUTC.getUTCDate()).padStart(2, '0')}`
 
-  const [omerTitle, isErevYomTov, eruvTavshilin, daysUntilPesach, roshChodeshStatus, isFastDayToday, majorHolidayToday, isNineDaysToday, isYomTovToday, diasporaSecondDayInfo] = await Promise.all([
+  const [omerTitle, omerOutlook, isErevYomTov, eruvTavshilin, daysUntilPesach, roshChodeshStatus, isFastDayToday, majorHolidayToday, isNineDaysToday, isYomTovToday, diasporaSecondDayInfo] = await Promise.all([
     getOmerStatus(),
+    getOmerOutlook(easternTodayStr), // separate call from getOmerStatus() -- that one only answers yes/no, this is the one with a clean day number, needed below to match calendar_content.omer_day
     getIsErevYomTov(easternTomorrowStr),
     getEruvTavshilinBanner(easternTodayStr),
     getDaysUntilPesach(),
@@ -723,7 +760,24 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     omerTitle,
     isErevYomTov,
   })
-  const dailyContent = await getDailyContent(propertyId, locale, todayTriggerType)
+  // SS-065/SS-064: which column (if any) disambiguates this trigger type,
+  // and today's real value for it -- roshChodeshStatus.monthName is only
+  // today's actual month when isToday is true (it otherwise names the NEXT
+  // occurrence, which could be a future month); omerOutlook.day only exists
+  // in the 'inside' state.
+  const dailyContentMatch: readonly [('hebrew_month' | 'omer_day' | null), (string | number | null)] =
+    todayTriggerType === 'rosh_chodesh' && roshChodeshStatus?.isToday
+      ? ['hebrew_month', roshChodeshStatus.monthName]
+      : todayTriggerType === 'omer' && omerOutlook?.state === 'inside'
+        ? ['omer_day', omerOutlook.day]
+        : [null, null]
+  const dailyContent = await getDailyContent(
+    propertyId,
+    locale,
+    todayTriggerType,
+    dailyContentMatch[0],
+    dailyContentMatch[1]
+  )
 
   // Real bug found and fixed, not assumed: meal_plan_entries is one row per
   // dish/course (confirmed live -- 38 rows for the week, 5-6 courses × 7
