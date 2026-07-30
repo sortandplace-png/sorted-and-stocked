@@ -2574,6 +2574,7 @@ function ItemFormSheet({
   const [photoRemoved, setPhotoRemoved] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [showCropper, setShowCropper] = useState(false);
+  const [showDangerZone, setShowDangerZone] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   function applyPhoto(file: File) {
@@ -2904,10 +2905,32 @@ function ItemFormSheet({
             {saving ? 'Saving…' : 'Save'}
           </button>
         </div>
+        {/* Delete sits behind an overflow toggle rather than inline. It used
+            to be a full-width button directly above ReorderSourcesEditor --
+            so the control people press constantly (reorder) and the one
+            that destroys a row were immediate neighbours, with no gap and
+            no confirm step between them. On a system where 240 rows once
+            vanished with no identified cause (SS-001), that adjacency is
+            not worth keeping for the sake of one saved tap. Collapsed by
+            default; deleting now takes a deliberate open-then-press. */}
         {onDelete && (
-          <button onClick={onDelete} className="w-full text-center text-sm text-rust mt-3">
-            Delete item
-          </button>
+          <div className="mt-3">
+            <button
+              onClick={() => setShowDangerZone((v) => !v)}
+              aria-expanded={showDangerZone}
+              className="w-full text-center text-sm text-dusk hover:text-denim transition-colors"
+            >
+              ⋯ More
+            </button>
+            {showDangerZone && (
+              <button
+                onClick={onDelete}
+                className="w-full text-center text-sm text-rust border border-rust/30 rounded-full py-2 mt-2"
+              >
+                Delete item
+              </button>
+            )}
+          </div>
         )}
 
         {form.id && <ReorderSourcesEditor itemId={form.id} propertyId={propertyId} />}
