@@ -17,7 +17,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import AllHousesInventoryClient from '@/components/AllHousesInventoryClient';
-import { isModuleEnabled } from '@/lib/module-flags';
+import { isModuleEnabled, isOperatorConsole } from '@/lib/module-flags';
 import type { HouseInventoryRow } from '@/lib/cross-house-inventory';
 
 export const dynamic = 'force-dynamic';
@@ -36,13 +36,23 @@ export default async function AllHousesPage({ params }: { params: Promise<{ id: 
   // person this console exists for. Same tier Procurement uses.
   const { data: membership } = await supabase
     .from('property_members')
-    .select('role')
+    .select('role, properties(feature_flags)')
     .eq('property_id', id)
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (!membership || membership.role === 'staff') {
     redirect(`/properties/${id}/inventory`);
+  }
+
+  // Operator-console only. This shipped ungated, so it appeared in the Shop
+  // menu of EVERY property including Strauss Main -- a cross-house view
+  // rendered inside one house, which is wrong now and would be visibly
+  // wrong once each white-label client has a single house of their own.
+  const hostFlags = (membership.properties as unknown as { feature_flags: Record<string, unknown> | null } | null)
+    ?.feature_flags;
+  if (!isOperatorConsole(hostFlags)) {
+    redirect(`/properties/${id}/dashboard`);
   }
 
   // Every house this person owns/manages -- archived fixtures excluded, and

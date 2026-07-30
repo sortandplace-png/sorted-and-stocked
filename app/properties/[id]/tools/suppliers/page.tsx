@@ -14,6 +14,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import SuppliersClient, { type Supplier } from '@/components/SuppliersClient';
+import { isOperatorConsole } from '@/lib/module-flags';
 
 export default async function SuppliersPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -26,13 +27,22 @@ export default async function SuppliersPage({ params }: { params: Promise<{ id: 
 
   const { data: membership } = await supabase
     .from('property_members')
-    .select('role')
+    .select('role, properties(feature_flags)')
     .eq('property_id', id)
     .eq('user_id', user.id)
     .maybeSingle();
 
   // No membership row is treated as the least privileged, not the most.
   if (!membership || membership.role === 'staff') {
+    redirect(`/properties/${id}/inventory`);
+  }
+
+  // Operator-level, not per-house (Racquel, 30 Jul): who the operation buys
+  // from is a business-wide directory, not something each client's house
+  // maintains its own copy of. Same gate as the cross-house console.
+  const hostFlags = (membership.properties as unknown as { feature_flags: Record<string, unknown> | null } | null)
+    ?.feature_flags;
+  if (!isOperatorConsole(hostFlags)) {
     redirect(`/properties/${id}/inventory`);
   }
 

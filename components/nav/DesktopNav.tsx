@@ -14,7 +14,7 @@ import { useTranslations } from 'next-intl';
 import { ChevronDown, Scan as ScanIcon } from 'lucide-react';
 import type { PropertyRole } from '@/components/PropertyRoleContext';
 import ScanModal from '@/components/nav/ScanModal';
-import { isModuleEnabled, type ModuleKey } from '@/lib/module-flags';
+import { isModuleEnabled, isOperatorConsole, type ModuleKey } from '@/lib/module-flags';
 
 type GroupKey = 'plan' | 'shop' | 'staff' | 'more';
 
@@ -26,6 +26,9 @@ type NavItem = {
   // (properties.feature_flags, see lib/module-flags.ts) -- independent of
   // managerOnly, which governs role, not the property's own on/off switch.
   module?: ModuleKey;
+  // Operator-console surfaces only. Opt-IN via feature_flags.operator_console,
+  // so a cross-house view never appears inside an ordinary house.
+  operatorOnly?: boolean;
   // A segment that's a sub-path of another group's own segment (here,
   // 'tools/tasks' is a sub-path of the More group's 'tools') would
   // otherwise highlight both groups active at once on that page — this
@@ -61,7 +64,7 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       { segment: 'inventory', labelKey: 'inventory', module: 'module_inventory' },
       // SS-399. Manager-tier like the page's own gate -- staff are
       // redirected out, so this doesn't offer a link they'd bounce off.
-      { segment: 'all-houses', labelKey: 'allHouses', managerOnly: true, module: 'module_inventory' },
+      { segment: 'all-houses', labelKey: 'allHouses', managerOnly: true, module: 'module_inventory', operatorOnly: true },
     ],
   },
   {
@@ -203,7 +206,10 @@ export default function DesktopNav({
 
       {GROUPS.map((group) => {
         const visibleItems = group.items.filter(
-          (i) => (!i.managerOnly || role === 'owner' || role === 'manager') && (!i.module || isModuleEnabled(flags, i.module))
+          (i) =>
+            (!i.managerOnly || role === 'owner' || role === 'manager') &&
+            (!i.module || isModuleEnabled(flags, i.module)) &&
+            (!i.operatorOnly || isOperatorConsole(flags))
         );
         if (visibleItems.length === 0) return null;
         const groupActive = visibleItems.some((i) => segmentIsActive(pathname, i));

@@ -342,6 +342,10 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
 
   const tools = (flags.guest_taste_memory ? [...TOOLS, TASTE_MEMORY_TOOL] : TOOLS)
     .filter((t) => canSeeTile(t.slug, role))
+    // Suppliers is operator-level, not per-house (Racquel, 30 Jul): who the
+    // operation buys from is one business-wide directory, not a copy each
+    // client's house keeps. Its own route enforces the same gate.
+    .filter((t) => t.slug !== 'suppliers' || flags.operator_console === true)
     .map((t) => (t.slug === 'knowledge-base' ? { ...t, count: knowledgeCount ?? 0 } : t));
   const bySlug = new Map(tools.map((t) => [t.slug, t]));
 

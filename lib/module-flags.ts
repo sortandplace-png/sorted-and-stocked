@@ -29,6 +29,21 @@ export function isModuleEnabled(flags: Record<string, unknown> | null | undefine
   return flags?.[module] !== false;
 }
 
+/** Operator-level surfaces -- the cross-house console and the Suppliers
+ *  directory -- belong to ONE property that acts as the operator's console,
+ *  not to every house. Showing a cross-house view inside an individual
+ *  house is conceptually wrong, and becomes visibly wrong once white-label
+ *  clients each have their own single house.
+ *
+ *  Opt-IN, unlike the module_* flags: absent means OFF here. A module flag
+ *  defaults on because every house should have inventory unless told
+ *  otherwise; a console defaults off because only one property should ever
+ *  be one, and a new client's property must never silently become an
+ *  operator console. */
+export function isOperatorConsole(flags: Record<string, unknown> | null | undefined): boolean {
+  return flags?.operator_console === true;
+}
+
 // Longest-prefix-wins route -> module map, so a route nested under a more
 // generic segment (tools/tasks under tools/) can still resolve to a more
 // specific module than its parent. Mirrors how DesktopNav.tsx and
