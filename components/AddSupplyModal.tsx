@@ -144,7 +144,14 @@ export default function AddSupplyModal({
             />
             <div className="max-h-48 overflow-y-auto rounded-xl2 border border-cardBorder">
               {filtered.length === 0 ? (
-                <p className="text-xs text-dusk px-3 py-2">{t('noMatches')}</p>
+                // "nothing matched your search" and "this property has no
+                // inventory at all" are different problems -- Lax has 79
+                // tasks and zero items, so the second is the common case
+                // and the search-flavoured wording sent people looking for
+                // a typo that was never there.
+                <p className="text-xs text-dusk px-3 py-2">
+                  {items.length === 0 ? t('noItemsYet') : t('noMatches')}
+                </p>
               ) : (
                 <ul>
                   {filtered.map((i) => (

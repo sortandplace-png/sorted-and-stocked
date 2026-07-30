@@ -164,6 +164,14 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   const [suppliesByTask, setSuppliesByTask] = useState<Map<string, TaskSupply[]>>(new Map());
   const [addSupplyTaskId, setAddSupplyTaskId] = useState<string | null>(null);
   const [removingSupplyId, setRemovingSupplyId] = useState<string | null>(null);
+  // task_supplies structurally depends on inventory_items -- a supply IS a
+  // join to an inventory row. So a property with tasks but its inventory
+  // module switched off cannot meaningfully use supplies, and one with the
+  // module on but zero items has nothing to pick. Both currently fail
+  // quietly (an empty picker, or a supply pointing at something the
+  // property can't display anywhere). Fetched so the UI can say which.
+  const [inventoryEnabled, setInventoryEnabled] = useState(true);
+  const [inventoryItemCount, setInventoryItemCount] = useState<number | null>(null);
 
   const [search, setSearch] = useState('');
   // SS-273. 'all' is the default per spec -- distinct from `room`, which
@@ -512,6 +520,23 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     fetchSuppliesByTask(supabase, taskIdsForSupplies)
       .then(setSuppliesByTask)
       .catch(() => setSuppliesByTask(new Map()));
+
+    // Same non-fatal treatment as supplies above: if either of these fails
+    // the roster still renders, it just cannot explain the supplies state.
+    supabase
+      .from('properties')
+      .select('feature_flags')
+      .eq('id', propertyId)
+      .single()
+      .then(({ data }) => {
+        const flags = (data?.feature_flags ?? {}) as Record<string, unknown>;
+        setInventoryEnabled(flags.module_inventory !== false);
+      });
+    supabase
+      .from('inventory_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('property_id', propertyId)
+      .then(({ count }) => setInventoryItemCount(count ?? 0));
     setMembers(
       (rows[3] as { id: string; user_id: string; profiles: unknown }[]).map((m) => ({
         id: m.id,
@@ -1244,7 +1269,14 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                             </button>
                           </>
                         )}
-                        {x.active && (
+                        {/* Offered only when a supply could actually be
+                            created. A supply is a join to an inventory row,
+                            so with the module off there is nothing to join
+                            to that this property can display, and with zero
+                            items there is nothing to pick -- in both cases
+                            the button led to a dead end that explained
+                            nothing. The reason is stated below instead. */}
+                        {x.active && inventoryEnabled && (inventoryItemCount ?? 0) > 0 && (
                           <button
                             onClick={() => setAddSupplyTaskId(x.id)}
                             className="text-[9px] font-semibold uppercase tracking-[0.15em] text-denim underline-offset-2 hover:underline"
@@ -1276,6 +1308,20 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                         onRemove={removeSupply}
                         removingId={removingSupplyId}
                       />
+
+                      {/* Says WHY supplies are unavailable rather than
+                          leaving the absence of an Add button unexplained.
+                          Two distinct causes, two distinct messages -- and
+                          the module-off case is shown even when the task
+                          already HAS supplies, because those supplies point
+                          at inventory rows this property currently cannot
+                          open anywhere. */}
+                      {x.active && !inventoryEnabled && (
+                        <p className="mt-1.5 text-[10px] text-dusk">{tSupplies('inventoryOff')}</p>
+                      )}
+                      {x.active && inventoryEnabled && inventoryItemCount === 0 && (
+                        <p className="mt-1.5 text-[10px] text-dusk">{tSupplies('noItemsYet')}</p>
+                      )}
 
                       {/* The full procedure, inline. Collapsed by default so
                           the grid stays a grid; open one and it expands in

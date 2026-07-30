@@ -979,7 +979,9 @@
     "saving": "Saving…",
     "saveFailed": "Could not save — try again.",
     "removeFailed": "Could not remove — try again.",
-    "alreadyAdded": "That item is already a supply for this task."
+    "alreadyAdded": "That item is already a supply for this task.",
+    "inventoryOff": "Inventory is turned off for this property, so supplies can't be added or opened here.",
+    "noItemsYet": "No inventory items at this property yet — add one in Inventory before linking a supply."
   },
   "trainingVideos": {
     "empty": "No training videos are available yet.",

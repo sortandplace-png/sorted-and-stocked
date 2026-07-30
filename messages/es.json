@@ -979,7 +979,9 @@
     "saving": "Guardando…",
     "saveFailed": "No se pudo guardar — inténtelo de nuevo.",
     "removeFailed": "No se pudo quitar — inténtelo de nuevo.",
-    "alreadyAdded": "Ese artículo ya es un suministro para esta tarea."
+    "alreadyAdded": "Ese artículo ya es un suministro para esta tarea.",
+    "inventoryOff": "El inventario está desactivado en esta propiedad, así que los suministros no se pueden agregar ni abrir aquí.",
+    "noItemsYet": "Aún no hay artículos de inventario en esta propiedad — agregue uno en Inventario antes de vincular un suministro."
   },
   "trainingVideos": {
     "empty": "Aún no hay videos de capacitación disponibles.",
