@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import ProcurementClient from '@/components/ProcurementClient';
 import { formatPropertyLabel } from '@/lib/property-display';
-import { isModuleEnabled } from '@/lib/module-flags';
+import { isModuleEnabled, isOperatorConsole } from '@/lib/module-flags';
 
 export default async function ProcurementPage() {
   const supabase = await createClient();
@@ -21,6 +21,18 @@ export default async function ProcurementPage() {
     .select('role, properties(id, name, household_id, feature_flags, archived_at, households(name))')
     .eq('user_id', user.id)
     .in('role', ['owner', 'manager']);
+
+  // SS-410: this is an OPERATOR surface — cross-house shopping belongs to
+  // the operator console (Lax), not to any client residence. A client who
+  // owns their own property is an owner/manager and passed the role check
+  // above, but they must never see a stitched multi-house view. Same
+  // opt-in flag the cross-house inventory console and Suppliers already
+  // gate on (230b2b0).
+  const isOperator = (memberships ?? []).some((m) => {
+    const p = m.properties as unknown as { feature_flags: Record<string, unknown> | null } | null;
+    return p !== null && isOperatorConsole(p.feature_flags);
+  });
+  if (!isOperator) redirect('/properties');
 
   const rawProperties = (memberships ?? [])
     .map(

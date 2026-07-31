@@ -100,7 +100,7 @@
     "shop": "Comprar",
     "more": "Más",
     "home": "Inicio",
-    "procurement": "Abastecimiento",
+    "procurement": "Compras Todas las Casas",
     "help": "Ayuda",
     "scanAriaLabel": "Escanear artículo al inventario",
     "dutyRoster": "Lista de Deberes",
@@ -599,7 +599,7 @@
       "tools": "Herramientas",
       "staff": "Personal",
       "settings": "Configuración",
-        "procurement": "Abastecimiento",
+        "procurement": "Compras Todas las Casas",
       "help": "Ayuda"
     },
     "shabbosModeBanner": "Modo Shabat • Edición desactivada",

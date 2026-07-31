@@ -100,7 +100,7 @@
     "shop": "Shop",
     "more": "More",
     "home": "Home",
-    "procurement": "Procurement",
+    "procurement": "Shop All Houses",
     "help": "Help",
     "scanAriaLabel": "Scan item to inventory",
     "dutyRoster": "Duty Roster",
@@ -599,7 +599,7 @@
       "tools": "Tools",
       "staff": "Staff",
       "settings": "Settings",
-        "procurement": "Procurement",
+        "procurement": "Shop All Houses",
       "help": "Help"
     },
     "shabbosModeBanner": "Shabbos Mode • Editing disabled",

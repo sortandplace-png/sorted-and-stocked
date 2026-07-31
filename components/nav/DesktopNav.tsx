@@ -139,7 +139,10 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // matches the gate it already enforces server-side (staff get
       // redirected out), so this doesn't offer a link staff would just
       // bounce off of.
-      { segment: 'procurement', labelKey: 'procurement', managerOnly: true, href: '/procurement' },
+      // SS-410: operator surface -- the link renders only while viewing the
+      // operator-console property, matching the server-side gate the page
+      // itself now enforces (a client residence never offers it).
+      { segment: 'procurement', labelKey: 'procurement', managerOnly: true, operatorOnly: true, href: '/procurement' },
       // Not managerOnly -- every role needs this for their own SMS opt-in;
       // the Invite Codes/Broadcast sections inside are what's actually
       // gated, per-role, by the page itself.

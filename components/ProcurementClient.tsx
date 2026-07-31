@@ -241,7 +241,7 @@ export default function ProcurementClient({
           <Link href="/properties" className="flex items-center gap-2.5 shrink-0">
             <LogoMark className="w-9 h-9" />
           </Link>
-          <span className="font-display text-lg">Procurement</span>
+          <span className="font-display text-lg">Shop All Houses</span>
         </div>
         <Link href="/properties" className="text-sm text-white/70 hover:text-white">
           ← Properties
