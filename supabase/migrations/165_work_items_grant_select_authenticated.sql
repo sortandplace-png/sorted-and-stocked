@@ -1,0 +1,16 @@
+-- 165_work_items_grant_select_authenticated.sql
+-- SS-457 P0 (Racquel's walkthrough): the register page showed the OWNER
+-- 0 of ~420 rows. The RLS policy (work_items_select_operator, migration
+-- 156) was correct all along -- the failure was one layer below it: no
+-- role-level SELECT grant existed for authenticated (only postgres and
+-- service_role held any privilege after the lockdown), so PostgREST
+-- failed at the SQL permission layer before RLS ever evaluated, and the
+-- page's `?? []` fallback dressed the error up as an empty register.
+--
+-- This grant is NOT "open read access" (restoring that stays forbidden):
+-- RLS remains enabled with the operator policy as the only read path.
+-- Verified live after applying, simulated via request.jwt.claims:
+--   owner (operator property) ... 421 rows
+--   staff .......................   0 rows
+--   anon ........................ no grant at all
+grant select on work_items to authenticated;

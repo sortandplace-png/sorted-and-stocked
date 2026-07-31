@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { storageThumbnail } from '@/lib/storage-image';
+import { signSopPosters } from '@/lib/sop-posters';
 import { routes } from '@/lib/app-routes';
 import { getEasternIsoWeekday } from '@/lib/eastern-weekday';
 import { compressImageToBlob } from '@/lib/compress-image';
@@ -163,6 +164,12 @@ export default function DutyRosterClient({
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [sopCounts, setSopCounts] = useState<Record<string, number>>({});
   const [posterByTask, setPosterByTask] = useState<Record<string, string>>({});
+  // SS-291 (reopened 31 Jul): task photos and SOP posters live in the
+  // PRIVATE sop-posters bucket (SS-363), but the columns store public-style
+  // URLs -- unsigned they 400 and the tiles rendered placeholders. Keyed
+  // original URL -> signed URL; public-bucket URLs aren't in the map and
+  // pass through unchanged.
+  const [signedByUrl, setSignedByUrl] = useState<Record<string, string>>({});
   const [sopTextByTask, setSopTextByTask] = useState<Record<string, LinkedSop>>({});
   // Which tile has its procedure open. One at a time -- a grid with every
   // panel expanded is not a grid any more.
@@ -617,6 +624,20 @@ export default function DutyRosterClient({
     setSopCounts(counts);
     setPosterByTask(posters);
     setSopTextByTask(sopTexts);
+    // One batched signing pass for everything the tiles can show (SS-291).
+    try {
+      const signed = await signSopPosters(supabase, [
+        ...(rows[0] as Task[]).map((x) => x.photo_url),
+        ...Object.values(posters),
+      ]);
+      const byUrl: Record<string, string> = {};
+      signed.forEach((v, k) => {
+        if (v.fullUrl) byUrl[k] = v.fullUrl;
+      });
+      setSignedByUrl(byUrl);
+    } catch {
+      setSignedByUrl({});
+    }
     setAssignments(rows[5] as Assignment[]);
     setSlots(rows[6] as Slot[]);
     setLoadError(failed.length > 0 ? t('loadPartial') : null);
@@ -1313,7 +1334,9 @@ export default function DutyRosterClient({
                 const f = x.frequency_id ? freqById.get(x.frequency_id) : undefined;
                 const unassigned = isUnassigned(x);
                 const sops = sopCounts[x.id] ?? 0;
-                const tileImage = x.photo_url ?? posterByTask[x.id] ?? null;
+                const rawTileImage = x.photo_url ?? posterByTask[x.id] ?? null;
+                // SS-291: private-bucket URLs must go out signed.
+                const tileImage = rawTileImage ? signedByUrl[rawTileImage] ?? rawTileImage : null;
                 const linked = sopTextByTask[x.id] ?? null;
                 // Falls back to the other language rather than showing an
                 // empty panel: English instructions beat no instructions.
@@ -1514,7 +1537,7 @@ export default function DutyRosterClient({
                               {posterByTask[x.id] && (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
-                                  src={storageThumbnail(posterByTask[x.id], 640)}
+                                  src={storageThumbnail(signedByUrl[posterByTask[x.id]] ?? posterByTask[x.id], 640)}
                                   alt=""
                                   loading="lazy"
                                   decoding="async"
@@ -1798,7 +1821,7 @@ export default function DutyRosterClient({
                   <div className="flex items-center gap-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={formPhotoPreview ?? storageThumbnail(formExistingPhotoUrl!, 96)}
+                      src={formPhotoPreview ?? storageThumbnail(signedByUrl[formExistingPhotoUrl!] ?? formExistingPhotoUrl!, 96)}
                       alt=""
                       className="h-14 w-14 rounded-lg object-cover bg-mist"
                     />

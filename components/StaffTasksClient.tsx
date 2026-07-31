@@ -36,6 +36,7 @@ import { jobFamily, jobFamilyLabel, jobLabel, type JobFamily } from '@/lib/job-t
 import { createClient } from '@/lib/supabase/client';
 import { compressImageToBlob } from '@/lib/compress-image';
 import { storageThumbnail } from '@/lib/storage-image';
+import { signSopPosters } from '@/lib/sop-posters';
 import CameraCapture from '@/components/CameraCapture';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
@@ -196,6 +197,12 @@ export default function StaffTasksClient({
   const [lastCompletionByTask, setLastCompletionByTask] = useState<Record<string, Completion>>({});
   const [todayCompletionByTask, setTodayCompletionByTask] = useState<Record<string, Completion>>({});
   const [posterByTaskId, setPosterByTaskId] = useState<Record<string, string>>({});
+  // SS-291 (reopened 31 Jul): task photos and SOP posters live in the
+  // PRIVATE sop-posters bucket (SS-363), but the columns store public-style
+  // URLs -- unsigned they 400 and every tile fell back to its placeholder.
+  // Keyed original URL -> signed URL; URLs from public buckets simply
+  // aren't in the map and pass through unchanged.
+  const [signedByUrl, setSignedByUrl] = useState<Record<string, string>>({});
   const [linkedSopByTaskId, setLinkedSopByTaskId] = useState<Record<string, LinkedSop>>({});
   const [sopLibrary, setSopLibrary] = useState<SopRow[]>([]);
   const [showLibrary, setShowLibrary] = useState(false);
@@ -342,12 +349,28 @@ export default function StaffTasksClient({
       }
       setPosterByTaskId(posters);
       setLinkedSopByTaskId(linkedSops);
+
+      // One batched signing pass for everything the tiles can show (SS-291).
+      try {
+        const signed = await signSopPosters(supabase, [
+          ...taskList.map((t) => t.photo_url),
+          ...Object.values(posters),
+        ]);
+        const byUrl: Record<string, string> = {};
+        signed.forEach((v, k) => {
+          if (v.fullUrl) byUrl[k] = v.fullUrl;
+        });
+        setSignedByUrl(byUrl);
+      } catch {
+        setSignedByUrl({});
+      }
     } else {
       setAssignments([]);
       setLastCompletionByTask({});
       setTodayCompletionByTask({});
       setPosterByTaskId({});
       setLinkedSopByTaskId({});
+      setSignedByUrl({});
     }
 
     if (canManage(role)) {
@@ -736,7 +759,9 @@ export default function StaffTasksClient({
             // nothing -- and until now neither rendered anywhere. No
             // placeholder when both are absent: an empty grey square on
             // most rows is worse than no square at all.
-            const tileImage = task.photo_url ?? posterByTaskId[task.id] ?? null;
+            const rawTileImage = task.photo_url ?? posterByTaskId[task.id] ?? null;
+            // SS-291: private-bucket URLs must go out signed.
+            const tileImage = rawTileImage ? signedByUrl[rawTileImage] ?? rawTileImage : null;
             // Linked-SOP instructions in the viewer's language, falling back
             // to the other language rather than showing nothing: a Spanish
             // reader is better served by English instructions than by a
@@ -887,7 +912,7 @@ export default function StaffTasksClient({
                             {posterByTaskId[task.id] && (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
-                                src={storageThumbnail(posterByTaskId[task.id], 640)}
+                                src={storageThumbnail(signedByUrl[posterByTaskId[task.id]] ?? posterByTaskId[task.id], 640)}
                                 alt=""
                                 loading="lazy"
                                 decoding="async"

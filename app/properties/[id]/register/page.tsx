@@ -40,11 +40,26 @@ export default async function RegisterPage({ params }: { params: Promise<{ id: s
     redirect(`/properties/${id}/dashboard`);
   }
 
-  const { data: items } = await supabase
+  const { data: items, error } = await supabase
     .from('work_items')
     .select(
       'id, title, detail, status, evidence, owner, sent_to_code_at, code_reported_at, verified_at, verified_how, screenshot_ref, superseded_by, created_at, updated_at'
     );
+
+  // SS-457 P0 lesson: a permission failure here once rendered as "0 rows",
+  // which reads like an empty register -- a lie. A read error must LOOK
+  // like an error.
+  if (error) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-10">
+        <h1 className="font-display text-3xl text-denim mb-2">Register</h1>
+        <p className="text-sm text-rust font-medium">
+          The register could not be read: {error.message}. This is an access/permission failure, not an
+          empty register — the table always has rows.
+        </p>
+      </div>
+    );
+  }
 
   return <RegisterViewerClient rows={(items ?? []) as WorkItemRow[]} />;
 }
