@@ -26,14 +26,28 @@ export default function MarketingFooter({
   return (
     <footer className="bg-linen border-t border-cardBorder mt-16">
       <div className="max-w-[1100px] mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[13px] text-dusk">
-        <p className="flex items-center gap-2">
-          {/* A tel: link, not plain text -- this is a phone number on a page
-              most people will read on a phone. */}
-          <a href="tel:+17189384342" className="hover:text-denim transition-colors">
+        <p className="flex items-center gap-2 flex-wrap justify-center">
+          {/* tel:/mailto-style links, not plain text -- this is contact info
+              on a page most people will read on a phone. Both business
+              numbers per SS-444. */}
+          <a href="tel:+17189384342" className="hover:text-denim transition-colors whitespace-nowrap">
             718-938-4342
           </a>
           <span aria-hidden="true">·</span>
-          <span>© Sort + Place</span>
+          <a href="tel:+17189162518" className="hover:text-denim transition-colors whitespace-nowrap">
+            718-916-2518
+          </a>
+          <span aria-hidden="true">·</span>
+          <a
+            href="https://mail.google.com/mail/?view=cm&fs=1&to=sortandplace@gmail.com&su=Sort%20%2B%20Place"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-denim transition-colors"
+          >
+            SortandPlace@gmail.com
+          </a>
+          <span aria-hidden="true">·</span>
+          <span className="whitespace-nowrap">© Sort + Place</span>
         </p>
 
         <nav className="flex items-center gap-x-4 gap-y-1 flex-wrap justify-center">

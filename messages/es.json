@@ -142,7 +142,9 @@
     "revert": "Deshacer",
     "signOut": "Cerrar sesión",
     "unknown": "alguien",
-    "runningLow": "Se está acabando"
+    "runningLow": "Se está acabando",
+    "contact": "Contacto",
+    "callAria": "Llamar al {number}"
   },
   "recipesGrid": {
     "title": "Recetas",

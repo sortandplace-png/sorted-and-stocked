@@ -142,7 +142,9 @@
     "revert": "Revert",
     "signOut": "Sign out",
     "unknown": "someone",
-    "runningLow": "Running low"
+    "runningLow": "Running low",
+    "contact": "Contact",
+    "callAria": "Call {number}"
   },
   "recipesGrid": {
     "title": "Recipes",
