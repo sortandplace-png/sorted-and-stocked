@@ -144,8 +144,7 @@
     "signOut": "Sign out",
     "unknown": "someone",
     "runningLow": "Running low",
-    "contact": "Contact",
-    "callAria": "Call {number}"
+    "contact": "Contact"
   },
   "recipesGrid": {
     "title": "Recipes",

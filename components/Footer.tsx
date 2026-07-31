@@ -22,15 +22,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
-// SS-444 (N): both business numbers, app-wide, as tel: links -- same
-// reasoning as MarketingFooter's, most readers are on a phone. The digits
-// themselves are language-neutral; the labels around them come from
-// messages/ (R19).
-const PHONES = [
-  { display: '(718) 938-4342', tel: '+17189384342' },
-  { display: '(718) 916-2518', tel: '+17189162518' },
-];
-
+// SS-454 (Racquel direct, 31 Jul, supersedes the SS-444 both-numbers
+// build): NO phone numbers in any footer. The footer is Sitemap ·
+// Contact (the Gmail-compose link) · Powered by Sort + Place. Standing
+// content rule: if any surface ever shows one business number it must
+// show both -- but the default is none.
 export default function Footer({ propertyId }: { propertyId?: string }) {
   const pathname = usePathname();
   const t = useTranslations('common');
@@ -55,18 +51,6 @@ export default function Footer({ propertyId }: { propertyId?: string }) {
               <span className="text-brass mx-[13px] text-[13px] font-bold select-none">&bull;</span>
             </>
           )}
-          {PHONES.map((p) => (
-            <span key={p.tel} className="contents">
-              <a
-                href={`tel:${p.tel}`}
-                aria-label={t('callAria', { number: p.display })}
-                className="text-[12px] text-denim tracking-[0.02em] hover:underline underline-offset-2 whitespace-nowrap"
-              >
-                {p.display}
-              </a>
-              <span className="text-brass mx-[13px] text-[13px] font-bold select-none">&bull;</span>
-            </span>
-          ))}
           <a
             href="https://mail.google.com/mail/?view=cm&fs=1&to=sortandplace@gmail.com&su=Sorted%20%26%20Stocked%20Support"
             target="_blank"
@@ -103,18 +87,6 @@ export default function Footer({ propertyId }: { propertyId?: string }) {
             compose URL works everywhere a browser does, regardless of
             device mail-client setup. Still just "Contact" as the visible
             text, not the raw address. */}
-        {PHONES.map((p) => (
-          <span key={p.tel} className="contents">
-            <a
-              href={`tel:${p.tel}`}
-              aria-label={t('callAria', { number: p.display })}
-              className="hover:text-denim underline underline-offset-2 whitespace-nowrap"
-            >
-              {p.display}
-            </a>
-            <span className="mx-2">·</span>
-          </span>
-        ))}
         <a
           href="https://mail.google.com/mail/?view=cm&fs=1&to=sortandplace@gmail.com&su=Sorted%20%26%20Stocked%20Support"
           target="_blank"

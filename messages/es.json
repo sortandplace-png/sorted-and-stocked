@@ -144,8 +144,7 @@
     "signOut": "Cerrar sesión",
     "unknown": "alguien",
     "runningLow": "Se está acabando",
-    "contact": "Contacto",
-    "callAria": "Llamar al {number}"
+    "contact": "Contacto"
   },
   "recipesGrid": {
     "title": "Recetas",

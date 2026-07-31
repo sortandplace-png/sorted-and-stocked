@@ -27,17 +27,10 @@ export default function MarketingFooter({
     <footer className="bg-linen border-t border-cardBorder mt-16">
       <div className="max-w-[1100px] mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[13px] text-dusk">
         <p className="flex items-center gap-2 flex-wrap justify-center">
-          {/* tel:/mailto-style links, not plain text -- this is contact info
-              on a page most people will read on a phone. Both business
-              numbers per SS-444. */}
-          <a href="tel:+17189384342" className="hover:text-denim transition-colors whitespace-nowrap">
-            718-938-4342
-          </a>
-          <span aria-hidden="true">·</span>
-          <a href="tel:+17189162518" className="hover:text-denim transition-colors whitespace-nowrap">
-            718-916-2518
-          </a>
-          <span aria-hidden="true">·</span>
+          {/* SS-454: NO phone numbers anywhere in the footers (supersedes
+              both earlier states -- the single 938 number and the SS-444
+              both-numbers build). Rule: one number shown anywhere means
+              both must be; default is none. The email link stays. */}
           <a
             href="https://mail.google.com/mail/?view=cm&fs=1&to=sortandplace@gmail.com&su=Sort%20%2B%20Place"
             target="_blank"
