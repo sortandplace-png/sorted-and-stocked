@@ -88,7 +88,14 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // bookmark keeps working -- it just isn't offered as a second door to
       // the same place. Kept in excludeFromActive below so a direct visit to
       // that URL doesn't light up Team.
-      { segment: 'tools/tasks', labelKey: 'staffTasks', managerOnly: true, module: 'module_staff' },
+      // SS-410 (Racquel's 31 Jul ruling): the Task Center exists only on
+      // the operator console and is cross-house there. The link disappears
+      // from every other property's nav, matching the server-side gate the
+      // route itself now enforces.
+      { segment: 'tools/tasks', labelKey: 'staffTasks', managerOnly: true, operatorOnly: true, module: 'module_staff' },
+      // SS-436: the one-page operator console (People / Configuration /
+      // Work). Same gate.
+      { segment: 'console', labelKey: 'console', managerOnly: true, operatorOnly: true },
       // Hours removed from the dropdown: it belongs inside My Day, not as
       // its own destination. The /staff/hours ROUTE is untouched and still
       // enforces its own owner/manager gate (R21) -- it is simply no longer

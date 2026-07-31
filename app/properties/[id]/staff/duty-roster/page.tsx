@@ -1,9 +1,14 @@
 // app/properties/[id]/staff/duty-roster/page.tsx
-// Unified Staff Duty Roster. Owner/manager only -- staff consume duties on
-// My Day, they don't assign them.
+// Bookmark-compat mount of the Task Center. Same SS-410 operator gate as
+// /tools/tasks -- the Task Center exists only on the console property and
+// is cross-house there (Racquel's 31 Jul ruling). Kept as a real mount
+// rather than deleted (R21); anyone holding the old URL on a non-console
+// property lands on their dashboard.
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import DutyRosterClient from '@/components/DutyRosterClient';
+import { isOperatorConsole } from '@/lib/module-flags';
+import { getOperatorProperties } from '@/lib/operator-properties';
 
 export default async function DutyRosterPage({
   params,
@@ -18,11 +23,9 @@ export default async function DutyRosterPage({
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // Same belt-and-suspenders gate as the staff page: RLS would block the
-  // writes anyway, but staff shouldn't reach a screen they can't use.
   const { data: membership } = await supabase
     .from('property_members')
-    .select('role')
+    .select('role, properties(feature_flags)')
     .eq('property_id', id)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -31,19 +34,18 @@ export default async function DutyRosterPage({
     redirect(`/properties/${id}/inventory`);
   }
 
-  // SS-156 Phase 2: DutyRosterClient no longer carries its own container,
-  // because inside the Task Center tabs that wrapper is what made the page
-  // change width and colour on every tab switch. This route still exists
-  // for anyone with it bookmarked, so it supplies the same frame itself --
-  // identical background and max-width to TaskCenterTabs, so the roster
-  // looks the same whichever door you came through.
-  //
-  // The stat tiles are deliberately NOT reproduced here. They live above
-  // the tabs now; this standalone view is the roster alone.
+  const flags = (membership.properties as unknown as { feature_flags: Record<string, unknown> | null } | null)
+    ?.feature_flags;
+  if (!isOperatorConsole(flags)) {
+    redirect(`/properties/${id}/dashboard`);
+  }
+
+  const properties = await getOperatorProperties(supabase, user.id);
+
   return (
     <div className="bg-linen min-h-screen">
       <div className="max-w-[1240px] mx-auto px-4 py-6">
-        <DutyRosterClient propertyId={id} />
+        <DutyRosterClient propertyId={id} properties={properties} />
       </div>
     </div>
   );

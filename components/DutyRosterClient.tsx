@@ -50,7 +50,7 @@ const FLOOR_ES: Record<string, string> = {
 // added with a name that sorts oddly.
 const FLOOR_ORDER = ['Basement', 'Main Floor', 'Upstairs'];
 
-type Room = { id: string; name_en: string; name_es: string; floor: string | null };
+type Room = { id: string; name_en: string; name_es: string; floor: string | null; property_id: string };
 
 // SS-273. Sunday-first display order, ISO weekday values (matching the
 // day_of_week column's own convention: 1=Mon..7=Sun) -- Saturday/6 is
@@ -69,8 +69,8 @@ const DAY_PICKER_OPTIONS: { iso: number; key: string }[] = [
 // it. Assigning to a slot works with zero staff accounts, and whoever is
 // later invited into the slot inherits its tasks via is_assigned_to_task(),
 // which now matches on either link.
-type Member = { id: string; user_id: string; full_name: string | null };
-type Slot = { id: string; label_en: string; label_es: string; user_id: string | null; active: boolean };
+type Member = { id: string; user_id: string; full_name: string | null; property_id: string };
+type Slot = { id: string; label_en: string; label_es: string; user_id: string | null; active: boolean; property_id: string };
 type Assignment = { id: string; task_id: string; member_id: string | null; slot_id: string | null };
 
 // The one <select> carries both kinds of assignee, so the option value
@@ -80,6 +80,7 @@ const SLOT_PREFIX = 's:';
 type Task = {
   id: string;
   task_number: string;
+  property_id: string;
   room_id: string | null;
   frequency_id: string | null;
   task_en: string;
@@ -126,12 +127,33 @@ const NO_ROOM = '__noroom__';
 // returns matches nothing while looking entirely reasonable.
 const NON_ROOM_AREAS = ['Maintenance', 'Childcare', 'Outdoors'];
 
-export default function DutyRosterClient({ propertyId }: { propertyId: string }) {
+export default function DutyRosterClient({
+  propertyId,
+  properties,
+}: {
+  propertyId: string;
+  /** SS-436/SS-410: when the operator console passes its member-property
+   *  list (labelled household + property, e.g. "Strauss Main" -- asked
+   *  three times), the roster goes CROSS-HOUSE: every query spans these
+   *  properties and a house filter appears, default All Houses. Absent (a
+   *  single-property mount), behaviour is exactly the old one. */
+  properties?: { id: string; label: string }[];
+}) {
   const t = useTranslations('dutyRoster');
   const tSupplies = useTranslations('taskSupplies');
   const locale = useLocale();
   const es = locale === 'es';
   const supabase = createClient();
+
+  const propertyOptions = useMemo(
+    () => (properties && properties.length > 0 ? properties : [{ id: propertyId, label: '' }]),
+    [properties, propertyId]
+  );
+  const propertyIds = useMemo(() => propertyOptions.map((p) => p.id), [propertyOptions]);
+  const crossHouse = propertyOptions.length > 1;
+  const labelByProperty = useMemo(() => new Map(propertyOptions.map((p) => [p.id, p.label])), [propertyOptions]);
+  // 'all' or a property id. Only rendered (and only meaningful) cross-house.
+  const [house, setHouse] = useState<string>('all');
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
@@ -243,11 +265,17 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   const [formPhotoRemoved, setFormPhotoRemoved] = useState(false);
   const [showTaskCamera, setShowTaskCamera] = useState(false);
   const taskGalleryInputRef = useRef<HTMLInputElement>(null);
+  // SS-436: which house a NEW task belongs to. Defaults to the selected
+  // house filter (or the console property under All Houses); an edit pins
+  // it to the task's own property and it is not changeable there -- moving
+  // a task between houses is 145/146's lesson, not a dropdown.
+  const [formPropertyId, setFormPropertyId] = useState<string>(propertyId);
 
   function openAddTask() {
     setFormTaskEn('');
     setFormTaskEs('');
     setFormRoomId('');
+    setFormPropertyId(crossHouse && house !== 'all' ? house : propertyId);
     setFormFrequencyId('');
     setFormJobType('');
     setFormTimeOfDay('');
@@ -265,6 +293,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     setFormTaskEn(x.task_en);
     setFormTaskEs(x.task_es);
     setFormRoomId(x.room_id ?? '');
+    setFormPropertyId(x.property_id);
     setFormFrequencyId(x.frequency_id ?? '');
     setFormJobType(x.job_type ?? '');
     setFormTimeOfDay(x.time_of_day ?? '');
@@ -322,7 +351,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     } else if (formPhotoFile) {
       try {
         const compressed = await compressImageToBlob(formPhotoFile);
-        const path = `${propertyId}/task-${crypto.randomUUID()}.jpg`;
+        const path = `${formPropertyId}/task-${crypto.randomUUID()}.jpg`;
         const { error: uploadError } = await supabase.storage
           .from('sop-posters')
           .upload(path, compressed, { contentType: 'image/jpeg' });
@@ -384,7 +413,9 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
 
       const { error } = await supabase.from('master_tasks').insert({
         ...payload,
-        property_id: propertyId,
+        // SS-436: the house chosen in the modal, never silently the console
+        // property -- a new task belongs to the house whose work it is.
+        property_id: formPropertyId,
         active: true,
         sort_order: nextSortOrder,
         task_number: taskNumber,
@@ -438,7 +469,10 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     const nextSortOrder = rooms.length;
 
     const { error } = await supabase.from('rooms').insert({
-      property_id: propertyId,
+      // SS-436: rooms are created into the house selected in the filter --
+      // creating one under All Houses lands on the console property, which
+      // the modal states rather than hides.
+      property_id: crossHouse && house !== 'all' ? house : propertyId,
       name_en: newRoomEn.trim(),
       name_es: newRoomEs.trim(),
       floor: newRoomFloor.trim() || null,
@@ -480,15 +514,15 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     const settled = await Promise.allSettled([
       supabase
         .from('master_tasks')
-        .select('id, task_number, room_id, frequency_id, task_en, task_es, job_type, assigned_role, source_area_en, source_area_es, photo_url, active, sort_order, day_of_week, time_of_day, estimated_minutes')
-        .eq('property_id', propertyId)
+        .select('id, task_number, property_id, room_id, frequency_id, task_en, task_es, job_type, assigned_role, source_area_en, source_area_es, photo_url, active, sort_order, day_of_week, time_of_day, estimated_minutes')
+        .in('property_id', propertyIds)
         .order('sort_order'),
       supabase.from('frequencies').select('id, code, label_en, label_es, recurrence_kind, sort_order').order('sort_order'),
-      supabase.from('rooms').select('id, name_en, name_es, floor').eq('property_id', propertyId).order('sort_order'),
+      supabase.from('rooms').select('id, name_en, name_es, floor, property_id').in('property_id', propertyIds).order('sort_order'),
       supabase
         .from('property_members')
-        .select('id, user_id, profiles(full_name)')
-        .eq('property_id', propertyId),
+        .select('id, user_id, property_id, profiles(full_name)')
+        .in('property_id', propertyIds),
       // Already fetched for the SOP count; the poster and the procedure
       // text ride along on the same query rather than costing a second
       // round trip. Ordered so the first row per task is its primary SOP.
@@ -501,7 +535,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
       supabase.from('task_assignments').select('id, task_id, member_id, slot_id').eq('active', true),
       // SS-429 B: slots are assignable alongside people. Inactive slots are
       // not offered for NEW assignments but stay resolvable for display.
-      supabase.from('staff_slots').select('id, label_en, label_es, user_id, active').eq('property_id', propertyId).order('sort_order'),
+      supabase.from('staff_slots').select('id, label_en, label_es, user_id, active, property_id').in('property_id', propertyIds).order('sort_order'),
     ]);
 
     // One failing source must not blank the page, and an error must never be
@@ -551,9 +585,10 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
       .eq('property_id', propertyId)
       .then(({ count }) => setInventoryItemCount(count ?? 0));
     setMembers(
-      (rows[3] as { id: string; user_id: string; profiles: unknown }[]).map((m) => ({
+      (rows[3] as { id: string; user_id: string; property_id: string; profiles: unknown }[]).map((m) => ({
         id: m.id,
         user_id: m.user_id,
+        property_id: m.property_id,
         full_name: (m.profiles as { full_name: string | null } | null)?.full_name ?? null,
       }))
     );
@@ -586,7 +621,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     setSlots(rows[6] as Slot[]);
     setLoadError(failed.length > 0 ? t('loadPartial') : null);
     setLoading(false);
-  }, [propertyId, supabase, t]);
+  }, [propertyId, propertyIds, supabase, t]);
 
   useEffect(() => {
     load();
@@ -712,8 +747,14 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   // Hiding them with no way back would trade a visible wrong number for an
   // invisible missing row.
   const scopedTasks = useMemo(
-    () => (showRetired ? tasks : tasks.filter((x) => x.active)),
-    [tasks, showRetired]
+    () =>
+      (showRetired ? tasks : tasks.filter((x) => x.active)).filter(
+        // SS-436: the house filter scopes EVERYTHING downstream -- stats,
+        // dropdown option pools, sections -- exactly like showRetired does,
+        // so no surface can disagree about which houses it is counting.
+        (x) => !crossHouse || house === 'all' || x.property_id === house
+      ),
+    [tasks, showRetired, crossHouse, house]
   );
   const retiredCount = useMemo(() => tasks.filter((x) => !x.active).length, [tasks]);
 
@@ -763,9 +804,15 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     const map = new Map<string, Task[]>();
     for (const x of filtered) {
       const room = x.room_id ? roomById.get(x.room_id) : null;
-      const label = room
+      let label = room
         ? (es ? room.name_es || room.name_en : room.name_en)
         : (es ? x.source_area_es || x.source_area_en : x.source_area_en) || t('noRoom');
+      // SS-436: under All Houses two houses can both have a Kitchen; the
+      // house label (household + property, e.g. "Strauss Main") rides on
+      // the section header so identically-named rooms never merge.
+      if (crossHouse && house === 'all') {
+        label = `${label} · ${labelByProperty.get(x.property_id) ?? ''}`.trim();
+      }
       const list = map.get(label);
       if (list) list.push(x);
       else map.set(label, [x]);
@@ -781,7 +828,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
         ),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, locale));
-  }, [filtered, roomById, es, locale, t]);
+  }, [filtered, roomById, es, locale, t, crossHouse, house, labelByProperty]);
 
   // Every room for this property, A-Z, for the inline room editor. Distinct
   // from `roomOptions` above, which is deliberately narrowed by the other
@@ -790,6 +837,31 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   const roomOptionsAZ = useMemo(
     () => [...rooms].sort((a, b) => (es ? a.name_es || a.name_en : a.name_en).localeCompare(es ? b.name_es || b.name_en : b.name_en, locale)),
     [rooms, es, locale]
+  );
+
+  // SS-436: a task can only be moved into (or created in) a room of ITS
+  // OWN house -- offering Main's Kitchen on a Low task would silently
+  // cross-link properties, the exact defect class 145/146 reconciled.
+  const roomsForProperty = useCallback(
+    (pid: string) => roomOptionsAZ.filter((r) => r.property_id === pid),
+    [roomOptionsAZ]
+  );
+
+  // SS-436: assignees are house-scoped the same way -- a tile offers the
+  // people and slots of the task's own property, never the union.
+  const assigneesForProperty = useCallback(
+    (pid: string) => [
+      ...members
+        .filter((m) => m.property_id === pid)
+        .map((m) => ({ id: `${MEMBER_PREFIX}${m.id}`, label: m.full_name ?? t('unnamedMember') })),
+      ...slots
+        .filter((s) => s.property_id === pid && s.active)
+        .map((s) => ({
+          id: `${SLOT_PREFIX}${s.id}`,
+          label: locale === 'es' ? s.label_es || s.label_en : s.label_en,
+        })),
+    ],
+    [members, slots, locale, t]
   );
 
   function toggleSection(label: string) {
@@ -821,7 +893,17 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   // rooms happen to be ordered within each floor. Only real, present floor
   // values -- a property with no floor data on any room shows no tab row
   // at all rather than an empty one.
-  const allFloorNames = FLOOR_ORDER.filter((f) => rooms.some((r) => r.floor === f));
+  // SS-436 cross-house: floors are a per-house concept -- Main and Low have
+  // them, Lax and Country are deliberately NULL (SS-420) -- so the tab row
+  // only renders once a single house is selected, from that house's own
+  // rooms. All Houses shows no floor row rather than a union of floor names
+  // that silently means different things per house.
+  const floorRoomPool = crossHouse
+    ? house === 'all'
+      ? []
+      : rooms.filter((r) => r.property_id === house)
+    : rooms;
+  const allFloorNames = FLOOR_ORDER.filter((f) => floorRoomPool.some((r) => r.floor === f));
   const floorLabel = (f: string) => (es && FLOOR_ES[f] ? FLOOR_ES[f] : f);
 
   // floor is deliberately excluded from filtersActive/clearFilters -- it is
@@ -938,23 +1020,18 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     setAssignments((prev) => [...prev.filter((a) => a.task_id !== taskId), data as Assignment]);
   }
 
-  // Real people from property_members, never a hardcoded name (R17). A member
-  // with no profile row still gets an option rather than disappearing from the
-  // list -- unnamed is a data gap, not a reason to be unassignable.
-  // SS-429 B: active slots are offered alongside people -- the way to assign
-  // work before anyone is hired. Value prefixes route the write.
-  const assignees = useMemo(
-    () => [
-      ...members.map((m) => ({ id: `${MEMBER_PREFIX}${m.id}`, label: m.full_name ?? t('unnamedMember') })),
-      ...slots
-        .filter((s) => s.active)
-        .map((s) => ({
-          id: `${SLOT_PREFIX}${s.id}`,
-          label: locale === 'es' ? s.label_es || s.label_en : s.label_en,
-        })),
-    ],
-    [members, slots, locale, t]
-  );
+  // (The flat cross-property assignee list was replaced by
+  // assigneesForProperty above -- SS-436 scopes every tile's options to the
+  // task's own house. R17 and the SS-429 B slot rules carry over unchanged.)
+
+  // SS-436: switching house resets the floor tab and room filter -- both
+  // are per-house concepts, and a Main floor name filtering Low's tasks
+  // would silently show nothing.
+  useEffect(() => {
+    setFloor('all');
+    setRoom('all');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [house]);
 
   const pill =
     'appearance-none bg-card border border-cardBorder rounded-full px-3 py-1.5 text-[12px] text-denim';
@@ -1037,6 +1114,35 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
           code with nothing left to render them. master_task_sops (the
           query that feeds each tile's own SOP count/poster/procedure text)
           is untouched -- a different query, still very much in use. */}
+
+      {/* SS-436/SS-410 house filter -- the cross-house console's top-level
+          narrowing, above the floor tabs because a floor only means
+          something within one house. Pills carry the household + property
+          label ("Strauss Main"), never the bare property name -- asked
+          three times. Same pill-strip treatment as the floor tabs below. */}
+      {crossHouse && (
+        <div className="flex items-center gap-1 bg-mist rounded-full p-1 flex-wrap mb-3 w-fit">
+          <button
+            onClick={() => setHouse('all')}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+              house === 'all' ? 'bg-denim text-white' : 'text-dusk'
+            }`}
+          >
+            {t('allHouses')}
+          </button>
+          {propertyOptions.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setHouse(p.id)}
+              className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+                house === p.id ? 'bg-denim text-white' : 'text-dusk'
+              }`}
+            >
+              {p.label || p.id}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* SS-273 floor tabs -- same bg-mist pill-strip treatment Inventory
           already uses for its own floor tabs (InventoryClient.tsx), so the
@@ -1239,7 +1345,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                             className="appearance-none bg-transparent cursor-pointer text-[9px] font-semibold uppercase tracking-[0.2em] text-brass truncate max-w-[120px] hover:underline underline-offset-2"
                           >
                             <option value="">{t('noRoom')}</option>
-                            {roomOptionsAZ.map((r) => (
+                            {roomsForProperty(x.property_id).map((r) => (
                               <option key={r.id} value={r.id}>
                                 {es ? r.name_es || r.name_en : r.name_en}
                               </option>
@@ -1466,7 +1572,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                         <option value="">
                           {unassigned ? t('unassigned') : t('removeAssignment')}
                         </option>
-                        {assignees.map((a) => (
+                        {assigneesForProperty(x.property_id).map((a) => (
                           <option key={a.id} value={a.id}>
                             {a.label}
                           </option>
@@ -1539,6 +1645,33 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                 )}
               </div>
 
+              {/* SS-436: which house this task belongs to. Add mode only --
+                  moving an existing task between houses is a reconcile-class
+                  operation (see 145/146), not an edit-modal dropdown.
+                  Changing the house clears the room pick, which belonged to
+                  the previous house. */}
+              {crossHouse && taskForm?.mode === 'add' && (
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-dusk mb-1">
+                    {t('formHouse')}
+                  </label>
+                  <select
+                    value={formPropertyId}
+                    onChange={(e) => {
+                      setFormPropertyId(e.target.value);
+                      setFormRoomId('');
+                    }}
+                    className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm text-denim bg-card"
+                  >
+                    {propertyOptions.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.label || p.id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-semibold uppercase tracking-wider text-dusk mb-1">
@@ -1550,7 +1683,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                     className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm text-denim bg-card"
                   >
                     <option value="">{t('noRoom')}</option>
-                    {roomOptionsAZ.map((r) => (
+                    {roomsForProperty(formPropertyId).map((r) => (
                       <option key={r.id} value={r.id}>
                         {es ? r.name_es || r.name_en : r.name_en}
                       </option>
