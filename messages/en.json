@@ -1008,7 +1008,9 @@
     "empty": "No training videos are available yet.",
     "unavailable": "This video can't be loaded right now.",
     "captionsEs": "Spanish captions",
-    "goThere": "Open this page"
+    "goThere": "Open this page",
+    "allCategories": "All",
+    "play": "Play"
   },
   "trainingOnboarding": {
     "close": "Close",

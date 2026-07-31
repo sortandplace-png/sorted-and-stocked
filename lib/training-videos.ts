@@ -42,6 +42,16 @@ export type TrainingVideo = {
   descriptionEn: string | null;
   descriptionEs: string | null;
   durationSeconds: number | null;
+  /** SS-443: grouping key (EN) + Spanish display label for the section
+   *  headings and filter chips. Data, not code -- new categories arrive
+   *  with new rows. */
+  categoryEn: string;
+  categoryEs: string | null;
+  /** Signed poster URL (same private bucket as the video), or null -- the
+   *  card renders its branded facade instead, never a black rectangle. */
+  posterUrl: string | null;
+  posterAltEn: string | null;
+  posterAltEs: string | null;
   /** Route this video is about, already resolved. Null when it teaches no
    *  single page (the welcome video and the overview). */
   href: string | null;
@@ -65,7 +75,7 @@ export async function getSignedTrainingVideos(
   const { data: rows, error } = await supabase
     .from('training_videos')
     .select(
-      'id, slug, bucket, storage_path, title_en, title_es, description_en, description_es, duration_seconds, caption_path'
+      'id, slug, bucket, storage_path, title_en, title_es, description_en, description_es, duration_seconds, caption_path, category_en, category_es, poster_path, poster_alt_en, poster_alt_es'
     )
     .eq('active', true)
     .order('sort_order');
@@ -81,6 +91,7 @@ export async function getSignedTrainingVideos(
     const paths = byBucket.get(r.bucket) ?? [];
     paths.push(r.storage_path);
     if (r.caption_path) paths.push(r.caption_path);
+    if (r.poster_path) paths.push(r.poster_path);
     byBucket.set(r.bucket, paths);
   }
 
@@ -106,6 +117,11 @@ export async function getSignedTrainingVideos(
     descriptionEn: r.description_en,
     descriptionEs: r.description_es,
     durationSeconds: r.duration_seconds,
+    categoryEn: r.category_en,
+    categoryEs: r.category_es,
+    posterUrl: r.poster_path ? signed.get(`${r.bucket}/${r.poster_path}`) ?? null : null,
+    posterAltEn: r.poster_alt_en,
+    posterAltEs: r.poster_alt_es,
     href: HREF_BY_SLUG[r.slug] ? HREF_BY_SLUG[r.slug](propertyId) : null,
     signedUrl: signed.get(`${r.bucket}/${r.storage_path}`) ?? null,
     captionSignedUrl: r.caption_path ? signed.get(`${r.bucket}/${r.caption_path}`) ?? null : null,

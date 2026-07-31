@@ -1008,7 +1008,9 @@
     "empty": "Aún no hay videos de capacitación disponibles.",
     "unavailable": "Este video no se puede cargar en este momento.",
     "captionsEs": "Subtítulos en español",
-    "goThere": "Abrir esta página"
+    "goThere": "Abrir esta página",
+    "allCategories": "Todos",
+    "play": "Reproducir"
   },
   "trainingOnboarding": {
     "close": "Cerrar",
