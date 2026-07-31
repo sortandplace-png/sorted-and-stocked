@@ -148,6 +148,7 @@
   },
   "recipesGrid": {
     "title": "Recetas",
+    "newBadge": "¡NUEVO!",
     "newRecipe": "Nueva Receta",
     "searchPlaceholder": "Buscar recetas...",
     "noResults": "No se encontraron recetas.",

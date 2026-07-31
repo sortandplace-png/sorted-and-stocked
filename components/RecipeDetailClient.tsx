@@ -28,6 +28,7 @@ import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { classifyProvenance, PROVENANCE_INFO } from '@/lib/recipe-provenance';
 import { addIngredientsToShoppingList } from '@/lib/shopping-list-actions';
 import { checkRecipeDeletable, type RecipeDeleteCheck } from '@/lib/recipe-delete-guard';
+import { showsNewBadge } from '@/lib/recipe-new-badge';
 import { bedikasTolaimIngredients, BEDIKAS_TOLAIM_NOTE } from '@/lib/bedikas-tolaim';
 
 // Confirmed each of these has a real page + component before linking to it
@@ -111,6 +112,7 @@ interface Recipe {
   is_shabbos_only: boolean | null;
   is_yom_tov: boolean | null;
   is_pesach: boolean | null;
+  new_badge_until?: string | null;
 }
 
 type Occasion = 'shabbos' | 'yomtov' | 'pesach' | 'weekday';
@@ -933,8 +935,16 @@ export default function RecipeDetailClient({
         </div>
       )}
 
-      <h1 className="font-display text-3xl text-denim mb-1">
-        {lang === 'es' && recipe.name_es ? recipe.name_es : recipe.name}
+      <h1 className="font-display text-3xl text-denim mb-1 flex items-center gap-2 flex-wrap">
+        <span>{lang === 'es' && recipe.name_es ? recipe.name_es : recipe.name}</span>
+        {/* SS-450: denim outline on white, never a brass fill (R9);
+            self-expires via new_badge_until. This component runs its own
+            lang toggle rather than next-intl, so the label is inline. */}
+        {showsNewBadge(recipe) && (
+          <span className="text-[11px] font-bold tracking-[0.06em] bg-white text-denim border border-denim rounded-full px-2.5 py-1 shadow-sm align-middle">
+            {lang === 'es' ? '¡NUEVO!' : 'NEW!'}
+          </span>
+        )}
       </h1>
       {recipe.name_es && (
         <p className="text-sm italic text-dusk -mt-1 mb-2">

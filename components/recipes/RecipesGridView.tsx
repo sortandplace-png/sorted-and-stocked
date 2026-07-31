@@ -42,6 +42,7 @@ import { COURSES, type Course } from '@/lib/course-constants';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { createClient } from '@/lib/supabase/client';
 import { checkRecipeDeletable, type RecipeDeleteCheck } from '@/lib/recipe-delete-guard';
+import { showsNewBadge } from '@/lib/recipe-new-badge';
 import NewRecipeModal from '@/components/NewRecipeModal';
 import FloatingMultiTimer from '@/components/kitchen/FloatingMultiTimer';
 import { useToast } from '@/components/Toast';
@@ -76,6 +77,7 @@ interface Recipe {
   is_shabbos_only: boolean | null;
   approx_total_minutes: number | null;
   created_at: string;
+  new_badge_until?: string | null;
 }
 
 // Weekday isn't a stored value — it's the default state where none of the
@@ -1011,7 +1013,12 @@ export default function RecipesGridView({
                       r.is_pesach ? 'bg-brass/[0.08] border-brass/40' : 'bg-card border-cardBorder'
                     }`}
                   >
-                    <div className="w-full h-20 lg:h-28 bg-linen flex items-center justify-center shrink-0">
+                    <div className="relative w-full h-20 lg:h-28 bg-linen flex items-center justify-center shrink-0">
+                      {showsNewBadge(r) && (
+                        <span className="absolute top-1.5 left-1.5 z-10 text-[9px] font-bold tracking-[0.06em] bg-white/95 text-denim border border-denim rounded-full px-1.5 py-0.5 shadow-sm">
+                          {t('newBadge')}
+                        </span>
+                      )}
                       {r.photo_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={r.photo_url} alt="" className="w-full h-full object-cover" />
@@ -1091,6 +1098,14 @@ export default function RecipesGridView({
                               not per-card decoration -- removed from here on
                               Racquel's explicit call after seeing it live on
                               every card in the grid. */}
+                          {/* SS-450: denim OUTLINE, white ground -- brass is
+                              never a fill (R9). Self-expires via
+                              new_badge_until. */}
+                          {showsNewBadge(recipe) && (
+                            <span className="absolute top-2 left-2 z-10 text-[10px] font-bold tracking-[0.06em] bg-white/95 text-denim border border-denim rounded-full px-2 py-0.5 shadow-sm">
+                              {t('newBadge')}
+                            </span>
+                          )}
                           {recipe.photo_url && isDirectImageUrl(recipe.photo_url) ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
