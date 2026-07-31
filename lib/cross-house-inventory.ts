@@ -15,6 +15,7 @@
 // has already passed inventory_items_select_member / is_property_member, so
 // it only ever shows houses the viewer is themselves a member of.
 import type { ReorderSource } from '@/lib/reorder-sources';
+import { isInventoryItemLow } from '@/lib/low-stock';
 
 export type HouseInventoryRow = {
   id: string;
@@ -25,6 +26,7 @@ export type HouseInventoryRow = {
   category: string | null;
   current_qty: number | null;
   min_qty: number | null;
+  auto_restock_eligible: boolean;
   last_counted_at: string | null;
   photo_url: string | null;
   reorder_link: string | null;
@@ -73,14 +75,10 @@ export function productKey(row: HouseInventoryRow): string {
   return normalizeName(row.name);
 }
 
-// Matches isLowStock() in InventoryClient.tsx and the v_low_stock_* views:
-// counted, eligible, at-or-below minimum. Kept in one place here so the
-// console cannot drift from the rest of the app's definition of "low".
-function rowIsLow(row: HouseInventoryRow): boolean {
-  if (row.last_counted_at === null) return false;
-  if (row.min_qty === null) return false;
-  return (row.current_qty ?? 0) <= row.min_qty;
-}
+// The definition of "low" lives in lib/low-stock.ts (the TS mirror of
+// migration 158's is_inventory_item_low()) -- this alias exists only so the
+// call sites below keep their row vocabulary.
+const rowIsLow = isInventoryItemLow;
 
 export function groupByProduct(
   rows: HouseInventoryRow[],

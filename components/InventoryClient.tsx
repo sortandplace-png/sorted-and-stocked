@@ -15,6 +15,7 @@ import { categoryIcon } from '@/lib/icon-maps';
 import { getItemIcon } from '@/lib/item-icons';
 import { flattenLocationTree, locationPath, rootGroupName, getDescendantIds } from '@/lib/location-tree';
 import { getLocationIcon } from '@/lib/location-icons';
+import { isInventoryItemLow } from '@/lib/low-stock';
 import Pin from '@/components/PinAccent';
 import RestockPhotoPrompt from '@/components/RestockPhotoPrompt';
 import LocationPhotoUpload from '@/components/LocationPhotoUpload';
@@ -235,17 +236,12 @@ function isExpiringSoon(expirationDate: string | null): boolean {
 // Matches the database definition, which was corrected the same day:
 // v_low_stock_summary / _by_property / _all_properties and
 // get_low_stock_items() all now require last_counted_at IS NOT NULL.
-// Two definitions of "low" is what caused this bug in the first place.
-function isLowStock(
-  item: Pick<InventoryItem, 'current_qty' | 'min_qty' | 'last_counted_at' | 'auto_restock_eligible'>
-): boolean {
-  if (item.last_counted_at === null) return false;
-  // SS-247: the view requires this too. Every row is true today, so this
-  // changes no number now -- it stops the page and the view disagreeing the
-  // first time an item is marked not-auto-restock.
-  if (!item.auto_restock_eligible) return false;
-  return item.current_qty <= item.min_qty;
-}
+// Two definitions of "low" is what caused this bug in the first place --
+// which is why the definition no longer lives here: it is
+// is_inventory_item_low() in migration 158 on the database side and
+// isInventoryItemLow() in lib/low-stock.ts on this side. This file only
+// imports it (aliased to keep the fifty-odd call sites readable).
+const isLowStock = isInventoryItemLow;
 
 // A thing nobody has ever counted is not low, and it is not fine either. It
 // is unknown, and the action is "count it" rather than "buy more".

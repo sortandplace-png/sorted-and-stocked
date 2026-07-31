@@ -15,6 +15,7 @@ import { SkeletonList } from '@/components/Skeleton';
 import { SITE_URL } from '@/lib/site-url';
 import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
 import { storageThumbnail } from '@/lib/storage-image';
+import { isInventoryItemLow } from '@/lib/low-stock';
 
 type Item = {
   id: string;
@@ -28,6 +29,8 @@ type Item = {
   category_group: string | null;
   current_qty: number;
   min_qty: number;
+  auto_restock_eligible: boolean;
+  last_counted_at: string | null;
   updated_at: string;
   label_printed_at: string | null;
 };
@@ -59,14 +62,14 @@ function sortCategory(item: Pick<Item, 'category' | 'category_group'>, mode: 'ma
   return item.category_group ?? fallback;
 }
 
-// Same definition InventoryClient.tsx's isLowStock() uses -- <=, not the
-// RPC's stricter < -- per Racquel's own July 19 call: current_qty <=
-// min_qty is correct even though most items default to 0/0 and haven't
-// been physically counted yet. That's real, accepted signal ("go verify
-// this"), not a bug to filter around here either.
-function isLowStock(item: Pick<Item, 'current_qty' | 'min_qty'>): boolean {
-  return item.current_qty <= item.min_qty;
-}
+// The definition of "low" lives in lib/low-stock.ts, the TS mirror of
+// migration 158's is_inventory_item_low(). This file used to carry its own
+// July-19-era copy (bare current_qty <= min_qty) which was never updated
+// for the SS-157 reversal -- so the "Low stock" filter here counted
+// never-counted 0/0 items as low while every other surface had stopped.
+// Aligned 31 Jul: never-counted and non-auto-restock items no longer match
+// this filter, same as everywhere else.
+const isLowStock = isInventoryItemLow;
 
 type Location = { id: string; name: string };
 
@@ -156,10 +159,8 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
   const [search, setSearch] = useSessionPersistedState('print-labels-filter-search', '');
   const [locationFilter, setLocationFilter] = useSessionPersistedState<string | null>('print-labels-filter-location', null);
   const [photosOnly, setPhotosOnly] = useSessionPersistedState('print-labels-filter-photosOnly', false);
-  // SS-015. Reuses the same current_qty <= min_qty definition as everywhere
-  // else in the app (Dashboard's Low Stock tile, Inventory's own stat) --
-  // see isLowStock() above for why that's correct even with most items
-  // still at their 0/0 defaults.
+  // SS-015. Uses the app-wide low-stock definition (lib/low-stock.ts) --
+  // see the note at isLowStock above.
   const [lowStockOnly, setLowStockOnly] = useSessionPersistedState('print-labels-filter-lowStockOnly', false);
   const [labelLanguage, setLabelLanguage] = useSessionPersistedState<'en' | 'es'>('print-labels-language', 'en');
   const [sortMode, setSortMode] = useSessionPersistedState<'macro' | 'micro'>('print-labels-sortMode', 'macro');
@@ -176,7 +177,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
       supabase
         .from('inventory_items')
         .select(
-          'id, name, name_es, qr_code, photo_url, print_label, location_id, category, category_group, current_qty, min_qty, updated_at, label_printed_at'
+          'id, name, name_es, qr_code, photo_url, print_label, location_id, category, category_group, current_qty, min_qty, auto_restock_eligible, last_counted_at, updated_at, label_printed_at'
         )
         .eq('property_id', propertyId)
         .order('name'),

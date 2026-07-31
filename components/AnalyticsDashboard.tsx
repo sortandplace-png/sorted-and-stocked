@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { BarChart3, TrendingUp, Users, ShoppingCart } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { isInventoryItemLow } from '@/lib/low-stock';
 
 type MetricCard = {
   label: string;
@@ -33,14 +34,16 @@ export default function AnalyticsDashboard({ propertyId }: { propertyId: string 
       }
 
       // Load inventory metrics
+      // NOTE: this component is UNMOUNTED -- no page imports it (verified
+      // 31 Jul). Kept per R21; it previously carried its own (wrong,
+      // strict-<, ungated) low-stock derivation. If it is ever mounted, it
+      // now agrees with lib/low-stock.ts / migration 158.
       const { data: inventoryData } = await supabase
         .from('inventory_items')
-        .select('id, current_qty, min_qty')
+        .select('id, current_qty, min_qty, auto_restock_eligible, last_counted_at')
         .eq('property_id', propertyId);
 
-      const lowStockCount = inventoryData?.filter(
-        (i: any) => i.current_qty < i.min_qty
-      ).length || 0;
+      const lowStockCount = inventoryData?.filter(isInventoryItemLow).length || 0;
 
       const mealMetrics: MetricCard[] = [
         {

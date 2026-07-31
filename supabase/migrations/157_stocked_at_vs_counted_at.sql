@@ -1,9 +1,11 @@
--- 157_stocked_at_vs_counted_at.PROPOSED.sql
--- *** PROPOSED, NOT APPLIED. Renamed without .PROPOSED and applied only
--- after Racquel rules on the 31 Jul bulk inventory operation (see
--- SS-437 in work_items). Held because the data half changes what the
--- low-stock surfaces show, and the operation it corrects is itself
--- awaiting her ruling. ***
+-- 157_stocked_at_vs_counted_at.sql
+-- UNBLOCKED 31 Jul: Racquel ruled KEEP on the bulk clone, which makes this
+-- repair live (it was held as .PROPOSED until that ruling). Predicate
+-- corrected before applying: the history trigger records a non-null
+-- actor_user_id even for direct-SQL writes -- the no-session signal is
+-- actor_name, verified live (3,058 quantity_changed rows today, all
+-- actor_name 'System / Direct Database Access (no app session)', zero with
+-- a null actor_user_id).
 --
 -- THE PROBLEM: the 31 Jul bulk operation set current_qty = 1 on ~3,058
 -- items, which fired the last-counted trigger, so 1,940 items on Lax,
@@ -42,5 +44,5 @@ where i.last_counted_at::date = '2026-07-31'
     where h.inventory_item_id = i.id
       and h.action_type = 'quantity_changed'
       and h.created_at::date = '2026-07-31'
-      and h.actor_user_id is null
+      and h.actor_name = 'System / Direct Database Access (no app session)'
   );

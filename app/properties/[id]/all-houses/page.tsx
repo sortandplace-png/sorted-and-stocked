@@ -85,7 +85,7 @@ export default async function AllHousesPage({ params }: { params: Promise<{ id: 
     ? await supabase
         .from('inventory_items')
         .select(
-          'id, property_id, name, name_es, category, current_qty, min_qty, last_counted_at, photo_url, reorder_link, reorder_sources(id, retailer_name, url, is_preferred)'
+          'id, property_id, name, name_es, category, current_qty, min_qty, auto_restock_eligible, last_counted_at, photo_url, reorder_link, reorder_sources(id, retailer_name, url, is_preferred)'
         )
         .in('property_id', houseIds)
     : { data: [] };
