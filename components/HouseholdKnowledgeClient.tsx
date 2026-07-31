@@ -2,6 +2,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientDelete } from '@/lib/resilient-write';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
@@ -25,6 +26,10 @@ export default function HouseholdKnowledgeClient({ propertyId }: { propertyId: s
   const role = usePropertyRole();
   const supabase = createClient();
   const showToast = useToast();
+  // Q / SS-143: the title was a hardcoded English "House Manual"; the
+  // confirmed names are "House Manual" / "Manual de la Casa", already in
+  // nav.kindKnowledge, so the h1 reads from there instead of a new key.
+  const tNav = useTranslations('nav');
 
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -141,7 +146,7 @@ export default function HouseholdKnowledgeClient({ propertyId }: { propertyId: s
 
   return (
     <div className="max-w-md lg:max-w-4xl mx-auto p-4">
-      <h1 className="text-2xl font-display text-denim mb-1">House Manual</h1>
+      <h1 className="text-2xl font-display text-denim mb-1">{tNav('kindKnowledge')}</h1>
       <p className="text-sm text-dusk mb-4">
         The answers staff and family keep asking for — where things are, how things are done.
       </p>

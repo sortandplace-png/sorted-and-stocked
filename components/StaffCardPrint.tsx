@@ -90,7 +90,7 @@ export default function StaffCardPrint() {
         <Section n="2" title="Durante el turno — During your shift">
           <Sub es="Si no sabe dónde va algo" en="If you don't know where something goes" />
           <Pair es="1. Busque el nombre en Inventario" en="Search the name in Inventory" />
-          <Pair es="2. Revise el Manual del Hogar" en="Check the House Manual" />
+          <Pair es="2. Revise el Manual de la Casa" en="Check the House Manual" />
           <Pair es="3. Solo entonces pregunte" en="Only then ask" />
           <Sub es="Si algo está fuera de lugar" en="If something is out of place" />
           <Pair
@@ -184,7 +184,7 @@ export default function StaffCardPrint() {
 
         <div className="break-inside-avoid border-t border-cardBorder pt-2">
           <Pair strong es="¿Preguntas?" en="Questions?" />
-          <Pair es="Manual del Hogar en la aplicación" en="House Manual in the app" />
+          <Pair es="Manual de la Casa en la aplicación" en="House Manual in the app" />
           <p className="text-[13px] text-denim">Sort + Place · (718) 938-4342</p>
         </div>
       </div>
