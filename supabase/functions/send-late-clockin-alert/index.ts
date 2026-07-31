@@ -12,7 +12,11 @@
 // Resend config should surface once in the statuses, not retry all day.
 //
 // Deliberate details:
-//   - day_of_week is ISO 1=Mon..7=Sun (master_tasks' convention).
+//   - day_of_week: Claude's schedule rows use 0=Sunday (JS getDay), while
+//     master_tasks uses ISO 1=Mon..7=Sun. Mon-Sat are the SAME digits in
+//     both conventions; only Sunday differs (0 vs 7), so the query accepts
+//     both values on Sunday and the function can never miss a row to a
+//     convention mismatch.
 //   - 4-hour cap: if the cron was down all morning, an 8am shift does not
 //     get a "running late?" at 4pm -- past 4 hours it is a different
 //     conversation, and this alert is not it.
@@ -25,18 +29,20 @@ const TZ = 'America/New_York'
 const GRACE_MINUTES = 20
 const STALE_CAP_MINUTES = 240
 
-function nyNow(): { isoDow: number; minutes: number; dateStr: string } {
+function nyNow(): { dowValues: number[]; minutes: number; dateStr: string } {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: TZ, hour12: false,
     weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit',
   }).formatToParts(new Date())
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
-  const dowMap: Record<string, number> = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 }
+  const dowMap: Record<string, number> = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 0 }
+  const dow = dowMap[get('weekday')] ?? -1
   // Intl can emit "24" for midnight with hour12:false (hourCycle h24 quirk).
   const hour = Number(get('hour')) % 24
   return {
-    isoDow: dowMap[get('weekday')] ?? 0,
+    // Sunday matches rows written as 0 (JS convention) OR 7 (ISO).
+    dowValues: dow === 0 ? [0, 7] : [dow],
     minutes: hour * 60 + Number(get('minute')),
     dateStr: `${get('year')}-${get('month')}-${get('day')}`,
   }
@@ -61,13 +67,13 @@ serve(async (_req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { isoDow, minutes, dateStr } = nyNow()
+    const { dowValues, minutes, dateStr } = nyNow()
 
     const { data: schedules, error } = await supabase
       .from('shift_schedules')
       .select('id, property_id, staff_user_id, start_time')
       .eq('active', true)
-      .eq('day_of_week', isoDow)
+      .in('day_of_week', dowValues)
       .not('staff_user_id', 'is', null)
 
     if (error) {

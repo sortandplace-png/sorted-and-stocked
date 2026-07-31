@@ -96,6 +96,9 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // SS-436: the one-page operator console (People / Configuration /
       // Work). Same gate.
       { segment: 'console', labelKey: 'console', managerOnly: true, operatorOnly: true },
+      // SS-457: the live register viewer. Same operator gate the route
+      // enforces server-side.
+      { segment: 'register', labelKey: 'register', managerOnly: true, operatorOnly: true },
       // Hours removed from the dropdown: it belongs inside My Day, not as
       // its own destination. The /staff/hours ROUTE is untouched and still
       // enforces its own owner/manager gate (R21) -- it is simply no longer

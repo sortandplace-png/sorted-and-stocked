@@ -7,8 +7,10 @@
 -- day_of_week, start_time, active) -- NO new schedule columns. Two facts
 -- about that table worth recording: it has 0 rows today, and no UI writes
 -- it (only the backup tool references it) -- so the alert pipeline ships
--- armed but silent until schedules are entered. day_of_week follows the
--- master_tasks convention: ISO 1=Mon .. 7=Sun.
+-- armed but silent until schedules are entered. day_of_week: schedule
+-- rows use 0=Sunday (confirmed 31 Jul; Mon-Sat share digits with the ISO
+-- convention, and the function accepts 0 OR 7 on Sunday so neither
+-- convention can miss).
 --
 -- The clock-in signal is shifts.clocked_in_at -- the Time Clock pill on My
 -- Day (SS-285, ClockInOutButton) is live and is the real clock-in path.
