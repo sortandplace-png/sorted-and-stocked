@@ -18,6 +18,12 @@
 -- Fix: remove the authenticated/anon path altogether rather than try to
 -- scope the policy -- there is no property_id to scope by, and nothing in
 -- the app is meant to read this table anyway.
+--
+-- SUPERSEDED IN PART, 30 Jul (SS-418): "no client-facing policy at all" no
+-- longer describes the live database. A SELECT policy scoped to the two
+-- operator accounts now exists -- see
+-- 147_reconcile_work_items_select_operator.sql for what replaced this and
+-- why. The revokes below still hold and were not reversed.
 drop policy if exists work_items_owner_manager on work_items;
 
 revoke all on work_items from authenticated;
