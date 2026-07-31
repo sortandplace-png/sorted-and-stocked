@@ -17,7 +17,8 @@ import Pin from '@/components/ui/Pin';
 import JumpToDatePanel from '@/components/JumpToDatePanel';
 import { isSecondDay } from '@/lib/yom-tov';
 import type { ObservanceKind } from '@/lib/yom-tov';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { usFederalHolidays, type UsHoliday } from '@/lib/us-holidays';
+import { ChevronLeft, ChevronRight, Flame } from 'lucide-react';
 
 export type Observance = {
   date: string;
@@ -77,9 +78,16 @@ function localIso(d: Date): string {
 export default function YomTovYearViewClient({
   propertyId,
   observances,
+  // SS-469 calendar layers (properties.calendar_layers): 'jewish' gates
+  // Shabbos/candles/observances, 'civil' gates the US federal holidays.
+  // Defaults keep every existing mount rendering exactly as before.
+  calendarLayers = ['jewish', 'civil'],
+  zip = null,
 }: {
   propertyId: string;
   observances: Observance[];
+  calendarLayers?: string[];
+  zip?: string | null;
 }) {
   const t = useTranslations('yomTovYearView');
   const locale = useLocale();
@@ -134,6 +142,45 @@ export default function YomTovYearViewClient({
   }, [observances]);
 
   const cells = useMemo(() => monthMatrix(cursor), [cursor]);
+
+  const showJewish = calendarLayers.includes('jewish');
+  const showCivil = calendarLayers.includes('civil');
+
+  // SS-467: US federal holidays are pure date rules -- computed for the
+  // cursor month's year, no API, no table, never expires.
+  const civilByDate = useMemo(() => {
+    if (!showCivil) return new Map<string, UsHoliday>();
+    return new Map(usFederalHolidays(cursor.getFullYear()).map((h) => [h.date, h]));
+  }, [cursor, showCivil]);
+
+  // SS-465/SS-466: candle lighting, havdalah and Rosh Chodesh for the
+  // cursor month, computed from Hebcal keyed to the property's zip (R1).
+  const [monthTimes, setMonthTimes] = useState<Map<string, { candles?: string; havdalah?: string }>>(new Map());
+  const [roshChodeshDates, setRoshChodeshDates] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!showJewish) return;
+    let cancelled = false;
+    const y = cursor.getFullYear();
+    const m = cursor.getMonth() + 1;
+    fetch(`/api/hebcal/month?gy=${y}&gm=${m}${zip ? `&zip=${zip}` : ''}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d) return;
+        const map = new Map<string, { candles?: string; havdalah?: string }>();
+        for (const t of d.times ?? []) {
+          const entry = map.get(t.date) ?? {};
+          if (t.category === 'candles') entry.candles = t.time;
+          else entry.havdalah = t.time;
+          map.set(t.date, entry);
+        }
+        setMonthTimes(map);
+        setRoshChodeshDates(new Set((d.roshChodesh ?? []).map((r: { date: string }) => r.date)));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [cursor, zip, showJewish]);
 
   // Jump-to-date highlight. Cleared on a timer rather than left on, so the
   // ring marks the day you asked for and then gets out of the way.
@@ -242,7 +289,12 @@ export default function YomTovYearViewClient({
 
       <JumpToDatePanel cursor={cursor} onJump={jumpTo} onToday={goToday} />
 
-      {observances.length === 0 ? (
+      {/* SS-469: the CALENDAR renders even with zero observances -- a
+          civil-only house (Henderson) has no jewish rows by design, and
+          August is genuinely empty of yom tov; the grid still has
+          Saturdays, candle times and US holidays to show. Only the LIST
+          view keeps the empty state. */}
+      {observances.length === 0 && view === 'list' ? (
         <p className="text-sm text-dusk text-center py-10 bg-card rounded-xl2 border border-cardBorder shadow-card">
           {t('empty')}
         </p>
@@ -288,13 +340,27 @@ export default function YomTovYearViewClient({
               {cells.map((d, i) => {
                 if (!d) return <div key={`pad-${i}`} className="min-h-[86px] rounded-lg" />;
                 const iso = localIso(d);
-                const items = byDate.get(iso) ?? [];
+                const items = showJewish ? byDate.get(iso) ?? [] : [];
                 const isToday = iso === today;
+                const isSaturday = d.getDay() === 6;
+                const civil = civilByDate.get(iso);
+                const times = showJewish ? monthTimes.get(iso) : undefined;
+                const isRoshChodesh = showJewish && roshChodeshDates.has(iso);
+                // R2: a fast day reads blacked-out on the GRID (meals on
+                // erev/motzei stay fully plannable elsewhere -- this is a
+                // rendering treatment, not a data rule).
+                const isFast = items.some((o) => o.kind === 'fast');
                 return (
                   <div
                     key={iso}
                     className={`min-h-[86px] rounded-lg border p-1.5 ${
-                      isToday ? 'border-denim bg-mist' : 'border-cardBorder bg-card'
+                      isFast
+                        ? 'border-rust/50 bg-rust/[0.07]'
+                        : isToday
+                          ? 'border-denim bg-mist'
+                          : isSaturday && showJewish
+                            ? 'border-brass/40 bg-linen'
+                            : 'border-cardBorder bg-card'
                     } ${
                       iso === highlightIso
                         ? 'ring-2 ring-denim ring-offset-1 animate-pulse'
@@ -308,6 +374,36 @@ export default function YomTovYearViewClient({
                     >
                       {d.getDate()}
                     </span>
+                    {/* SS-465: every Saturday IS Shabbos -- computed, never
+                        seeded (a Saturday is a fact of the weekday grid;
+                        the times below are the Hebcal-computed part). */}
+                    {isSaturday && showJewish && (
+                      <span className="block text-[10px] font-medium text-denim leading-tight mb-0.5">
+                        {es ? 'Shabat' : 'Shabbos'}
+                        {times?.havdalah && (
+                          <span className="block text-[9px] text-dusk tabular-nums">★ {times.havdalah}</span>
+                        )}
+                      </span>
+                    )}
+                    {/* SS-466: candle lighting on the Friday square, keyed
+                        to this property's zip. Erev Yom Tov candles come
+                        through the same feed on their own dates. */}
+                    {times?.candles && (
+                      <span className="flex items-center gap-0.5 text-[9px] text-dusk tabular-nums mb-0.5">
+                        <Flame size={9} strokeWidth={1.75} className="text-brass shrink-0" aria-hidden="true" />
+                        {times.candles}
+                      </span>
+                    )}
+                    {isRoshChodesh && (
+                      <span className="block text-[9px] text-dusk leading-tight mb-0.5">
+                        {es ? 'Rosh Jodesh' : 'Rosh Chodesh'}
+                      </span>
+                    )}
+                    {civil && (
+                      <span className="block text-[10px] text-denim/70 leading-tight mb-0.5" title={es ? civil.name_es : civil.name_en}>
+                        {es ? civil.name_es : civil.name_en}
+                      </span>
+                    )}
                     {items.map((o) => (
                       <span
                         key={`${o.date}-${o.name_en}`}

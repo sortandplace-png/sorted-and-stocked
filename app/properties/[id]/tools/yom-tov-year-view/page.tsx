@@ -15,6 +15,16 @@ export default async function YomTovYearViewPage({ params }: { params: Promise<{
   const { id } = await params;
   const supabase = await createClient();
 
+  // SS-469: layers + zip decide what the grid shows -- Henderson {civil}
+  // gets a plain American calendar; candle times key to the property's
+  // OWN zip (Henderson NV and Lakewood NJ are three time zones apart).
+  const { data: property } = await supabase
+    .from('properties')
+    .select('zip, calendar_layers')
+    .eq('id', id)
+    .maybeSingle();
+  const calendarLayers = (property?.calendar_layers as string[] | null) ?? ['jewish', 'civil'];
+
   // Neither table is property-scoped (shared calendar data, same tables the
   // Dashboard's Erev Yom Tov check and header countdown pill already read).
   const [{ data: yomTov }, { data: fasts }] = await Promise.all([
@@ -44,5 +54,14 @@ export default async function YomTovYearViewPage({ params }: { params: Promise<{
 
   const observances = [...yomTovRows, ...fastRows].sort((a, b) => a.date.localeCompare(b.date));
 
-  return <YomTovYearViewClient propertyId={id} observances={observances} />;
+  return (
+    <YomTovYearViewClient
+      propertyId={id}
+      // A civil-only house doesn't receive the jewish rows at all -- the
+      // layer is enforced at the data edge, not just in rendering.
+      observances={calendarLayers.includes('jewish') ? observances : []}
+      calendarLayers={calendarLayers}
+      zip={property?.zip ?? null}
+    />
+  );
 }
