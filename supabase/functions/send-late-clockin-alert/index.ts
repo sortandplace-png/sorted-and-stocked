@@ -101,7 +101,7 @@ serve(async (_req) => {
     const fromNumber = Deno.env.get('TWILIO_PHONE_NUMBER') ?? ''
     const resendKey = Deno.env.get('RESEND_API_KEY') ?? ''
 
-    const results: { schedule_id: string; sms: string; email: string }[] = []
+    const results: { schedule_id: string; sms: string; email: string; manager?: string }[] = []
 
     for (const sched of due) {
       if (alreadyAlerted.has(sched.id)) continue
@@ -209,13 +209,39 @@ serve(async (_req) => {
         }
       }
 
+      // --- Manager copy (SS-449 ruling, 31 Jul): every late alert also
+      // goes to the working account. English only -- the manager copy is
+      // for Racquel's side, not the staff member. No staff name in it
+      // (R17): the property + shift time identifies the schedule row.
+      let managerStatus = 'skipped_not_configured'
+      if (resendKey) {
+        try {
+          const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${resendKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: 'Sorted & Stocked <alerts@sortandplace.com>',
+              to: 'sortandplace@gmail.com',
+              subject: `Late clock-in — ${propertyName}, ${startDisplay} shift`,
+              html: `<p>The ${startDisplay} shift at ${propertyName} has no clock-in ${GRACE_MINUTES} minutes past start. The scheduled person was notified (SMS: ${smsStatus}, email: ${emailStatus}).</p>`,
+            }),
+          })
+          managerStatus = res.ok ? 'sent' : `failed: Resend returned ${res.status}`
+        } catch (err) {
+          managerStatus = `failed: ${err instanceof Error ? err.message : 'network error'}`
+        }
+      }
+
       await supabase.from('late_clockin_alerts').insert({
         schedule_id: sched.id,
         alert_date: dateStr,
         sms_status: smsStatus,
         email_status: emailStatus,
       })
-      results.push({ schedule_id: sched.id, sms: smsStatus, email: emailStatus })
+      results.push({ schedule_id: sched.id, sms: smsStatus, email: emailStatus, manager: managerStatus })
     }
 
     return new Response(JSON.stringify({ processed: results.length, results }), {
