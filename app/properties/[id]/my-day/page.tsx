@@ -89,11 +89,24 @@ type DutyArea = { areaEn: string; areaEs: string; tasks: DutyTask[] }
 async function getDutyAreas(
   propertyId: string,
   memberId: string,
+  userId: string,
   todayStr: string,
   isoWeekday: number,
   timeBlock: 'AM' | 'PM'
 ): Promise<DutyArea[]> {
   const supabase = await createClient()
+
+  // SS-429 B: a task is "mine" through either link -- a direct member_id
+  // assignment, or an assignment to a staff slot whose user_id is me. The
+  // slot lookup happens first because PostgREST's or() needs the concrete
+  // slot ids; a viewer with no linked slot skips straight to the member
+  // filter unchanged.
+  const { data: mySlots } = await supabase
+    .from('staff_slots')
+    .select('id')
+    .eq('property_id', propertyId)
+    .eq('user_id', userId)
+  const slotIds = (mySlots ?? []).map((s) => s.id)
 
   // Errors are logged, never silently returned as an empty list. The RLS
   // recursion on 27 Jul made this concrete: the Duty Roster reported "Some
@@ -101,13 +114,16 @@ async function getDutyAreas(
   // for the same failure -- one told the truth, one invented an answer. A
   // query that FAILED must not be indistinguishable from one that found
   // nothing.
-  const { data: assignments, error: assignErr } = await supabase
+  let assignmentsQuery = supabase
     .from('task_assignments')
     .select('task_id')
-    .eq('member_id', memberId)
     .eq('active', true)
     .lte('effective_from', todayStr)
     .or(`effective_to.is.null,effective_to.gte.${todayStr}`)
+  assignmentsQuery = slotIds.length > 0
+    ? assignmentsQuery.or(`member_id.eq.${memberId},slot_id.in.(${slotIds.join(',')})`)
+    : assignmentsQuery.eq('member_id', memberId)
+  const { data: assignments, error: assignErr } = await assignmentsQuery
   if (assignErr) console.error('my-day: task_assignments fetch failed', assignErr)
   const assignedIds = (assignments ?? []).map((a) => a.task_id).filter(Boolean)
   if (assignedIds.length === 0) return []
@@ -210,7 +226,7 @@ export default async function MyDayPage({
   // isStaff && hasRosterKey gate here would have left My Day empty for exactly
   // the people the repoint was meant to fix.
   if (membership?.id) {
-    dutyAreas = await getDutyAreas(id, membership.id, todayStr, isoWeekday, timeBlock);
+    dutyAreas = await getDutyAreas(id, membership.id, user.id, todayStr, isoWeekday, timeBlock);
   }
 
   // Parent layout already confirmed membership on this property — no

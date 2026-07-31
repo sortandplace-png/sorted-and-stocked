@@ -63,11 +63,20 @@ const DAY_PICKER_OPTIONS: { iso: number; key: string }[] = [
   { iso: 4, key: 'dayThu' },
   { iso: 5, key: 'dayFri' },
 ];
-// SS-131: assignment is to a PERSON. task_assignments.member_id is an FK to
-// property_members.id; there is no assigned_slot_id and staff_slots are not in
-// this path (SS-243 parked for exactly that reason).
+// SS-131 said assignment is to a PERSON; SS-429 (Racquel's ruling, option B)
+// widened that: an assignment targets a person (member_id) OR a staff slot
+// (slot_id), never both -- the DB check task_assignments_one_target enforces
+// it. Assigning to a slot works with zero staff accounts, and whoever is
+// later invited into the slot inherits its tasks via is_assigned_to_task(),
+// which now matches on either link.
 type Member = { id: string; user_id: string; full_name: string | null };
-type Assignment = { id: string; task_id: string; member_id: string | null };
+type Slot = { id: string; label_en: string; label_es: string; user_id: string | null; active: boolean };
+type Assignment = { id: string; task_id: string; member_id: string | null; slot_id: string | null };
+
+// The one <select> carries both kinds of assignee, so the option value
+// encodes which table the id belongs to.
+const MEMBER_PREFIX = 'm:';
+const SLOT_PREFIX = 's:';
 type Task = {
   id: string;
   task_number: string;
@@ -128,6 +137,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [slots, setSlots] = useState<Slot[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [sopCounts, setSopCounts] = useState<Record<string, number>>({});
   const [posterByTask, setPosterByTask] = useState<Record<string, string>>({});
@@ -488,7 +498,10 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
         .order('is_primary', { ascending: false })
         .order('sort_order', { ascending: true }),
       // Only live assignments. Ended ones stay on the table as history.
-      supabase.from('task_assignments').select('id, task_id, member_id').eq('active', true),
+      supabase.from('task_assignments').select('id, task_id, member_id, slot_id').eq('active', true),
+      // SS-429 B: slots are assignable alongside people. Inactive slots are
+      // not offered for NEW assignments but stay resolvable for display.
+      supabase.from('staff_slots').select('id, label_en, label_es, user_id, active').eq('property_id', propertyId).order('sort_order'),
     ]);
 
     // One failing source must not blank the page, and an error must never be
@@ -570,6 +583,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     setPosterByTask(posters);
     setSopTextByTask(sopTexts);
     setAssignments(rows[5] as Assignment[]);
+    setSlots(rows[6] as Slot[]);
     setLoadError(failed.length > 0 ? t('loadPartial') : null);
     setLoading(false);
   }, [propertyId, supabase, t]);
@@ -606,16 +620,39 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   const assignmentByTask = useMemo(() => {
     const m = new Map<string, Assignment>();
     assignments.forEach((a) => {
-      if (a.member_id) m.set(a.task_id, a);
+      if (a.member_id || a.slot_id) m.set(a.task_id, a);
     });
     return m;
   }, [assignments]);
 
   const memberById = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
+  const slotById = useMemo(() => new Map(slots.map((s) => [s.id, s])), [slots]);
 
   const memberName = (memberId: string | null | undefined) => {
     if (!memberId) return null;
     return memberById.get(memberId)?.full_name ?? null;
+  };
+
+  const slotLabel = (slotId: string | null | undefined) => {
+    if (!slotId) return null;
+    const s = slotById.get(slotId);
+    if (!s) return null;
+    return locale === 'es' ? s.label_es || s.label_en : s.label_en;
+  };
+
+  // What the assignment badge and the select show for a task -- a person's
+  // name, or the slot's label. Never a typed name from anywhere else (R17).
+  const assigneeDisplay = (a: Assignment | undefined) => {
+    if (!a) return null;
+    if (a.member_id) return memberName(a.member_id);
+    return slotLabel(a.slot_id);
+  };
+
+  const assigneeValue = (a: Assignment | undefined) => {
+    if (!a) return '';
+    if (a.member_id) return `${MEMBER_PREFIX}${a.member_id}`;
+    if (a.slot_id) return `${SLOT_PREFIX}${a.slot_id}`;
+    return '';
   };
 
   const isUnassigned = (x: Task) => !assignmentByTask.has(x.id);
@@ -854,9 +891,10 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
     }
   }
 
-  async function assign(taskId: string, memberId: string) {
+  // `target` is the select's encoded value: m:<member_id>, s:<slot_id>, or ''.
+  async function assign(taskId: string, target: string) {
     const existing = assignmentByTask.get(taskId);
-    if (existing && existing.member_id === memberId) return;
+    if (existing && assigneeValue(existing) === target) return;
 
     if (existing) {
       const { error } = await supabase
@@ -871,15 +909,26 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
 
     // Empty selection means "unassign": the old row is closed out above and no
     // new one is opened.
-    if (!memberId) {
+    if (!target) {
       setAssignments((prev) => prev.filter((a) => a.task_id !== taskId));
       return;
     }
 
+    // SS-429 B: one column or the other, never both (DB check enforces the
+    // same). A slot assignment works with zero staff accounts; whoever is
+    // later linked into the slot inherits the task.
+    const isSlot = target.startsWith(SLOT_PREFIX);
+    const targetId = isSlot ? target.slice(SLOT_PREFIX.length) : target.slice(MEMBER_PREFIX.length);
+    const row = {
+      task_id: taskId,
+      member_id: isSlot ? null : targetId,
+      slot_id: isSlot ? targetId : null,
+    };
+
     const { data, error } = await supabase
       .from('task_assignments')
-      .insert({ task_id: taskId, member_id: memberId })
-      .select('id, task_id, member_id')
+      .insert(row)
+      .select('id, task_id, member_id, slot_id')
       .single();
     if (error || !data) {
       setLoadError(t('saveFailed'));
@@ -892,9 +941,19 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
   // Real people from property_members, never a hardcoded name (R17). A member
   // with no profile row still gets an option rather than disappearing from the
   // list -- unnamed is a data gap, not a reason to be unassignable.
+  // SS-429 B: active slots are offered alongside people -- the way to assign
+  // work before anyone is hired. Value prefixes route the write.
   const assignees = useMemo(
-    () => members.map((m) => ({ id: m.id, label: m.full_name ?? t('unnamedMember') })),
-    [members, t]
+    () => [
+      ...members.map((m) => ({ id: `${MEMBER_PREFIX}${m.id}`, label: m.full_name ?? t('unnamedMember') })),
+      ...slots
+        .filter((s) => s.active)
+        .map((s) => ({
+          id: `${SLOT_PREFIX}${s.id}`,
+          label: locale === 'es' ? s.label_es || s.label_en : s.label_en,
+        })),
+    ],
+    [members, slots, locale, t]
   );
 
   const pill =
@@ -1388,7 +1447,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                         </span>
                       ) : (
                         <span className="w-5 h-5 rounded-full bg-denim text-white text-[10px] font-bold flex items-center justify-center shrink-0">
-                          {(memberName(assignmentByTask.get(x.id)?.member_id) ?? '?')
+                          {(assigneeDisplay(assignmentByTask.get(x.id)) ?? '?')
                             .trim()
                             .charAt(0)
                             .toUpperCase()}
@@ -1396,7 +1455,7 @@ export default function DutyRosterClient({ propertyId }: { propertyId: string })
                       )}
                       <select
                         className="appearance-none bg-white border border-cardBorder rounded-full px-3 py-1.5 text-[11px] text-denim truncate max-w-[110px]"
-                        value={assignmentByTask.get(x.id)?.member_id ?? ''}
+                        value={assigneeValue(assignmentByTask.get(x.id))}
                         onChange={(e) => assign(x.id, e.target.value)}
                         aria-label={t('assignTo')}
                       >

@@ -78,7 +78,9 @@ type MasterTask = {
   active: boolean;
 };
 
-type Assignment = { id: string; task_id: string; member_id: string | null };
+// SS-429 B: an assignment targets a member OR a staff slot. A slot
+// assignment is "mine" when the slot's user_id links to the viewer.
+type Assignment = { id: string; task_id: string; member_id: string | null; slot_id: string | null };
 // master_task_sops joined to its SOP. sop_id is a many-to-one FK, so
 // PostgREST returns a single embedded object -- but the generated types
 // model it as an array, and getting this wrong fails silently (no poster
@@ -189,6 +191,7 @@ export default function StaffTasksClient({
   const [rooms, setRooms] = useState<Room[]>([]);
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [slots, setSlots] = useState<{ id: string; user_id: string | null }[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [lastCompletionByTask, setLastCompletionByTask] = useState<Record<string, Completion>>({});
   const [todayCompletionByTask, setTodayCompletionByTask] = useState<Record<string, Completion>>({});
@@ -211,6 +214,16 @@ export default function StaffTasksClient({
   const freqById = useMemo(() => new Map(frequencies.map((f) => [f.id, f])), [frequencies]);
   const memberById = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
   const myMemberId = useMemo(() => members.find((m) => m.user_id === currentUserId)?.id ?? null, [members, currentUserId]);
+  const mySlotIds = useMemo(
+    () => new Set(slots.filter((s) => s.user_id != null && s.user_id === currentUserId).map((s) => s.id)),
+    [slots, currentUserId]
+  );
+  // "Mine" through either link -- direct member assignment, or a slot the
+  // viewer's account is linked into (SS-429 B inheritance).
+  const isMyAssignment = useCallback(
+    (a: Assignment) => a.member_id === myMemberId || (a.slot_id != null && mySlotIds.has(a.slot_id)),
+    [myMemberId, mySlotIds]
+  );
   const assignmentsByTask = useMemo(() => {
     const map = new Map<string, Assignment[]>();
     for (const a of assignments) {
@@ -231,7 +244,7 @@ export default function StaffTasksClient({
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [{ data: taskRows }, { data: roomRows }, { data: freqRows }, { data: memberRows }] = await Promise.all([
+    const [{ data: taskRows }, { data: roomRows }, { data: freqRows }, { data: memberRows }, { data: slotRows }] = await Promise.all([
       supabase
         .from('master_tasks')
         .select('id, task_number, room_id, frequency_id, sop_id, task_en, task_es, sop_en, sop_es, pass_fail_en, pass_fail_es, estimated_minutes, job_type, photo_url, active')
@@ -241,7 +254,11 @@ export default function StaffTasksClient({
       supabase.from('rooms').select('id, name_en, name_es').eq('property_id', propertyId).eq('active', true),
       supabase.from('frequencies').select('id, code, label_en, label_es, interval_days').order('sort_order'),
       supabase.from('property_members').select('id, user_id, profiles(full_name)').eq('property_id', propertyId),
+      // SS-429 B: which slots belong to the viewer decides which slot
+      // assignments count as "mine".
+      supabase.from('staff_slots').select('id, user_id').eq('property_id', propertyId),
     ]);
+    setSlots((slotRows as { id: string; user_id: string | null }[]) ?? []);
 
     const taskList = (taskRows as MasterTask[]) ?? [];
     setTasks(taskList);
@@ -258,7 +275,7 @@ export default function StaffTasksClient({
     const taskIds = taskList.map((t) => t.id);
     if (taskIds.length > 0) {
       const [{ data: assignRows }, { data: completionRows }, { data: posterRows }] = await Promise.all([
-        supabase.from('task_assignments').select('id, task_id, member_id').eq('active', true).in('task_id', taskIds),
+        supabase.from('task_assignments').select('id, task_id, member_id, slot_id').eq('active', true).in('task_id', taskIds),
         supabase
           .from('task_completions')
           .select('task_id, due_date, completed, passed, note, photo_url')
@@ -551,7 +568,7 @@ export default function StaffTasksClient({
       ? rows.filter(
           (r) =>
             (r.status === 'due' || r.status === 'never_done' || r.status === 'done') &&
-            (assignmentsByTask.get(r.task.id) ?? []).some((a) => a.member_id === myMemberId)
+            (assignmentsByTask.get(r.task.id) ?? []).some(isMyAssignment)
         )
       : rows;
 
@@ -708,7 +725,7 @@ export default function StaffTasksClient({
             // (has_property_role(owner/manager) OR is_assigned_to_task) so
             // the UI never offers an action the RLS is going to refuse.
             const canAct =
-              canManage(role) || (assignmentsByTask.get(task.id) ?? []).some((a) => a.member_id === myMemberId);
+              canManage(role) || (assignmentsByTask.get(task.id) ?? []).some(isMyAssignment);
             const expanded = expandedTaskId === task.id;
             const sop = sopText(task);
             const passFail = passFailText(task);
