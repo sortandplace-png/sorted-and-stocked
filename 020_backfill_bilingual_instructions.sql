@@ -1,6 +1,12 @@
 -- ============================================================================
 -- 020: Backfill real bilingual instructions + kosher type
 -- ============================================================================
+-- *** NEVER RUN THIS FILE AGAIN (R13). It was applied once, long ago, by
+-- hand. It matches recipes BY NAME against a property looked up by the old
+-- name 'Strauss' (renamed since), so re-running would at best no-op and at
+-- worst overwrite later edits to these recipes. It lives at the repo ROOT,
+-- outside supabase/migrations, precisely so no tooling ever picks it up.
+-- Marker added 31 Jul 2026 during the register audit. ***
 -- Matches existing recipes by name (already imported by strauss_recipes_
 -- import.sql) and fills in the columns 019 just added. Run AFTER both 019
 -- and the recipe import.
