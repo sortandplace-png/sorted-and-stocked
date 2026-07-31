@@ -35,6 +35,9 @@ import {
   FileText,
   ClipboardList,
   PlayCircle,
+  Truck,
+  DatabaseBackup,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react';
 import ToolModal, { type ToolModalSlug } from '@/components/ToolModal';
@@ -95,11 +98,22 @@ const TOOL_ICON_OVERRIDES: Record<string, LucideIcon> = {
   'translation-worklist': Languages,
   digest: Newspaper,
   blog: FileText,
-  // Required, not optional: this map has no emoji fallback any more, so a
-  // slug missing from it renders <undefined /> and crashes the Tools page.
   sops: ClipboardList,
   training: PlayCircle,
+  // SS-431 ROOT CAUSE (31 Jul): these two were MISSING. Their tiles are
+  // role-gated, so the owner's /tools rendered <undefined /> -- minified
+  // React #130 -- while the QA-scoped account, which never sees them,
+  // walked every page clean. Three sessions of "unreproducible" was a
+  // two-line gap in this map.
+  suppliers: Truck,
+  backup: DatabaseBackup,
 };
+
+// The old comment here said a missing slug "fails loudly (a crash)" as if
+// that were a feature. It took the whole Tools page down for the owner
+// only, three sessions running. A crash is not louder than a wrong icon
+// -- it is just a crash. Wrench is the explicit last-resort fallback.
+const FALLBACK_TOOL_ICON: LucideIcon = Wrench;
 
 // Same modal treatment already proven for Kitchen Ops (opened from a
 // recipe, via KitchenOpsToolModal) applied here to the tools that are
@@ -145,7 +159,7 @@ export default function ToolsGroupList({ propertyId, groups }: { propertyId: str
   }
 
   function toolCard(tool: Tool) {
-    const Icon = TOOL_ICON_OVERRIDES[tool.slug];
+    const Icon = TOOL_ICON_OVERRIDES[tool.slug] ?? FALLBACK_TOOL_ICON;
     const cardInner = (
       <>
         <Pin size="sm" />
