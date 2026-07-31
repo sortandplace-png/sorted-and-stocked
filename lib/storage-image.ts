@@ -1,46 +1,29 @@
 // lib/storage-image.ts
-// Supabase Storage serves two URL shapes for a public object:
+// SS-451 (ruled 31 Jul, option A): Supabase's on-the-fly image
+// transformation (/storage/v1/render/image/...) is a METERED paid feature
+// and the meter must stop counting. This helper used to rewrite public
+// object URLs onto that endpoint; it now returns the original object URL
+// untouched.
 //
-//   /storage/v1/object/public/<bucket>/<path>          the original file
-//   /storage/v1/render/image/public/<bucket>/<path>    resized on the fly
+// The function deliberately KEEPS its signature and stays mounted at every
+// call site: it is the single seam through which any future pre-sized
+// assets (real thumbnail files generated at upload time) would be wired
+// back in -- one file changes, not nine call sites.
 //
-// The stored URLs are all the first kind, which is correct for anything
-// shown at full size and badly wrong for a thumbnail. The SOP posters are
-// ~800KB JPEGs; a task list rendering 43 of them into 44px squares would
-// pull tens of megabytes to draw postage stamps, on staff phones, most
-// likely on mobile data. Measured on SOP-047: 803,021 bytes as stored,
-// 3,488 bytes through the render endpoint at 88px -- about 230x smaller.
-//
-// Transformation is a paid Supabase feature; confirmed live on this project
-// (the render URL above returns 200 image/jpeg, not 400).
+// Known, accepted cost of the ruling: originals serve at full size, so a
+// task list drawing ~800KB posters into 44px squares pulls the full bytes
+// again (measured before: 803,021 bytes original vs 3,488 through the
+// transformer at 88px). If that bites on staff phones, the fix is
+// pre-sized assets, never the render endpoint.
 
-/**
- * Rewrite a public Supabase Storage URL to its resizing endpoint.
- *
- * `size` is the pixel box the image is fitted into -- pass roughly twice
- * the CSS size so it stays sharp on a 2x phone screen.
- *
- * `resize` defaults to 'cover', which crops to fill -- right for the square
- * thumbnails on task tiles, wrong for anything read rather than glanced at.
- * Pass 'contain' for a poster shown at reading size: it fits inside the box
- * with the aspect ratio intact, so no instruction gets cropped off an edge.
- *
- * Anything that is not a public Supabase object URL is returned untouched,
- * so this is safe to apply to a column that might hold an external link:
- * the worst case is the original URL, which is what it does today.
- */
+/** SS-451: passthrough. `size`/`resize` are ignored (kept so call sites,
+ *  and any future pre-sized wiring, don't churn). */
 export function storageThumbnail(
   url: string,
-  size: number,
-  resize: 'cover' | 'contain' = 'cover'
+  _size?: number,
+  _resize?: 'cover' | 'contain'
 ): string {
-  const marker = '/storage/v1/object/public/';
-  if (!url.includes(marker)) return url;
-  // An existing query string would collide with the transform params, and
-  // signed/download URLs are not our shape anyway -- leave those alone.
-  if (url.includes('?')) return url;
-  const rendered = url.replace(marker, '/storage/v1/render/image/public/');
-  return `${rendered}?width=${size}&height=${size}&resize=${resize}&quality=70`;
+  return url;
 }
 
 /**

@@ -1,20 +1,13 @@
 // lib/sop-posters.ts
-// SS-363: sop-posters is a private bucket now, so a poster can no longer be
-// shown by rewriting a public URL (storageThumbnail's approach, still
-// correct for buckets that stay public) -- it needs a signed URL, and
-// unlike training-videos' one-URL-per-file, SopLibraryClient shows the SAME
-// poster at three different sizes (tile thumbnail, expanded-card detail,
-// full-size lightbox), each needing its own signed+transformed URL, since a
-// transform is baked into the signature and can't be appended after the
-// fact the way storageThumbnail appends query params to a public URL.
+// SS-363: sop-posters is a private bucket, so a poster needs a signed URL.
 //
-// createSignedUrl (singular) is the only method in this SDK version whose
-// types support a `transform` option -- createSignedUrls (plural, batch)
-// does not (confirmed against node_modules/@supabase/storage-js's actual
-// source, not assumed from the docs). So this signs individually per path
-// per size tier rather than in three batched calls; all requests still run
-// in parallel via Promise.all, so it's still one network "round" regardless
-// of how many posters exist, just more individual requests within it.
+// SS-451 (31 Jul): the per-size signed TRANSFORMS this file used to mint
+// (160px thumb / 640px detail / full) are gone -- signed transforms bill
+// on the metered image-transformation feature Racquel ruled off. One
+// plain signed URL per poster now serves every tier; the SignedPoster
+// shape is kept so SopLibraryClient's three mounting points don't churn,
+// and so pre-sized assets can slot back into the tiers later if the
+// full-size-bytes cost ever bites.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { storagePathFromPublicUrl } from '@/lib/storage-image';
 
@@ -23,14 +16,12 @@ const SIGNED_URL_TTL_SECONDS = 3600;
 
 export type SignedPoster = { thumbUrl: string | null; detailUrl: string | null; fullUrl: string | null };
 
-async function signOne(
-  supabase: SupabaseClient,
-  path: string,
-  transform?: { width: number; height: number; resize: 'contain'; quality: number }
-): Promise<string | null> {
-  const { data } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS, transform ? { transform } : undefined);
+async function signOne(supabase: SupabaseClient, path: string): Promise<string | null> {
+  // SS-451: no `transform` option, ever -- signed transforms bill on the
+  // same metered image-transformation feature Racquel ruled off. One plain
+  // signed URL per object; the three size tiers below all reuse it and the
+  // browser scales it down.
+  const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
   return data?.signedUrl ?? null;
 }
 
@@ -55,14 +46,9 @@ export async function signSopPosters(
 
   await Promise.all(
     [...byPath.entries()].map(async ([path, originalUrl]) => {
-      const [thumbUrl, detailUrl, fullUrl] = await Promise.all([
-        signOne(supabase, path, { width: 160, height: 160, resize: 'contain', quality: 70 }),
-        signOne(supabase, path, { width: 640, height: 640, resize: 'contain', quality: 70 }),
-        // No transform -- the lightbox is the one place full size is the
-        // point (matches the original public-URL behavior it replaces).
-        signOne(supabase, path),
-      ]);
-      result.set(originalUrl, { thumbUrl, detailUrl, fullUrl });
+      // SS-451: one untransformed signed URL serves all three tiers.
+      const url = await signOne(supabase, path);
+      result.set(originalUrl, { thumbUrl: url, detailUrl: url, fullUrl: url });
     })
   );
 
