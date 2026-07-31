@@ -20,6 +20,7 @@ import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import Pin from '@/components/PinAccent';
 import { Search, X } from 'lucide-react';
 import SopPosterUpload from '@/components/SopPosterUpload';
+import SopPosterBulkUpload from '@/components/SopPosterBulkUpload';
 import TaskSuppliesList from '@/components/TaskSuppliesList';
 import { fetchSuppliesForSop, type TaskSupply } from '@/lib/task-supplies';
 
@@ -211,6 +212,13 @@ export default function SopLibraryClient({
     <div className="pb-4">
       <h1 className="text-2xl font-display text-denim mb-1">{t('title')}</h1>
       <p className="text-sm text-dusk mb-4">{t('description', { count: sops.length })}</p>
+
+      {/* Batch poster intake -- Racquel arrives with dozens of ready-made
+          posters named after their procedures; opening 37 cards one at a
+          time is not a workflow. Manager-only, same gate as sop_write. */}
+      {editable && (
+        <SopPosterBulkUpload sops={sops} onUpdated={(sopId, patch) => handlePosterUpdated(sopId, patch)} />
+      )}
 
       <div className="relative mb-4">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-brass" aria-hidden="true" />

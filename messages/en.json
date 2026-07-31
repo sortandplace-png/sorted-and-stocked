@@ -766,7 +766,22 @@
     "posterSaving": "Saving…",
     "posterSaved": "Poster updated.",
     "posterUploadFailed": "Could not save the poster — try again.",
-    "photoVerification": "Require a completion photo"
+    "photoVerification": "Require a completion photo",
+    "bulkUpload": "Bulk upload posters",
+    "bulkTitle": "Match posters to procedures",
+    "bulkReviewHint": "Check every match before uploading — a poster on the wrong procedure is worse than none.",
+    "bulkPickTarget": "Procedure for this poster",
+    "bulkNoMatch": "— no procedure selected —",
+    "bulkNeedsPick": "No confident match — pick the procedure.",
+    "bulkMatched": "Matched from the filename",
+    "bulkWillReplace": "Replaces this procedure's current poster",
+    "bulkConflict": "Two files point at this procedure — fix one.",
+    "bulkSkip": "Skip",
+    "bulkRepick": "Choose different files",
+    "bulkConfirm": "Upload {count} posters",
+    "bulkUploading": "Uploading {done} of {total}…",
+    "bulkDone": "{count} posters uploaded.",
+    "bulkPartial": "{ok} uploaded, {failed} failed — the failed ones are still listed, try them again."
   },
   "training": {
     "title": "Training",
