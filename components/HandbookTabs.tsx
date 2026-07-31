@@ -147,6 +147,18 @@ export default function HandbookTabs({
         ))}
       </div>
 
+      {/* The printable one-pager (SS-411 follow-on) -- a real page, not a
+          fourth tab: it exists to be printed, not browsed. Label is
+          bilingual-inline like the card itself, Spanish first. */}
+      <p className="-mt-2 mb-4 text-right">
+        <a
+          href={`/properties/${propertyId}/staff/card`}
+          className="text-[12px] text-dusk hover:text-denim underline underline-offset-2"
+        >
+          Tarjeta del personal imprimible · Printable staff card
+        </a>
+      </p>
+
       {tab === 'guide' ? (
         <StaffHandbookClient articles={articles} propertyId={propertyId} />
       ) : tab === 'videos' ? (
