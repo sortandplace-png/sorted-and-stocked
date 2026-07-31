@@ -92,11 +92,29 @@ export default function Error({
           </a>
         </div>
 
-        {error.digest && (
-          <p style={{ fontSize: 11, color: '#9AA7B2', marginTop: 18 }}>
-            Reference: {error.digest}
-          </p>
-        )}
+        {/* SS-431: ALWAYS print a reference, never conditionally. A digest
+            only exists for SERVER errors -- the crash Racquel keeps hitting
+            is a client-side exception, which has none, so the old
+            digest-only block rendered nothing and three sessions asked her
+            for a string the UI never showed. Client errors carry their real
+            message (Next only redacts server messages), so show digest when
+            it exists, the raw message otherwise, plus the path -- and make
+            it selectable so a phone long-press can copy it. */}
+        <p
+          style={{
+            fontSize: 11,
+            color: '#6B7A88',
+            marginTop: 18,
+            userSelect: 'all',
+            WebkitUserSelect: 'all',
+            wordBreak: 'break-word',
+            fontFamily: 'ui-monospace, monospace',
+          }}
+        >
+          Reference · Referencia:{' '}
+          {error.digest || `${error.name}: ${error.message}` || 'unknown'}
+          {typeof window !== 'undefined' ? ` @ ${window.location.pathname}` : ''}
+        </p>
       </div>
     </div>
   );

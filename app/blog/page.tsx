@@ -1,12 +1,22 @@
 // app/blog/page.tsx
 // Public, unauthenticated -- see PUBLIC_PATHS in lib/supabase/middleware.ts.
-// Meant to be reachable and indexable without a login, unlike every other
-// route in this app.
+// This is the SEO surface: seven published articles on kosher household
+// management are the content that gets sortandplace.com surfacing in
+// Lakewood searches, so the page gets the full marketing treatment --
+// shared header/footer, real metadata, header images -- rather than the
+// bare list it launched as. sitemap.xml already emits /blog and every
+// published slug (app/sitemap.ts).
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import MarketingHeader from '@/components/marketing/MarketingHeader';
+import MarketingFooter from '@/components/marketing/MarketingFooter';
+import { SITE_URL } from '@/lib/site-url';
 
 export const metadata = {
-  title: 'Blog — Sorted & Stocked',
+  title: 'Blog — Kosher Household Management | Sort + Place',
+  description:
+    'Practical articles on kosher household management from Sort + Place in Lakewood, NJ — staff training, Shabbos and Yom Tov preparation, inventory, and multi-property care.',
+  alternates: { canonical: `${SITE_URL}/blog` },
 };
 
 // Public content that changes whenever a post is published -- must never
@@ -17,39 +27,53 @@ export default async function BlogIndexPage() {
   const supabase = await createClient();
   const { data: posts } = await supabase
     .from('blog_posts')
-    .select('slug, title, excerpt, published_at')
+    .select('slug, title, excerpt, header_image_url, published_at')
     .not('published_at', 'is', null)
     .order('published_at', { ascending: false });
 
   return (
-    <div className="min-h-screen bg-mist">
-      <div className="max-w-3xl mx-auto px-4 py-10">
-        <h1 className="font-display text-3xl font-semibold text-denim mb-8">Blog</h1>
+    <div className="min-h-screen bg-linen flex flex-col">
+      <MarketingHeader />
+      <main className="flex-1 max-w-[1100px] w-full mx-auto px-4 py-10">
+        <h1 className="font-display text-3xl font-semibold text-denim mb-2">Blog</h1>
+        <p className="text-sm text-dusk mb-8 max-w-xl">
+          Practical writing on running a kosher household well — from the team behind Sorted &amp; Stocked.
+        </p>
 
-        {(!posts || posts.length === 0) && (
-          <p className="text-sm text-dusk">No posts yet.</p>
-        )}
+        {(!posts || posts.length === 0) && <p className="text-sm text-dusk">No posts yet.</p>}
 
-        <div className="space-y-4">
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {(posts ?? []).map((post) => (
             <Link
               key={post.slug}
               href={`/blog/${post.slug}`}
-              className="relative block rounded-xl2 bg-card border border-cardBorder shadow-card hover:shadow-cardHover transition-shadow p-5"
+              className="block rounded-xl2 bg-card border border-cardBorder shadow-card hover:shadow-cardHover transition-shadow overflow-hidden"
             >
-              <p className="text-xs text-dusk mb-1">
-                {new Date(post.published_at!).toLocaleDateString(undefined, {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-              </p>
-              <h2 className="font-display text-xl font-semibold text-denim mb-2">{post.title}</h2>
-              {post.excerpt && <p className="text-sm text-dusk leading-relaxed">{post.excerpt}</p>}
+              {post.header_image_url && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={post.header_image_url}
+                  alt=""
+                  loading="lazy"
+                  className="w-full h-40 object-cover"
+                />
+              )}
+              <div className="p-5">
+                <p className="text-xs text-dusk mb-1">
+                  {new Date(post.published_at!).toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </p>
+                <h2 className="font-display text-xl font-semibold text-denim mb-2 leading-snug">{post.title}</h2>
+                {post.excerpt && <p className="text-sm text-dusk leading-relaxed">{post.excerpt}</p>}
+              </div>
             </Link>
           ))}
         </div>
-      </div>
+      </main>
+      <MarketingFooter />
     </div>
   );
 }

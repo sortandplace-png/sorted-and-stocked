@@ -84,11 +84,24 @@ export default function GlobalError({
               </a>
             </div>
 
-            {error.digest && (
-              <p style={{ fontSize: 11, color: '#9AA7B2', marginTop: 18 }}>
-                Reference: {error.digest}
-              </p>
-            )}
+            {/* SS-431: always render the reference -- see app/error.tsx.
+                Client exceptions have no digest, so the digest-only block
+                showed nothing exactly when it was needed most. */}
+            <p
+              style={{
+                fontSize: 11,
+                color: '#6B7A88',
+                marginTop: 18,
+                userSelect: 'all',
+                WebkitUserSelect: 'all',
+                wordBreak: 'break-word',
+                fontFamily: 'ui-monospace, monospace',
+              }}
+            >
+              Reference · Referencia:{' '}
+              {error.digest || `${error.name}: ${error.message}` || 'unknown'}
+              {typeof window !== 'undefined' ? ` @ ${window.location.pathname}` : ''}
+            </p>
           </div>
         </div>
       </body>
