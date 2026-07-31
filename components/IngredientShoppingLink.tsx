@@ -64,7 +64,12 @@ export default function IngredientShoppingLink({
 
   const primaryStoreCode = ingredient.primary_store;
   const primaryStoreInfo = primaryStoreCode ? STORE_INFO[primaryStoreCode] : null;
-  const alternativeStores = (ingredient.alternative_stores || []).slice(0, 5);
+  // SS-448: the cart leads with Amazon, so Amazon doesn't repeat in the
+  // secondary list; the ingredient's assigned reorder_link moves to the
+  // top of that list instead of being the cart itself (kept, never
+  // deleted -- Kosher West and the other kosher routings all stay here).
+  const alternativeStores = (ingredient.alternative_stores || []).filter((s) => s !== 'amazon').slice(0, 5);
+  const amazonUrl = STORE_INFO.amazon.url(ingredient.name);
 
   function copyToClipboard() {
     const text = `${ingredient.quantity || ''} ${ingredient.unit || ''} ${displayName ?? ingredient.name}`.trim();
@@ -76,17 +81,15 @@ export default function IngredientShoppingLink({
       {/* Cart = buy (link out to the store), copy/box = add to shopping
           list -- was reversed (cart meant add-to-list, buy had a plain
           external-link icon). Racquel's explicit call after seeing it live. */}
-      {ingredient.reorder_link && (
-        <a
-          href={ingredient.reorder_link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-7 h-7 flex items-center justify-center rounded-full border border-brass/30 text-brass hover:bg-mist transition"
-          title={primaryStoreInfo ? `Buy at ${primaryStoreInfo.name}` : 'Reorder link'}
-        >
-          <ShoppingCart size={14} strokeWidth={1.75} />
-        </a>
-      )}
+      <a
+        href={amazonUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-7 h-7 flex items-center justify-center rounded-full border border-brass/30 text-brass hover:bg-mist transition"
+        title={`Buy at Amazon`}
+      >
+        <ShoppingCart size={14} strokeWidth={1.75} />
+      </a>
 
       {onAddToList && (
         <button
@@ -107,7 +110,7 @@ export default function IngredientShoppingLink({
         <ClipboardCopy size={14} strokeWidth={1.75} />
       </button>
 
-      {alternativeStores.length > 0 && (
+      {(ingredient.reorder_link || alternativeStores.length > 0) && (
         <div className="relative">
           <button
             onClick={() => setShowStoreDropdown(!showStoreDropdown)}
@@ -119,6 +122,16 @@ export default function IngredientShoppingLink({
 
           {showStoreDropdown && (
             <div className="absolute top-full mt-1 left-0 bg-card border border-cardBorder rounded-lg shadow-cardHover z-10 min-w-[160px]">
+              {ingredient.reorder_link && (
+                <a
+                  href={ingredient.reorder_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block px-3 py-2 text-sm text-denim hover:bg-mist transition border-b border-cardBorder last:border-b-0"
+                >
+                  {primaryStoreInfo ? primaryStoreInfo.name : 'Assigned link'}
+                </a>
+              )}
               {alternativeStores.map((storeCode, idx) => {
                 const storeInfo = STORE_INFO[storeCode];
                 if (!storeInfo) return null;

@@ -5,22 +5,38 @@
 // established on recipe ingredient rows (IngredientShoppingLink.tsx) --
 // consistent, not a second meaning for the same icon.
 //
-// Three-tier fallback (2026-07-20, Racquel's required order):
-// reorder_sources (this item's configured retailer rows) -> the item's own
-// inventory_items.reorder_link (a second, separately-maintained link field
-// -- the Edit Item modal / ReorderSourcePicker read reorder_sources, but
-// this plain column has always been a real, independently-editable field)
-// -> generic Amazon search, rather than rendering nothing. Confirmed live
-// only ~70% of pending shopping list rows have an explicit reorder_sources
-// row; some of the remainder still have a real reorder_link that was being
-// skipped entirely before this. "Nothing renders blank" was the explicit
-// ask; same fallback-search pattern IngredientShoppingLink.tsx already uses
-// for its alternate-store list, not a new idea introduced here.
+// SS-448 (31 Jul, Racquel's ruling, supersedes the 20 Jul three-tier
+// order): AMAZON FIRST on every ordering surface. The cart icon now always
+// leads to Amazon -- the item's own Amazon link if one of its sources IS
+// Amazon, otherwise an Amazon search on the item name. Existing store
+// links are never deleted (R21) and stay one tap away as the named pills
+// after the cart; tapping one still records it as preferred. Kosher West
+// and the other kosher-store routings therefore stand, demoted to
+// secondary, not removed.
 'use client';
 
 import { ShoppingCart } from 'lucide-react';
-import { getPreferredSource, type ReorderSource } from '@/lib/reorder-sources';
+import type { ReorderSource } from '@/lib/reorder-sources';
 import ReorderSourcePills from '@/components/ReorderSourcePills';
+
+function isAmazonUrl(url: string): boolean {
+  try {
+    return /(^|\.)amazon\.[a-z.]+$/i.test(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
+// Label for a bare reorder_link that has no named source row: the brand is
+// almost always the hostname ("instacart.com" -> "Instacart").
+function hostLabel(url: string): string {
+  try {
+    const base = new URL(url).hostname.replace(/^www\./i, '').split('.')[0];
+    return base ? base.charAt(0).toUpperCase() + base.slice(1) : 'Store';
+  } catch {
+    return 'Store';
+  }
+}
 
 export default function OrderLink({
   itemName,
@@ -35,34 +51,49 @@ export default function OrderLink({
   variant?: 'default' | 'conceptB';
   className?: string;
 }) {
-  if ((sources?.length ?? 0) > 1) {
-    return <ReorderSourcePills sources={sources!} variant={variant} className={className} />;
-  }
+  // Everything the item already has, as pill candidates -- sources first,
+  // then the separately-maintained plain reorder_link column when there are
+  // no source rows (same either-or the pre-SS-448 fallback used).
+  const existing: ReorderSource[] =
+    sources?.length
+      ? sources
+      : fallbackLink
+        ? [{ id: '', retailer_name: hostLabel(fallbackLink), url: fallbackLink, is_preferred: false }]
+        : [];
 
-  const preferred = getPreferredSource(sources);
-  const url = preferred?.url || fallbackLink || `https://www.amazon.com/s?k=${encodeURIComponent(itemName)}`;
-  const label = preferred
-    ? `Order ${itemName} — ${preferred.retailer_name}`
-    : fallbackLink
-      ? `Order ${itemName}`
-      : `Search for ${itemName} on Amazon`;
+  // If one of the item's own links already IS Amazon, the cart uses that
+  // (a real product link beats a search) and it doesn't repeat as a pill.
+  const ownAmazon = existing.find((s) => isAmazonUrl(s.url));
+  const amazonUrl = ownAmazon?.url ?? `https://www.amazon.com/s?k=${encodeURIComponent(itemName)}`;
+  const secondary = existing.filter((s) => s !== ownAmazon);
+
+  const label = ownAmazon ? `Order ${itemName} — Amazon` : `Search for ${itemName} on Amazon`;
 
   const iconClass =
     variant === 'conceptB'
       ? 'text-brass hover:text-denim bg-mist'
       : 'text-brass hover:bg-linen border border-cardBorder';
 
-  return (
+  const cart = (
     <a
-      href={url}
+      href={amazonUrl}
       target="_blank"
       rel="noopener noreferrer"
       onClick={(e) => e.stopPropagation()}
       aria-label={label}
       title={label}
-      className={`shrink-0 w-7 h-7 flex items-center justify-center rounded-full transition-colors ${iconClass} ${className}`}
+      className={`shrink-0 w-7 h-7 flex items-center justify-center rounded-full transition-colors ${iconClass} ${secondary.length ? '' : className}`}
     >
       <ShoppingCart size={14} strokeWidth={1.75} aria-hidden="true" />
     </a>
+  );
+
+  if (secondary.length === 0) return cart;
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 ${className}`}>
+      {cart}
+      <ReorderSourcePills sources={secondary} variant={variant} min={1} />
+    </span>
   );
 }

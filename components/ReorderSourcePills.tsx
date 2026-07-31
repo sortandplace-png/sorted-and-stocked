@@ -25,15 +25,24 @@ export default function ReorderSourcePills({
   sources,
   className = '',
   variant = 'default',
+  // Direct mounts (ScanClient) keep the historical show-only-when->1 rule;
+  // OrderLink passes min={1} since SS-448 made its pills the secondary row
+  // behind the Amazon-first cart, where even a single store link must stay
+  // reachable.
+  min = 2,
 }: {
   sources: ReorderSource[];
   className?: string;
   variant?: 'default' | 'conceptB';
+  min?: 1 | 2;
 }) {
-  if (sources.length < 2) return null;
+  if (sources.length < min) return null;
   const supabase = createClient();
 
   function handlePillClick(source: ReorderSource) {
+    // Synthetic pills (a bare reorder_link lifted into pill form by
+    // OrderLink) have no row to prefer.
+    if (!source.id) return;
     supabase.rpc('set_preferred_reorder_source', { p_id: source.id }).then(() => {});
   }
 
