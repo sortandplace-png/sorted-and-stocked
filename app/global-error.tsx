@@ -12,6 +12,28 @@
 
 import { useEffect } from 'react';
 
+// SS-431: same stale-shell recovery as app/error.tsx (see the full note
+// there). Duplicated, not imported -- this boundary must stay free of any
+// shared module, including that one.
+const STALE_SIGNATURE = /#130|ChunkLoadError|Loading chunk|expected a string.*got: undefined/i;
+const RECOVERY_FLAG = 'ss431-chunk-recovery-attempted';
+
+async function recoverFromStaleShell(): Promise<void> {
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+  } catch {
+    // Best effort -- the reload below still fetches a fresh document.
+  }
+  window.location.reload();
+}
+
 export default function GlobalError({
   error,
   reset,
@@ -21,6 +43,10 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error('[global error boundary]', error);
+    if (STALE_SIGNATURE.test(`${error.name}: ${error.message}`) && !sessionStorage.getItem(RECOVERY_FLAG)) {
+      sessionStorage.setItem(RECOVERY_FLAG, '1');
+      recoverFromStaleShell();
+    }
   }, [error]);
 
   return (
@@ -82,6 +108,21 @@ export default function GlobalError({
               >
                 Go to my properties · Ir a mis propiedades
               </a>
+              <button
+                onClick={() => recoverFromStaleShell()}
+                style={{
+                  padding: '11px 16px',
+                  borderRadius: 999,
+                  background: 'transparent',
+                  color: '#2E4A62',
+                  border: '1px solid #E8DDD0',
+                  fontSize: 15,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                Update &amp; reload · Actualizar y recargar
+              </button>
             </div>
 
             {/* SS-431: always render the reference -- see app/error.tsx.

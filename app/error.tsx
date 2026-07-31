@@ -17,6 +17,45 @@
 
 import { useEffect } from 'react';
 
+// SS-431: Racquel's Reference line read "Minified React error #130;
+// args[]=undefined" -- a component type of undefined. Every import audit
+// and a full circular-dependency scan of the current code came back clean,
+// and the same production bundle renders these pages for a fresh session.
+// What her device has that a fresh session does not is an INSTALLED PWA
+// SHELL that survives deploys: after a deploy, a stale shell requests
+// chunks by old hashes and receives (or resolves) modules that no longer
+// line up, and a lazy component comes back undefined -- #130, on whatever
+// page she happens to open, unreproducible anywhere else. Same class
+// SS-339 identified; AppUpdateChecker narrows the window but cannot close
+// it for an already-broken shell that crashed before the checker ran.
+//
+// Recovery: when the error matches the stale-chunk signature, unregister
+// every service worker, drop caches, and hard-reload ONCE (sessionStorage
+// guard so a genuine, persistent #130 still lands on the card below with
+// its reference visible instead of reload-looping).
+const STALE_SIGNATURE = /#130|ChunkLoadError|Loading chunk|expected a string.*got: undefined/i;
+const RECOVERY_FLAG = 'ss431-chunk-recovery-attempted';
+
+function looksStale(error: Error & { digest?: string }): boolean {
+  return STALE_SIGNATURE.test(`${error.name}: ${error.message}`);
+}
+
+async function recoverFromStaleShell(): Promise<void> {
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+  } catch {
+    // Best effort -- the reload below still fetches a fresh document.
+  }
+  window.location.reload();
+}
+
 export default function Error({
   error,
   reset,
@@ -29,6 +68,11 @@ export default function Error({
     // logs -- the friendly copy below deliberately does not show it, but it
     // must not be swallowed either.
     console.error('[app error boundary]', error);
+
+    if (looksStale(error) && !sessionStorage.getItem(RECOVERY_FLAG)) {
+      sessionStorage.setItem(RECOVERY_FLAG, '1');
+      recoverFromStaleShell();
+    }
   }, [error]);
 
   return (
@@ -72,6 +116,24 @@ export default function Error({
             }}
           >
             Try again · Reintentar
+          </button>
+          {/* The manual door to the same recovery the effect above attempts
+              automatically -- for the case where the automatic pass already
+              ran this session and the page still cannot load its chunks. */}
+          <button
+            onClick={() => recoverFromStaleShell()}
+            style={{
+              padding: '11px 16px',
+              borderRadius: 999,
+              background: 'transparent',
+              color: '#2E4A62',
+              border: '1px solid #E8DDD0',
+              fontSize: 15,
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
+          >
+            Update &amp; reload · Actualizar y recargar
           </button>
           {/* A real anchor, not router.push -- if the router or a provider
               is the thing that broke, a full document load still works. */}
