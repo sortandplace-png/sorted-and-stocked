@@ -620,12 +620,17 @@ export default function ShoppingListViewEnhanced({
     if (mode === 'by-store') {
       // Groups by each item's own preferred reorder source (the same
       // is_preferred pick OrderLink/ReorderSourcePicker already use
-      // elsewhere) -- an item with no reorder_sources at all falls into
-      // "Other" rather than disappearing, same convention as the other
-      // modes' uncategorized bucket.
+      // elsewhere). SS-445: an item with no source AND no reorder_link is
+      // grouped under Amazon, because that is genuinely where its cart
+      // icon goes (OrderLink's Amazon-search default) -- "Other" was
+      // hiding that. An item with its own reorder_link but no named
+      // source stays in "Other": its link is kept as-is, and we can't
+      // name the store from a bare URL.
       const byStore = bucketItems.reduce(
         (acc, item) => {
-          const store = getPreferredSource(item.reorder_sources)?.retailer_name || 'Other';
+          const store =
+            getPreferredSource(item.reorder_sources)?.retailer_name ||
+            (item.reorder_link ? 'Other' : 'Amazon');
           (acc[store] ??= []).push(item);
           return acc;
         },
