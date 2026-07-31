@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getTranslations, getLocale } from 'next-intl/server'
 import { format, parseISO } from 'date-fns'
-import { Calendar, Camera, Clock, Package, Plus, Scan, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, UtensilsCrossed } from 'lucide-react'
+import { Calendar, Camera, Clock, Package, Plus, Scan, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, Sunset, UtensilsCrossed } from 'lucide-react'
 import FloatingScanButton from '@/components/FloatingScanButton'
 import LocationZmanim from '@/components/LocationZmanim'
 import DashboardWidgets from '@/components/DashboardWidgets'
@@ -16,6 +16,7 @@ import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
 import { getWidgetPrefs, getTodaysMealPlan, getLowStockAlerts } from '@/lib/dashboard-widgets-data'
 import { formatPropertyLabel } from '@/lib/property-display'
 import { isModuleEnabled, isOperatorConsole } from '@/lib/module-flags'
+import { isJewishObservant } from '@/lib/observance-gating'
 import {
   getOmerStatus,
   getOmerOutlook,
@@ -411,6 +412,55 @@ function getKashrut(kosherType: string | null | undefined): keyof typeof KASHRUT
   return 'Parve'
 }
 
+// Observance gating (amended table -- lib/observance-gating.ts): the
+// Candle Lighting card swaps to Evening Anchor on a property without the
+// jewish calendar layer. Same axis the month grid and Yom Tov Year View
+// already key off (SS-469), read here alongside the zip the anchor time
+// needs.
+async function getObservanceContext(propertyId: string): Promise<{ jewish: boolean; zip: string | null }> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('properties')
+    .select('calendar_layers, zip')
+    .eq('id', propertyId)
+    .single()
+  return {
+    jewish: isJewishObservant(data?.calendar_layers as string[] | null | undefined),
+    zip: (data?.zip as string | null) ?? null,
+  }
+}
+
+// Evening Anchor time: tonight's sunset for the property's OWN zip --
+// Hebcal's zmanim endpoint carries the location's own tzid back with the
+// response, so a Henderson NV sunset formats in Pacific time with no
+// server timezone math (the same class of bug every candle-time fix on
+// this page dealt with). Explicit date in the URL so a cached response
+// can't linger past its own day, same technique as getHebcal(). Null zip
+// (SS-478: Henderson has no location data at all yet) or any fetch
+// failure returns null and the card renders its set-a-zip hint instead.
+async function getEveningAnchor(zip: string | null): Promise<{ time: string; dateLabel: string | null } | null> {
+  if (!zip) return null
+  try {
+    const res = await fetch(
+      `https://www.hebcal.com/zmanim?cfg=json&zip=${encodeURIComponent(zip)}&date=${easternDateStr(new Date())}`,
+      { next: { revalidate: 21600 } }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    const sunset = data?.times?.sunset
+    if (!sunset) return null
+    const tzid = data?.location?.tzid ?? 'America/New_York'
+    return {
+      time: new Date(sunset).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: tzid }),
+      dateLabel: new Intl.DateTimeFormat('en-US', { timeZone: tzid, weekday: 'short', month: 'short', day: 'numeric' }).format(
+        new Date(sunset)
+      ),
+    }
+  } catch {
+    return null
+  }
+}
+
 // Same value the property layout's header subtitle already shows — that
 // fetch happens in app/properties/[id]/layout.tsx, which doesn't pass data
 // down to this page, so it needs its own (tiny) lookup here.
@@ -632,7 +682,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const { id: propertyId } = await params
   const t = await getTranslations('dashboard')
   const locale = await getLocale()
-  const [{ meals, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount, pantryCount, widgetPrefs, todaysMeals, lowStockItems, moduleFlags] = await Promise.all([
+  const [{ meals, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount, pantryCount, widgetPrefs, todaysMeals, lowStockItems, moduleFlags, observance] = await Promise.all([
     getData(propertyId),
     getHebcal(),
     getHebrewInfo(),
@@ -649,8 +699,12 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     getTodaysMealPlan(propertyId),
     getLowStockAlerts(propertyId),
     getModuleFlags(propertyId),
+    getObservanceContext(propertyId),
   ])
   const isOwnerOrManager = userRole === 'owner' || userRole === 'manager'
+  // Only fetched for the Evening Anchor swap -- a Jewish-observant
+  // property's card keeps its candle-lighting time and never needs this.
+  const eveningAnchor = observance.jewish ? null : await getEveningAnchor(observance.zip)
   const tehillim = await getTehillim(hebrewInfo.day)
 
   // SS-408: tip of the day. Selection (set filtering, Hebcal trigger
@@ -919,12 +973,44 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               </div>
             }
             candleHeader={
+              // Observance gating (amended table): Candle Lighting swaps
+              // to Evening Anchor on a property without the jewish
+              // calendar layer -- same card slot, neutral framing.
               <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5 flex items-center gap-2">
-                <Flame size={13} className="text-white/80" aria-hidden="true" />
-                {t('candle.label')}
+                {observance.jewish ? (
+                  <Flame size={13} className="text-white/80" aria-hidden="true" />
+                ) : (
+                  <Sunset size={13} className="text-white/80" aria-hidden="true" />
+                )}
+                {observance.jewish ? t('candle.label') : t('candle.eveningAnchorLabel')}
               </div>
             }
             candleContent={
+              !observance.jewish ? (
+                <>
+                  {/* Evening Anchor body: no Shabbos-candles photo on a
+                      non-observant household's card -- an evening-sky
+                      gradient built from the Concept B tokens (denim ->
+                      denimBlue -> brass horizon) fills the same slot, so
+                      the row keeps its height-match behavior. */}
+                  <div
+                    className="min-h-[230px] w-full flex-1"
+                    style={{ backgroundImage: 'linear-gradient(180deg, #2E4A62 0%, #6B8DBE 62%, #C6A46E 100%)' }}
+                  />
+                  <div className="bg-denim px-5 py-4 flex items-center justify-center shrink-0">
+                    <div className="flex flex-col items-center gap-1 text-center">
+                      <bdi dir="ltr" className="font-display text-[24px] text-white tracking-[0.04em] leading-none">
+                        {eveningAnchor?.time ?? '—'}
+                      </bdi>
+                      <div className="font-display italic text-[12px] text-white/60 tracking-wide">
+                        {eveningAnchor
+                          ? `${eveningAnchor.dateLabel ? `${eveningAnchor.dateLabel}` : ''}${propertyName ? ` — ${propertyName}` : ''}`
+                          : t('candle.eveningAnchorNoZip')}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
               <>
                 <div
                   // Per Racquel's reference image, the photo is meant to
@@ -963,6 +1049,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                   />
                 </div>
               </>
+              )
             }
           />
 

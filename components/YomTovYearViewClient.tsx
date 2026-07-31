@@ -260,8 +260,16 @@ export default function YomTovYearViewClient({
     <div className="max-w-[1240px] mx-auto p-4">
       <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-display text-denim mb-1">{t('title')}</h1>
-          <p className="text-sm text-dusk">{t('subtitle')}</p>
+          {/* Observance gating amendment: without the jewish layer this
+              page IS the Year at a Glance swap -- same route, neutral
+              name, civil rows only (already enforced at the data edge by
+              the page fetch). */}
+          <h1 className="text-2xl font-display text-denim mb-1">
+            {calendarLayers.includes('jewish') ? t('title') : t('titleNeutral')}
+          </h1>
+          <p className="text-sm text-dusk">
+            {calendarLayers.includes('jewish') ? t('subtitle') : t('subtitleNeutral')}
+          </p>
         </div>
 
         {/* D-18: the selected side is bg-denim + white, not a brass fill. */}

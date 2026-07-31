@@ -18,6 +18,9 @@ import IdentifyItemClient from '@/components/IdentifyItemClient';
 import LinkCapturedPhotosClient from '@/components/LinkCapturedPhotosClient';
 import HechsherVerificationClient from '@/components/HechsherVerificationClient';
 import KosherTypeTaggingClient from '@/components/KosherTypeTaggingClient';
+import AllergenVerificationClient from '@/components/AllergenVerificationClient';
+import DietaryTaggingClient from '@/components/DietaryTaggingClient';
+import SeasonalHomePrepClient from '@/components/SeasonalHomePrepClient';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 
 export type ToolModalSlug =
@@ -36,7 +39,12 @@ export type ToolModalSlug =
   | 'identify-item'
   | 'link-captured-photos'
   | 'hechsher-verification'
-  | 'kosher-type-tagging';
+  | 'kosher-type-tagging'
+  // Observance gating amendment: the universal pair (all properties,
+  // always on) plus the non-Jewish swap for halachic-calendar.
+  | 'allergen-verification'
+  | 'dietary-tagging'
+  | 'seasonal-home-prep';
 
 // Same modal shell as KitchenOpsToolModal (its own established, verified
 // pattern) applied to the Scanners / Inventory Ops / Household groups --
@@ -114,6 +122,19 @@ export default function ToolModal({
           ) : (
             <p className="p-5 text-sm text-dusk">Only an owner or manager can use this tool.</p>
           ))}
+        {slug === 'allergen-verification' &&
+          (canManage(role) ? (
+            <AllergenVerificationClient propertyId={propertyId} />
+          ) : (
+            <p className="p-5 text-sm text-dusk">Only an owner or manager can use this tool.</p>
+          ))}
+        {slug === 'dietary-tagging' &&
+          (canManage(role) ? (
+            <DietaryTaggingClient propertyId={propertyId} />
+          ) : (
+            <p className="p-5 text-sm text-dusk">Only an owner or manager can use this tool.</p>
+          ))}
+        {slug === 'seasonal-home-prep' && <SeasonalHomePrepClient />}
       </div>
     </div>
   );

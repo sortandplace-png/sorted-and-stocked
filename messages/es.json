@@ -478,6 +478,8 @@
     "todayHeader": "Hoy",
     "candle": {
       "label": "Encendido de Velas",
+      "eveningAnchorLabel": "Atardecer",
+      "eveningAnchorNoZip": "Agregue el código postal de la propiedad para mostrar la puesta del sol de hoy.",
       "labelNearYou": "Encendido de velas cerca de usted",
       "switchToHousehold": "Volver a la ubicación del hogar",
       "useMyLocation": "Usar mi ubicación actual para el encendido de velas",
@@ -1049,6 +1051,8 @@
   "yomTovYearView": {
     "title": "Calendario Anual de Yom Tov",
     "subtitle": "Todas las fechas de Yom Tov y días de ayuno, de un vistazo.",
+    "titleNeutral": "El Año de un Vistazo",
+    "subtitleNeutral": "Todos los días festivos del calendario, de un vistazo.",
     "backToTools": "Herramientas",
     "empty": "Aún no hay fechas en el calendario.",
     "viewToggleLabel": "Elegir una vista",

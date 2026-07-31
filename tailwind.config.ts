@@ -60,6 +60,24 @@ const config: Config = {
           DEFAULT: '#9B2C2C',  // text
         },
 
+        // Observance gating amendment (2026-07-31): allergen and dietary
+        // tags get their OWN token set, drawn from the Concept B palette
+        // (mist/denimBlue and linen/brass below), because the kashrut
+        // three above -- rust #B5636B / dairy #4A6B8A / sage #8CA085 --
+        // stay reserved for Meat/Dairy/Parve only. Same fill+border+text
+        // three-part shape as briar, since these badges also always
+        // render as a set.
+        allergenTag: {
+          bg: '#E8EEF6',      // mist
+          border: '#6B8DBE',  // denimBlue
+          DEFAULT: '#2E4A62', // text -- denim
+        },
+        dietaryTag: {
+          bg: '#FFFAF3',      // linen
+          border: '#C6A46E',  // brass (border only -- R9: brass never a fill outside kosher badges)
+          DEFAULT: '#2E4A62', // text -- denim
+        },
+
         // Bold Direction (2026-07-15) — additive only. Phase 1 of the
         // approved redesign, Home dashboard only that round; every other
         // page still reads Bold Direction or the New Direction below until

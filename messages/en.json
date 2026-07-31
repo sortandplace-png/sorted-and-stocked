@@ -478,6 +478,8 @@
     "todayHeader": "Today",
     "candle": {
       "label": "Candle Lighting",
+      "eveningAnchorLabel": "Evening Anchor",
+      "eveningAnchorNoZip": "Add the property's ZIP code to show tonight's sunset.",
       "labelNearYou": "Candle Lighting near you",
       "switchToHousehold": "Switch back to household location",
       "useMyLocation": "Use my current location for candle lighting",
@@ -1049,6 +1051,8 @@
   "yomTovYearView": {
     "title": "Yom Tov Year View",
     "subtitle": "Every Yom Tov and fast day on the calendar, at a glance.",
+    "titleNeutral": "Year at a Glance",
+    "subtitleNeutral": "Every holiday on the calendar, at a glance.",
     "backToTools": "Tools",
     "empty": "No dates on the calendar yet.",
     "viewToggleLabel": "Choose a view",
