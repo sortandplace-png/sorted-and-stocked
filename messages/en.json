@@ -723,6 +723,7 @@
     "saveFailed": "Could not save — try again.",
     "addSlot": "Add slot",
     "addFailed": "Could not add a slot — try again.",
+    "noOneAssigned": "No one assigned yet",
     "renameNote": "Renaming changes the label only. Duties, assignments and history stay attached to the slot."
   },
   "halachicCalendar": {

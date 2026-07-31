@@ -276,7 +276,7 @@ export default function SettingsClient({
 
       <section>
         <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
-          <Pin size="lg" />
+          <Pin size="sm" />
           <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
             Notifications
           </div>
@@ -288,7 +288,7 @@ export default function SettingsClient({
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 placeholder="(555) 123-4567"
-                className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-full px-4 py-2 bg-mist text-sm text-denim"
+                className="w-full border border-brass/30 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-4 py-3 bg-mist text-sm text-denim"
               />
             </div>
             <div className="flex items-center justify-between gap-3">
@@ -316,7 +316,7 @@ export default function SettingsClient({
             <button
               onClick={saveNotificationSettings}
               disabled={savingPhone}
-              className="w-full py-2 rounded-full bg-denim text-white text-sm font-medium disabled:opacity-40"
+              className="w-full md:w-auto px-6 py-3 rounded-xl2 bg-denim text-white text-sm font-medium disabled:opacity-40"
             >
               {savingPhone ? 'Saving…' : 'Save'}
             </button>
@@ -327,7 +327,7 @@ export default function SettingsClient({
       {canManage(role) && !loadingFlags && (
         <section>
           <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
-            <Pin size="lg" />
+            <Pin size="sm" />
             <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
               Household Features
             </div>
@@ -377,7 +377,7 @@ export default function SettingsClient({
       {canManage(role) && (
         <section>
           <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
-            <Pin size="lg" />
+            <Pin size="sm" />
             <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
               Invite Codes
             </div>
@@ -388,7 +388,7 @@ export default function SettingsClient({
               <button
                 onClick={generateCode}
                 disabled={generating}
-                className="w-full py-2 rounded-full bg-denim text-white text-sm font-medium disabled:opacity-40"
+                className="w-full md:w-auto px-6 py-3 rounded-xl2 bg-denim text-white text-sm font-medium disabled:opacity-40"
               >
                 {generating ? 'Generating…' : 'Generate invite code'}
               </button>
@@ -457,7 +457,7 @@ export default function SettingsClient({
       {canManage(role) && (
         <section>
           <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
-            <Pin size="lg" />
+            <Pin size="sm" />
             <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
               Send Broadcast
             </div>
@@ -468,12 +468,12 @@ export default function SettingsClient({
                 onChange={(e) => setBroadcastMessage(e.target.value)}
                 placeholder="e.g. Reminder: early close today at 3pm."
                 rows={3}
-                className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-2xl px-4 py-3 bg-mist text-sm text-denim"
+                className="w-full border border-brass/30 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-4 py-3 bg-mist text-sm text-denim"
               />
               <button
                 onClick={sendBroadcast}
                 disabled={!broadcastMessage.trim() || sendingBroadcast}
-                className="w-full py-2 rounded-full bg-denim text-white text-sm font-medium disabled:opacity-40"
+                className="w-full md:w-auto px-6 py-3 rounded-xl2 bg-denim text-white text-sm font-medium disabled:opacity-40"
               >
                 {sendingBroadcast ? 'Sending…' : 'Send broadcast'}
               </button>

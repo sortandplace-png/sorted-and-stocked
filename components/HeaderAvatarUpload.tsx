@@ -6,6 +6,9 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { Settings as SettingsIcon } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { compressImageToBlob } from '@/lib/compress-image';
 import { resilientUpdate } from '@/lib/resilient-write';
@@ -17,12 +20,20 @@ export default function HeaderAvatarUpload({
   fullName,
   email,
   avatarUrl,
+  propertyId,
 }: {
   userId: string;
   fullName?: string | null;
   email?: string | null;
   avatarUrl?: string | null;
+  /** SS-429: when present, the sheet behind the avatar carries a Settings
+   *  link -- the account surface, not the More dropdown (More is dissolving
+   *  under SS-375, and SS-410 takes Settings off client-residence navs;
+   *  this entry survives both). Absent on cross-property pages, which have
+   *  no property settings to point at. */
+  propertyId?: string;
 }) {
+  const tNav = useTranslations('nav');
   const supabase = createClient();
   const showToast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -116,6 +127,17 @@ export default function HeaderAvatarUpload({
               >
                 📸 Tap to add a photo
               </button>
+            )}
+
+            {propertyId && (
+              <Link
+                href={`/properties/${propertyId}/settings`}
+                onClick={closeModal}
+                className="flex items-center gap-2 w-full rounded-xl2 border border-cardBorder bg-mist px-4 py-3 mb-3 text-sm font-medium text-denim"
+              >
+                <SettingsIcon size={16} className="text-brass" strokeWidth={1.75} aria-hidden="true" />
+                {tNav('settings')}
+              </Link>
             )}
 
             <div className="flex gap-2">

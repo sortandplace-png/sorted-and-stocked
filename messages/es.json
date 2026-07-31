@@ -723,6 +723,7 @@
     "saveFailed": "No se pudo guardar — inténtelo de nuevo.",
     "addSlot": "Agregar puesto",
     "addFailed": "No se pudo agregar el puesto — inténtelo de nuevo.",
+    "noOneAssigned": "Nadie asignado todavía",
     "renameNote": "Renombrar cambia solo la etiqueta. Las tareas, asignaciones e historial siguen vinculados al puesto."
   },
   "halachicCalendar": {

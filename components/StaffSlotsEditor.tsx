@@ -121,26 +121,34 @@ export default function StaffSlotsEditor({
       <h2 className="font-display text-lg text-denim mb-1">{t('title')}</h2>
       <p className="text-xs text-dusk mb-4">{t('description')}</p>
 
-      <ul className="space-y-3">
+      {/* SS-429: Concept B action tiles -- mist fill, 20px radius (xl2, an
+          action tile, not the 28px section-card radius), brass hairline,
+          pin dot each, two-up on md. The empty state IS the normal state:
+          all 16 slots app-wide are unlinked, so "no one assigned yet" is
+          designed as the default line, not an edge case. */}
+      <ul className="grid gap-[14px] md:grid-cols-2">
         {slots.map((s) => {
           const d = draftFor(s);
           const dirty = d.label_en !== s.label_en || d.label_es !== s.label_es;
           const incomplete = !d.label_en.trim() || !d.label_es.trim();
           return (
-            <li key={s.id} className={`rounded-xl2 border border-cardBorder p-3 ${s.active ? '' : 'opacity-60'}`}>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-medium uppercase tracking-wider text-brass">
+            <li
+              key={s.id}
+              className={`relative flex flex-col gap-[11px] bg-mist rounded-xl2 border border-brass/30 shadow-card py-[14px] px-[18px] ${s.active ? '' : 'opacity-60'}`}
+            >
+              <Pin size="sm" />
+              <div className="flex items-center gap-2 pr-6">
+                <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-brass">
                   {t('slotNumber', { number: s.slot_number })}
                 </span>
-                {s.user_id && <span className="text-[11px] text-dusk">{t('linked')}</span>}
                 <button
                   onClick={() => toggleActive(s)}
-                  className="ml-auto text-xs text-dusk hover:text-denim underline underline-offset-2"
+                  className="ml-auto text-[11px] text-dusk hover:text-denim underline underline-offset-2"
                 >
                   {s.active ? t('deactivate') : t('activate')}
                 </button>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="grid grid-cols-2 gap-3">
                 <input
                   value={d.label_en}
                   onChange={(e) => setDraft(s.id, { label_en: e.target.value })}
@@ -156,12 +164,18 @@ export default function StaffSlotsEditor({
                   className={FIELD}
                 />
               </div>
-              {incomplete && <p className="text-[11px] text-brass mt-1">{t('bothRequired')}</p>}
+              {/* Dusk is correct here -- a status line is genuinely
+                  non-critical text, unlike the tappable toggle SS-429 moved
+                  off dusk elsewhere. Never a typed name when linked (R17):
+                  linked slots show the generic linked marker; display names
+                  come from the account itself on staff-facing surfaces. */}
+              <p className="text-[11px] text-dusk">{s.user_id ? t('linked') : t('noOneAssigned')}</p>
+              {incomplete && <p className="text-[11px] text-brass">{t('bothRequired')}</p>}
               {dirty && (
                 <button
                   onClick={() => save(s)}
                   disabled={savingId === s.id || incomplete}
-                  className="mt-2 text-sm font-medium bg-denim text-white px-4 py-1.5 rounded-full disabled:opacity-40"
+                  className="self-start text-sm font-medium bg-denim text-white px-4 py-1.5 rounded-full disabled:opacity-40"
                 >
                   {savingId === s.id ? t('saving') : t('save')}
                 </button>

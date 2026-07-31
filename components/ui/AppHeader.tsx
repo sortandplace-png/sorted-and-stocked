@@ -72,7 +72,7 @@ export default function AppHeader({
         )}
         {propertyId && <HeaderSearchClient propertyId={propertyId} />}
         <LocaleToggle />
-        <HeaderAvatarUpload userId={userId} fullName={fullName} email={userEmail} avatarUrl={avatarUrl} />
+        <HeaderAvatarUpload userId={userId} fullName={fullName} email={userEmail} avatarUrl={avatarUrl} propertyId={propertyId} />
         <LogoutButton variant="dark" />
       </div>
     </header>

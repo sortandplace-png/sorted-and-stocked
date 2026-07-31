@@ -72,7 +72,7 @@ export default function SquarePaymentCard({
             value={squarePaymentLink}
             onChange={(e) => onLinkChange(e.target.value)}
             placeholder="https://square.link/…"
-            className="w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-full px-4 py-2 bg-mist text-sm text-denim"
+            className="w-full border border-brass/30 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-4 py-3 bg-mist text-sm text-denim"
           />
           <p className="text-xs text-dusk mt-1">
             Create this in your own Square Dashboard, then paste it here -- nothing is generated automatically.
@@ -81,7 +81,7 @@ export default function SquarePaymentCard({
         <button
           onClick={onSaveLink}
           disabled={savingLink}
-          className="w-full py-2 rounded-full bg-mist text-denim text-sm font-medium disabled:opacity-40"
+          className="w-full md:w-auto px-6 py-3 rounded-xl2 bg-denim text-white text-sm font-medium disabled:opacity-40"
         >
           {savingLink ? 'Saving…' : 'Save link'}
         </button>
@@ -93,19 +93,26 @@ export default function SquarePaymentCard({
                 Last sent via {lastSentVia} on {new Date(lastSentAt).toLocaleDateString()}.
               </p>
             )}
+            {/* SS-429: the selected pill was a WHITE fill -- leftover Concept
+                A, not a brass violation. Selected is now a denim fill; the
+                unselected option is text-denim/70, not text-dusk, because a
+                tappable option is not non-critical text and dusk fails AA
+                contrast (D-19). */}
             <div className="flex rounded-full bg-mist p-1">
               <button
                 onClick={() => onSendChannelChange('email')}
+                aria-pressed={sendChannel === 'email'}
                 className={`flex-1 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  sendChannel === 'email' ? 'bg-card text-denim shadow-sm' : 'text-dusk'
+                  sendChannel === 'email' ? 'bg-denim text-white shadow-sm' : 'text-denim/70'
                 }`}
               >
                 Email
               </button>
               <button
                 onClick={() => onSendChannelChange('sms')}
+                aria-pressed={sendChannel === 'sms'}
                 className={`flex-1 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  sendChannel === 'sms' ? 'bg-card text-denim shadow-sm' : 'text-dusk'
+                  sendChannel === 'sms' ? 'bg-denim text-white shadow-sm' : 'text-denim/70'
                 }`}
               >
                 Text
@@ -114,7 +121,7 @@ export default function SquarePaymentCard({
             <button
               onClick={onSendPaymentLink}
               disabled={sendingPaymentLink}
-              className="w-full py-2 rounded-full bg-denim text-white text-sm font-medium disabled:opacity-40"
+              className="w-full md:w-auto px-6 py-3 rounded-xl2 bg-denim text-white text-sm font-medium disabled:opacity-40"
             >
               {sendingPaymentLink ? 'Sending…' : `Send payment link via ${sendChannel === 'email' ? 'email' : 'text'}`}
             </button>
