@@ -38,6 +38,8 @@ export default async function StaffHandbookPage({
     .select('id, question, short_answer, detailed_answer, question_es, short_answer_es, detailed_answer_es')
     .gte('id', 'FAQ-101')
     .lte('id', 'FAQ-110')
+    // 152: superseded duplicates stay in the table (R21) but out of the list.
+    .eq('active', true)
     .order('id');
 
   if (error) {

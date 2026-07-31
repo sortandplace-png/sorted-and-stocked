@@ -5,7 +5,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import Pin from '@/components/PinAccent';
 import { ChevronLeft } from 'lucide-react';
@@ -63,6 +63,7 @@ export default function HelpClient({ articles, initialCategory }: Props) {
   const locale = useLocale();
   const isEs = locale === 'es';
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const deepLinkId = searchParams.get('article');
   const focusCategory = initialCategory ?? searchParams.get('category') ?? null;
@@ -135,15 +136,19 @@ export default function HelpClient({ articles, initialCategory }: Props) {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Help was reachable but not leavable -- no header, no nav, no way back
-          except the browser button. The property-scoped route restores the app
-          chrome; this covers the case of arriving from a deep link. */}
-      <button
-        onClick={() => router.back()}
-        className="inline-flex items-center gap-1.5 text-[12px] text-denim border border-cardBorder bg-card rounded-full px-3 py-1.5 mb-4"
-      >
-        <ChevronLeft size={14} className="text-brass" strokeWidth={1.5} aria-hidden="true" />
-        {t('back')}
-      </button>
+          except the browser button. Inside a property the shared layout now
+          renders GlobalBackBar (SS-412), so this own button would be a second
+          back control there; it stays only for the standalone /help route,
+          which has no property layout above it. */}
+      {!pathname?.includes('/properties/') && (
+        <button
+          onClick={() => router.back()}
+          className="inline-flex items-center gap-1.5 text-[12px] text-denim border border-cardBorder bg-card rounded-full px-3 py-1.5 mb-4"
+        >
+          <ChevronLeft size={14} className="text-brass" strokeWidth={1.5} aria-hidden="true" />
+          {t('back')}
+        </button>
+      )}
 
       <h1 className="font-display text-3xl font-semibold text-denim mb-1">
         {focusCategory === STAFF_CATEGORY ? t('staffHandbook') : t('title')}

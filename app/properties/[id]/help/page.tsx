@@ -33,6 +33,8 @@ export default async function PropertyHelpPage({
     .select(
       'id, category, question, short_answer, detailed_answer, question_es, short_answer_es, detailed_answer_es, keywords'
     )
+    // 152: superseded duplicates stay in the table (R21) but out of the list.
+    .eq('active', true)
     .order('id');
 
   if (error) {
