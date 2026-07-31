@@ -18,7 +18,6 @@ import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import Pin from '@/components/PinAccent';
 import { usePullToRefresh } from '@/lib/use-pull-to-refresh';
-import BackLink from '@/components/ui/BackLink';
 import { usePropertyRole, canManage } from '@/components/PropertyRoleContext';
 import { Settings2 } from 'lucide-react';
 
@@ -288,10 +287,6 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
           one placed under it would scroll away beneath a sticky element.
           Padded to the same 6xl gutter the tabs use so it lines up with the
           content edge rather than the viewport edge. */}
-      <div className="max-w-6xl mx-auto px-4">
-        <BackLink fallbackHref={`/properties/${propertyId}/dashboard`} />
-      </div>
-
       {/* Tab Navigation */}
       <div className="bg-card border-b border-cardBorder sticky top-0 z-10 mb-4">
         <div className="max-w-6xl mx-auto flex px-4">

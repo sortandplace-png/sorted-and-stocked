@@ -7,7 +7,6 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import BackLink from '@/components/ui/BackLink';
 
 export default function BackupDownloadClient({ propertyId }: { propertyId: string }) {
   const t = useTranslations('backup');
@@ -44,7 +43,6 @@ export default function BackupDownloadClient({ propertyId }: { propertyId: strin
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <BackLink fallbackHref={`/properties/${propertyId}/dashboard`} />
       <h1 className="text-2xl font-display text-denim mb-1">{t('title')}</h1>
       <p className="text-sm text-dusk mb-5">{t('subtitle')}</p>
 

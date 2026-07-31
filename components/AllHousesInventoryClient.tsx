@@ -12,7 +12,6 @@ import { useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Home, Package, Search } from 'lucide-react';
 import OrderLink from '@/components/OrderLink';
-import BackLink from '@/components/ui/BackLink';
 import { groupByProduct, type HouseInventoryRow, type HouseTally } from '@/lib/cross-house-inventory';
 
 // Residence pill. Same visual language as the item card's location pill
@@ -86,8 +85,6 @@ export default function AllHousesInventoryClient({
 
   return (
     <div className="max-w-md lg:max-w-6xl mx-auto p-4">
-      <BackLink fallbackHref={`/properties/${currentPropertyId}/dashboard`} />
-
       <h1 className="font-display text-2xl text-denim mb-1">{t('title')}</h1>
       <p className="text-sm text-dusk mb-4">
         {t('subtitle', { products: groups.length, houses: houseCount })}

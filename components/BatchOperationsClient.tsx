@@ -102,13 +102,6 @@ export default function BatchOperationsClient({
   return (
     <div className="min-h-screen bg-linen p-6">
       <div className="max-w-4xl mx-auto">
-        <Link
-          href={`/properties/${propertyId}/dashboard`}
-          className="text-sm text-denim font-medium mb-4 inline-block"
-        >
-          ← Back
-        </Link>
-
         <h1 className="text-3xl font-serif mb-1 text-denim">Batch Operations</h1>
         <p className="text-sm text-dusk mb-6">{propertyName}</p>
 

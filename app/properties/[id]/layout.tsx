@@ -10,6 +10,7 @@ import StaffOnboardingModal from '@/components/StaffOnboardingModal';
 import TrainingVideoOnboardingModal from '@/components/TrainingVideoOnboardingModal';
 import { PropertyRoleProvider, type PropertyRole } from '@/components/PropertyRoleContext';
 import Footer from '@/components/Footer';
+import GlobalBackBar from '@/components/ui/GlobalBackBar';
 import { getNextObservance } from '@/lib/get-next-observance';
 import { formatPropertyLabel } from '@/lib/property-display';
 import { isModuleEnabled, moduleForSegment } from '@/lib/module-flags';
@@ -157,6 +158,9 @@ export default async function PropertyLayout({
           <DesktopNav propertyId={id} role={membership.role as PropertyRole} flags={featureFlags} />
         </div>
         <main className="pb-20 md:pb-0">
+          {/* SS-412: every page gets a way back, from the layout, so no
+              future page can ship stranded. Hidden on the dashboard. */}
+          <GlobalBackBar propertyId={id} />
           {children}
           <Footer propertyId={id} />
         </main>

@@ -36,7 +36,6 @@ import CameraCapture from '@/components/CameraCapture';
 import { Camera, AlertTriangle, Clock, CheckCircle2, XCircle, HelpCircle, Package, StickyNote, ArrowLeft, Pencil, QrCode as QrCodeIcon, ScanLine, MapPin, ArrowLeftRight, Copy, Link2, X, type LucideIcon } from 'lucide-react';
 import QRCode from 'qrcode';
 import { SITE_URL } from '@/lib/site-url';
-import BackLink from '@/components/ui/BackLink';
 import ToolModal from '@/components/ToolModal';
 
 // SS-012: html5-qrcode touches `navigator.mediaDevices`/DOM APIs that don't
@@ -1562,10 +1561,6 @@ export default function InventoryClient({
           {refreshing ? 'Refreshing…' : pullDistance > 50 ? 'Release to refresh' : 'Pull to refresh'}
         </div>
       )}
-      {/* Above the title, not inside the title row -- the row is a flex
-          justify-between holding the heading and its action buttons, and
-          adding a third child there would push the actions off-centre. */}
-      <BackLink fallbackHref={`/properties/${propertyId}/dashboard`} />
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-display text-denim">Inventory</h1>
         <div className="flex gap-2">

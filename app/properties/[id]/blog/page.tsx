@@ -29,12 +29,6 @@ export default async function BlogPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <Link
-        href={`/properties/${propertyId}/dashboard`}
-        className="inline-flex items-center gap-2 text-dusk hover:text-denim underline underline-offset-2 mb-6"
-      >
-        ← Back to Dashboard
-      </Link>
       <div className="mb-12">
         <h1 className="text-4xl font-serif text-denim mb-2" style={{ fontFamily: 'Playfair Display, serif' }}>
           Sorted & Stocked Blog

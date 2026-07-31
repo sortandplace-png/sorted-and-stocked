@@ -13,7 +13,6 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import Pin from '@/components/ui/Pin';
-import BackLink from '@/components/ui/BackLink';
 import { ExternalLink } from 'lucide-react';
 
 export type Supplier = {
@@ -68,8 +67,6 @@ export default function SuppliersClient({
   return (
     <div className="bg-linen min-h-screen">
       <div className="max-w-[1100px] mx-auto px-4 py-8">
-        <BackLink fallbackHref={`/properties/${propertyId}/tools`} />
-
         <h1 className="text-2xl font-display text-denim mb-1">{t('title')}</h1>
         <p className="text-sm text-dusk mb-5">
           {t('subtitle', { stores: suppliers.length, items: totalItems })}
