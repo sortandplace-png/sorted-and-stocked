@@ -70,7 +70,7 @@ export default function CaptureInboxClient({ propertyId }: { propertyId: string 
         .eq('status', 'pending')
         .in('capture_type', ['recipe', 'inventory', 'meal_plan'])
         .order('created_at'),
-      supabase.from('locations').select('id, name').eq('property_id', propertyId),
+      supabase.from('locations').select('id, name').eq('property_id', propertyId).neq('is_active', false),
       supabase
         .from('recipes')
         .select('id, name, recipe_property_links!inner(property_id)')

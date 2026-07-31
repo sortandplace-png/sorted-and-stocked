@@ -18,10 +18,19 @@
 import { ShoppingCart } from 'lucide-react';
 import type { ReorderSource } from '@/lib/reorder-sources';
 import ReorderSourcePills from '@/components/ReorderSourcePills';
+import { useRetailerDefault } from '@/components/RetailerDefaultContext';
 
 function isAmazonUrl(url: string): boolean {
   try {
     return /(^|\.)amazon\.[a-z.]+$/i.test(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
+function isWalmartUrl(url: string): boolean {
+  try {
+    return /(^|\.)walmart\.[a-z.]+$/i.test(new URL(url).hostname);
   } catch {
     return false;
   }
@@ -51,6 +60,11 @@ export default function OrderLink({
   variant?: 'default' | 'conceptB';
   className?: string;
 }) {
+  // SS-448 per-property ruling (migration 166): which retailer LEADS is a
+  // property fact -- Henderson walmart, Lax amazon+walmart, default amazon.
+  const retailerDefault = useRetailerDefault();
+  const lead = retailerDefault === 'walmart' ? 'walmart' : 'amazon';
+
   // Everything the item already has, as pill candidates -- sources first,
   // then the separately-maintained plain reorder_link column when there are
   // no source rows (same either-or the pre-SS-448 fallback used).
@@ -61,13 +75,41 @@ export default function OrderLink({
         ? [{ id: '', retailer_name: hostLabel(fallbackLink), url: fallbackLink, is_preferred: false }]
         : [];
 
-  // If one of the item's own links already IS Amazon, the cart uses that
-  // (a real product link beats a search) and it doesn't repeat as a pill.
-  const ownAmazon = existing.find((s) => isAmazonUrl(s.url));
-  const amazonUrl = ownAmazon?.url ?? `https://www.amazon.com/s?k=${encodeURIComponent(itemName)}`;
-  const secondary = existing.filter((s) => s !== ownAmazon);
+  // If one of the item's own links already IS the leading retailer, the
+  // cart uses that (a real product link beats a search) and it doesn't
+  // repeat as a pill.
+  const isLeadUrl = lead === 'walmart' ? isWalmartUrl : isAmazonUrl;
+  const ownLead = existing.find((s) => isLeadUrl(s.url));
+  const searchUrl =
+    lead === 'walmart'
+      ? `https://www.walmart.com/search?q=${encodeURIComponent(itemName)}`
+      : `https://www.amazon.com/s?k=${encodeURIComponent(itemName)}`;
+  const leadUrl = ownLead?.url ?? searchUrl;
+  const leadName = lead === 'walmart' ? 'Walmart' : 'Amazon';
+  const secondary = existing.filter((s) => s !== ownLead);
 
-  const label = ownAmazon ? `Order ${itemName} — Amazon` : `Search for ${itemName} on Amazon`;
+  // amazon+walmart (Lax): Amazon leads, and a Walmart search rides as a
+  // standing secondary unless the item already carries a Walmart link.
+  // walmart lead (Henderson): the SS-448 Amazon default demotes to a pill.
+  if (retailerDefault === 'amazon+walmart' && !existing.some((s) => isWalmartUrl(s.url))) {
+    secondary.push({
+      id: '',
+      retailer_name: 'Walmart',
+      url: `https://www.walmart.com/search?q=${encodeURIComponent(itemName)}`,
+      is_preferred: false,
+    });
+  }
+  if (lead === 'walmart' && !existing.some((s) => isAmazonUrl(s.url))) {
+    secondary.push({
+      id: '',
+      retailer_name: 'Amazon',
+      url: `https://www.amazon.com/s?k=${encodeURIComponent(itemName)}`,
+      is_preferred: false,
+    });
+  }
+
+  const amazonUrl = leadUrl;
+  const label = ownLead ? `Order ${itemName} — ${leadName}` : `Search for ${itemName} on ${leadName}`;
 
   const iconClass =
     variant === 'conceptB'

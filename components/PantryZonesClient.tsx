@@ -82,6 +82,7 @@ export default function PantryZonesClient({ propertyId }: { propertyId: string }
         .from('locations')
         .select('id, name, parent_location_id')
         .eq('property_id', propertyId)
+        .neq('is_active', false)
         .order('sort_order'),
       supabase
         .from('pantry_zones')

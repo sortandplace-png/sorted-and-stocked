@@ -105,7 +105,7 @@ export default function HeaderSearchClient({ propertyId }: { propertyId: string 
         supabase
           .rpc('search_inventory_items', { p_property_id: propertyId, p_query: q.trim() })
           .limit(5),
-        supabase.from('locations').select('id, name').eq('property_id', propertyId).ilike('name', like).limit(5),
+        supabase.from('locations').select('id, name').eq('property_id', propertyId).neq('is_active', false).ilike('name', like).limit(5),
         supabase
           .from('household_knowledge')
           .select('id, question, answer, category')

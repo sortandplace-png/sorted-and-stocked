@@ -481,6 +481,9 @@ export default function InventoryClient({
         .from('locations')
         .select('id, name, parent_location_id, photo_url')
         .eq('property_id', propertyId)
+        // Deactivated rooms (is_active=false, 31 Jul) stay out of every
+        // room surface; neq keeps true AND null rows.
+        .neq('is_active', false)
         .order('name'),
       // Fetch all available categories for autocomplete suggestions + icon fallback
       supabase

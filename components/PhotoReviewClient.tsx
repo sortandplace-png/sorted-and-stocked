@@ -52,6 +52,7 @@ export default function PhotoReviewClient({
       .from('locations')
       .select('id, name, photo_url')
       .eq('property_id', propertyId)
+      .neq('is_active', false)
       .order('name');
     setLocations(data ?? []);
     setLoadingLocations(false);

@@ -44,7 +44,7 @@ export default function LinkCapturedPhotosClient({ propertyId }: { propertyId: s
         .eq('status', 'pending')
         .order('created_at'),
       supabase.from('inventory_items').select('id, name, photo_url').eq('property_id', propertyId).order('name'),
-      supabase.from('locations').select('id, name, photo_url').eq('property_id', propertyId).order('name'),
+      supabase.from('locations').select('id, name, photo_url').eq('property_id', propertyId).neq('is_active', false).order('name'),
     ]);
     setCaptures(
       (captureRes.data ?? []).map((c: any) => ({

@@ -9,6 +9,7 @@ import MobileBottomNav from '@/components/nav/MobileBottomNav';
 import StaffOnboardingModal from '@/components/StaffOnboardingModal';
 import TrainingVideoOnboardingModal from '@/components/TrainingVideoOnboardingModal';
 import { PropertyRoleProvider, type PropertyRole } from '@/components/PropertyRoleContext';
+import { RetailerDefaultProvider } from '@/components/RetailerDefaultContext';
 import Footer from '@/components/Footer';
 import GlobalBackBar from '@/components/ui/GlobalBackBar';
 import { getNextObservance } from '@/lib/get-next-observance';
@@ -39,7 +40,7 @@ export default async function PropertyLayout({
 
   const { data: membership } = await supabase
     .from('property_members')
-    .select('role, properties(name, household_id, feature_flags, households(name))')
+    .select('role, properties(name, household_id, feature_flags, default_retailer, households(name))')
     .eq('property_id', id)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -130,8 +131,12 @@ export default async function PropertyLayout({
 
   const nextObservance = await getNextObservance();
 
+  const defaultRetailer = (membership.properties as unknown as { default_retailer?: string | null } | null)
+    ?.default_retailer;
+
   return (
     <PropertyRoleProvider role={membership.role as PropertyRole}>
+      <RetailerDefaultProvider value={defaultRetailer}>
       <div className="min-h-screen bg-linen">
         {/* Shared chrome (header + DesktopNav below) -- migrated to Concept B
             (denim/brass/mist/linen) per the app-wide palette reversal. The
@@ -177,6 +182,7 @@ export default async function PropertyLayout({
           <TrainingVideoOnboardingModal userId={user.id} role={membership.role as PropertyRole} />
         )}
       </div>
+      </RetailerDefaultProvider>
     </PropertyRoleProvider>
   );
 }

@@ -7,6 +7,8 @@ import { Calendar, Camera, Clock, Package, Plus, Scan, ShoppingCart, Square, Cir
 import FloatingScanButton from '@/components/FloatingScanButton'
 import LocationZmanim from '@/components/LocationZmanim'
 import DashboardWidgets from '@/components/DashboardWidgets'
+import DashboardTipCard from '@/components/DashboardTipCard'
+import { getTipOfTheDay } from '@/lib/dashboard-tips'
 import CollapsibleCard from '@/components/CollapsibleCard'
 import TodayCandleLightingRow from '@/components/TodayCandleLightingRow'
 import Pin from '@/components/PinAccent'
@@ -651,6 +653,12 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const isOwnerOrManager = userRole === 'owner' || userRole === 'manager'
   const tehillim = await getTehillim(hebrewInfo.day)
 
+  // SS-408: tip of the day. Selection (set filtering, Hebcal trigger
+  // awareness, deterministic daily rotation) lives in lib/dashboard-tips.
+  const tipSupabase = await createClient()
+  const { data: tipProp } = await tipSupabase.from('properties').select('tip_sets').eq('id', propertyId).single()
+  const tip = await getTipOfTheDay(tipSupabase, propertyId, ((tipProp?.tip_sets as string[]) ?? []))
+
   // Shopping List widget's image: Racquel's own direction was "pics of
   // ingredients" -- the real items actually pending on the list, each with
   // its own real photo (not a detached mosaic that loses the name-to-photo
@@ -1201,6 +1209,12 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
           </div>
           )}
         </div>
+
+        {tip && (
+          <div className="mb-4">
+            <DashboardTipCard tip={tip} />
+          </div>
+        )}
 
         <DashboardWidgets
           propertyId={propertyId}

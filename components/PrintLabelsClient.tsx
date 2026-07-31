@@ -181,7 +181,7 @@ export default function PrintLabelsClient({ propertyId }: { propertyId: string }
         )
         .eq('property_id', propertyId)
         .order('name'),
-      supabase.from('locations').select('id, name').eq('property_id', propertyId).order('name'),
+      supabase.from('locations').select('id, name').eq('property_id', propertyId).neq('is_active', false).order('name'),
     ]).then(([itemsRes, locationsRes]) => {
       if (cancelled) return;
       if (itemsRes.error) {
