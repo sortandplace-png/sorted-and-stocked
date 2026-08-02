@@ -1,7 +1,7 @@
 # Sort + Place — SEO Article Package
 
-Written 2 Aug 2026. 28 articles, each with a matched 1376x768 featured image.
-(Final drop, 2 Aug late: articles 3 and 17 arrived written, contrary to the earlier "not written" list; article 26 arrived revised.)
+Written 2 Aug 2026. 31 articles, each with a matched 1376x768 featured image.
+(2 Aug late: articles 3 and 17 arrived written contrary to the earlier "not written" list; article 26 arrived revised. 2 Aug latest, updated final zip: articles 10, Kitchen Decluttering, and Professional Organizer vs DIY arrived written; article 02 arrived revised -- decision-fatigue framing rewritten as observation, do NOT add a citation for it, per the ego-depletion replication problem.)
 
 | Article file | Featured image | Status |
 |---|---|---|
@@ -11,6 +11,7 @@ Written 2 Aug 2026. 28 articles, each with a matched 1376x768 featured image.
 | article-07-decluttering-before-moving.md | blog-07-decluttering-before-moving.jpg | ready to stage |
 | article-08-packing-tips-for-moving.md | blog-08-packing-tips-for-moving.jpg | ready to stage |
 | article-09-how-to-unpack-after-moving.md | blog-09-how-to-unpack-after-moving.jpg | ready to stage |
+| article-10-moving-into-a-new-home-checklist.md | blog-10-moving-into-a-new-home-checklist.jpg | ready to stage |
 | article-11-pantry-organization-ideas.md | blog-11-pantry-organization-ideas.jpg | ready to stage |
 | article-12-how-to-organize-a-small-kitchen.md | blog-12-how-to-organize-a-small-kitchen.jpg | ready to stage |
 | article-13-kitchen-organization-busy-families.md | blog-13-kitchen-organization-busy-families.jpg | ready to stage |
@@ -32,7 +33,9 @@ Written 2 Aug 2026. 28 articles, each with a matched 1376x768 featured image.
 | article-29-meal-planning-systems.md | blog-29-meal-planning-systems.jpg | ready to stage |
 | article-30-home-that-runs-itself.md | blog-30-home-that-runs-itself.jpg | ready to stage |
 | article-best-containers-kitchen-pantry.md | blog-best-containers-kitchen-pantry.jpg | ready to stage |
+| article-kitchen-decluttering.md | blog-kitchen-decluttering.jpg | ready to stage |
 | article-home-maintenance-tracker.md | blog-home-maintenance-tracker.jpg | ready to stage |
+| article-professional-organizer-vs-diy.md | blog-professional-organizer-vs-diy.jpg | ready to stage |
 
 ## Needs before publishing
 
@@ -42,9 +45,9 @@ Written 2 Aug 2026. 28 articles, each with a matched 1376x768 featured image.
 
 ## Not written
 
-Article 5 (dropped — pricing), Article 10, Kitchen Decluttering, Professional Organizer vs DIY. (Articles 3 and 17 arrived written in the 2 Aug final package.)
+Article 5 (dropped — pricing) is the only unwritten article remaining.
 
 
 ## Publishing cadence
 
-Three posts per drop, every other week. 28 articles clears in roughly 19 weeks.
+Three posts per drop, every other week per PUBLISHING-CALENDAR.md (drops 2-10, Aug 16 through Dec 6; blog-26 Pesach is the one hard deadline).
