@@ -13,7 +13,8 @@
 // handbook, SOPs or training at all. Tools/Labels stay off the bar.
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -54,6 +55,19 @@ export default function MobileBottomNav({
   const [showScan, setShowScan] = useState(false);
   const [showStaff, setShowStaff] = useState(false);
 
+  // Rendered through a portal to document.body (below). position:fixed
+  // positions against the nearest ancestor with a transform/filter/
+  // backdrop-filter -- a "containing block" -- instead of the viewport,
+  // which is exactly how a fixed bar ends up floating mid-page and
+  // scrolling with content (the Browse-by-Room regression). Portaling to
+  // body means NO app wrapper -- present or future, page-level or
+  // layout-level -- can ever capture this bar; it is pinned to the real
+  // viewport everywhere the layout renders it, for every role. The
+  // mounted gate exists because document doesn't exist during SSR; the
+  // bar appears at hydration.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const staffModuleOn = isModuleEnabled(flags, 'module_staff');
   const staffLinks = STAFF_LINKS.filter((l) => !l.managerOnly || role === 'owner' || role === 'manager');
 
@@ -65,6 +79,8 @@ export default function MobileBottomNav({
     ...(isModuleEnabled(flags, 'module_shopping') ? [{ segment: 'shopping-list', labelKey: 'shopping', Icon: ShoppingCart }] : []),
     ...(isModuleEnabled(flags, 'module_inventory') ? [{ segment: 'inventory', labelKey: 'inventory', Icon: Package }] : []),
   ];
+
+  if (!mounted) return null;
 
   function NavItem({ segment, labelKey, Icon }: { segment: string; labelKey: string; Icon: LucideIcon }) {
     const active = pathname.includes(`/${segment}`);
@@ -84,7 +100,7 @@ export default function MobileBottomNav({
     );
   }
 
-  return (
+  return createPortal(
     <>
       <nav
         className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-denim border-t border-white/10 flex items-stretch px-2 pb-[env(safe-area-inset-bottom)] print:hidden"
@@ -187,6 +203,7 @@ export default function MobileBottomNav({
       )}
 
       {showScan && <ScanModal propertyId={propertyId} onClose={() => setShowScan(false)} />}
-    </>
+    </>,
+    document.body
   );
 }

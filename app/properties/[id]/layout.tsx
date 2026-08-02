@@ -170,7 +170,12 @@ export default async function PropertyLayout({
         <div className="sticky top-[60px] z-20">
           <DesktopNav propertyId={id} role={membership.role as PropertyRole} flags={featureFlags} />
         </div>
-        <main className="pb-20 md:pb-0">
+        {/* Bottom padding = bar height (~56px) + breathing room + the
+            iPhone home-indicator inset the bar itself also pads by, so
+            the last cards on scroll-heavy pages (inventory rooms, All
+            Items, shopping list, recipes, My Day) can never end hidden
+            behind the fixed bar. */}
+        <main className="pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0">
           {/* SS-412: every page gets a way back, from the layout, so no
               future page can ship stranded. Hidden on the dashboard. */}
           <GlobalBackBar propertyId={id} />

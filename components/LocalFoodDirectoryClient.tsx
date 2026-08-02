@@ -91,6 +91,11 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
   // UI and the radius rule all key off the property's own row -- nothing
   // about Lakewood (or any city) is hardcoded here anymore.
   const [propertyCtx, setPropertyCtx] = useState<PropertyContext | null>(null);
+  // Real centroid miles per row zip (/api/zip-distance -- the Census ZCTA
+  // table is server-only). null value = unmeasurable; absent/undefined =
+  // not answered yet. Both render permissively, so rows never blink out
+  // and back while the lookup is in flight.
+  const [distanceByZip, setDistanceByZip] = useState<Record<string, number | null>>({});
 
   function loadRestaurants() {
     return supabase
@@ -129,13 +134,42 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
   // wrong (stripped) directory at the household that cares most about it.
   const jewish = propertyCtx?.jewish ?? true;
 
+  // One distance lookup per load: every distinct row zip against the
+  // property zip. Skipped entirely when the property has no zip -- the
+  // radius rule is permissive then anyway.
+  useEffect(() => {
+    const propertyZip = propertyCtx?.zip?.trim();
+    if (!propertyZip) return;
+    const zips = [...new Set(restaurants.map((r) => r.zip?.trim()).filter((z): z is string => !!z))];
+    if (zips.length === 0) return;
+    fetch('/api/zip-distance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ propertyZip, zips }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.miles) setDistanceByZip(data.miles);
+      })
+      .catch(() => {
+        // Lookup failure leaves distances unknown -- the filter stays
+        // permissive rather than blanking a curated list.
+      });
+  }, [propertyCtx?.zip, restaurants]);
+
   // Radius by density (lib/directory-radius.ts): 5 mi in a dense metro,
   // 25 mi otherwise -- Country (Mountain Dale NY 12763) needs the wide
-  // rule or its list filters itself empty. Applied before the user
-  // filters so the chips and counts they see are already local.
+  // rule or its list filters itself empty. Real centroid miles where a
+  // row zip resolved; unmeasurable rows stay visible. Applied before the
+  // user filters so the chips and counts they see are already local.
   const withinRadius = useMemo(
-    () => (propertyCtx ? restaurants.filter((r) => isWithinDirectoryRadius(propertyCtx, r)) : restaurants),
-    [restaurants, propertyCtx]
+    () =>
+      propertyCtx
+        ? restaurants.filter((r) =>
+            isWithinDirectoryRadius(propertyCtx, r, r.zip?.trim() ? distanceByZip[r.zip.trim()] : undefined)
+          )
+        : restaurants,
+    [restaurants, propertyCtx, distanceByZip]
   );
 
   const categories = useMemo(
