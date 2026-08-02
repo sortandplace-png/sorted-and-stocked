@@ -311,7 +311,7 @@ That's what **[Sorted & Stocked](/sorted-and-stocked)** was built for — invent
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She built Sorted & Stocked after watching households with staff try to run shared kitchens on tools designed for one person, and remains unconvinced by the refrigerator camera.*
+*Sort + Place is a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area.*
 
 ---
 

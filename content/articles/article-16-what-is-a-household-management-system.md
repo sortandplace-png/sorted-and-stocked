@@ -400,7 +400,7 @@ That's what a household management system does. It moves the load out of your he
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She specializes in households running multiple properties and employing household staff, where documented systems are the difference between help that reduces workload and help that adds to it. She is also the creator of Sorted & Stocked, a household inventory and management platform.*
+*Sort + Place is a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area.*
 
 ---
 

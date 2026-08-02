@@ -374,7 +374,7 @@ We design these around your household's actual traffic, at the heights your actu
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She designs family command centers for large households and holds that the location decision matters more than every other design choice combined.*
+*Sort + Place is a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area.*
 
 ---
 

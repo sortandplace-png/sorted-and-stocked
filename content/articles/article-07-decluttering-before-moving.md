@@ -362,7 +362,7 @@ We do this work alongside families — deciding faster because we carry no histo
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She has run decluttering and unpacking projects through moves of every size, and has yet to meet a household that regretted arriving with less.*
+*Sort + Place is a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area.*
 
 ---
 
