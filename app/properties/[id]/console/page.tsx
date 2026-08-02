@@ -117,12 +117,21 @@ export default async function OperatorConsolePage({
               the route's own gate; the Staff-sheet entry is the primary
               door, this is the console-side one. */}
           {membership.role === 'owner' && (
-            <Link
-              href={`/properties/${id}/register`}
-              className="text-sm font-medium text-white bg-denim px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity"
-            >
-              Register →
-            </Link>
+            <div className="flex items-center gap-2">
+              {/* SS-430: the R18 clip queue -- owner-only like the route. */}
+              <Link
+                href={`/properties/${id}/staff/clip-review`}
+                className="text-sm font-medium text-denim border border-brass/30 bg-mist px-5 py-2.5 rounded-full hover:bg-card transition-colors"
+              >
+                Clip Review
+              </Link>
+              <Link
+                href={`/properties/${id}/register`}
+                className="text-sm font-medium text-white bg-denim px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity"
+              >
+                Register →
+              </Link>
+            </div>
           )}
         </div>
 

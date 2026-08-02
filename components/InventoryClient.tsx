@@ -327,6 +327,10 @@ export default function InventoryClient({
   // Recipes page's Occasion filter to Pesach, and flags (not silently
   // includes) uncleared items on the shopping list.
   const [pesachModeEnabled, setPesachModeEnabled] = useState(false);
+  // Clone-integrity trust indicator: this house's name + the set of item
+  // names that exist in Main (empty on Main itself). See loadData.
+  const [propertyDisplayName, setPropertyDisplayName] = useState('');
+  const [cloneSourceNames, setCloneSourceNames] = useState<Set<string>>(new Set());
   const [savingPesachMode, setSavingPesachMode] = useState(false);
   const [showBatchScanner, setShowBatchScanner] = useState(false);
   // Content filters below use sessionStorage-backed state (not plain
@@ -499,7 +503,8 @@ export default function InventoryClient({
         : Promise.resolve({ data: [] as { inventory_item_id: string }[] }),
       // feature_flags.pesach_mode -- same jsonb pattern already used for
       // auto_restock (now on its own Shopping Rules settings page).
-      supabase.from('properties').select('feature_flags').eq('id', propertyId).single(),
+      // name added for the clone-integrity trust indicator below.
+      supabase.from('properties').select('name, feature_flags').eq('id', propertyId).single(),
       // Variant grouping. Currently 0 rows -- the grouped card is inert until
       // someone groups items by hand, which is the intended state.
       supabase.from('master_products').select('id, name, name_es').eq('property_id', propertyId),
@@ -517,6 +522,39 @@ export default function InventoryClient({
     setFavoriteIds(new Set((favoritesRes.data ?? []).map((f) => f.inventory_item_id)));
     const flags = (propertyRes.data?.feature_flags ?? {}) as Record<string, boolean>;
     setPesachModeEnabled(!!flags.pesach_mode);
+    const thisPropertyName = (propertyRes.data as { name?: string } | null)?.name ?? '';
+    setPropertyDisplayName(thisPropertyName);
+
+    // Clone-integrity trust indicator (Racquel ruling, 2 Aug: "a property's
+    // data must be true of that property"). An item that (a) has never been
+    // counted here and (b) exists byte-identically by name in Main is
+    // clone-born until someone at this house confirms it -- the card says
+    // so explicitly. The subtitle disappears forever on first count
+    // (last_counted_at is the existing signal; counting sets it). Main
+    // itself never shows it. Name-only fetch, paged past the 1000-row cap
+    // like the main fetch above.
+    if (thisPropertyName && thisPropertyName !== 'Main') {
+      const { data: mainProp } = await supabase.from('properties').select('id').eq('name', 'Main').maybeSingle();
+      if (mainProp) {
+        const names = new Set<string>();
+        let offset = 0;
+        const pageSize = 1000;
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { data } = await supabase
+            .from('inventory_items')
+            .select('name')
+            .eq('property_id', mainProp.id)
+            .range(offset, offset + pageSize - 1);
+          for (const r of data ?? []) names.add(r.name);
+          if (!data || data.length < pageSize) break;
+          offset += pageSize;
+        }
+        setCloneSourceNames(names);
+      }
+    } else {
+      setCloneSourceNames(new Set());
+    }
     setLoading(false);
   }, [propertyId, supabase]);
 
@@ -1457,6 +1495,15 @@ export default function InventoryClient({
             <p className="text-xs text-brass truncate mt-0.5 flex items-center gap-1">
               <StickyNote className="w-3 h-3 shrink-0" strokeWidth={1.75} aria-hidden="true" />
               {item.notes}
+            </p>
+          )}
+          {/* Clone-integrity ruling (2 Aug): a clone-born item that has
+              never been counted at THIS house says so explicitly -- the
+              whose-house answer at the card level. Gone forever on first
+              count (counting sets last_counted_at). */}
+          {notYetCounted && propertyDisplayName !== '' && cloneSourceNames.has(item.name) && (
+            <p className="text-[11px] text-dusk mt-0.5">
+              {ti('copiedFromMain', { house: propertyDisplayName })}
             </p>
           )}
           <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">

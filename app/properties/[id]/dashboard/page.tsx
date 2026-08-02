@@ -717,9 +717,14 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
 
   // SS-408: tip of the day. Selection (set filtering, Hebcal trigger
   // awareness, deterministic daily rotation) lives in lib/dashboard-tips.
+  // SS-474 gating ruling (2 Aug midnight): audience sets derive from
+  // calendar_layers -- the same observance axis as everything else -- not
+  // from the old per-house tip_sets column. Universal tips show EVERYWHERE
+  // (tip_sets used to withhold them from jewish-only houses);
+  // jewish-calendar-tied tips only where the jewish layer is on.
   const tipSupabase = await createClient()
-  const { data: tipProp } = await tipSupabase.from('properties').select('tip_sets').eq('id', propertyId).single()
-  const tip = await getTipOfTheDay(tipSupabase, propertyId, ((tipProp?.tip_sets as string[]) ?? []))
+  const tipSets = observance.jewish ? ['universal', 'jewish'] : ['universal']
+  const tip = await getTipOfTheDay(tipSupabase, propertyId, tipSets)
 
   // Shopping List widget's image: Racquel's own direction was "pics of
   // ingredients" -- the real items actually pending on the list, each with

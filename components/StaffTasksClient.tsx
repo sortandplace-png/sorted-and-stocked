@@ -378,6 +378,9 @@ export default function StaffTasksClient({
         .from('sop_library')
         .select('id, sop_code, zone_type, task_en, task_es, sop_en, sop_es, estimated_minutes, default_frequency_id')
         .eq('active', true)
+        // Migration 172 (Tineco ruling): property_scope arrays gate a
+        // procedure to specific houses; NULL stays global.
+        .or(`property_scope.is.null,property_scope.cs.{${propertyId}}`)
         .order('zone_type')
         .order('task_en');
       setSopLibrary((sopRows as SopRow[]) ?? []);

@@ -9,6 +9,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import AppHeader from '@/components/ui/AppHeader';
+import CrossHouseNav from '@/components/nav/CrossHouseNav';
 import { getNextObservance } from '@/lib/get-next-observance';
 import { formatPropertyLabel } from '@/lib/property-display';
 
@@ -86,7 +87,10 @@ export default async function ProcurementLayout({ children }: { children: React.
         observance={nextObservance}
       />
       {/* No DesktopNav or MobileBottomNav: both are property-scoped and take a
-          propertyId. The switcher is the way back into a property from here. */}
+          propertyId. The switcher is the way back into a property from here.
+          SS-257 (ruled): cross-house pages get their OWN slim nav instead --
+          cross-house destinations only. */}
+      <CrossHouseNav />
       <main className="pb-20 md:pb-0">{children}</main>
     </div>
   );

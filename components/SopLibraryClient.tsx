@@ -248,17 +248,11 @@ export default function SopLibraryClient({
                 <span className="flex-1 border-t border-cardBorder" />
               </div>
 
-              {/* A lone card takes the full row rather than half of one with
-                  a hole beside it. Most zones here have exactly one SOP --
-                  Accessories, Bathroom, Charging Dock and nine others are all
-                  single -- so this was the common case, not the edge. */}
-              <ul
-                className={
-                  items.length === 1
-                    ? 'space-y-2.5'
-                    : 'space-y-2.5 md:space-y-0 md:grid md:grid-cols-2 xl:grid-cols-4 md:gap-2.5'
-                }
-              >
+              {/* Handbook-polish ruling (2 Aug midnight): tiles keep their
+                  FIXED size in every section -- a lone card sits at normal
+                  tile width, never stretched across the full row. (Reverses
+                  the earlier lone-card-takes-the-row choice.) */}
+              <ul className="space-y-2.5 md:space-y-0 md:grid md:grid-cols-2 xl:grid-cols-4 md:gap-2.5">
                 {items.map((s) => {
                   const open = openId === s.id;
                   const isEditing = editingId === s.id;

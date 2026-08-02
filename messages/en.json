@@ -848,6 +848,7 @@
     "emptyNone": "No items yet. Tap “Add item” to get started.",
     "emptyNoFavorites": "No favorites yet — tap the star on any item.",
     "searchLinkWarning": "This link runs a search rather than opening a specific product — check it points at the right item.",
+    "copiedFromMain": "Copied from Main — not yet confirmed at {house}",
     "varietyCount": "{count} varieties",
     "locationCount": "{count} locations",
     "rowCount": "{count} rows",

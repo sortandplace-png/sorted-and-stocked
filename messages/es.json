@@ -848,6 +848,7 @@
     "emptyNone": "Aún no hay artículos. Toque “Agregar artículo” para empezar.",
     "emptyNoFavorites": "Aún no hay favoritos — toque la estrella en cualquier artículo.",
     "searchLinkWarning": "Este enlace hace una búsqueda en lugar de abrir un producto específico — verifique que apunte al artículo correcto.",
+    "copiedFromMain": "Copiado de Main — aún no confirmado en {house}",
     "varietyCount": "{count} variedades",
     "locationCount": "{count} ubicaciones",
     "rowCount": "{count} filas",

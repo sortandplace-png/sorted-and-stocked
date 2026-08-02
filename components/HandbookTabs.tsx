@@ -62,6 +62,9 @@ export default function HandbookTabs({
         'id, sop_code, zone_type, zone_type_es, task_en, task_es, sop_en, sop_es, pass_fail_en, pass_fail_es, estimated_minutes, expected_appearance_url, photo_verification'
       )
       .eq('active', true)
+      // Migration 172 (Tineco ruling): a procedure with a property_scope
+      // array surfaces only at those houses; NULL = global (103 of 104).
+      .or(`property_scope.is.null,property_scope.cs.{${propertyId}}`)
       .order('zone_type')
       .order('task_en');
     const rows = (data as Sop[]) ?? [];
