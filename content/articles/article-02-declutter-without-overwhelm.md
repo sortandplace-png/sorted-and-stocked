@@ -9,7 +9,7 @@ That reaction isn't laziness or a lack of willpower. **Learning how to declutter
 This guide gives you a different approach: how to start small enough to finish, clear criteria so decisions get faster, scripts for the genuinely hard items, and a maintenance routine so it doesn't quietly refill.
 
 > **Need Help Creating Systems That Last?**
-> Sort + Place helps busy families organize, simplify, and maintain their homes with customized systems that save time every day.
+> Sort & Place helps busy families organize, simplify, and maintain their homes with customized systems that save time every day.
 > **[Book Your Free Discovery Call](/professional-organizing)**
 
 ---
@@ -357,7 +357,7 @@ We work alongside families, not around them. We make the decisions faster becaus
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She has spent years working alongside families through exactly the decisions this article describes, and builds the systems that keep a decluttered home decluttered.*
+*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She has spent years working alongside families through exactly the decisions this article describes, and builds the systems that keep a decluttered home decluttered.*
 
 ---
 

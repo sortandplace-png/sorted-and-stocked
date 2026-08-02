@@ -353,7 +353,7 @@ If you want the spaces set up so tracking is actually realistic, that's the part
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She has built tracking systems for households running several properties with staff, and holds that the hardest part of any inventory is deciding what to leave out of it.*
+*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She has built tracking systems for households running several properties with staff, and holds that the hardest part of any inventory is deciding what to leave out of it.*
 
 ---
 

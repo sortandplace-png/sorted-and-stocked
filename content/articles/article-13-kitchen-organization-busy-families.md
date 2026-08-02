@@ -371,7 +371,7 @@ That's what we build — zones designed around your family's real traffic, syste
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She works with large households, many keeping kosher and employing kitchen staff, and holds that the best test of a family kitchen is whether a six-year-old can get a snack without asking.*
+*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She works with large households, many keeping kosher and employing kitchen staff, and holds that the best test of a family kitchen is whether a six-year-old can get a snack without asking.*
 
 ---
 

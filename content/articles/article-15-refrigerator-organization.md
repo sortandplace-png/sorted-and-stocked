@@ -304,7 +304,7 @@ It also connects to everything else. A fridge you can see into makes **[meal pla
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She works with large kosher households where fridge organization has to satisfy food safety and separation requirements at the same time.*
+*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She works with large kosher households where fridge organization has to satisfy food safety and separation requirements at the same time.*
 
 ---
 

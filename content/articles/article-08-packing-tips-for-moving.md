@@ -369,7 +369,7 @@ We pack with that in mind — boxes labeled for a crew that's never met you, fra
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She has packed and unpacked households of every size and maintains that the marker matters more than the bubble wrap.*
+*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She has packed and unpacked households of every size and maintains that the marker matters more than the bubble wrap.*
 
 ---
 
