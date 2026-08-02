@@ -106,7 +106,7 @@ export default function DietaryTaggingClient({ propertyId }: { propertyId: strin
   }
 
   if (!canManage(role)) {
-    return <p className="max-w-md mx-auto p-4 text-sm text-dusk">Only an owner or manager can use this tool.</p>;
+    return <p className="max-w-md lg:max-w-2xl mx-auto p-4 text-sm text-dusk">Only an owner or manager can use this tool.</p>;
   }
 
   if (loading) return <SkeletonList />;
@@ -122,7 +122,7 @@ export default function DietaryTaggingClient({ propertyId }: { propertyId: strin
     .sort((a, b) => b.groupItems.length - a.groupItems.length);
 
   return (
-    <div className="max-w-md mx-auto p-4">
+    <div className="max-w-md lg:max-w-2xl mx-auto p-4">
       <h1 className="text-2xl font-display text-denim mb-1">Dietary Tagging</h1>
       <p className="text-sm text-dusk mb-5">
         {items.length} item{items.length === 1 ? '' : 's'} with no dietary tags on file yet, grouped by category.
