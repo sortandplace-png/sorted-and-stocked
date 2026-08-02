@@ -99,7 +99,6 @@
     "plan": "Plan",
     "shop": "Shop",
     "more": "More",
-    "home": "Home",
     "procurement": "Shop All Houses",
     "console": "Operator Console",
     "register": "Register",
@@ -148,6 +147,7 @@
   },
   "recipesGrid": {
     "title": "Recipes",
+    "aggregateNote": "Every house you belong to, in one view. Opening a recipe takes you to its home house — edits happen there.",
     "newBadge": "NEW!",
     "newRecipe": "New Recipe",
     "searchPlaceholder": "Search recipes...",
@@ -443,6 +443,7 @@
     "alsoDidPlaceholder": "Anything else worth mentioning — errands, small fixes, favours"
   },
   "myDay": {
+    "adHocTasks": "One-off tasks assigned to you",
     "staffNoteHeading": "Today's note for staff",
     "captureTile": "Capture",
     "captureSubtitle": "Snap a photo",
@@ -478,6 +479,9 @@
     "todayHeader": "Today",
     "candle": {
       "label": "Candle Lighting",
+      "eveningAnchorLabel": "Evening Anchor",
+      "eveningAnchorClose": "House closes {time}",
+      "eveningAnchorUnset": "Set dinner and house-close times in Settings.",
       "labelNearYou": "Candle Lighting near you",
       "switchToHousehold": "Switch back to household location",
       "useMyLocation": "Use my current location for candle lighting",
@@ -1049,6 +1053,8 @@
   "yomTovYearView": {
     "title": "Yom Tov Year View",
     "subtitle": "Every Yom Tov and fast day on the calendar, at a glance.",
+    "titleNeutral": "Year at a Glance",
+    "subtitleNeutral": "Every holiday on the calendar, at a glance.",
     "backToTools": "Tools",
     "empty": "No dates on the calendar yet.",
     "viewToggleLabel": "Choose a view",

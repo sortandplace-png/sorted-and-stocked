@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getTranslations, getLocale } from 'next-intl/server'
 import { format, parseISO } from 'date-fns'
-import { Calendar, Camera, Clock, Package, Plus, Scan, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, UtensilsCrossed } from 'lucide-react'
+import { Calendar, Camera, Clock, Package, Plus, Scan, ShoppingCart, Square, Circle, Triangle, BookOpen, Flame, Sunset, UtensilsCrossed } from 'lucide-react'
 import FloatingScanButton from '@/components/FloatingScanButton'
 import LocationZmanim from '@/components/LocationZmanim'
 import DashboardWidgets from '@/components/DashboardWidgets'
@@ -16,6 +16,7 @@ import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
 import { getWidgetPrefs, getTodaysMealPlan, getLowStockAlerts } from '@/lib/dashboard-widgets-data'
 import { formatPropertyLabel } from '@/lib/property-display'
 import { isModuleEnabled, isOperatorConsole } from '@/lib/module-flags'
+import { isJewishObservant } from '@/lib/observance-gating'
 import {
   getOmerStatus,
   getOmerOutlook,
@@ -411,6 +412,43 @@ function getKashrut(kosherType: string | null | undefined): keyof typeof KASHRUT
   return 'Parve'
 }
 
+// Observance gating (amended table -- lib/observance-gating.ts): the
+// Candle Lighting card swaps to Evening Anchor on a property without the
+// jewish calendar layer. Same axis the month grid and Yom Tov Year View
+// already key off (SS-469). Evening Anchor is NOT an astronomical time --
+// per the spec it is the household's own dinner time + house close time,
+// a per-property setting stored in the same feature_flags jsonb every
+// other per-property setting already uses (set in Settings > Evening
+// Anchor, read-then-merge, never a new column). Prep Timeline reads the
+// same dinner value as its backward-anchor on a non-Jewish property.
+async function getObservanceContext(
+  propertyId: string
+): Promise<{ jewish: boolean; dinnerTime: string | null; closeTime: string | null }> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('properties')
+    .select('calendar_layers, feature_flags')
+    .eq('id', propertyId)
+    .single()
+  const flags = (data?.feature_flags ?? {}) as Record<string, unknown>
+  return {
+    jewish: isJewishObservant(data?.calendar_layers as string[] | null | undefined),
+    dinnerTime: typeof flags.evening_anchor_dinner === 'string' ? flags.evening_anchor_dinner : null,
+    closeTime: typeof flags.evening_anchor_close === 'string' ? flags.evening_anchor_close : null,
+  }
+}
+
+// "18:30" -> "6:30 PM". The setting is stored as a 24h HH:MM string (the
+// native <input type="time"> value), displayed in the same 12h style the
+// candle time uses.
+function formatAnchorClock(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number)
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return hhmm
+  const period = h >= 12 ? 'PM' : 'AM'
+  const displayHour = h % 12 === 0 ? 12 : h % 12
+  return `${displayHour}:${String(m).padStart(2, '0')} ${period}`
+}
+
 // Same value the property layout's header subtitle already shows — that
 // fetch happens in app/properties/[id]/layout.tsx, which doesn't pass data
 // down to this page, so it needs its own (tiny) lookup here.
@@ -632,7 +670,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   const { id: propertyId } = await params
   const t = await getTranslations('dashboard')
   const locale = await getLocale()
-  const [{ meals, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount, pantryCount, widgetPrefs, todaysMeals, lowStockItems, moduleFlags] = await Promise.all([
+  const [{ meals, shopping }, hebcal, hebrewInfo, prepReminders, propertyName, recipeCount, readiness, userRole, prepAheadReminders, prepAheadEnabled, inventoryCount, pantryCount, widgetPrefs, todaysMeals, lowStockItems, moduleFlags, observance] = await Promise.all([
     getData(propertyId),
     getHebcal(),
     getHebrewInfo(),
@@ -649,6 +687,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     getTodaysMealPlan(propertyId),
     getLowStockAlerts(propertyId),
     getModuleFlags(propertyId),
+    getObservanceContext(propertyId),
   ])
   const isOwnerOrManager = userRole === 'owner' || userRole === 'manager'
   const tehillim = await getTehillim(hebrewInfo.day)
@@ -919,12 +958,48 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               </div>
             }
             candleHeader={
+              // Observance gating (amended table): Candle Lighting swaps
+              // to Evening Anchor on a property without the jewish
+              // calendar layer -- same card slot, neutral framing.
               <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5 flex items-center gap-2">
-                <Flame size={13} className="text-white/80" aria-hidden="true" />
-                {t('candle.label')}
+                {observance.jewish ? (
+                  <Flame size={13} className="text-white/80" aria-hidden="true" />
+                ) : (
+                  <Sunset size={13} className="text-white/80" aria-hidden="true" />
+                )}
+                {observance.jewish ? t('candle.label') : t('candle.eveningAnchorLabel')}
               </div>
             }
             candleContent={
+              !observance.jewish ? (
+                <>
+                  {/* Evening Anchor body: no Shabbos-candles photo on a
+                      non-observant household's card -- an evening-sky
+                      gradient built from the Concept B tokens (denim ->
+                      denimBlue -> brass horizon) fills the same slot, so
+                      the row keeps its height-match behavior. */}
+                  <div
+                    className="min-h-[230px] w-full flex-1"
+                    style={{ backgroundImage: 'linear-gradient(180deg, #2E4A62 0%, #6B8DBE 62%, #C6A46E 100%)' }}
+                  />
+                  <div className="bg-denim px-5 py-4 flex items-center justify-center shrink-0">
+                    <div className="flex flex-col items-center gap-1 text-center">
+                      <bdi dir="ltr" className="font-display text-[24px] text-white tracking-[0.04em] leading-none">
+                        {observance.dinnerTime ? formatAnchorClock(observance.dinnerTime) : '—'}
+                      </bdi>
+                      <div className="font-display italic text-[12px] text-white/60 tracking-wide">
+                        {observance.dinnerTime
+                          ? `${
+                              observance.closeTime
+                                ? `${t('candle.eveningAnchorClose', { time: formatAnchorClock(observance.closeTime) })}`
+                                : ''
+                            }${observance.closeTime && propertyName ? ' — ' : ''}${propertyName ?? ''}`
+                          : t('candle.eveningAnchorUnset')}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
               <>
                 <div
                   // Per Racquel's reference image, the photo is meant to
@@ -963,6 +1038,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                   />
                 </div>
               </>
+              )
             }
           />
 

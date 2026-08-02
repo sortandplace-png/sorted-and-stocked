@@ -1,12 +1,13 @@
 // components/PrepTimelineClient.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { SkeletonList } from '@/components/Skeleton';
 import { formatMinutes } from '@/lib/format-time';
 import { bedikasTolaimIngredients, BEDIKAS_TOLAIM_NOTE } from '@/lib/bedikas-tolaim';
+import { isJewishObservant } from '@/lib/observance-gating';
 
 type Entry = {
   id: string;
@@ -38,6 +39,55 @@ export default function PrepTimelineClient({ propertyId }: { propertyId: string 
   const [readyTime, setReadyTime] = useState('18:00');
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Observance gating: the backward-anchor's SOURCE depends on the
+  // property. Jewish -> candle lighting for the chosen day (when it has
+  // one); not Jewish -> the household's own Evening Anchor dinner time
+  // (Settings > Evening Anchor, feature_flags). Same component, same
+  // countdown math -- only the seed differs, and only until the person
+  // touches the time input themselves (their explicit choice always wins).
+  const [jewish, setJewish] = useState(true);
+  const [anchorSource, setAnchorSource] = useState<'candles' | 'evening-anchor' | null>(null);
+  const timeTouched = useRef(false);
+
+  useEffect(() => {
+    supabase
+      .from('properties')
+      .select('calendar_layers, feature_flags')
+      .eq('id', propertyId)
+      .single()
+      .then(({ data }) => {
+        const isJewish = isJewishObservant(data?.calendar_layers as string[] | null | undefined);
+        setJewish(isJewish);
+        const flags = (data?.feature_flags ?? {}) as Record<string, unknown>;
+        const dinner = typeof flags.evening_anchor_dinner === 'string' ? flags.evening_anchor_dinner : null;
+        if (!isJewish && dinner && !timeTouched.current) {
+          setReadyTime(dinner);
+          setAnchorSource('evening-anchor');
+        }
+      });
+  }, [propertyId, supabase]);
+
+  // Jewish anchor: /api/hebcal's per-day map carries candleLighting as
+  // "H:MM" (evening, so hours < 12 mean PM) for erev Shabbos/Yom Tov.
+  // Only days that HAVE a candle lighting re-seed; a plain Tuesday keeps
+  // the default or whatever the person set.
+  useEffect(() => {
+    if (!jewish || timeTouched.current) return;
+    const [y, m] = date.split('-');
+    fetch(`/api/hebcal?year=${y}&month=${Number(m)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const candle: string | undefined = data?.days?.[date]?.candleLighting;
+        if (!candle || timeTouched.current) return;
+        const [h, min] = candle.split(':').map(Number);
+        if (!Number.isFinite(h) || !Number.isFinite(min)) return;
+        const h24 = h < 12 ? h + 12 : h;
+        setReadyTime(`${String(h24).padStart(2, '0')}:${String(min).padStart(2, '0')}`);
+        setAnchorSource('candles');
+      })
+      .catch(() => {});
+  }, [jewish, date]);
 
   useEffect(() => {
     setLoading(true);
@@ -99,10 +149,21 @@ export default function PrepTimelineClient({ propertyId }: { propertyId: string 
         <input
           type="time"
           value={readyTime}
-          onChange={(e) => setReadyTime(e.target.value)}
+          onChange={(e) => {
+            timeTouched.current = true;
+            setReadyTime(e.target.value);
+          }}
           className="flex-1 border border-cardBorder rounded-xl px-3 py-2 text-sm"
         />
       </div>
+
+      {anchorSource && !timeTouched.current && (
+        <p className="text-xs text-dusk mb-4 -mt-2">
+          {anchorSource === 'candles'
+            ? 'Ready-by time anchored to candle lighting for this day.'
+            : "Ready-by time anchored to this house's Evening Anchor dinner time."}
+        </p>
+      )}
 
       {entries.length === 0 && (
         <div className="text-center py-8">
@@ -113,7 +174,9 @@ export default function PrepTimelineClient({ propertyId }: { propertyId: string 
         </div>
       )}
 
-      {bedikahIngredients.length > 0 && (
+      {/* Halachic reference -- only meaningful on a Jewish-observant
+          property; a civil-only house's timeline stays purely culinary. */}
+      {jewish && bedikahIngredients.length > 0 && (
         <div className="bg-sage/10 border border-sage/20 rounded-2xl p-4 mb-4">
           <p className="text-sm font-medium text-denim mb-1">🔎 Bedikas Tolaim: {bedikahIngredients.join(', ')}</p>
           <p className="text-xs text-dusk">{BEDIKAS_TOLAIM_NOTE}</p>

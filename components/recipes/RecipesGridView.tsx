@@ -78,6 +78,12 @@ interface Recipe {
   approx_total_minutes: number | null;
   created_at: string;
   new_badge_until?: string | null;
+  // Operator-aggregate view only (recipes/page.tsx): the recipe's HOME
+  // property, from recipes.property_id -> properties.name. Cards carrying
+  // these render a source badge and open in the home property, so edits
+  // always land where the recipe lives.
+  source_property_id?: string | null;
+  source_property_name?: string | null;
 }
 
 // Weekday isn't a stored value — it's the default state where none of the
@@ -213,9 +219,14 @@ function isDirectImageUrl(url: string) {
 export default function RecipesGridView({
   propertyId,
   recipes,
+  aggregateView = false,
 }: {
   propertyId: string;
   recipes: Recipe[];
+  // Operator console (Lax): the grid spans every property the operator
+  // belongs to. Read-only-safe by construction -- cards open in their
+  // home property, and the note under the title says so.
+  aggregateView?: boolean;
 }) {
   const role = usePropertyRole();
   const t = useTranslations('recipesGrid');
@@ -623,6 +634,7 @@ export default function RecipesGridView({
       <div className="flex items-start justify-between mb-4 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-display font-bold text-denim">{t('title')}</h1>
+          {aggregateView && <p className="text-xs text-dusk mt-0.5">{t('aggregateNote')}</p>}
           <p className="text-sm text-dusk mt-0.5">
             {recipes.length} recipe{recipes.length === 1 ? '' : 's'} in your collection
           </p>
@@ -1087,7 +1099,11 @@ export default function RecipesGridView({
                     {groupRecipes.map((recipe) => (
                       <Link
                         key={recipe.id}
-                        href={`/properties/${propertyId}/recipes/${recipe.id}`}
+                        // Aggregate cards open in the recipe's HOME property
+                        // (source badge says which) -- an edit from the
+                        // operator view always happens where the recipe
+                        // lives, never as a Lax-scoped copy.
+                        href={`/properties/${recipe.source_property_id ?? propertyId}/recipes/${recipe.id}`}
                         className={`block rounded-xl2 overflow-hidden border shadow-card hover:shadow-cardHover transition-shadow ${
                           recipe.is_pesach ? 'bg-brass/[0.08] border-brass/40' : 'bg-card border-cardBorder'
                         }`}
@@ -1104,6 +1120,14 @@ export default function RecipesGridView({
                           {showsNewBadge(recipe) && (
                             <span className="absolute top-2 left-2 z-10 text-[10px] font-bold tracking-[0.06em] bg-white/95 text-denim border border-denim rounded-full px-2 py-0.5 shadow-sm">
                               {t('newBadge')}
+                            </span>
+                          )}
+                          {/* Source badge (operator aggregate): which house
+                              this recipe lives in. Top-right so it never
+                              collides with the NEW badge on the left. */}
+                          {recipe.source_property_name && (
+                            <span className="absolute top-2 right-2 z-10 text-[10px] font-semibold tracking-[0.06em] bg-white/95 text-denim border border-cardBorder rounded-full px-2 py-0.5 shadow-sm">
+                              {recipe.source_property_name}
                             </span>
                           )}
                           {recipe.photo_url && isDirectImageUrl(recipe.photo_url) ? (
@@ -1170,7 +1194,10 @@ export default function RecipesGridView({
                                         // modal pre-triggered, rather than duplicating that
                                         // modal's full initial-data-fetch here with a partial
                                         // recipe object off the grid.
-                                        router.push(`/properties/${propertyId}/recipes/${recipe.id}?edit=1`);
+                                        // Same home-property routing as the card
+                                        // link -- the aggregate view never edits
+                                        // a recipe under the operator property.
+                                        router.push(`/properties/${recipe.source_property_id ?? propertyId}/recipes/${recipe.id}?edit=1`);
                                       }}
                                       className="w-full min-h-11 flex items-center gap-2 px-3 text-sm text-denim hover:bg-mist transition border-b border-cardBorder"
                                     >

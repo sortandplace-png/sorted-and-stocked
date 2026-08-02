@@ -17,6 +17,11 @@
 //   pin       defaults true. Pure navigation tiles pass pin={false},
 //             matching the Dashboard Quick Actions precedent: the dot
 //             marks a card that holds or does something, not a signpost.
+//   pinkAccent  the Lax card's ruled one-card exception (see
+//             lib/property-accent.ts): pink tint in place of the mist
+//             fill, hot-pink label text, everything else -- gold pin,
+//             brass eyebrow, border -- unchanged. Not a theme system;
+//             nothing else may pass this.
 import Link from 'next/link';
 import Pin from '@/components/ui/Pin';
 
@@ -32,6 +37,7 @@ export default function Tile({
   onClick,
   disabled = false,
   pin = true,
+  pinkAccent = false,
   children,
   className = '',
 }: {
@@ -46,12 +52,16 @@ export default function Tile({
   onClick?: () => void;
   disabled?: boolean;
   pin?: boolean;
+  pinkAccent?: boolean;
   children?: React.ReactNode;
   className?: string;
 }) {
   const shell = [
     'relative rounded-xl2 border shadow-card hover:shadow-cardHover transition-shadow py-[14px] px-[18px] flex flex-col gap-[11px]',
-    active ? 'bg-denim border-denim' : 'bg-mist border-brass/30',
+    // Literal class strings -- Tailwind's scanner cannot see interpolated
+    // arbitrary values, so the pink hexes are written out here and only
+    // DOCUMENTED in lib/property-accent.ts (keep the two in sync).
+    active ? 'bg-denim border-denim' : pinkAccent ? 'bg-[#F7E3ED] border-brass/30' : 'bg-mist border-brass/30',
     centered ? 'items-center text-center justify-center' : '',
     disabled ? 'opacity-40' : '',
     className,
@@ -78,7 +88,11 @@ export default function Tile({
       )}
       {icon}
       {label && (
-        <span className={`font-display text-[18px] leading-snug ${active ? 'text-white' : 'text-denim'}`}>
+        <span
+          className={`font-display text-[18px] leading-snug ${
+            active ? 'text-white' : pinkAccent ? 'text-[#D6336C]' : 'text-denim'
+          }`}
+        >
           {label}
         </span>
       )}

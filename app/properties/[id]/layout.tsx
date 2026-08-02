@@ -14,6 +14,7 @@ import Footer from '@/components/Footer';
 import GlobalBackBar from '@/components/ui/GlobalBackBar';
 import { getNextObservance } from '@/lib/get-next-observance';
 import { formatPropertyLabel } from '@/lib/property-display';
+import { isPinkAccentProperty } from '@/lib/property-accent';
 import { isModuleEnabled, moduleForSegment } from '@/lib/module-flags';
 
 export default async function PropertyLayout({
@@ -119,7 +120,10 @@ export default async function PropertyLayout({
       }
       return a.name.localeCompare(b.name);
     })
-    .map((p) => ({ id: p.id, label: formatPropertyLabel(p.name, household(p)) }));
+    // pinkAccent decided HERE, where the raw property name is known -- the
+    // formatted label can carry a household prefix, so the switcher itself
+    // could not reliably spot Lax (see lib/property-accent.ts).
+    .map((p) => ({ id: p.id, label: formatPropertyLabel(p.name, household(p)), pinkAccent: isPinkAccentProperty(p.name) }));
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -158,6 +162,10 @@ export default async function PropertyLayout({
           fullName={profile?.full_name}
           avatarUrl={profile?.avatar_url}
           observance={nextObservance}
+          // Sole route home since the bottom nav lost its Home tab: staff
+          // land on My Day, everyone else on the dashboard -- the same
+          // role split the property picker already applies.
+          homeSegment={membership.role === 'staff' ? 'my-day' : 'dashboard'}
         />
         <div className="sticky top-[60px] z-20">
           <DesktopNav propertyId={id} role={membership.role as PropertyRole} flags={featureFlags} />

@@ -1,6 +1,10 @@
 // components/nav/MobileBottomNav.tsx
-// Fixed bottom bar for small screens — Home, Recipes, Staff, Scan (center,
-// prominent filled circle), Shopping, Inventory.
+// Fixed bottom bar for small screens — Recipes, Staff | Scan (center FAB) |
+// Shopping, Inventory. The Home tab is GONE (bottom-nav rebalance): the
+// header's house mark is the sole route to the dashboard/My Day now. The
+// FAB is centered by construction -- the bar is two equal flex-1 halves
+// with the FAB a fixed-width cell between them, so it stays mathematically
+// centered whatever role/module filtering does to either side's tab count.
 //
 // Staff opens a sheet rather than a link, because the Staff group is seven
 // destinations and the bar has room for one. Before this the bar had no staff
@@ -13,7 +17,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Home, BookOpen, Scan as ScanIcon, ShoppingCart, Package, Users, X } from 'lucide-react';
+import { BookOpen, Scan as ScanIcon, ShoppingCart, Package, Users, X, type LucideIcon } from 'lucide-react';
 import ScanModal from '@/components/nav/ScanModal';
 import type { PropertyRole } from '@/components/PropertyRoleContext';
 import { isModuleEnabled } from '@/lib/module-flags';
@@ -53,8 +57,8 @@ export default function MobileBottomNav({
   const staffModuleOn = isModuleEnabled(flags, 'module_staff');
   const staffLinks = STAFF_LINKS.filter((l) => !l.managerOnly || role === 'owner' || role === 'manager');
 
+  // No Home tab -- the header's house mark is the sole route home now.
   const items = [
-    { segment: 'dashboard', labelKey: 'home', Icon: Home },
     ...(isModuleEnabled(flags, 'module_recipes') ? [{ segment: 'recipes', labelKey: 'recipes', Icon: BookOpen }] : []),
   ];
   const itemsRight = [
@@ -62,7 +66,7 @@ export default function MobileBottomNav({
     ...(isModuleEnabled(flags, 'module_inventory') ? [{ segment: 'inventory', labelKey: 'inventory', Icon: Package }] : []),
   ];
 
-  function NavItem({ segment, labelKey, Icon }: { segment: string; labelKey: string; Icon: typeof Home }) {
+  function NavItem({ segment, labelKey, Icon }: { segment: string; labelKey: string; Icon: LucideIcon }) {
     const active = pathname.includes(`/${segment}`);
     return (
       <Link
@@ -86,34 +90,40 @@ export default function MobileBottomNav({
         className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-denim border-t border-white/10 flex items-stretch px-2 pb-[env(safe-area-inset-bottom)] print:hidden"
         aria-label="Sections"
       >
-        {items.map((i) => (
-          <NavItem key={i.segment} {...i} />
-        ))}
+        {/* Two equal flex-1 halves around a fixed-width FAB cell: the FAB
+            is centered by flex spacing, never a hardcoded offset, and stays
+            centered even when module/role filtering leaves the halves with
+            different tab counts (the staff variant included). */}
+        <div className="flex-1 flex items-stretch min-w-0">
+          {items.map((i) => (
+            <NavItem key={i.segment} {...i} />
+          ))}
 
-        {staffModuleOn && (
-          <button
-            onClick={() => setShowStaff(true)}
-            aria-haspopup="dialog"
-            aria-expanded={showStaff}
-            className="flex flex-col items-center justify-center gap-0.5 flex-1 min-w-[44px] min-h-[44px] py-1.5 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-          >
-            <Users
-              size={20}
-              strokeWidth={1.5}
-              className={pathname.includes('/staff') || pathname.includes('/my-day') ? 'text-brass' : 'text-white/50'}
-              aria-hidden="true"
-            />
-            <span
-              className={`text-[10px] font-medium leading-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-full [-webkit-text-size-adjust:100%] [text-size-adjust:100%] ${
-                pathname.includes('/staff') || pathname.includes('/my-day') ? 'text-white' : 'text-white/50'
-              }`}
+          {staffModuleOn && (
+            <button
+              onClick={() => setShowStaff(true)}
+              aria-haspopup="dialog"
+              aria-expanded={showStaff}
+              className="flex flex-col items-center justify-center gap-0.5 flex-1 min-w-[44px] min-h-[44px] py-1.5 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             >
-              {t('staff')}
-            </span>
-          </button>
-        )}
+              <Users
+                size={20}
+                strokeWidth={1.5}
+                className={pathname.includes('/staff') || pathname.includes('/my-day') ? 'text-brass' : 'text-white/50'}
+                aria-hidden="true"
+              />
+              <span
+                className={`text-[10px] font-medium leading-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-full [-webkit-text-size-adjust:100%] [text-size-adjust:100%] ${
+                  pathname.includes('/staff') || pathname.includes('/my-day') ? 'text-white' : 'text-white/50'
+                }`}
+              >
+                {t('staff')}
+              </span>
+            </button>
+          )}
+        </div>
 
-        <div className="flex-1 flex items-center justify-center">
+        <div className="w-16 shrink-0 flex items-center justify-center">
           {isModuleEnabled(flags, 'module_inventory') && (
             <button
               onClick={() => setShowScan(true)}
@@ -125,9 +135,11 @@ export default function MobileBottomNav({
           )}
         </div>
 
-        {itemsRight.map((i) => (
-          <NavItem key={i.segment} {...i} />
-        ))}
+        <div className="flex-1 flex items-stretch min-w-0">
+          {itemsRight.map((i) => (
+            <NavItem key={i.segment} {...i} />
+          ))}
+        </div>
       </nav>
 
       {/* Sheet, not a page: the seven staff destinations are reachable in two

@@ -229,6 +229,24 @@ export default async function MyDayPage({
     dutyAreas = await getDutyAreas(id, membership.id, user.id, todayStr, isoWeekday, timeBlock);
   }
 
+  // ONE Task Center ruling: staff_tasks stays the ad-hoc one-off lane and
+  // ALSO flows into My Day -- but only rows explicitly assigned to the
+  // viewer (assigned_to -> their own property_members row) and not done,
+  // matching the "nothing appears here that isn't an assignment" rule the
+  // canonical master_tasks -> task_assignments path already enforces.
+  let adHocTasks: { id: string; title: string; due_date: string | null; priority: string | null }[] = [];
+  if (membership?.id) {
+    const { data: adHoc, error: adHocErr } = await supabase
+      .from('staff_tasks')
+      .select('id, title, due_date, priority')
+      .eq('property_id', id)
+      .eq('assigned_to', membership.id)
+      .neq('status', 'done')
+      .order('due_date', { ascending: true });
+    if (adHocErr) console.error('my-day: staff_tasks fetch failed', adHocErr);
+    adHocTasks = adHoc ?? [];
+  }
+
   // Parent layout already confirmed membership on this property — no
   // additional role gate here. This is staff's landing page, but nothing
   // about it is staff-exclusive (an owner/manager visiting directly just
@@ -240,6 +258,7 @@ export default async function MyDayPage({
       isStaff={isStaff}
       hasRosterKey={hasRosterKey}
       dutyAreas={dutyAreas}
+      adHocTasks={adHocTasks}
       todayStr={todayStr}
     />
   );

@@ -30,6 +30,8 @@ import {
   Camera,
   Sparkles,
   ShieldCheck,
+  ShieldAlert,
+  Salad,
   Languages,
   Newspaper,
   FileText,
@@ -95,6 +97,15 @@ const TOOL_ICON_OVERRIDES: Record<string, LucideIcon> = {
   'link-captured-photos': Link2,
   'hechsher-verification': ShieldCheck,
   'kosher-type-tagging': Tags,
+  // Observance gating amendment: the universal pair mirrors its
+  // Jewish-only siblings' icons without duplicating them --
+  // ShieldAlert beside ShieldCheck reads as "same verify family,
+  // different concern"; Salad is genuinely dietary, not another Tags.
+  'allergen-verification': ShieldAlert,
+  'dietary-tagging': Salad,
+  // The non-Jewish swap keeps Calendar, same deliberate sharing as the
+  // halachic-calendar / yom-tov-year-view pair whose slot it inherits.
+  'seasonal-home-prep': Calendar,
   'translation-worklist': Languages,
   digest: Newspaper,
   blog: FileText,
@@ -138,6 +149,9 @@ const MODAL_SLUGS = new Set<ToolModalSlug>([
   'link-captured-photos',
   'hechsher-verification',
   'kosher-type-tagging',
+  'allergen-verification',
+  'dietary-tagging',
+  'seasonal-home-prep',
 ]);
 
 export default function ToolsGroupList({ propertyId, groups }: { propertyId: string; groups: Group[] }) {

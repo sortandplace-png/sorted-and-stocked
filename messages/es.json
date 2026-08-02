@@ -99,7 +99,6 @@
     "plan": "Planificar",
     "shop": "Comprar",
     "more": "Más",
-    "home": "Inicio",
     "procurement": "Compras Todas las Casas",
     "console": "Consola del Operador",
     "register": "Registro",
@@ -148,6 +147,7 @@
   },
   "recipesGrid": {
     "title": "Recetas",
+    "aggregateNote": "Todas las casas a las que pertenece, en una sola vista. Al abrir una receta irá a su casa de origen — los cambios se hacen allí.",
     "newBadge": "¡NUEVO!",
     "newRecipe": "Nueva Receta",
     "searchPlaceholder": "Buscar recetas...",
@@ -443,6 +443,7 @@
     "alsoDidPlaceholder": "Algo más que valga la pena mencionar — mandados, arreglos pequeños, favores"
   },
   "myDay": {
+    "adHocTasks": "Tareas puntuales asignadas a usted",
     "staffNoteHeading": "Nota de hoy para el personal",
     "captureTile": "Capturar",
     "captureSubtitle": "Tomar una foto",
@@ -478,6 +479,9 @@
     "todayHeader": "Hoy",
     "candle": {
       "label": "Encendido de Velas",
+      "eveningAnchorLabel": "Hora de la Cena",
+      "eveningAnchorClose": "La casa cierra a las {time}",
+      "eveningAnchorUnset": "Configure la hora de la cena y del cierre en Ajustes.",
       "labelNearYou": "Encendido de velas cerca de usted",
       "switchToHousehold": "Volver a la ubicación del hogar",
       "useMyLocation": "Usar mi ubicación actual para el encendido de velas",
@@ -1049,6 +1053,8 @@
   "yomTovYearView": {
     "title": "Calendario Anual de Yom Tov",
     "subtitle": "Todas las fechas de Yom Tov y días de ayuno, de un vistazo.",
+    "titleNeutral": "El Año de un Vistazo",
+    "subtitleNeutral": "Todos los días festivos del calendario, de un vistazo.",
     "backToTools": "Herramientas",
     "empty": "Aún no hay fechas en el calendario.",
     "viewToggleLabel": "Elegir una vista",
