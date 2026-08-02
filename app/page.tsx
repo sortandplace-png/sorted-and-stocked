@@ -82,19 +82,13 @@ export default async function RootMarketingPage() {
     <div className="bg-mist min-h-screen font-interDisplay">
       <LocalBusinessJsonLd />
 
-      {/* Contact bar. Kept above the shared nav rather than folded into it
-          -- it carries a second phone line (916-2518) MarketingHeader has
-          no slot for, and it predates the 4-page nav this page did not
-          used to need. */}
+      {/* Contact bar. SS-454/SS-434 ruling: zero phone numbers site-wide,
+          email only -- the two business lines that used to sit here are
+          deliberately gone, and the if-any-number-then-both parity rule
+          still applies should numbers ever be ruled back. */}
       <div className="bg-denim text-white text-xs text-center py-2 px-4">
-        <a href="tel:+17189384342" className="hover:underline">
-          (718) 938-4342
-        </a>
-        <span className="mx-2 text-white/50" aria-hidden="true">
-          ·
-        </span>
-        <a href="tel:+17189162518" className="hover:underline">
-          (718) 916-2518
+        <a href="mailto:SortandPlace@gmail.com" className="hover:underline">
+          SortandPlace@gmail.com
         </a>
       </div>
 
