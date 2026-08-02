@@ -9,11 +9,11 @@ import type { Metadata } from 'next';
 import RequestAccessForm from '@/components/RequestAccessForm';
 
 export const metadata: Metadata = {
-  title: 'Sorted & Stocked — Built for the way your kitchen actually runs',
+  title: 'Sorted & Stocked. Built for the way your kitchen actually runs',
   description:
-    'Meal planning, inventory, and staff coordination built for Orthodox Jewish households — kashrut-aware from day one, by a professional organizer.',
+    'Meal planning, inventory, and staff coordination built for Orthodox Jewish households. Kashrut-aware from day one, by a professional organizer.',
   openGraph: {
-    title: 'Sorted & Stocked — Built for the way your kitchen actually runs',
+    title: 'Sorted & Stocked. Built for the way your kitchen actually runs',
     description: 'Meal planning, inventory, and staff coordination that actually understands kashrut, Shabbos, and Yom Tov.',
     url: 'https://sortandplace.com/welcome',
     type: 'website',
@@ -30,9 +30,9 @@ const HOUSE_MARK = (
 
 const FEATURES = [
   { title: 'Meal Plan', body: 'Full year, aware of Shabbos, Yom Tov, and the Nine Days automatically.' },
-  { title: 'Inventory', body: 'Real stock counts by zone — fridge, freezer, pantry — not a guess.' },
+  { title: 'Inventory', body: 'Real stock counts by zone: fridge, freezer, pantry. Not a guess.' },
   { title: 'Shopping List', body: 'Built from the meal plan automatically, organized by aisle for real trips.' },
-  { title: 'Staff Coordination', body: 'Real shift handover and task tracking — searchable, not lost in a chat.' },
+  { title: 'Staff Coordination', body: 'Real shift handover and task tracking. Searchable, not lost in a chat.' },
 ];
 
 export default function WelcomePage() {
@@ -59,7 +59,7 @@ export default function WelcomePage() {
             </h1>
             <p className="text-ink-soft text-base leading-relaxed max-w-[460px] mb-7">
               Meal planning, inventory, and staff coordination that actually understands kashrut, Shabbos, and Yom
-              Tov — built by a professional organizer, not retrofitted from a generic recipe app.
+              Tov. Built by a professional organizer, not retrofitted from a generic recipe app.
             </p>
             <div className="flex items-center gap-4 flex-wrap">
               <a href="#cta" className="bg-ink text-white font-bold text-sm px-7 py-3.5 rounded">
@@ -95,7 +95,7 @@ export default function WelcomePage() {
         <section className="py-14">
           <p className="text-[11px] tracking-[0.18em] uppercase font-bold text-muted2 mb-3.5">The Real Problem</p>
           <h2 className="font-display font-semibold text-3xl text-ink max-w-[600px] mb-4">
-            You&apos;re already running this system — just in your head, and in a dozen WhatsApp threads.
+            You&apos;re already running this system, just in your head, and in a dozen WhatsApp threads.
           </h2>
           <p className="text-ink-soft text-[15px] max-w-[520px] leading-relaxed mb-9">
             Every household manager already knows what&apos;s meat, what&apos;s dairy, what&apos;s running low, and
@@ -122,14 +122,14 @@ export default function WelcomePage() {
           <p className="text-[11px] tracking-[0.18em] uppercase font-bold text-brass mb-3.5">The Difference</p>
           <h2 className="font-display font-semibold text-3xl text-white mb-4">One glance. Always safe.</h2>
           <p className="text-[#C9C2B4] text-[15px] max-w-[520px] leading-relaxed mb-9">
-            Every recipe and every inventory item carries one of three tags — bold enough to see at a glance,
+            Every recipe and every inventory item carries one of three tags, bold enough to see at a glance,
             built into the product from day one, not bolted on after.
           </p>
           <div className="grid md:grid-cols-3 gap-4">
             {[
-              ['Fleishig', 'bg-fleishigBold', 'Meat. Flagged red, everywhere it appears — recipes, inventory, the shopping list.'],
+              ['Fleishig', 'bg-fleishigBold', 'Meat. Flagged red, everywhere it appears: recipes, inventory, the shopping list.'],
               ['Milchig', 'bg-milchigBold', 'Dairy. The system warns automatically if a meat and dairy item land on the same day.'],
-              ['Parve', 'bg-parveBold', 'Neither. Safe with either — and the meal plan knows the difference.'],
+              ['Parve', 'bg-parveBold', 'Neither. Safe with either, and the meal plan knows the difference.'],
             ].map(([title, bg, body]) => (
               <div key={title} className="border border-white/15 rounded p-6">
                 <div className={`w-full h-1.5 rounded mb-4 ${bg}`} />
@@ -176,7 +176,7 @@ export default function WelcomePage() {
             Sorted &amp; Stocked is currently working with households in Lakewood, NJ, with more coming soon.
           </p>
           <RequestAccessForm />
-          <p className="text-[11.5px] text-muted2 mt-4">No commitment — just a conversation about your household.</p>
+          <p className="text-[11.5px] text-muted2 mt-4">No commitment, just a conversation about your household.</p>
         </section>
 
         <footer className="border-t border-line py-7 flex items-center justify-between text-xs text-muted2">

@@ -14,13 +14,13 @@ import LocalBusinessJsonLd from '@/components/marketing/LocalBusinessJsonLd';
 import FaqList from '@/components/marketing/FaqList';
 
 export const metadata: Metadata = {
-  title: 'FAQ | Sort + Place — Common Questions',
+  title: 'FAQ | Sort + Place, Common Questions',
   description:
-    'Answers to common questions about home organization, household management, staff training, and our process. Sort + Place — Lakewood NJ.',
+    'Answers to common questions about home organization, household management, staff training, and our process. Sort + Place, Lakewood NJ.',
   openGraph: {
-    title: 'FAQ | Sort + Place — Common Questions',
+    title: 'FAQ | Sort + Place, Common Questions',
     description:
-      'Answers to common questions about home organization, household management, staff training, and our process. Sort + Place — Lakewood NJ.',
+      'Answers to common questions about home organization, household management, staff training, and our process. Sort + Place, Lakewood NJ.',
     url: 'https://sortandplace.com/faq',
     type: 'website',
   },
@@ -29,11 +29,11 @@ export const metadata: Metadata = {
 const FAQS = [
   {
     q: 'How is this different from a regular organizer?',
-    a: 'Most organizers focus on the visible result — the pretty pantry, the color-coded closet. We focus on the system behind it: who restocks it, how they know what to buy, where the reorder link is, and what happens when someone new starts. The organization is a byproduct of the system, not the other way around.',
+    a: 'Most organizers focus on the visible result, the pretty pantry, the color-coded closet. We focus on the system behind it: who restocks it, how they know what to buy, where the reorder link is, and what happens when someone new starts. The organization is a byproduct of the system, not the other way around.',
   },
   {
     q: 'Do you work with household staff?',
-    a: 'Yes — staff management is one of our core services. We build bilingual task checklists, standard operating procedures, shift handover protocols, and visual reference materials so your staff can maintain your standards independently.',
+    a: 'Yes, staff management is one of our core services. We build bilingual task checklists, standard operating procedures, shift handover protocols, and visual reference materials so your staff can maintain your standards independently.',
   },
   {
     q: 'What does "ongoing management" include?',
@@ -41,7 +41,7 @@ const FAQS = [
   },
   {
     q: 'Do you only work in Lakewood?',
-    a: 'We’re based in Lakewood NJ and serve Ocean County and the surrounding area. For larger projects or ongoing management contracts, we’ll travel further — reach out and we’ll discuss.',
+    a: 'We’re based in Lakewood NJ and serve Ocean County and the surrounding area. For larger projects or ongoing management contracts, we’ll travel further. Reach out and we’ll discuss.',
   },
   {
     q: 'How long does a full home organization take?',
@@ -49,7 +49,7 @@ const FAQS = [
   },
   {
     q: 'What’s the newlywed package?',
-    a: 'Everything you need to set up your first home right — kitchen essentials sourced and organized, closet systems built, pantry stocked and labeled, and a basic household operations guide so you start with systems instead of building them under pressure later.',
+    a: 'Everything you need to set up your first home right: kitchen essentials sourced and organized, closet systems built, pantry stocked and labeled, and a basic household operations guide so you start with systems instead of building them under pressure later.',
   },
   {
     q: 'Is everything kosher-aware?',

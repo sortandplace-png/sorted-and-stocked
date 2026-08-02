@@ -11,6 +11,10 @@ const SERVICE_OPTIONS = [
   'Kitchen/Pantry Setup',
   'Newlywed Package',
   'Household Operations/Staff Management',
+  // SS-488 + 2 Aug ruling: new services, mirrored on /services and in the
+  // API allowlist.
+  'Moving, Packing & Unpacking',
+  'Simcha & Event Prep',
 ];
 
 export default function ConsultationForm() {
@@ -32,7 +36,7 @@ export default function ConsultationForm() {
   if (status === 'sent') {
     return (
       <p className="font-bold text-denim text-sm py-3 text-center">
-        Thank you — we've received your request and will be in touch soon.
+        Thank you. We've received your request and will be in touch soon.
       </p>
     );
   }
@@ -106,7 +110,7 @@ export default function ConsultationForm() {
         {status === 'sending' ? 'Sending…' : 'Book Your Consultation'}
       </button>
       {status === 'error' && (
-        <p className="text-rust text-xs text-center">Something went wrong sending your request — please try again.</p>
+        <p className="text-rust text-xs text-center">Something went wrong sending your request. Please try again.</p>
       )}
     </form>
   );

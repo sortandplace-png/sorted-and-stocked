@@ -25,6 +25,10 @@ const SERVICE_OPTIONS = [
   'Household Operations & Staff Management',
   'Pesach Prep',
   'Ongoing Management',
+  // SS-488 + 2 Aug ruling: new services, mirrored on /services and in the
+  // API allowlist.
+  'Moving, Packing & Unpacking',
+  'Simcha & Event Prep',
   'Other',
 ];
 
@@ -47,7 +51,7 @@ export default function ContactPageForm() {
   if (status === 'sent') {
     return (
       <p className="font-bold text-denim text-base py-6 text-center bg-card border border-cardBorder rounded-2xl shadow-card px-6">
-        Thank you — we&apos;ll be in touch within 1 business day.
+        Thank you. We&apos;ll be in touch within 1 business day.
       </p>
     );
   }
@@ -88,7 +92,7 @@ export default function ContactPageForm() {
         {status === 'sending' ? 'Sending…' : 'Book Your Consultation'}
       </button>
       {status === 'error' && (
-        <p className="text-rust text-xs text-center">Something went wrong sending your request — please try again.</p>
+        <p className="text-rust text-xs text-center">Something went wrong sending your request. Please try again.</p>
       )}
     </form>
   );

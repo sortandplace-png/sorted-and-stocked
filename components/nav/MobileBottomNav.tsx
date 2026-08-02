@@ -21,20 +21,32 @@ import { useTranslations } from 'next-intl';
 import { BookOpen, Scan as ScanIcon, ShoppingCart, Package, Users, X, type LucideIcon } from 'lucide-react';
 import ScanModal from '@/components/nav/ScanModal';
 import type { PropertyRole } from '@/components/PropertyRoleContext';
-import { isModuleEnabled } from '@/lib/module-flags';
+import { isModuleEnabled, isOperatorConsole } from '@/lib/module-flags';
 
 // Mirrors DesktopNav's staff group. managerOnly matches each page's own
 // server-side gate, so staff are never offered a link that redirects them
 // out. Every entry here is module_staff -- the whole sheet is a single
 // Staff destination, so it's gated as one unit below rather than per-item.
-const STAFF_LINKS: { segment: string; labelKey: string; managerOnly?: boolean; dividerBefore?: boolean; href?: string }[] = [
+const STAFF_LINKS: {
+  segment: string;
+  labelKey: string;
+  managerOnly?: boolean;
+  dividerBefore?: boolean;
+  href?: string;
+  operatorOnly?: boolean;
+  hideOnOperator?: boolean;
+}[] = [
   { segment: 'my-day', labelKey: 'myDay' },
-  { segment: 'tools/tasks', labelKey: 'staffTasks', managerOnly: true },
+  // SS-436 retirement, mirroring DesktopNav: on the operator property the
+  // console absorbed the Task Center and the Team page, so their entries
+  // hide there (routes untouched, R21) and the console entry appears.
+  // Client houses keep Team; Task Center was operator-only already.
+  { segment: 'console', labelKey: 'console', managerOnly: true, operatorOnly: true },
   // Hours and Training Videos removed here too -- these two lists mirror
   // each other, and a dropdown that differs between desktop and phone is
   // worse than either version alone. Both ROUTES are untouched (R21); see
   // DesktopNav for why neither is redirected yet.
-  { segment: 'staff', labelKey: 'team', managerOnly: true },
+  { segment: 'staff', labelKey: 'team', managerOnly: true, hideOnOperator: true },
   // SOP Library removed here too, same reason as DesktopNav: the Handbook's
   // Procedures tab is where it lives now, so a second nav item pointing into
   // the same page was two doors to one room. Route untouched (R21).
@@ -69,7 +81,13 @@ export default function MobileBottomNav({
   useEffect(() => setMounted(true), []);
 
   const staffModuleOn = isModuleEnabled(flags, 'module_staff');
-  const staffLinks = STAFF_LINKS.filter((l) => !l.managerOnly || role === 'owner' || role === 'manager');
+  const operator = isOperatorConsole(flags);
+  const staffLinks = STAFF_LINKS.filter(
+    (l) =>
+      (!l.managerOnly || role === 'owner' || role === 'manager') &&
+      (!l.operatorOnly || operator) &&
+      (!l.hideOnOperator || !operator)
+  );
 
   // No Home tab -- the header's house mark is the sole route home now.
   const items = [

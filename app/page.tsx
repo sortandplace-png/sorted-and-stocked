@@ -13,6 +13,12 @@
 // for why the root path specifically needs an exact-match, not startsWith,
 // check).
 //
+// COPY RULE (Racquel, 2 Aug, applies to every user-facing marketing/site
+// string, EN and ES): NO dashes as punctuation -- no "--", no em dash, no
+// en dash in visible copy. Rewrite with periods or commas. Hyphenated
+// compound words (move-in, before-and-after) stay. Code comments are
+// exempt (they are not user-facing).
+//
 // Host-based branching (added same day, before this ever shipped): this
 // page must NOT render on app.sortandplace.com -- that hostname is the real
 // app, once the subdomain split is live, and needs the old redirect-to-
@@ -29,7 +35,7 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import Pin from '@/components/PinAccent';
 import ConsultationForm from '@/components/ConsultationForm';
-import { ClipboardList, Users, Package } from 'lucide-react';
+import { ClipboardList, Users, Package, Boxes, PartyPopper } from 'lucide-react';
 import { TESTFLIGHT_URL } from '@/lib/testflight';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
@@ -41,13 +47,13 @@ const APP_HOSTNAME = 'app.sortandplace.com';
 // title/description differ from what shipped earlier tonight (that version
 // predates having the actual content package; this is the real, final copy).
 export const metadata: Metadata = {
-  title: 'Sort + Place | Professional Home Organization & Household Management — Lakewood NJ',
+  title: 'Sort + Place | Professional Home Organization & Household Management, Lakewood NJ',
   description:
-    'Sort + Place brings order to busy homes. Professional organization, household staff management, and meal planning systems — built to last, not just for the after photo. Serving Lakewood NJ and Ocean County.',
+    'Sort + Place brings order to busy homes. Professional organization, household staff management, and meal planning systems built to last, not just for the after photo. Serving Lakewood NJ and Ocean County.',
   openGraph: {
-    title: 'Sort + Place | Professional Home Organization & Household Management — Lakewood NJ',
+    title: 'Sort + Place | Professional Home Organization & Household Management, Lakewood NJ',
     description:
-      'Sort + Place brings order to busy homes. Professional organization, household staff management, and meal planning systems — built to last, not just for the after photo. Serving Lakewood NJ and Ocean County.',
+      'Sort + Place brings order to busy homes. Professional organization, household staff management, and meal planning systems built to last, not just for the after photo. Serving Lakewood NJ and Ocean County.',
     url: 'https://sortandplace.com',
     type: 'website',
   },
@@ -57,17 +63,32 @@ const SERVICES = [
   {
     icon: ClipboardList,
     title: 'Weekly Meal Planning + Grocery Orders Placed',
-    body: 'A real plan for the week, and the order actually placed -- not just a list you still have to shop yourself.',
+    body: 'A real plan for the week, and the order actually placed. Not just a list you still have to shop yourself.',
   },
   {
     icon: Users,
     title: 'Vendor Scheduling',
-    body: 'Cleaners, handyman, simcha help -- coordinated and confirmed, so it is off your plate and actually on the calendar.',
+    body: 'Cleaners, handyman, simcha help. Coordinated and confirmed, so it is off your plate and actually on the calendar.',
   },
   {
     icon: Package,
     title: 'Systems That Stick',
-    body: 'Closets, playrooms, papers, pantries -- built to hold up under a real, busy household, not just for the after photo.',
+    body: 'Closets, playrooms, papers, pantries. Built to hold up under a real, busy household, not just for the after photo.',
+  },
+  {
+    // SS-488 amendment: inline in this grid after Systems That Stick,
+    // identical card system, ADDED as a new service (nothing replaced).
+    // Copy is Racquel-approved verbatim, dash-free per the copy ruling.
+    icon: Boxes,
+    title: 'Moving, Packing & Unpacking',
+    body: 'Professional packing before the move, full unpacking after, and every kitchen, closet, and playroom set up to function from day one. No garage of boxes you are still living out of in six months.',
+  },
+  {
+    // 2 Aug ruling: sixth service, ADDED like Moving -- copy verbatim,
+    // dash-free.
+    icon: PartyPopper,
+    title: 'Simcha & Event Prep',
+    body: 'The house guest ready before the simcha and put back together after. Extra hands scheduled, linens counted, and the kitchen turned around while you enjoy the event.',
   },
 ];
 
@@ -82,16 +103,11 @@ export default async function RootMarketingPage() {
     <div className="bg-mist min-h-screen font-interDisplay">
       <LocalBusinessJsonLd />
 
-      {/* Contact bar. SS-454/SS-434 ruling: zero phone numbers site-wide,
-          email only -- the two business lines that used to sit here are
-          deliberately gone, and the if-any-number-then-both parity rule
-          still applies should numbers ever be ruled back. */}
-      <div className="bg-denim text-white text-xs text-center py-2 px-4">
-        <a href="mailto:SortandPlace@gmail.com" className="hover:underline">
-          SortandPlace@gmail.com
-        </a>
-      </div>
-
+      {/* The top contact strip is GONE entirely (2 Aug ruling) -- first it
+          lost its phone numbers (SS-454/SS-434), then the email-only band
+          itself was removed. Email lives in the footer and on /contact
+          only. The if-any-number-then-both parity rule stays recorded
+          should numbers ever be ruled back anywhere. */}
       <MarketingHeader />
 
       <div className="max-w-[1080px] mx-auto px-4">
@@ -152,7 +168,12 @@ export default async function RootMarketingPage() {
 
         {/* Service bento cards */}
         <section className="py-10 md:py-14">
-          <div className="grid md:grid-cols-3 gap-5">
+          {/* Five cards since the Moving + Simcha additions. Even-count
+              rebalance ruling: 2-up on tablets wraps 2/2/1, 3-up on desktop
+              wraps 3/2 -- with an odd card count no grid divides evenly, so
+              this is the closest-to-even layout without inventing a sixth
+              homepage card nobody ruled. */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {SERVICES.map(({ icon: Icon, title, body }) => (
               <div
                 key={title}
