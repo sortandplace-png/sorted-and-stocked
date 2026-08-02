@@ -10,16 +10,24 @@ import Link from 'next/link';
 
 export default function HeaderLogoLink({
   propertyId,
+  homeSegment = 'dashboard',
   className,
   children,
 }: {
   // Optional: cross-property pages have none, and the logo then points at
   // the property picker rather than a dashboard that does not exist.
   propertyId?: string;
+  // Bottom-nav rebalance: with the Home tab gone this icon is the SOLE
+  // route home, so it must respect each role's real landing page --
+  // owner/manager -> dashboard, staff -> my-day (the same split the
+  // property picker and post-login redirect already apply). The layout
+  // passes the role-resolved segment; cross-property mounts keep the
+  // picker fallback.
+  homeSegment?: 'dashboard' | 'my-day';
   className?: string;
   children: React.ReactNode;
 }) {
-  const href = propertyId ? `/properties/${propertyId}/dashboard` : '/properties';
+  const href = propertyId ? `/properties/${propertyId}/${homeSegment}` : '/properties';
 
   // SS-022: the visible mark is 36px (LogoMark's w-9 h-9), below the 44px
   // touch target this app uses everywhere else (e.g. MobileBottomNav's

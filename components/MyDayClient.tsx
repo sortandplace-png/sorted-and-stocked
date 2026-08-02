@@ -24,6 +24,7 @@ import { routes } from '@/lib/app-routes';
 
 type DutyTask = { id: string; taskEn: string; taskEs: string; completed: boolean };
 type DutyArea = { areaEn: string; areaEs: string; tasks: DutyTask[] };
+type AdHocTask = { id: string; title: string; due_date: string | null; priority: string | null };
 
 export default function MyDayClient({
   propertyId,
@@ -31,6 +32,7 @@ export default function MyDayClient({
   isStaff,
   hasRosterKey,
   dutyAreas,
+  adHocTasks = [],
   todayStr,
 }: {
   propertyId: string;
@@ -38,6 +40,7 @@ export default function MyDayClient({
   isStaff: boolean;
   hasRosterKey: boolean;
   dutyAreas: DutyArea[];
+  adHocTasks?: AdHocTask[];
   todayStr: string;
 }) {
   const t = useTranslations('myDay');
@@ -198,6 +201,35 @@ export default function MyDayClient({
           >
             <div className="p-4">
               <StaffTasksClient propertyId={propertyId} scope="mine" />
+              {/* ONE Task Center ruling: staff_tasks is the ad-hoc one-off
+                  lane and also flows into My Day. Server-filtered to rows
+                  assigned to THIS viewer and not done -- an unassigned
+                  ad-hoc task never appears here, same rule as the
+                  canonical assignment path above. Read-only list: status
+                  changes stay in the Task Center flow that owns them. */}
+              {adHocTasks.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-cardBorder/60">
+                  <p className="text-[10px] tracking-[0.14em] uppercase font-semibold text-brass mb-2">
+                    {t('adHocTasks')}
+                  </p>
+                  <ul className="space-y-1.5">
+                    {adHocTasks.map((task) => (
+                      <li key={task.id} className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-denim min-w-0 truncate">{task.title}</span>
+                        <span className="text-xs text-dusk shrink-0">
+                          {task.due_date
+                            ? new Date(`${task.due_date}T00:00:00`).toLocaleDateString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                              })
+                            : ''}
+                          {task.priority === 'high' ? ' · !' : ''}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </CollapsibleCard>
         </div>

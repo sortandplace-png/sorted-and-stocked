@@ -17,6 +17,7 @@
 // the grouping existed before the headings were ever drawn.
 import { Home, Plus } from 'lucide-react';
 import Tile from '@/components/ui/Tile';
+import { isPinkAccentProperty } from '@/lib/property-accent';
 
 export type PropertyEntry = { id: string; name: string; role: string };
 export type HouseholdGroup = { key: string; householdName: string | null; properties: PropertyEntry[] };
@@ -47,6 +48,9 @@ export default function PropertiesPickerList({ groups }: { groups: HouseholdGrou
             label={property.name}
             icon={<Home size={20} className="text-denim" aria-hidden="true" />}
             centered
+            // Lax only: the owner's personal-brand pink treatment, a ruled
+            // one-card exception to Concept B (lib/property-accent.ts).
+            pinkAccent={isPinkAccentProperty(property.name)}
           />
         );
       })}

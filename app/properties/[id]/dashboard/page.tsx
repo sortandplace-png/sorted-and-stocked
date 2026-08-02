@@ -415,50 +415,38 @@ function getKashrut(kosherType: string | null | undefined): keyof typeof KASHRUT
 // Observance gating (amended table -- lib/observance-gating.ts): the
 // Candle Lighting card swaps to Evening Anchor on a property without the
 // jewish calendar layer. Same axis the month grid and Yom Tov Year View
-// already key off (SS-469), read here alongside the zip the anchor time
-// needs.
-async function getObservanceContext(propertyId: string): Promise<{ jewish: boolean; zip: string | null }> {
+// already key off (SS-469). Evening Anchor is NOT an astronomical time --
+// per the spec it is the household's own dinner time + house close time,
+// a per-property setting stored in the same feature_flags jsonb every
+// other per-property setting already uses (set in Settings > Evening
+// Anchor, read-then-merge, never a new column). Prep Timeline reads the
+// same dinner value as its backward-anchor on a non-Jewish property.
+async function getObservanceContext(
+  propertyId: string
+): Promise<{ jewish: boolean; dinnerTime: string | null; closeTime: string | null }> {
   const supabase = await createClient()
   const { data } = await supabase
     .from('properties')
-    .select('calendar_layers, zip')
+    .select('calendar_layers, feature_flags')
     .eq('id', propertyId)
     .single()
+  const flags = (data?.feature_flags ?? {}) as Record<string, unknown>
   return {
     jewish: isJewishObservant(data?.calendar_layers as string[] | null | undefined),
-    zip: (data?.zip as string | null) ?? null,
+    dinnerTime: typeof flags.evening_anchor_dinner === 'string' ? flags.evening_anchor_dinner : null,
+    closeTime: typeof flags.evening_anchor_close === 'string' ? flags.evening_anchor_close : null,
   }
 }
 
-// Evening Anchor time: tonight's sunset for the property's OWN zip --
-// Hebcal's zmanim endpoint carries the location's own tzid back with the
-// response, so a Henderson NV sunset formats in Pacific time with no
-// server timezone math (the same class of bug every candle-time fix on
-// this page dealt with). Explicit date in the URL so a cached response
-// can't linger past its own day, same technique as getHebcal(). Null zip
-// (SS-478: Henderson has no location data at all yet) or any fetch
-// failure returns null and the card renders its set-a-zip hint instead.
-async function getEveningAnchor(zip: string | null): Promise<{ time: string; dateLabel: string | null } | null> {
-  if (!zip) return null
-  try {
-    const res = await fetch(
-      `https://www.hebcal.com/zmanim?cfg=json&zip=${encodeURIComponent(zip)}&date=${easternDateStr(new Date())}`,
-      { next: { revalidate: 21600 } }
-    )
-    if (!res.ok) return null
-    const data = await res.json()
-    const sunset = data?.times?.sunset
-    if (!sunset) return null
-    const tzid = data?.location?.tzid ?? 'America/New_York'
-    return {
-      time: new Date(sunset).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: tzid }),
-      dateLabel: new Intl.DateTimeFormat('en-US', { timeZone: tzid, weekday: 'short', month: 'short', day: 'numeric' }).format(
-        new Date(sunset)
-      ),
-    }
-  } catch {
-    return null
-  }
+// "18:30" -> "6:30 PM". The setting is stored as a 24h HH:MM string (the
+// native <input type="time"> value), displayed in the same 12h style the
+// candle time uses.
+function formatAnchorClock(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number)
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return hhmm
+  const period = h >= 12 ? 'PM' : 'AM'
+  const displayHour = h % 12 === 0 ? 12 : h % 12
+  return `${displayHour}:${String(m).padStart(2, '0')} ${period}`
 }
 
 // Same value the property layout's header subtitle already shows — that
@@ -702,9 +690,6 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
     getObservanceContext(propertyId),
   ])
   const isOwnerOrManager = userRole === 'owner' || userRole === 'manager'
-  // Only fetched for the Evening Anchor swap -- a Jewish-observant
-  // property's card keeps its candle-lighting time and never needs this.
-  const eveningAnchor = observance.jewish ? null : await getEveningAnchor(observance.zip)
   const tehillim = await getTehillim(hebrewInfo.day)
 
   // SS-408: tip of the day. Selection (set filtering, Hebcal trigger
@@ -1000,12 +985,16 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                   <div className="bg-denim px-5 py-4 flex items-center justify-center shrink-0">
                     <div className="flex flex-col items-center gap-1 text-center">
                       <bdi dir="ltr" className="font-display text-[24px] text-white tracking-[0.04em] leading-none">
-                        {eveningAnchor?.time ?? '—'}
+                        {observance.dinnerTime ? formatAnchorClock(observance.dinnerTime) : '—'}
                       </bdi>
                       <div className="font-display italic text-[12px] text-white/60 tracking-wide">
-                        {eveningAnchor
-                          ? `${eveningAnchor.dateLabel ? `${eveningAnchor.dateLabel}` : ''}${propertyName ? ` — ${propertyName}` : ''}`
-                          : t('candle.eveningAnchorNoZip')}
+                        {observance.dinnerTime
+                          ? `${
+                              observance.closeTime
+                                ? `${t('candle.eveningAnchorClose', { time: formatAnchorClock(observance.closeTime) })}`
+                                : ''
+                            }${observance.closeTime && propertyName ? ' — ' : ''}${propertyName ?? ''}`
+                          : t('candle.eveningAnchorUnset')}
                       </div>
                     </div>
                   </div>

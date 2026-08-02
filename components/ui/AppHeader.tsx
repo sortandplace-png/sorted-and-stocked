@@ -34,6 +34,7 @@ export default function AppHeader({
   fullName,
   avatarUrl,
   observance,
+  homeSegment = 'dashboard',
 }: {
   /** Absent on cross-property pages -- see the note above. */
   propertyId?: string;
@@ -44,11 +45,15 @@ export default function AppHeader({
   fullName?: string | null;
   avatarUrl?: string | null;
   observance?: { name: string; daysUntil: number } | null;
+  /** Role-resolved home destination for the logo/house mark -- staff land
+   *  on my-day, everyone else on dashboard (bottom-nav rebalance made
+   *  this icon the sole route home). */
+  homeSegment?: 'dashboard' | 'my-day';
 }) {
   return (
     <header className="flex items-center justify-between px-4 py-3 bg-denim text-white sticky top-0 z-30 print:hidden">
       <div className="flex items-center gap-2.5 min-w-0">
-        <HeaderLogoLink propertyId={propertyId} className="flex items-center gap-2.5 shrink-0">
+        <HeaderLogoLink propertyId={propertyId} homeSegment={homeSegment} className="flex items-center gap-2.5 shrink-0">
           <LogoMark className="w-9 h-9 shrink-0" />
           {/* Hidden below sm: the full wordmark ran into the switcher on
               narrow screens, same icon-only-on-mobile pattern as search and

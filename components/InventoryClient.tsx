@@ -1542,10 +1542,23 @@ export default function InventoryClient({
                 );
               })()}
           </div>
+          {/* Retailer chips on their OWN row below the stepper -- they were
+              absolutely pinned bottom-right and overlaid the stepper row and
+              its "Not tracked" label the moment either grew (long ES labels,
+              3+ chips: Achva Sesame Tahini / All-Purpose Flour / Allspice on
+              a phone). In normal flow they can never overlay a sibling;
+              flex-wrap + justify-end keeps them right-aligned and wrapping
+              instead of colliding, and the stepper row above keeps the full
+              card width. */}
+          <div className="mt-1.5 flex justify-end" onClick={(e) => e.stopPropagation()}>
+            <OrderLink
+              itemName={item.name}
+              sources={item.reorder_sources}
+              fallbackLink={item.reorder_link}
+              className="flex-wrap justify-end"
+            />
+          </div>
         </div>
-        <span onClick={(e) => e.stopPropagation()} className="absolute bottom-3 right-3">
-          <OrderLink itemName={item.name} sources={item.reorder_sources} fallbackLink={item.reorder_link} />
-        </span>
       </div>
     );
   }

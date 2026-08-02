@@ -116,7 +116,9 @@ const TOOLS = [
     slug: 'takeout-directory',
     icon: '🥡',
     title: 'Local Takeout Directory',
-    description: 'Restaurants and takeout near Lakewood, with hashgacha noted.',
+    // Placeholder only -- replaced per property below (generated from
+    // properties.city + observance; never a hardcoded town).
+    description: 'Restaurants and takeout near this house.',
   },
   {
     slug: 'halachic-calendar',
@@ -302,7 +304,12 @@ const GROUPS: {
     // SS-096) -- no backing table, currently live/clickable but goes
     // nowhere. Route and component left in place; don't "restore" this
     // without resolving that decision first.
-    slugs: ['tasks', 'takeout-directory', 'taste-memory', 'blog'],
+    //
+    // 'tasks' (Staff Task Center) removed from this group per the ONE
+    // Task Center ruling: the Staff sheet's Task Center entry is the
+    // single door; this card was the duplicate. Route, TOOLS entry and
+    // MIN_ROLE line all stay -- only the House tile is gone.
+    slugs: ['takeout-directory', 'taste-memory', 'blog'],
     subgroups: [
       // Location-based pair first (House Manual, Pantry Zone Map), then the
       // people/contact-based pair (Contacts & Vendors, Borrowed & Lent).
@@ -356,7 +363,8 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
     .from('properties')
     // calendar_layers is the observance axis (SS-469) -- the same one the
     // month grid and Yom Tov Year View already key off, not a second flag.
-    .select('feature_flags, calendar_layers')
+    // city feeds the generated Local Takeout Directory subtitle.
+    .select('feature_flags, calendar_layers, city')
     .eq('id', id)
     .single();
   const flags = (property?.feature_flags ?? {}) as Record<string, boolean>;
@@ -377,7 +385,20 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
     // operation buys from is one business-wide directory, not a copy each
     // client's house keeps. Its own route enforces the same gate.
     .filter((t) => t.slug !== 'suppliers' || flags.operator_console === true)
-    .map((t) => (t.slug === 'knowledge-base' ? { ...t, count: knowledgeCount ?? 0 } : t));
+    .map((t) => (t.slug === 'knowledge-base' ? { ...t, count: knowledgeCount ?? 0 } : t))
+    // Generated, never hardcoded: the directory tile names the property's
+    // own city, mentions hashgacha only for an observant household, and
+    // turns into the add-your-places CTA when no city is on file.
+    .map((t) =>
+      t.slug === 'takeout-directory'
+        ? {
+            ...t,
+            description: property?.city
+              ? `Restaurants and takeout near ${property.city}${jewish ? ', with hashgacha noted.' : '.'}`
+              : 'Add the places this house orders from.',
+          }
+        : t
+    );
   // Observance gating (amended table -- lib/observance-gating.ts is the
   // one place the rules live). Keyed by the ORIGINAL slug so the static
   // GROUPS arrays keep resolving even when the stored tile is the neutral

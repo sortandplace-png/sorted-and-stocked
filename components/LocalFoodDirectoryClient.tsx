@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { SkeletonList } from '@/components/Skeleton';
 import { usePropertyRole, canManage } from '@/components/PropertyRoleContext';
+import { isJewishObservant } from '@/lib/observance-gating';
+import { directoryRadiusMiles, isWithinDirectoryRadius } from '@/lib/directory-radius';
 
 type Restaurant = {
   id: string;
@@ -13,6 +15,8 @@ type Restaurant = {
   whatsapp: string | null;
   address: string | null;
   city: string | null;
+  state: string | null;
+  zip: string | null;
   category: string | null;
   hashgacha: string | null;
   hashgacha_confirmed: boolean | null;
@@ -21,6 +25,8 @@ type Restaurant = {
   delivery_available: boolean | null;
   rating: number | null;
 };
+
+type PropertyContext = { city: string | null; state: string | null; zip: string | null; jewish: boolean };
 
 type FormState = {
   name: string;
@@ -81,11 +87,16 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Observance gating + generated locality: the subtitle, the hashgacha
+  // UI and the radius rule all key off the property's own row -- nothing
+  // about Lakewood (or any city) is hardcoded here anymore.
+  const [propertyCtx, setPropertyCtx] = useState<PropertyContext | null>(null);
+
   function loadRestaurants() {
     return supabase
       .from('local_food_directory')
       .select(
-        'id, name, phone, whatsapp, address, city, category, hashgacha, hashgacha_confirmed, website, hours, delivery_available, rating'
+        'id, name, phone, whatsapp, address, city, state, zip, category, hashgacha, hashgacha_confirmed, website, hours, delivery_available, rating'
       )
       .eq('property_id', propertyId)
       .order('name')
@@ -97,26 +108,62 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
 
   useEffect(() => {
     loadRestaurants();
+    supabase
+      .from('properties')
+      .select('city, state, zip, calendar_layers')
+      .eq('id', propertyId)
+      .single()
+      .then(({ data }) => {
+        setPropertyCtx({
+          city: data?.city ?? null,
+          state: data?.state ?? null,
+          zip: data?.zip ?? null,
+          jewish: isJewishObservant(data?.calendar_layers as string[] | null | undefined),
+        });
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId]);
 
+  // Default to the observant treatment until the property row answers --
+  // hiding then revealing hashgacha on an observant house would flash the
+  // wrong (stripped) directory at the household that cares most about it.
+  const jewish = propertyCtx?.jewish ?? true;
+
+  // Radius by density (lib/directory-radius.ts): 5 mi in a dense metro,
+  // 25 mi otherwise -- Country (Mountain Dale NY 12763) needs the wide
+  // rule or its list filters itself empty. Applied before the user
+  // filters so the chips and counts they see are already local.
+  const withinRadius = useMemo(
+    () => (propertyCtx ? restaurants.filter((r) => isWithinDirectoryRadius(propertyCtx, r)) : restaurants),
+    [restaurants, propertyCtx]
+  );
+
   const categories = useMemo(
-    () => [...new Set(restaurants.map((r) => r.category).filter(Boolean))] as string[],
-    [restaurants]
+    () => [...new Set(withinRadius.map((r) => r.category).filter(Boolean))] as string[],
+    [withinRadius]
   );
 
   const hashgachas = useMemo(
-    () => [...new Set(restaurants.map((r) => r.hashgacha).filter(Boolean))] as string[],
-    [restaurants]
+    () => [...new Set(withinRadius.map((r) => r.hashgacha).filter(Boolean))] as string[],
+    [withinRadius]
   );
 
-  const filtered = restaurants.filter((r) => {
+  const filtered = withinRadius.filter((r) => {
     const q = search.trim().toLowerCase();
     if (q && !r.name.toLowerCase().includes(q)) return false;
     if (categoryFilter && r.category !== categoryFilter) return false;
     if (hashgachaFilter && r.hashgacha !== hashgachaFilter) return false;
     return true;
   });
+
+  // Generated subtitle -- never a hardcoded town. City present: "near
+  // {city}" with the radius the density rule chose; hashgacha mention
+  // only for an observant household. City missing: the honest CTA.
+  const subtitle = propertyCtx?.city
+    ? `Restaurants and takeout within ${directoryRadiusMiles(propertyCtx.zip)} mi of ${propertyCtx.city}${
+        jewish ? ', with hashgacha noted.' : '.'
+      }`
+    : 'Add the places this house orders from.';
 
   function openAddForm() {
     setEditingId(null);
@@ -210,7 +257,7 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
           </button>
         )}
       </div>
-      <p className="text-sm text-dusk mb-4">Restaurants and takeout near Lakewood, with hashgacha noted.</p>
+      <p className="text-sm text-dusk mb-4">{subtitle}</p>
 
       {formOpen && (
         <div className="bg-card rounded-2xl border border-cardBorder shadow-card p-4 mb-4 space-y-2.5">
@@ -270,22 +317,28 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
             placeholder="Website"
             className="w-full border border-cardBorder rounded-full px-4 py-2 bg-card text-sm"
           />
-          <input
-            value={form.hashgacha}
-            onChange={(e) => setForm((f) => ({ ...f, hashgacha: e.target.value }))}
-            placeholder="Hashgacha"
-            className="w-full border border-cardBorder rounded-full px-4 py-2 bg-card text-sm"
-          />
+          {/* Hashgacha entry is observant-household UI -- a civil-only
+              house's directory form stays neutral (observance gating). */}
+          {jewish && (
+            <input
+              value={form.hashgacha}
+              onChange={(e) => setForm((f) => ({ ...f, hashgacha: e.target.value }))}
+              placeholder="Hashgacha"
+              className="w-full border border-cardBorder rounded-full px-4 py-2 bg-card text-sm"
+            />
+          )}
           <div className="flex gap-4 px-1">
-            <label className="flex items-center gap-1.5 text-sm text-dusk">
-              <input
-                type="checkbox"
-                checked={form.hashgacha_confirmed}
-                onChange={(e) => setForm((f) => ({ ...f, hashgacha_confirmed: e.target.checked }))}
-                className="rounded border-cardBorder text-brass"
-              />
-              Hashgacha confirmed
-            </label>
+            {jewish && (
+              <label className="flex items-center gap-1.5 text-sm text-dusk">
+                <input
+                  type="checkbox"
+                  checked={form.hashgacha_confirmed}
+                  onChange={(e) => setForm((f) => ({ ...f, hashgacha_confirmed: e.target.checked }))}
+                  className="rounded border-cardBorder text-brass"
+                />
+                Hashgacha confirmed
+              </label>
+            )}
             <label className="flex items-center gap-1.5 text-sm text-dusk">
               <input
                 type="checkbox"
@@ -339,8 +392,9 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
 
       {/* "with hashgacha noted" was only ever description text -- this is
           the real filter, same single-select toggle pattern as category
-          just above, not a second UI paradigm. */}
-      {hashgachas.length > 0 && (
+          just above, not a second UI paradigm. Observance-gated: renders
+          only for a Jewish-observant household. */}
+      {jewish && hashgachas.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
           {hashgachas.map((h) => (
             <button
@@ -356,7 +410,24 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
         </div>
       )}
 
-      {filtered.length === 0 && <p className="text-sm text-dusk text-center py-8">No matches.</p>}
+      {filtered.length === 0 &&
+        (restaurants.length === 0 ? (
+          // Nothing curated for this house yet -- the honest empty state,
+          // with the same Add action the header already offers managers.
+          <div className="text-center py-8">
+            <p className="text-sm text-dusk mb-3">Add the places this house orders from.</p>
+            {canManage(role) && !formOpen && (
+              <button
+                onClick={openAddForm}
+                className="text-sm font-medium bg-denim text-white px-4 py-2 rounded-full"
+              >
+                + Add the first place
+              </button>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-dusk text-center py-8">No matches.</p>
+        ))}
 
       <ul className="space-y-2">
         {filtered.map((r) => (
@@ -366,14 +437,15 @@ export default function LocalFoodDirectoryClient({ propertyId }: { propertyId: s
                 <p className="font-medium text-sm text-denim">{r.name}</p>
                 {r.category && <p className="text-xs text-dusk">{r.category}</p>}
               </div>
-              {r.hashgacha ? (
-                <span className="text-xs bg-sage/10 text-sage px-2 py-0.5 rounded-full shrink-0">
-                  {r.hashgacha}
-                  {r.hashgacha_confirmed ? '' : ' (unconfirmed)'}
-                </span>
-              ) : (
-                <span className="text-xs bg-rust/10 text-rust px-2 py-0.5 rounded-full shrink-0">No hashgacha found</span>
-              )}
+              {jewish &&
+                (r.hashgacha ? (
+                  <span className="text-xs bg-sage/10 text-sage px-2 py-0.5 rounded-full shrink-0">
+                    {r.hashgacha}
+                    {r.hashgacha_confirmed ? '' : ' (unconfirmed)'}
+                  </span>
+                ) : (
+                  <span className="text-xs bg-rust/10 text-rust px-2 py-0.5 rounded-full shrink-0">No hashgacha found</span>
+                ))}
             </div>
             {r.address && <p className="text-xs text-dusk mt-1">{r.address}</p>}
             {(r.hours || r.rating != null || r.delivery_available != null) && (

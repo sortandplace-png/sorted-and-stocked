@@ -10,6 +10,7 @@ import { canManage, type PropertyRole } from '@/components/PropertyRoleContext';
 import { SITE_URL } from '@/lib/site-url';
 import SquarePaymentCard from '@/components/billing/SquarePaymentCard';
 import Pin from '@/components/PinAccent';
+import { isJewishObservant } from '@/lib/observance-gating';
 
 type SignupCode = {
   id: string;
@@ -71,6 +72,17 @@ export default function SettingsClient({
   const [loadingFlags, setLoadingFlags] = useState(true);
   const [savingTasteMemory, setSavingTasteMemory] = useState(false);
 
+  // Evening Anchor (observance gating): dinner time + house close time,
+  // the per-property setting the non-Jewish dashboard card and Prep
+  // Timeline anchor read. Lives in the same feature_flags jsonb as every
+  // other per-property setting -- read-then-merge, never a new column.
+  // The section only renders on a property WITHOUT the jewish calendar
+  // layer, since an observant house's card anchors on candle lighting.
+  const [jewishProperty, setJewishProperty] = useState(true);
+  const [eveningDinner, setEveningDinner] = useState('');
+  const [eveningClose, setEveningClose] = useState('');
+  const [savingEveningAnchor, setSavingEveningAnchor] = useState(false);
+
   // Square doesn't have API access wired into this app -- an owner/manager
   // creates the payment link themselves in their own Square Dashboard and
   // pastes it here. This never generates or guesses a link.
@@ -100,9 +112,12 @@ export default function SettingsClient({
   const loadFeatureFlags = useCallback(async () => {
     if (!canManage(role)) return;
     setLoadingFlags(true);
-    const { data } = await supabase.from('properties').select('feature_flags').eq('id', propertyId).single();
-    const flags = (data?.feature_flags ?? {}) as Record<string, boolean>;
+    const { data } = await supabase.from('properties').select('feature_flags, calendar_layers').eq('id', propertyId).single();
+    const flags = (data?.feature_flags ?? {}) as Record<string, unknown>;
     setTasteMemoryEnabled(!!flags.guest_taste_memory);
+    setJewishProperty(isJewishObservant(data?.calendar_layers as string[] | null | undefined));
+    setEveningDinner(typeof flags.evening_anchor_dinner === 'string' ? flags.evening_anchor_dinner : '');
+    setEveningClose(typeof flags.evening_anchor_close === 'string' ? flags.evening_anchor_close : '');
     setLoadingFlags(false);
   }, [propertyId, role, supabase]);
 
@@ -187,6 +202,30 @@ export default function SettingsClient({
     }
     setTasteMemoryEnabled(next);
     showToast(next ? 'Taste Memory enabled.' : 'Taste Memory disabled.', { variant: 'success' });
+  }
+
+  // Same read-then-merge write as toggleTasteMemory above -- the jsonb is
+  // shared by every flag on the property and must never be blind-overwritten.
+  async function saveEveningAnchor() {
+    setSavingEveningAnchor(true);
+    const { data: current } = await supabase.from('properties').select('feature_flags').eq('id', propertyId).single();
+    const flags = (current?.feature_flags ?? {}) as Record<string, unknown>;
+    const { error } = await supabase
+      .from('properties')
+      .update({
+        feature_flags: {
+          ...flags,
+          evening_anchor_dinner: eveningDinner || null,
+          evening_anchor_close: eveningClose || null,
+        },
+      })
+      .eq('id', propertyId);
+    setSavingEveningAnchor(false);
+    if (error) {
+      showToast('Failed to save Evening Anchor times.', { variant: 'error' });
+      return;
+    }
+    showToast('Evening Anchor times saved.', { variant: 'success' });
   }
 
   async function saveNotificationSettings() {
@@ -351,6 +390,50 @@ export default function SettingsClient({
                     tasteMemoryEnabled ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {canManage(role) && !loadingFlags && !jewishProperty && (
+        <section>
+          <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
+            <Pin size="sm" />
+            <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
+              Evening Anchor
+            </div>
+            <div className="p-5 space-y-3">
+              <p className="text-xs text-dusk">
+                The dashboard's Evening Anchor card and the Prep Timeline count backward from dinner time; the
+                house-close time marks the end of the household's working day.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-xs font-medium text-denim">Dinner time</span>
+                  <input
+                    type="time"
+                    value={eveningDinner}
+                    onChange={(e) => setEveningDinner(e.target.value)}
+                    className="mt-1 w-full border border-brass/30 bg-mist rounded-xl2 px-3 py-2 text-sm text-denim focus:outline-none focus:ring-2 focus:ring-brass/40"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-medium text-denim">House close time</span>
+                  <input
+                    type="time"
+                    value={eveningClose}
+                    onChange={(e) => setEveningClose(e.target.value)}
+                    className="mt-1 w-full border border-brass/30 bg-mist rounded-xl2 px-3 py-2 text-sm text-denim focus:outline-none focus:ring-2 focus:ring-brass/40"
+                  />
+                </label>
+              </div>
+              <button
+                onClick={saveEveningAnchor}
+                disabled={savingEveningAnchor}
+                className="w-full md:w-auto px-6 py-3 rounded-xl2 bg-denim text-white text-sm font-medium disabled:opacity-40"
+              >
+                {savingEveningAnchor ? 'Saving…' : 'Save'}
               </button>
             </div>
           </div>
