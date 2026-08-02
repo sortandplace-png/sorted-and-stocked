@@ -27,6 +27,7 @@ const LINKS = [
 export default function MarketingFooter({
   extraLinks = [],
   homepage = false,
+  flush = false,
 }: {
   // The homepage's existing footer already linked Terms before this shared
   // component existed -- an optional extra rather than baking Terms into
@@ -35,9 +36,13 @@ export default function MarketingFooter({
   extraLinks?: { href: string; label: string }[];
   /** Homepage keeps the Google-verification credit line; see below. */
   homepage?: boolean;
+  /** Drop the default mt-16: for short pages (/contact) whose own bottom
+      padding already provides the gap -- the two stacked into the dead
+      band reported twice on 2 Aug. */
+  flush?: boolean;
 }) {
   return (
-    <footer className="bg-linen border-t border-cardBorder mt-16">
+    <footer className={`bg-linen border-t border-cardBorder ${flush ? '' : 'mt-16'}`}>
       <div className="max-w-[1100px] mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[13px] text-dusk">
         <p className="flex items-center gap-2 flex-wrap justify-center">
           {/* SS-454: NO phone numbers anywhere in the footers (supersedes

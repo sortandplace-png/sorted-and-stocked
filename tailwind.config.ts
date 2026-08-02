@@ -78,20 +78,14 @@ const config: Config = {
           DEFAULT: '#2E4A62', // text -- denim
         },
 
-        // Bold Direction (2026-07-15) — additive only. Phase 1 of the
-        // approved redesign, Home dashboard only that round; every other
-        // page still reads Bold Direction or the New Direction below until
-        // migrated. Once the whole app has moved over, these are the real
-        // candidates to fold into the New Direction tokens below — not
-        // done yet, don't rename early.
-        ink: '#171512',
-        'ink-soft': '#3A362F',
-        stone: '#F1ECE2',
-        line: '#DED5C4',
-        muted2: '#8C8373', // named distinctly from the old `gold` family; unrelated token, same neutral-label role as denim/60 elsewhere
-        fleishigBold: '#9C2E22',
-        milchigBold: '#243F63',
-        parveBold: '#3E5734',
+        // Bold Direction (2026-07-15) — RETIRED 2 Aug 2026 on Racquel's
+        // "Concept B is universal" ruling. The last consumers (/welcome,
+        // ThisWeeksMealsList, RequestAccessForm) moved to the Concept B
+        // tokens below; the Bold kashrut variants (fleishigBold #9C2E22 /
+        // milchigBold #243F63 / parveBold #3E5734) are gone for good --
+        // kashrut renders ONLY as the functional rust/dairy/sage triple
+        // above, unmodified. ink/ink-soft/stone/line/muted2 removed with
+        // them once their consumer count hit zero.
 
         // New direction (2026-07-15) -- replaces Bold Direction above as of
         // the Home dashboard's full repaint this round. Bold Direction's own

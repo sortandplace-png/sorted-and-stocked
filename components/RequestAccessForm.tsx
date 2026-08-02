@@ -21,7 +21,7 @@ export default function RequestAccessForm() {
 
   if (status === 'sent') {
     return (
-      <p className="font-bold text-ink text-sm py-3">
+      <p className="font-bold text-denim text-sm py-3">
         Thank you — we've received your request and will be in touch soon.
       </p>
     );
@@ -34,25 +34,25 @@ export default function RequestAccessForm() {
         name="name"
         placeholder="Your name"
         required
-        className="px-4 py-3 border border-line rounded bg-linen text-sm"
+        className="px-4 py-3 border border-cardBorder rounded-xl2 bg-linen text-sm"
       />
       <input
         type="email"
         name="email"
         placeholder="Email address"
         required
-        className="px-4 py-3 border border-line rounded bg-linen text-sm"
+        className="px-4 py-3 border border-cardBorder rounded-xl2 bg-linen text-sm"
       />
       <input
         type="text"
         name="city"
         placeholder="City (optional)"
-        className="px-4 py-3 border border-line rounded bg-linen text-sm"
+        className="px-4 py-3 border border-cardBorder rounded-xl2 bg-linen text-sm"
       />
       <button
         type="submit"
         disabled={status === 'sending'}
-        className="bg-ink text-white font-bold text-sm py-3.5 rounded disabled:opacity-50"
+        className="bg-denim text-white font-bold text-sm py-3.5 rounded-full disabled:opacity-50"
       >
         {status === 'sending' ? 'Sending…' : 'Request Early Access'}
       </button>

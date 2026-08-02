@@ -28,7 +28,7 @@ Individually trivial. Across a year, across every category, not trivial at all.
 
 ### Food you paid for and threw away
 
-Food waste in American households is substantial and well documented. USDA and EPA analyses have consistently found that a significant share of the U.S. food supply goes uneaten, with households responsible for a large portion of it.
+Food waste in American households is substantial and well documented. [USDA estimates put food waste at 30 to 40 percent of the U.S. food supply](https://www.usda.gov/about-food/food-safety/food-loss-and-waste), with its Economic Research Service estimating the loss at the retail and consumer levels at about 31 percent, roughly 133 billion pounds and $161 billion worth of food in 2010.
 
 In most kitchens the mechanism isn't carelessness. **Something goes behind something else and stops existing.** It reappears three weeks past its point, and into the trash it goes — having been paid for twice, once at purchase and once in the space it occupied.
 
@@ -42,7 +42,7 @@ Fifteen minutes here, ten there. It's the least visible cost and one of the larg
 
 This is the cost that stays invisible until it's catastrophic.
 
-Insurance industry guidance has long recommended maintaining a home inventory, and the reason is blunt: **claims are settled on what you can document.** After a fire, flood, or burglary, adjusters ask what you owned. Reconstructing a full household from memory — under stress, possibly displaced — is close to impossible, and most people substantially under-report.
+Insurance industry guidance has long [recommended maintaining a home inventory](https://www.iii.org/article/how-create-home-inventory), and the reason is blunt: **claims are settled on what you can document.** After a fire, flood, or burglary, adjusters ask what you owned. Reconstructing a full household from memory — under stress, possibly displaced — is close to impossible, and most people substantially under-report. The Insurance Information Institute's own suggestion is a [video walkthrough of each room, describing the contents as you go](https://www.iii.org/article/making-home-inventory), with a copy stored outside the home.
 
 The gap between what you owned and what you can prove you owned is money you don't get back.
 
@@ -300,6 +300,6 @@ We build the whole picture: organized spaces where an inventory is possible to m
 - `/smart-pantry-management` — final CTA section
 
 **Notes before publishing:**
-1. **Three claims need citation links.** USDA/EPA on household food waste, insurance-industry guidance on maintaining a home inventory, and the cognitive-household-labor research. All directionally accurate, none linked. This article is built on those three claims more than any other in the set — it's a persuasive piece, and unsourced persuasion is where E-E-A-T is won or lost.
+1. **Two of the three claims are now sourced.** The food waste figure links USDA (30 to 40 percent of the U.S. food supply, with the ERS estimate of about 31 percent at the retail and consumer levels, roughly 133 billion pounds and $161 billion in 2010), and the insurance guidance links the Insurance Information Institute, including its video-walkthrough recommendation. The cognitive-household-labor research is still unlinked and needs a citation before this goes live.
 2. **Slug conflict, second cluster.** Article 21 (*Best Home Inventory App For Families*) is referenced as `/best-home-inventory-app` in this brief but as `/home-inventory-app` in Article 23's brief. Article 21's own brief pointed at `/home-inventory-system`, which is *this* article. Pick one slug per page across 21, 22, 23, and 24 before publishing any of them.
 3. App-SEO pillar split: **22 owns the argument (why).** Tool selection in 21, method in 23, forward-looking features in 24, pantry-specific build in 14. There is deliberately no step-by-step in this article.

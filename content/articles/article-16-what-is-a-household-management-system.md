@@ -24,7 +24,7 @@ That last clause is the whole thing. Most homes don't lack information. Someone 
 - **It can't be interrupted.** If that person is sick, traveling, or simply having a hard week, the home degrades immediately.
 - **It never stops.** The mental work of remembering runs continuously, including at 9:47 p.m.
 
-Researchers who study unpaid domestic work call this the *cognitive labor* of running a household — the noticing, anticipating, deciding, and monitoring that happens before any physical task begins. Sociologist Allison Daminger's work on cognitive household labor documents that this dimension is both substantial and unevenly distributed, and it's largely invisible precisely because it produces no observable activity. You can see someone doing dishes. You can't see someone remembering that the dishwasher salt is almost out.
+Researchers who study unpaid domestic work call this the *cognitive labor* of running a household — the noticing, anticipating, deciding, and monitoring that happens before any physical task begins. Sociologist Allison Daminger's [work on cognitive household labor](https://journals.sagepub.com/doi/10.1177/0003122419859007) documents that this dimension is both substantial and unevenly distributed, and it's largely invisible precisely because it produces no observable activity. You can see someone doing dishes. You can't see someone remembering that the dishwasher salt is almost out.
 
 A household management system makes that invisible work visible, which is the first step to sharing it, reducing it, or automating it.
 
@@ -73,7 +73,7 @@ This is the connective tissue: how the mail gets handled, what happens when a sc
 
 ### It reclaims the mental load
 
-Time-use research consistently shows that women in different-sex households carry a disproportionate share of household planning and management work, even when physical task-splitting is closer to even. The physical tasks are visible and negotiable. The remembering isn't.
+The research here is precise. In ["The Cognitive Dimension of Household Labor"](https://journals.sagepub.com/doi/10.1177/0003122419859007) (American Sociological Review 84(4): 609-633, 2019), a study based on 70 in-depth interviews across 35 couples, sociologist Allison Daminger found that cognitive labor consists of four kinds of work: anticipating needs, identifying options for filling them, deciding among them, and monitoring the results. Women in the different-gender couples she studied did more of the cognitive work overall, and disproportionately more of the anticipating and monitoring, the least visible forms. The physical tasks are visible and negotiable. The remembering isn't.
 
 A system doesn't redistribute that labor by itself. But it converts invisible work into visible work, and visible work can be discussed, assigned, and shared. **You cannot delegate what you cannot describe.**
 
@@ -416,4 +416,4 @@ That's what a household management system does. It moves the load out of your he
 - `/professional-organizing` — maintenance/staff section
 - `/family-command-center` — mid-article CTA and schedules section
 
-**Note before publishing:** the two research references (cognitive household labor / Daminger, and time-use findings on distribution of planning work) are directionally accurate but should be linked to a specific citation before this goes live — E-E-A-T value comes from the link, not the mention.
+**Note before publishing:** both research references are now sourced to Daminger, Allison. 2019. "The Cognitive Dimension of Household Labor." American Sociological Review 84(4): 609-633, linked at the cognitive-labor mention and in the mental-load section. The vaguer time-use phrasing was replaced with the paper's own findings (70 in-depth interviews across 35 couples; women in different-gender couples do more cognitive work overall, disproportionately the anticipating and monitoring).
