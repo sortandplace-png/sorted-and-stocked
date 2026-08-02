@@ -70,3 +70,18 @@ Pinterest pins. It is the ORIGINAL long copy for the slugs listed here --
 e.g. article 11 is 4,335 words there against 1,347 here. THIS FOLDER WINS
 for every slug it contains. The package supplies the other 13 articles and
 its images and pins, which are uncontested.
+
+## Known false positive: grepping for the owner's name
+
+A whole-file grep for the owner's name flags several of these files. That is
+CORRECT and must not be "fixed". The name lives only inside the NOTES block,
+which sits after `**Meta Description:**` and is stripped by
+stage-blog-drop.py before anything reaches body_markdown.
+
+Verify against the PUBLISHED body, not the whole file:
+
+    ml=$(grep -n '^\*\*Meta Description' "$f" | head -1 | cut -d: -f1)
+    head -n $((ml-1)) "$f" | grep -ci 'racquel\|about the author'    # must be 0
+
+Measured this way the count is 0 for every file here. Someone acting on the
+whole-file grep would rewrite copy that was never broken.
