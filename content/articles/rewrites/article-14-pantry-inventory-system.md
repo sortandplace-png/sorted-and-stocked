@@ -133,5 +133,20 @@ We build kitchens and pantries around how your household actually cooks — labe
 
 **[Book Your Consultation](/contact)**
 
+---
 
 **Meta Description:** How to build a pantry inventory system that survives: track only what runs out, three fields per item, and the one step everyone skips.
+
+---
+
+**NOTES — NOT FOR PUBLICATION, placed after Meta Description so the staging script cuts them.**
+
+**Detail — voice and length correction, per SS-521 and SS-508.**
+
+| | Before | After |
+|---|---|---|
+| Body words | 1,831 | **~440** |
+
+Owns the **tracking** slot in the kitchen cluster. Kept: consumables-only scope, the three fields, and the update-when-you-take-the-last-one point which is the actual failure mode.
+
+No inline images — renderer has no image support.

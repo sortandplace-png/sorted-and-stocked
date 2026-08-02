@@ -132,5 +132,24 @@ We build the maintenance layer alongside everything else — appliance records, 
 
 **[Book Your Consultation](/contact)**
 
+---
 
 **Meta Description:** A home maintenance tracker that works: what to check and when, the two tasks that actually matter, and the four reminders to set today.
+
+---
+
+**NOTES — NOT FOR PUBLICATION, placed after Meta Description so the staging script cuts them.**
+
+**Detail — voice and length correction, per SS-521 and SS-508.**
+
+| | Before | After |
+|---|---|---|
+| Body words | 1,956 | **~640** |
+| FAQ | 7 | **4** |
+| CTA blocks | 3 | **1** |
+
+**Two NFPA references kept deliberately, named in prose without hyperlinks** — per SS-506, attribution stays and the anchor goes. These are the one category where naming the source earns its place: a reader deciding whether to check their smoke alarm's date should know the guidance is the fire-safety body's, not an organizer's opinion. Racquel to confirm whether NFPA is the one exception to the no-outbound-links rule.
+
+**HVAC intervals deliberately uncited** and routed to the reader's own filter packaging — there is no single authoritative figure and quoting one would be wrong for most readers.
+
+No inline images — renderer has no image support.

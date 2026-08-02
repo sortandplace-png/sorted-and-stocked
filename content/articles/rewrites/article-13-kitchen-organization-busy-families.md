@@ -131,5 +131,20 @@ We build kitchens and pantries around how your household actually cooks — labe
 
 **[Book Your Consultation](/contact)**
 
+---
 
 **Meta Description:** Kitchen organization for busy families: put things where the hands are, group by zone, and build the snack station that stops the interruptions.
+
+---
+
+**NOTES — NOT FOR PUBLICATION, placed after Meta Description so the staging script cuts them.**
+
+**Detail — voice and length correction, per SS-521 and SS-508.**
+
+| | Before | After |
+|---|---|---|
+| Body words | 2,246 | **~470** |
+
+Owns the **family workflow** slot in the kitchen cluster — 11 pantry systems, 12 spatial constraint, 14 tracking, 15 refrigerator. Kept: children's reach as interruption-reduction, the snack station, and zones as one-trip design.
+
+No inline images — renderer has no image support.

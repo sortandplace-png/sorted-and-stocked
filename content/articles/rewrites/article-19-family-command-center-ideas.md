@@ -135,5 +135,24 @@ We build the surface and everything behind it — routines, staff schedules, and
 
 **[Book Your Consultation](/contact)**
 
+---
 
 **Meta Description:** Family command center ideas that work: where to put it, the four things it needs, and why most stop being used.
+
+---
+
+**NOTES — NOT FOR PUBLICATION, placed after Meta Description so the staging script cuts them.**
+
+**Detail — voice and length correction, per SS-521 and SS-508.**
+
+| | Before | After |
+|---|---|---|
+| Body words | 2,074 | **~680** |
+| FAQ | 7 | **4** |
+| CTA blocks | 3 | **1** |
+
+Owns the **daily surface** slot in the household-management cluster. No overlap with 18 (archive) or 30 (build sequence).
+
+Kept and sharpened: "stand where your family drops their bags — that's the spot", hooks at children's height, and the frum section with Erev Shabbos as its own column, which no competitor article has.
+
+No inline images — renderer doesn't support the syntax yet.

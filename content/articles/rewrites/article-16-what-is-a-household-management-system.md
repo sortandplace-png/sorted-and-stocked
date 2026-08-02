@@ -131,5 +131,27 @@ We build the structure — organized spaces, written routines, and bilingual pro
 
 **[Book Your Consultation](/contact)**
 
+---
 
 **Meta Description:** What a household management system is, the four pieces every one needs, and which to build first.
+
+---
+
+**NOTES — NOT FOR PUBLICATION, placed after Meta Description so the staging script cuts them.**
+
+**Detail — voice correction, not just a length cut.**
+
+**What was wrong with the original:** it cited Allison Daminger's cognitive-labour research in *American Sociological Review*, used the phrase "researchers who study unpaid domestic work," and read like a content marketer establishing credentials. That is not how Racquel talks. Her own site says "the problem was never the clutter — nobody built the backend" and "a house that works on Tuesday at 4pm when nobody's watching." Flat, concrete, slightly impatient.
+
+**What changed:**
+
+| | Before | After |
+|---|---|---|
+| Body words | ~2,750 | **~640** |
+| Academic citation | Daminger 2019, ASR | **removed entirely** |
+| FAQ | 7 | **4** |
+| CTA blocks | 3 | **1** |
+
+**The research is gone and should not come back.** It was never Racquel's claim, it isn't how she'd explain this to a client standing in her kitchen, and citing sociology at someone deciding whether to hire an organizer is the wrong register. Everything the research was doing — "this work is real, it's invisible, it lands on one person" — is now said plainly in the reader's own terms.
+
+**Applies to the whole set.** Every article should be checked for the same failure: borrowed authority standing in for the thing Racquel actually knows from doing this work in real houses.

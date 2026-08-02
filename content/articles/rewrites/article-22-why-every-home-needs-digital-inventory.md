@@ -131,5 +131,27 @@ We set the spaces up so an inventory is possible to keep, then build the system 
 
 **[Book Your Consultation](/contact)**
 
+---
 
 **Meta Description:** Why every home needs a digital inventory: duplicate buying, food you never see, and the questions that route through you.
+
+---
+
+**NOTES — NOT FOR PUBLICATION, placed after Meta Description so the staging script cuts them.**
+
+**Detail — voice and length correction, per SS-521 and SS-508.**
+
+| | Before | After |
+|---|---|---|
+| Body words | 1,736 | **~660** |
+| Borrowed authority | USDA/EPA food waste, "researchers of household labor", insurance-industry guidance | **all removed** |
+| FAQ | 7 | **4** |
+| CTA blocks | 3 | **1** |
+
+**Every statistic is gone and should stay gone.** The article previously leaned on USDA/EPA food-waste analysis and cognitive-labour research to make points that are more convincing when stated plainly: you throw food out because you can't see the back of the shelf. That is something Racquel knows from doing this in real houses, and it does not need a federal agency behind it.
+
+**The insurance section keeps the substance and drops the citation.** "Your insurer will ask you to list what you lost, try doing that from a hotel room three days after" says everything the III guidance said, in the register of someone who has watched it happen.
+
+**No inline images in this version.** The renderer does not support markdown image syntax — `![alt](file.jpg)` renders as literal body text — so inline images wait on renderer support. Header image only for now.
+
+**This article is LIVE.** It should replace the published version rather than wait for the batch.

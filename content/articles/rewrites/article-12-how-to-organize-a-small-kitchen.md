@@ -127,5 +127,20 @@ We build kitchens and pantries around how your household actually cooks — labe
 
 **[Book Your Consultation](/contact)**
 
+---
 
 **Meta Description:** Small kitchen organization starts with what leaves, not where things go — plus the vertical space most small kitchens waste.
+
+---
+
+**NOTES — NOT FOR PUBLICATION, placed after Meta Description so the staging script cuts them.**
+
+**Detail — voice and length correction, per SS-521 and SS-508.**
+
+| | Before | After |
+|---|---|---|
+| Body words | 1,662 | **~430** |
+
+Owns the **spatial constraint** slot in the kitchen cluster — distinct from kitchen-decluttering, which owns the emotional half of letting go. Kept: the constraint-changes-the-answer framing, storing outside the kitchen, and protecting the counter.
+
+No inline images — renderer has no image support.

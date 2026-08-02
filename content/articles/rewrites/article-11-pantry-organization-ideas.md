@@ -164,5 +164,26 @@ We build pantries around how your household actually cooks — labelled, sourced
 
 **[Book Your Consultation](/contact)**
 
+---
 
 **Meta Description:** Pantry organization that holds: what to take out, where things go, what to decant, and how to stop it filling up again.
+
+---
+
+**NOTES — NOT FOR PUBLICATION, placed after Meta Description so the staging script cuts them.**
+
+**Detail — voice and length correction, per SS-521 and SS-508.**
+
+| | Before | After |
+|---|---|---|
+| Body words | **3,267** — longest in the set | **~780** |
+| FAQ | 7 | **5** |
+| CTA blocks | 3 | **1** |
+
+**This was the longest article in the package and the furthest from Racquel's voice** — a five-step framework with numbered sub-sections reading like a course syllabus. The substance is unchanged: empty it, be honest about what goes back, reach hierarchy, decant selectively, label for other people, control what comes in. Every one of those survived. The scaffolding didn't.
+
+**Two things kept deliberately** because they are hers and no competitor article has them: the kosher pantry section with Pesach bins stored outside the pantry, and the Spanish-labels point — "a Spanish label isn't a nicety, it's the difference between things going back correctly and things going back somewhere."
+
+**No inline images.** Renderer does not support markdown image syntax; waiting on that.
+
+**This article is LIVE** — published 2 Aug 19:54. Replace the published version rather than waiting for the batch.

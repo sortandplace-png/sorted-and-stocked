@@ -137,5 +137,24 @@ We build the documentation layer — emergency records, appliance registers, and
 
 **[Book Your Consultation](/contact)**
 
+---
 
 **Meta Description:** What belongs in a household binder, what to leave out, and how to build a useful one in about an hour.
+
+---
+
+**NOTES — NOT FOR PUBLICATION, placed after Meta Description so the staging script cuts them.**
+
+**Detail — voice and length correction, per SS-521 and SS-508.**
+
+| | Before | After |
+|---|---|---|
+| Body words | 1,960 | **~700** |
+| FAQ | 7 | **4** |
+| CTA blocks | 3 | **1** |
+
+Owns the **archive** slot in the household-management cluster: 16 definitional, 17 the role, 19 the daily surface, 20 one routine, 30 the build sequence. No overlap added.
+
+Kept: photographing model plates and shut-off valves, the bilingual point, and "a binder full of things nobody consults is worse than no binder."
+
+No inline images — renderer doesn't support the syntax yet.

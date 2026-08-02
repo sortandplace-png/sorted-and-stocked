@@ -115,5 +115,20 @@ We build kitchens and pantries around how your household actually cooks — labe
 
 **[Book Your Consultation](/contact)**
 
+---
 
 **Meta Description:** Refrigerator organization that works with where the cold actually is — plus the one bin that cuts food waste most, and the temperatures that matter.
+
+---
+
+**NOTES — NOT FOR PUBLICATION, placed after Meta Description so the staging script cuts them.**
+
+**Detail — voice and length correction, per SS-521 and SS-508.**
+
+| | Before | After |
+|---|---|---|
+| Body words | 1,541 | **~420** |
+
+Owns the **refrigerator** slot in the kitchen cluster. USDA/FDA temperature guidance retained as plain fact without citation or link — 40°F and 0°F are standard food-safety figures, not a claim needing sourcing. Kept: door-is-warmest, the eat-me-first bin, and the thermometer point.
+
+No inline images — renderer has no image support.

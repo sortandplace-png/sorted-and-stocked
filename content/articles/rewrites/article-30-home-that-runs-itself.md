@@ -163,5 +163,24 @@ We build the layer underneath — organized spaces, written routines, and biling
 
 **[Book Your Consultation](/contact)**
 
+---
 
 **Meta Description:** How to create a home that runs itself: the seven-step build order, what breaks it, and what it looks like working.
+
+---
+
+**NOTES — NOT FOR PUBLICATION, placed after Meta Description so the staging script cuts them.**
+
+**Detail — voice and length correction, per SS-521 and SS-508.**
+
+| | Before | After |
+|---|---|---|
+| Body words | 2,937 | **~800** |
+| FAQ | 7 | **4** |
+| CTA blocks | 3 | **1** |
+
+This is the flagship for "home that runs itself" and keeps that keyword. The seven-step build sequence is intact — that's what separates it from 16 (definitional) and 17 (the role). What went was the framing paragraphs around each step.
+
+**"You're allowed to lower a standard on purpose" is kept deliberately.** It's the most useful line in the piece and no competitor article says it.
+
+No inline images — renderer doesn't support the syntax yet.

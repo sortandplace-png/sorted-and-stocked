@@ -51,7 +51,19 @@ exited; and its slug rule is `'blog-' + strip_leading('article-')`, so a
 `blog-` prefixed file yields `blog-blog-NN-...`. Files here are all
 `article-NN-slug.md`, which is the only name that produces a correct slug.
 
-## Precedence against the full 31-article package
+## STANDING RULE — precedence (do not treat as a note)
+
+This is the highest-damage failure currently available: a session loads the
+"complete" 31-article package and silently reverts every rewrite, including
+on four LIVE posts, with no build error and no visible symptom.
+
+  rewrites/ WINS for every slug it contains. Always.
+  The full package supplies only the slugs NOT present here, plus its
+  header images and Pinterest pins, which are uncontested.
+
+Check this folder's filenames before loading anything from any package.
+
+## Precedence detail
 
 A complete 31-article package (files_40) also exists, with header images and
 Pinterest pins. It is the ORIGINAL long copy for the slugs listed here --

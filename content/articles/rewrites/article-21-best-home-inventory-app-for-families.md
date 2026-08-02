@@ -141,5 +141,25 @@ We set up the spaces so an inventory is maintainable, then build the system your
 
 **[Book Your Consultation](/contact)**
 
+---
 
 **Meta Description:** Choosing a home inventory app for families: what actually matters, where they fail, and how to start small.
+
+---
+
+**NOTES — NOT FOR PUBLICATION, placed after Meta Description so the staging script cuts them.**
+
+**Detail — this is the proposed new template. Changes from the original:**
+
+| | Before | After |
+|---|---|---|
+| Body words | ~1,830 | **~740** |
+| FAQ questions | 7 | **4** |
+| CTA blocks | 3 | **1** |
+| Images | 1 header | **1 header only** — inline images removed, renderer has no image support |
+| Author bio | Racquel named | **removed** |
+| Outbound links | 2 | **0** — III named in prose, not linked |
+
+Everything cut was elaboration, not substance. Every claim in the original survives; the sentences around them don't. The two inline images break the page into three readable blocks instead of one column of text.
+
+If this is right, I'll rebuild the other 30 to match — roughly 740–900 words, 4 FAQs, one CTA, two inline images each.
