@@ -23,8 +23,9 @@ export default function ContactPage() {
     // short page a viewport-height floor plus this page's own bottom
     // padding plus the footer's default top margin stacked into ~180px of
     // dead linen between the submit button and the footer hairline. The
-    // content column keeps its top padding but ends tight (pb-8), and the
-    // footer mounts flush.
+    // content column keeps its top padding but ends tight (pb-8).
+    // The footer's own mt-16 was removed globally on the fourth report --
+    // this page no longer needs a special prop, because no page does.
     <div className="bg-linen font-interDisplay">
       <LocalBusinessJsonLd />
       <MarketingHeader />
@@ -49,7 +50,7 @@ export default function ContactPage() {
         </p>
       </div>
 
-      <MarketingFooter flush />
+      <MarketingFooter />
     </div>
   );
 }
