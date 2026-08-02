@@ -20,7 +20,7 @@ async function fetchPost(slug: string) {
   const supabase = await createClient();
   const { data } = await supabase
     .from('blog_posts')
-    .select('slug, title, excerpt, body_markdown, header_image_url, cta_label, cta_url, published_at')
+    .select('slug, title, excerpt, body_markdown, header_image_url, cta_label, cta_url, published_at, faq_jsonld')
     .eq('slug', slug)
     .not('published_at', 'is', null)
     .maybeSingle();
@@ -80,6 +80,11 @@ export default async function BlogPostPage({
   return (
     <div className="min-h-screen bg-linen flex flex-col">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {/* Migration 176: SEO-package articles ship a Schema.org FAQPage
+          block; stored as jsonb per post, rendered only when present. */}
+      {post.faq_jsonld && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(post.faq_jsonld) }} />
+      )}
       <MarketingHeader />
       <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-10">
         <Link href="/blog" className="text-sm text-dusk hover:text-denim underline underline-offset-2 mb-6 inline-block">
