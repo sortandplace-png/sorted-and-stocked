@@ -1,10 +1,12 @@
 # Sort + Place — SEO Article Package
 
-Written 2 Aug 2026. 26 articles, each with a matched 1376x768 featured image.
+Written 2 Aug 2026. 28 articles, each with a matched 1376x768 featured image.
+(Final drop, 2 Aug late: articles 3 and 17 arrived written, contrary to the earlier "not written" list; article 26 arrived revised.)
 
 | Article file | Featured image | Status |
 |---|---|---|
 | article-02-declutter-without-overwhelm.md | blog-02-declutter-without-overwhelm.jpg | ready to stage |
+| article-03-why-organized-homes-reduce-stress.md | blog-03-why-organized-homes-reduce-stress.jpg | ready to stage |
 | article-06-moving-organization-checklist.md | blog-06-moving-organization-checklist.jpg | ready to stage |
 | article-07-decluttering-before-moving.md | blog-07-decluttering-before-moving.jpg | ready to stage |
 | article-08-packing-tips-for-moving.md | blog-08-packing-tips-for-moving.jpg | ready to stage |
@@ -15,6 +17,7 @@ Written 2 Aug 2026. 26 articles, each with a matched 1376x768 featured image.
 | article-14-pantry-inventory-system.md | blog-14-pantry-inventory-system.jpg | ready to stage |
 | article-15-refrigerator-organization.md | blog-15-refrigerator-organization.jpg | ready to stage |
 | article-16-what-is-a-household-management-system.md | blog-16-what-is-a-household-management-system.jpg | ready to stage |
+| article-17-run-your-home-like-a-ceo.md | blog-17-run-your-home-like-a-ceo.jpg | ready to stage |
 | article-18-household-binder-guide.md | blog-18-household-binder-guide.jpg | ready to stage |
 | article-19-family-command-center-ideas.md | blog-19-family-command-center-ideas.jpg | ready to stage |
 | article-20-weekly-cleaning-schedule.md | blog-20-weekly-cleaning-schedule.jpg | ready to stage |
@@ -39,9 +42,9 @@ Written 2 Aug 2026. 26 articles, each with a matched 1376x768 featured image.
 
 ## Not written
 
-Article 3, Article 5 (dropped — pricing), Article 10, Article 17, Kitchen Decluttering, Professional Organizer vs DIY.
+Article 5 (dropped — pricing), Article 10, Kitchen Decluttering, Professional Organizer vs DIY. (Articles 3 and 17 arrived written in the 2 Aug final package.)
 
 
 ## Publishing cadence
 
-Three posts per drop, every other week. 26 articles clears in roughly 17 weeks.
+Three posts per drop, every other week. 28 articles clears in roughly 19 weeks.

@@ -1,6 +1,6 @@
 # Organizing A Home Before Pesach
 
-There's a particular kind of dread that arrives around Purim. Not about Pesach itself — about the six weeks before it. The closets. The playroom. The car. The kitchen, which somehow has to become a different kitchen. The feeling that you're already behind on something enormous and you haven't started.
+There's a particular feeling that arrives around Purim — not about Pesach itself, but about the six weeks before it. The closets. The playroom. The car. The kitchen, which somehow has to become a different kitchen. The feeling that you're already behind on something enormous and you haven't started.
 
 And then, running underneath it, a quieter worry: that you're doing too much of the wrong thing and not enough of the right thing.
 
@@ -18,13 +18,13 @@ And then, running underneath it, a quieter worry: that you're doing too much of 
 
 Ask almost any Rav about pre-Pesach overwhelm and you'll hear a version of the same thing: **many people are doing far more than what is required, and exhausting themselves on work that isn't the mitzvah.**
 
-The widely taught principle is that Pesach cleaning concerns chametz — not dust, not general grime, not the annual deep clean. A spotless windowsill is a lovely thing and it is a different project. Rabbanim have been saying this publicly for decades precisely because the conflation causes real suffering in households every single year.
+Pesach cleaning concerns chametz — not dust, not general grime, not the annual deep clean. A spotless windowsill is a different project. Rabbanim raise this publicly every year, precisely because the conflation causes real strain in households.
 
 **Ask your Rav where the line is for your home.** Then organize around the answer rather than around the anxiety.
 
 Here's why this matters for organizing specifically: once you know what's actually required, you can separate your pre-Pesach work into two streams that run on different tracks.
 
-- **Stream 1 — what Pesach requires.** Defined by your Rav. Non-negotiable, and usually far smaller than the dread suggests.
+- **Stream 1 — what Pesach requires.** Defined by your Rav. Non-negotiable, and usually far smaller than it feels in advance.
 - **Stream 2 — organizing you want to do.** Decluttering, systems, storage. Genuinely valuable, entirely optional, and schedulable.
 
 **Confusing the two is what turns six weeks into a marathon.** Keeping them separate is what makes the season survivable — and it also means that if a hard week happens, you know exactly which stream gets dropped.
@@ -359,7 +359,7 @@ We work with families through exactly this season: the decluttering, the timelin
 
 1. **This article deliberately paskens nothing.** Every halachic question — what constitutes chametz, what requires cleaning versus checking, kashering, bedikah, mechirah, toys and car seats, the status of anything — is routed to the reader's Rav, in the introduction, in the kitchen section, above the FAQ block, and in the author bio. **Do not let an editor soften or remove any of those routing statements**, and do not let anyone add a specific halachic ruling to make the article more "complete." The value here is that it's honest about its own scope.
 
-2. **The cleaning-versus-chametz point is attributed as widely taught, not as a ruling.** I've phrased it as what Rabbanim commonly say and paired it with "ask your Rav where the line is for your home." That framing is doing real work — keep it.
+2. **The cleaning-versus-chametz point is attributed to what Rabbanim say publicly, not stated as a principle or a ruling.** It is paired with "ask your Rav where the line is for your home." That framing is doing real work — keep it.
 
 3. **You are far better placed than I am to check this one.** Read it specifically for anything that reads as a psak, anything that overstates what's required, or anything that would make a reader feel judged about how much they do. If a line doesn't sit right, cut it — I'd rather this article be shorter than wrong.
 
