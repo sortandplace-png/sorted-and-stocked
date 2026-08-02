@@ -61,6 +61,18 @@ const withPWA = require('next-pwa')({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // /privacy and /terms as clean live URLs -- Google's OAuth consent-screen
+  // verification needs both reachable at stable paths, and the only real
+  // pages are the static public/*.html files. Rewrites (not redirects) so
+  // the clean URL IS the page, no visible .html hop; the .html paths keep
+  // working unchanged. Both clean paths are also in the auth middleware's
+  // PUBLIC_PATHS so an anonymous crawler is never bounced to /login.
+  async rewrites() {
+    return [
+      { source: '/privacy', destination: '/privacy.html' },
+      { source: '/terms', destination: '/terms.html' },
+    ];
+  },
   // Two dev servers on this repo (a human on :3000, an agent on :3100) were
   // both writing to the same .next directory, which on Windows produces
   // EBUSY "resource busy or locked" errors on

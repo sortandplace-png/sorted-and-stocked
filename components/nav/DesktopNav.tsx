@@ -29,6 +29,9 @@ type NavItem = {
   // Operator-console surfaces only. Opt-IN via feature_flags.operator_console,
   // so a cross-house view never appears inside an ordinary house.
   operatorOnly?: boolean;
+  // The inverse: hidden on the operator-console property specifically,
+  // because the console absorbed the destination there (SS-436).
+  hideOnOperator?: boolean;
   // A segment that's a sub-path of another group's own segment (here,
   // 'tools/tasks' is a sub-path of the More group's 'tools') would
   // otherwise highlight both groups active at once on that page — this
@@ -88,11 +91,11 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // bookmark keeps working -- it just isn't offered as a second door to
       // the same place. Kept in excludeFromActive below so a direct visit to
       // that URL doesn't light up Team.
-      // SS-410 (Racquel's 31 Jul ruling): the Task Center exists only on
-      // the operator console and is cross-house there. The link disappears
-      // from every other property's nav, matching the server-side gate the
-      // route itself now enforces.
-      { segment: 'tools/tasks', labelKey: 'staffTasks', managerOnly: true, operatorOnly: true, module: 'module_staff' },
+      // SS-410 ruled the Task Center operator-only; SS-436's PM ruling
+      // ("this is a better place") then retired even that last nav door --
+      // the console's WORK section IS the Task Center now. The /tools/tasks
+      // ROUTE is untouched (R21), it just is not offered anywhere.
+      //
       // SS-436: the one-page operator console (People / Configuration /
       // Work). Same gate.
       { segment: 'console', labelKey: 'console', managerOnly: true, operatorOnly: true },
@@ -115,9 +118,15 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // 'staff' is a prefix of 'staff/duty-roster' and the three below, so
       // without this Team would light up active on every one of them.
       {
+        // SS-436 PM ruling 3: "Team page NOT needed" on the operator
+        // property -- members-per-residence lives in the console's PEOPLE
+        // section there. hideOnOperator keeps Team for client houses,
+        // whose managers still need it; the /staff route stays (R21) and
+        // the console links to it for role changes/offboarding.
         segment: 'staff',
         labelKey: 'team',
         managerOnly: true,
+        hideOnOperator: true,
         module: 'module_staff',
         excludeFromActive: ['staff/duty-roster', 'staff/hours', 'staff/sops', 'staff/training', 'staff/handbook'],
       },
@@ -222,7 +231,8 @@ export default function DesktopNav({
           (i) =>
             (!i.managerOnly || role === 'owner' || role === 'manager') &&
             (!i.module || isModuleEnabled(flags, i.module)) &&
-            (!i.operatorOnly || isOperatorConsole(flags))
+            (!i.operatorOnly || isOperatorConsole(flags)) &&
+            (!i.hideOnOperator || !isOperatorConsole(flags))
         );
         if (visibleItems.length === 0) return null;
         const groupActive = visibleItems.some((i) => segmentIsActive(pathname, i));

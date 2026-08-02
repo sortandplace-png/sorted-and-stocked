@@ -13,7 +13,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 // Without this, Googlebot (and every other signed-out visitor) would be
 // redirected to /login on all four, which is exactly the failure mode this
 // batch of pages exists to avoid.
-const PUBLIC_PATHS = ['/login', '/auth/callback', '/auth/confirm', '/forgot-password', '/reset-password', '/signup', '/welcome', '/entry', '/privacy.html', '/terms.html', '/cookie-policy.html', '/blog', '/services', '/about', '/faq', '/contact'];
+// /privacy and /terms (clean, extension-less) rewrite to the .html files in
+// next.config.js -- Google consent-screen verification hits the clean URLs,
+// so they must be public here too, not just the .html variants.
+const PUBLIC_PATHS = ['/login', '/auth/callback', '/auth/confirm', '/forgot-password', '/reset-password', '/signup', '/welcome', '/entry', '/privacy.html', '/terms.html', '/privacy', '/terms', '/cookie-policy.html', '/blog', '/services', '/about', '/faq', '/contact'];
 
 export async function updateSession(request: NextRequest) {
   // request.headers (the incoming request's own Headers object) is

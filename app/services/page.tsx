@@ -10,14 +10,27 @@ import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
 import LocalBusinessJsonLd from '@/components/marketing/LocalBusinessJsonLd';
 
+// SEO extended for the Moving service (SS-488 amendment): packing,
+// unpacking, and move-in setup terms live in the metadata and the
+// OfferCatalog JSON-LD below, phrased naturally. Nothing keyword-stuffed
+// appears in the visible page copy.
 export const metadata: Metadata = {
-  title: 'Our Services | Sort + Place — Home Organization & Household Management',
+  title: 'Our Services | Sort + Place. Home Organization, Household Management, Moving & Packing',
   description:
-    'Full-home organization, kitchen and pantry setup, staff management, and newlywed packages. Systems that work for real families. Serving Lakewood NJ.',
+    'Full-home organization, kitchen and pantry setup, staff management, newlywed packages, and packing and unpacking services with complete move-in setup. Systems that work for real families. Serving Lakewood NJ.',
+  keywords: [
+    'home organization Lakewood NJ',
+    'household management',
+    'packing services',
+    'unpacking services',
+    'move-in setup',
+    'home organization after moving',
+    'kosher kitchen organization',
+  ],
   openGraph: {
-    title: 'Our Services | Sort + Place — Home Organization & Household Management',
+    title: 'Our Services | Sort + Place. Home Organization, Household Management, Moving & Packing',
     description:
-      'Full-home organization, kitchen and pantry setup, staff management, and newlywed packages. Systems that work for real families. Serving Lakewood NJ.',
+      'Full-home organization, kitchen and pantry setup, staff management, newlywed packages, and packing and unpacking services with complete move-in setup. Systems that work for real families. Serving Lakewood NJ.',
     url: 'https://sortandplace.com/services',
     type: 'website',
   },
@@ -37,13 +50,13 @@ const SERVICES: {
   {
     icon: Home,
     title: 'Full Home Organization',
-    body: 'Every room, every closet, every drawer. We build systems that match how your family actually lives — labeled, sourced, and maintainable without us.',
+    body: 'Every room, every closet, every drawer. We build systems that match how your family actually lives. Labeled, sourced, and maintainable without us.',
     bannerSrc: null, // Racquel: flat-lay photo
   },
   {
     icon: ChefHat,
     title: 'Kitchen & Pantry Setup',
-    body: 'Kosher kitchen flow, labeled storage, expiration tracking, and a stocked pantry that staff can maintain on their own. Fleishig, milchig, pareve — everything in its place.',
+    body: 'Kosher kitchen flow, labeled storage, expiration tracking, and a stocked pantry that staff can maintain on their own. Fleishig, milchig, pareve, everything in its place.',
     bannerSrc: null, // Racquel: fridge photo
   },
   {
@@ -71,18 +84,62 @@ const SERVICES: {
     bannerSrc: null, // Racquel: TBD
   },
   {
-    // SS-488: new service, same card system as the six above.
+    // SS-488 amendment: ADDED as a new service, nothing replaced. Copy is
+    // Racquel-approved verbatim, dash-free per the copy ruling. ES
+    // translation (usted register) is staged below for the day the
+    // marketing site gains a locale path -- these public pages render
+    // EN-only today, so there is nowhere to mount it yet:
+    //   "Mudanza, Empaque y Desempaque" / "Empaque profesional antes de
+    //   la mudanza, desempaque completo despues, y cada cocina, armario y
+    //   cuarto de juegos listo para funcionar desde el primer dia. Sin un
+    //   garaje de cajas del que usted sigue viviendo seis meses despues."
     icon: Boxes,
-    title: 'Moving & Packing',
-    body: 'Pack-up, move coordination, and unpacking into systems from day one — every box labeled by room, and the new home organized before the first night, not months after.',
+    title: 'Moving, Packing & Unpacking',
+    body: 'Professional packing before the move, full unpacking after, and every kitchen, closet, and playroom set up to function from day one. No garage of boxes you are still living out of in six months.',
     bannerSrc: null, // Racquel: TBD
   },
 ];
+
+// OfferCatalog JSON-LD: one Service entry per card, driven off the same
+// SERVICES array so schema and page can't drift. The Moving entry carries
+// the move-related serviceType terms (packing services, unpacking
+// services, move-in setup, home organization after moving) -- crawler
+// vocabulary only, never visible copy.
+const SERVICES_JSONLD = {
+  '@context': 'https://schema.org',
+  '@type': 'OfferCatalog',
+  name: 'Sort + Place Services',
+  itemListElement: SERVICES.map((s) => ({
+    '@type': 'Offer',
+    itemOffered: {
+      '@type': 'Service',
+      name: s.title,
+      description: s.body,
+      provider: { '@type': 'LocalBusiness', name: 'Sort + Place' },
+      areaServed: 'Lakewood NJ',
+      ...(s.title === 'Moving, Packing & Unpacking'
+        ? {
+            serviceType: [
+              'Packing services',
+              'Unpacking services',
+              'Move-in setup',
+              'Home organization after moving',
+            ],
+          }
+        : {}),
+    },
+  })),
+};
 
 export default function ServicesPage() {
   return (
     <div className="bg-linen min-h-screen font-interDisplay">
       <LocalBusinessJsonLd />
+      <script
+        type="application/ld+json"
+        // JSON.stringify of literals we control -- no user input reaches this.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(SERVICES_JSONLD) }}
+      />
       <MarketingHeader />
 
       <div className="max-w-[1100px] mx-auto px-4">
@@ -91,7 +148,7 @@ export default function ServicesPage() {
             Our Services
           </h1>
           <p className="text-lg text-dusk">
-            Systems that work for real families — not a one-time reset, a way of running the house.
+            Systems that work for real families. Not a one-time reset, a way of running the house.
           </p>
         </section>
 

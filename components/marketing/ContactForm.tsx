@@ -58,7 +58,7 @@ export default function ContactForm() {
     return (
       <div className="bg-card border border-cardBorder rounded-xl3 shadow-card p-6 text-center">
         <p className="font-display text-[20px] text-denim">
-          Thank you — we&apos;ll be in touch within 1 business day.
+          Thank you. We&apos;ll be in touch within 1 business day.
         </p>
         <p className="text-[13px] text-dusk mt-3">
           If your mail app didn&apos;t open, email us directly at{' '}

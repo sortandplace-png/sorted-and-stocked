@@ -13,6 +13,12 @@
 // for why the root path specifically needs an exact-match, not startsWith,
 // check).
 //
+// COPY RULE (Racquel, 2 Aug, applies to every user-facing marketing/site
+// string, EN and ES): NO dashes as punctuation -- no "--", no em dash, no
+// en dash in visible copy. Rewrite with periods or commas. Hyphenated
+// compound words (move-in, before-and-after) stay. Code comments are
+// exempt (they are not user-facing).
+//
 // Host-based branching (added same day, before this ever shipped): this
 // page must NOT render on app.sortandplace.com -- that hostname is the real
 // app, once the subdomain split is live, and needs the old redirect-to-
@@ -29,7 +35,7 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import Pin from '@/components/PinAccent';
 import ConsultationForm from '@/components/ConsultationForm';
-import { ClipboardList, Users, Package } from 'lucide-react';
+import { ClipboardList, Users, Package, Boxes } from 'lucide-react';
 import { TESTFLIGHT_URL } from '@/lib/testflight';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
@@ -41,13 +47,13 @@ const APP_HOSTNAME = 'app.sortandplace.com';
 // title/description differ from what shipped earlier tonight (that version
 // predates having the actual content package; this is the real, final copy).
 export const metadata: Metadata = {
-  title: 'Sort + Place | Professional Home Organization & Household Management — Lakewood NJ',
+  title: 'Sort + Place | Professional Home Organization & Household Management, Lakewood NJ',
   description:
-    'Sort + Place brings order to busy homes. Professional organization, household staff management, and meal planning systems — built to last, not just for the after photo. Serving Lakewood NJ and Ocean County.',
+    'Sort + Place brings order to busy homes. Professional organization, household staff management, and meal planning systems built to last, not just for the after photo. Serving Lakewood NJ and Ocean County.',
   openGraph: {
-    title: 'Sort + Place | Professional Home Organization & Household Management — Lakewood NJ',
+    title: 'Sort + Place | Professional Home Organization & Household Management, Lakewood NJ',
     description:
-      'Sort + Place brings order to busy homes. Professional organization, household staff management, and meal planning systems — built to last, not just for the after photo. Serving Lakewood NJ and Ocean County.',
+      'Sort + Place brings order to busy homes. Professional organization, household staff management, and meal planning systems built to last, not just for the after photo. Serving Lakewood NJ and Ocean County.',
     url: 'https://sortandplace.com',
     type: 'website',
   },
@@ -57,17 +63,25 @@ const SERVICES = [
   {
     icon: ClipboardList,
     title: 'Weekly Meal Planning + Grocery Orders Placed',
-    body: 'A real plan for the week, and the order actually placed -- not just a list you still have to shop yourself.',
+    body: 'A real plan for the week, and the order actually placed. Not just a list you still have to shop yourself.',
   },
   {
     icon: Users,
     title: 'Vendor Scheduling',
-    body: 'Cleaners, handyman, simcha help -- coordinated and confirmed, so it is off your plate and actually on the calendar.',
+    body: 'Cleaners, handyman, simcha help. Coordinated and confirmed, so it is off your plate and actually on the calendar.',
   },
   {
     icon: Package,
     title: 'Systems That Stick',
-    body: 'Closets, playrooms, papers, pantries -- built to hold up under a real, busy household, not just for the after photo.',
+    body: 'Closets, playrooms, papers, pantries. Built to hold up under a real, busy household, not just for the after photo.',
+  },
+  {
+    // SS-488 amendment: inline in this grid after Systems That Stick,
+    // identical card system, ADDED as a new service (nothing replaced).
+    // Copy is Racquel-approved verbatim, dash-free per the copy ruling.
+    icon: Boxes,
+    title: 'Moving, Packing & Unpacking',
+    body: 'Professional packing before the move, full unpacking after, and every kitchen, closet, and playroom set up to function from day one. No garage of boxes you are still living out of in six months.',
   },
 ];
 
@@ -152,7 +166,10 @@ export default async function RootMarketingPage() {
 
         {/* Service bento cards */}
         <section className="py-10 md:py-14">
-          <div className="grid md:grid-cols-3 gap-5">
+          {/* Four cards since the Moving addition -- 2x2 on tablets, one
+              row of four on desktop, so the new card sits inline rather
+              than wrapping alone under a 3-column row. */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
             {SERVICES.map(({ icon: Icon, title, body }) => (
               <div
                 key={title}
