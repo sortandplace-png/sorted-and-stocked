@@ -454,7 +454,7 @@ That's what we build. Not a beautiful weekend, but the layers underneath it: def
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She works primarily with households running multiple properties and employing household staff, where the difference between documented and undocumented systems determines whether hired help reduces the owner's workload or adds to it. She is also the creator of Sorted & Stocked, a household inventory and management platform.*
+*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She works primarily with households running multiple properties and employing household staff, where the difference between documented and undocumented systems determines whether hired help reduces the owner's workload or adds to it. She is also the creator of Sorted & Stocked, a household inventory and management platform.*
 
 ---
 

@@ -369,7 +369,7 @@ It's also the first real step out of being the only person who knows how your ho
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She builds household documentation for families running multiple properties and employing staff, where the binder is frequently the difference between help that works and help that needs constant direction.*
+*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She builds household documentation for families running multiple properties and employing staff, where the binder is frequently the difference between help that works and help that needs constant direction.*
 
 ---
 

@@ -348,7 +348,7 @@ Getting it out of your head and onto a schedule is the same move that makes ever
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She builds maintenance systems for households running multiple properties, and holds that the single most valuable thing in any home's records is a photograph of the appliance model plate.*
+*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She builds maintenance systems for households running multiple properties, and holds that the single most valuable thing in any home's records is a photograph of the appliance model plate.*
 
 ---
 

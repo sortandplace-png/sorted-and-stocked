@@ -283,7 +283,7 @@ We build the whole picture: organized spaces where an inventory is possible to m
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She built Sorted & Stocked after repeatedly watching households where one person held every piece of information about what was in the house — and watching what happened the weeks that person wasn't available.*
+*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She built Sorted & Stocked after repeatedly watching households where one person held every piece of information about what was in the house — and watching what happened the weeks that person wasn't available.*
 
 ---
 

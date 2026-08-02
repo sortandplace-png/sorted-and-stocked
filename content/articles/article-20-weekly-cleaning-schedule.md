@@ -300,7 +300,7 @@ That's one piece of a larger structure. We build the rest of it too: the routine
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She builds cleaning systems for large households and household staff, and maintains that the four daily tasks matter more than every weekly one combined.*
+*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She builds cleaning systems for large households and household staff, and maintains that the four daily tasks matter more than every weekly one combined.*
 
 ---
 
