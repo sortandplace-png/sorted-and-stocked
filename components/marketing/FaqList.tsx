@@ -33,7 +33,15 @@ export type FaqItem = { q: string; a: string; icon: LucideIcon };
 
 export default function FaqList({ items }: { items: FaqItem[] }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+    // SS-529: NO items-start here. It explicitly opts the row out of the
+    // grid's default `stretch`, so each tile sized to its own content --
+    // and because three left-column questions wrap to two lines while only
+    // one on the right does, the two columns stopped lining up. Default
+    // stretch plus h-full on the tile gives every tile its row's height.
+    // Content stays top-aligned by normal block flow, which is the point:
+    // vertically centring it would leave short questions floating in the
+    // middle of tall cards.
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {items.map(({ q, a, icon: Icon }) => (
         // The tile is a DIV wrapping the disclosure, not the <details>
         // itself: a closed <details> hides every child except its
@@ -42,7 +50,7 @@ export default function FaqList({ items }: { items: FaqItem[] }) {
         // the picture slot gone -- the pin must stay outside the details.
         <div
           key={q}
-          className="relative bg-card border border-cardBorder rounded-xl2 shadow-card"
+          className="relative h-full bg-card border border-cardBorder rounded-xl2 shadow-card"
         >
           <Pin size="sm" />
           <details className="group">
