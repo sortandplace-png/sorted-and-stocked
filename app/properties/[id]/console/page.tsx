@@ -108,9 +108,22 @@ export default async function OperatorConsolePage({
         {/* SS-436 PM ruling 1: the operator console carries NO Spanish --
             an explicit carve-out from R19 for this owner-only surface. The
             bilingual labels V1 shipped with are gone on that ruling. */}
-        <div>
-          <h1 className="font-display text-[34px] font-normal text-denim">Operator Console</h1>
-          <p className="text-[13px] text-dusk">People, configuration and work. One page.</p>
+        <div className="flex items-end justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="font-display text-[34px] font-normal text-denim">Operator Console</h1>
+            <p className="text-[13px] text-dusk">People, configuration and work. One page.</p>
+          </div>
+          {/* Prominent register link (2 Aug spec) -- owner-only, matching
+              the route's own gate; the Staff-sheet entry is the primary
+              door, this is the console-side one. */}
+          {membership.role === 'owner' && (
+            <Link
+              href={`/properties/${id}/register`}
+              className="text-sm font-medium text-white bg-denim px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity"
+            >
+              Register →
+            </Link>
+          )}
         </div>
 
         {/* PEOPLE -- slots, who is in each, the whole team per residence

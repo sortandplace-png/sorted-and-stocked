@@ -22,6 +22,9 @@ type NavItem = {
   segment: string;
   labelKey: string;
   managerOnly?: boolean;
+  // Stricter than managerOnly -- the register route redirects managers
+  // (owner-only per the 2 Aug directive), so its entry must too.
+  ownerOnly?: boolean;
   // Hides the item entirely when this property has turned the module off
   // (properties.feature_flags, see lib/module-flags.ts) -- independent of
   // managerOnly, which governs role, not the property's own on/off switch.
@@ -99,9 +102,10 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // SS-436: the one-page operator console (People / Configuration /
       // Work). Same gate.
       { segment: 'console', labelKey: 'console', managerOnly: true, operatorOnly: true },
-      // SS-457: the live register viewer. Same operator gate the route
-      // enforces server-side.
-      { segment: 'register', labelKey: 'register', managerOnly: true, operatorOnly: true },
+      // SS-457: the live register viewer. Owner-only since the route's
+      // 2 Aug gate tightening -- a managerOnly entry here would be a
+      // dead click into a redirect.
+      { segment: 'register', labelKey: 'register', ownerOnly: true, operatorOnly: true },
       // Hours removed from the dropdown: it belongs inside My Day, not as
       // its own destination. The /staff/hours ROUTE is untouched and still
       // enforces its own owner/manager gate (R21) -- it is simply no longer
@@ -229,6 +233,7 @@ export default function DesktopNav({
       {GROUPS.map((group) => {
         const visibleItems = group.items.filter(
           (i) =>
+            (!i.ownerOnly || role === 'owner') &&
             (!i.managerOnly || role === 'owner' || role === 'manager') &&
             (!i.module || isModuleEnabled(flags, i.module)) &&
             (!i.operatorOnly || isOperatorConsole(flags)) &&
