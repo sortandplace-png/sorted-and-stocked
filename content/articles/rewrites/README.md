@@ -1,6 +1,6 @@
 # Voice rewrites — prepared, NOT yet loaded
 
-13 articles rewritten for voice and length (SS-521 / SS-508), received 2 Aug
+14 articles rewritten for voice and length (SS-521 / SS-508), received 2 Aug
 across four drops. These files are the STAGING-READY versions: renamed to
 their true slugs and with the internal NOTES blocks removed. The originals
 as delivered are not kept here, because the two differences below are the
@@ -36,6 +36,9 @@ visible FAQ count == faq_jsonld count · meta description present · zero
 outbound links · zero inline images (the renderer does not support
 `![alt](file.jpg)` and emits it as literal body text) · no byline or name.
 
-## Not yet received
+## Still to come
 
-Article 17 (Drop 3). Drop 3 is otherwise complete (20 + maintenance tracker).
+None. All 14 received: Drops 2, 3, 4 complete, plus 11/16/21/22 (live) and
+12 (Drop 5). Article 17 arrived with its NOTES placed AFTER the Meta
+Description line and a comment saying why, so trap 2 is fixed at source
+from that file onward.
