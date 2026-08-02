@@ -8,10 +8,36 @@
 // dangerouslySetInnerHTML/XSS surface even though this content is
 // manager-authored and trusted.
 //
-// Links render as anchors ONLY for site-internal paths (leading "/"): the
-// blog must never grow off-site links by accident through a pasted draft --
-// anything else renders as its plain text.
+// Links render as anchors ONLY for site-internal paths (leading "/") or
+// for the citation-host allowlist below: the blog must never grow off-site
+// links by accident through a pasted draft -- anything else renders as its
+// plain text.
 import type { ReactNode } from 'react';
+
+// Verified-citation hosts (Racquel, 2 Aug: primary-source links checked by
+// her for articles 15/16/21/22 + maintenance tracker). Off-site anchors
+// render ONLY for these hosts -- a deliberate, reviewed list, so a pasted
+// draft still can't mint an arbitrary external link. Subdomains of a listed
+// host count (www.usda.gov, fsis.usda.gov).
+const CITATION_HOSTS = [
+  'foodsafety.gov',
+  'usda.gov',
+  'journals.sagepub.com',
+  'iii.org',
+  'nfpa.org',
+  'cpsc.gov',
+  'csia.org',
+];
+
+function isAllowedCitation(href: string): boolean {
+  if (!href.startsWith('https://')) return false;
+  try {
+    const host = new URL(href).hostname.toLowerCase();
+    return CITATION_HOSTS.some((h) => host === h || host.endsWith(`.${h}`));
+  } catch {
+    return false;
+  }
+}
 
 function renderInline(text: string): ReactNode[] {
   const parts = text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\)|\*[^*\n]+\*)/g);
@@ -29,6 +55,21 @@ function renderInline(text: string): ReactNode[] {
       if (href.startsWith('/')) {
         return (
           <a key={i} href={href} className="text-denim underline underline-offset-2 hover:text-brass">
+            {label}
+          </a>
+        );
+      }
+      if (isAllowedCitation(href)) {
+        // External citation: new tab + noopener so the opened site gets no
+        // window.opener handle back to this page.
+        return (
+          <a
+            key={i}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-denim underline underline-offset-2 hover:text-brass"
+          >
             {label}
           </a>
         );

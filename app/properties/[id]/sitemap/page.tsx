@@ -127,7 +127,7 @@ function buildSections(propertyId: string): Section[] {
     {
       label: 'Tools — Household',
       // Home Memory Timeline (memory-timeline) hidden pending a
-      // build-or-kill decision (SS-318/SS-096) -- no backing table. Don't
+      // build-or-kill decision (SS-037/SS-096) -- no backing table. Don't
       // "restore" this entry without resolving that decision first.
       entries: [
         // SS-143: the slug is still knowledge-base, but every surface that

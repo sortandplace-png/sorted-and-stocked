@@ -1,5 +1,5 @@
 // app/api/billing/send-payment-link/route.ts
-// Owner/manager-triggered "prompt the owner to pay" step for Sort & Place's
+// Owner/manager-triggered "prompt the owner to pay" step for Sort + Place's
 // own subscription billing. Never generates or guesses a Square link -- it
 // only ever sends whatever link an owner/manager already pasted into
 // Settings (properties.square_payment_link). Fans out to every owner-role
@@ -18,10 +18,10 @@ async function sendPaymentEmail(opts: { toEmail: string; propertyName: string; p
   if (!apiKey) return { sent: false, reason: 'RESEND_API_KEY not configured' as const };
 
   const html = emailShell(
-    'Your Sort &amp; Place subscription payment',
+    'Your Sort + Place subscription payment',
     `
     <p style="color:#2B2B2B;font-size:15px;">
-      This is your monthly subscription payment for <strong>${escapeHtml(opts.propertyName)}</strong> on Sort &amp; Place.
+      This is your monthly subscription payment for <strong>${escapeHtml(opts.propertyName)}</strong> on Sort + Place.
     </p>
     <p style="margin:24px 0;">
       <a href="${opts.paymentLink}" style="background:#2E4A62;color:#FFFFFF;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:600;">
@@ -39,7 +39,7 @@ async function sendPaymentEmail(opts: { toEmail: string; propertyName: string; p
     body: JSON.stringify({
       from: RESEND_FROM,
       to: opts.toEmail,
-      subject: `Payment due -- ${opts.propertyName} on Sort & Place`,
+      subject: `Payment due -- ${opts.propertyName} on Sort + Place`,
       html,
     }),
   });
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
         sendStaffText({
           propertyId,
           recipientUserId: o.user_id,
-          message: `${property.name}: your Sort & Place subscription payment is due. Pay here: ${property.square_payment_link}`,
+          message: `${property.name}: your Sort + Place subscription payment is due. Pay here: ${property.square_payment_link}`,
           trigger: 'payment_reminder',
           sentBy: user.id,
         })

@@ -44,7 +44,10 @@ export const metadata: Metadata = {
 // (R18/no-invented-imagery).
 // 2 Aug midnight batch: five of Racquel's real photos landed (optimized to
 // 1200x675 in public/services/, rendered via next/image -- NOT Supabase
-// transforms, SS-451). The remaining three cards keep the placeholder.
+// transforms, SS-451). 2 Aug evening: her servicecardimages drop filled the
+// last three empty slots and replaced Moving + Simcha per her consolidated
+// fix list -- every card now carries a real supplied image, none of them
+// invented (R18 intact).
 const SERVICES: {
   icon: typeof Home;
   title: string;
@@ -55,19 +58,19 @@ const SERVICES: {
     icon: Home,
     title: 'Full Home Organization',
     body: 'Every room, every closet, every drawer. We build systems that match how your family actually lives. Labeled, sourced, and maintainable without us.',
-    bannerSrc: null, // Racquel: flat-lay photo
+    bannerSrc: '/services/full-home-organization.jpg', // Racquel's servicecardimages drop, 2 Aug
   },
   {
     icon: ChefHat,
     title: 'Kitchen & Pantry Setup',
     body: 'Kosher kitchen flow, labeled storage, expiration tracking, and a stocked pantry that staff can maintain on their own. Fleishig, milchig, pareve, everything in its place.',
-    bannerSrc: null, // Racquel: fridge photo
+    bannerSrc: '/services/kitchen-pantry-setup.jpg', // Racquel's servicecardimages drop, 2 Aug
   },
   {
     icon: Users,
     title: 'Household Operations & Staff Management',
     body: 'Task systems, daily checklists, bilingual SOPs, shift handover protocols, and accountability tools so your home runs whether you’re there or not.',
-    bannerSrc: null, // Racquel: TBD
+    bannerSrc: '/services/household-operations.jpg', // Racquel's servicecardimages drop, 2 Aug
   },
   {
     icon: HeartHandshake,
@@ -100,7 +103,7 @@ const SERVICES: {
     icon: Boxes,
     title: 'Moving, Packing & Unpacking',
     body: 'Professional packing before the move, full unpacking after, and every kitchen, closet, and playroom set up to function from day one. No garage of boxes you are still living out of in six months.',
-    bannerSrc: '/services/moving-packing-unpacking.jpg', // Moving_boxes_in_luxury_home
+    bannerSrc: '/services/moving-packing-unpacking.jpg', // replaced with Racquel's servicecardimages drop, 2 Aug (was Moving_boxes_in_luxury_home)
   },
   {
     // 2 Aug ruling: sixth service (eighth card here), ADDED like Moving.
@@ -114,7 +117,7 @@ const SERVICES: {
     icon: PartyPopper,
     title: 'Simcha & Event Prep',
     body: 'The house guest ready before the simcha and put back together after. Extra hands scheduled, linens counted, and the kitchen turned around while you enjoy the event.',
-    bannerSrc: '/services/simcha-event-prep.jpg', // Dining_room_prepared_for_celebration
+    bannerSrc: '/services/simcha-event-prep.jpg', // replaced with Racquel's servicecardimages drop, 2 Aug (was Dining_room_prepared_for_celebration)
   },
 ];
 

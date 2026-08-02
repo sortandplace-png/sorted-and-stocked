@@ -20,7 +20,7 @@ Before you move a single item, get the settings right. Placement decisions only 
 
 ### The two numbers
 
-Keep the refrigerator at or below **40°F (4°C)** and the freezer at **0°F (-18°C)**. This is standard U.S. food safety guidance from the USDA, and the reason is specific: bacteria multiply rapidly in the range between 40°F and 140°F.
+Keep the refrigerator at or below **40°F (4°C)** and the freezer at **0°F (-18°C)**. This is [standard U.S. food safety guidance](https://www.foodsafety.gov/food-safety-charts/safe-minimum-internal-temperatures) from the USDA, and the reason is specific: bacteria multiply rapidly in the [range between 40°F and 140°F](https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/danger-zone-40f-140f).
 
 **Buy a fridge thermometer.** Built-in displays are frequently inaccurate, and a $7 thermometer is the cheapest food-safety purchase available.
 
@@ -74,7 +74,7 @@ The coldest shelf, and critically, **the lowest**. This is the single most impor
 
 Raw meat goes on the bottom **in a sealed container or on a tray**, so that if anything leaks it cannot drip onto food below. There is nothing below the bottom shelf except the drawers, which are enclosed.
 
-**Never store raw meat above produce or ready-to-eat food.** This is the most common cause of preventable cross-contamination in home kitchens.
+**[Never store raw meat above produce or ready-to-eat food](https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/refrigeration-and-food-safety).** This is the most common cause of preventable cross-contamination in home kitchens.
 
 ### Drawers — humidity control
 
@@ -142,7 +142,7 @@ New groceries go behind older stock. Every time. Ten seconds per item, and it pr
 
 Clear containers, a piece of tape with the date, and a fixed location at the front of the top shelf.
 
-**Undated leftovers are food you'll throw away**, because nobody wants to gamble on something of unknown age. As a general working guideline, most cooked leftovers are good for about three to four days refrigerated — but date them so you're not guessing.
+**Undated leftovers are food you'll throw away**, because nobody wants to gamble on something of unknown age. As a general working guideline, most cooked leftovers are good for [about three to four days refrigerated](https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts) — but date them so you're not guessing.
 
 ---
 
@@ -321,7 +321,7 @@ It also connects to everything else. A fridge you can see into makes **[meal pla
 - `/pantry-organization-ideas` — final CTA section
 
 **Notes before publishing:**
-1. **This is the article with the most citable claims in the set, and the highest cost of getting one wrong.** The 40°F/0°F thresholds, the 40–140°F danger zone, the raw-meat-on-the-bottom rule, and the 3–4 day leftover guideline are all standard USDA/FoodSafety.gov guidance. **Link them to foodsafety.gov or the USDA Food Safety and Inspection Service before publishing.** This is a food-safety article — an unsourced claim here carries more risk than an unsourced organizing tip.
+1. **This is the article with the most citable claims in the set, and the highest cost of getting one wrong.** The 40°F/0°F thresholds, the 40–140°F danger zone, the raw-meat-on-the-bottom rule, and the 3–4 day leftover guideline are all standard USDA/FoodSafety.gov guidance. **Now sourced: the temperature thresholds link the FoodSafety.gov safe minimum temperatures chart, the danger zone links the FSIS Danger Zone page, the leftover guideline links the FoodSafety.gov cold food storage chart, and the raw-meat placement rule links the FSIS refrigeration and food safety page.**
 2. The ethylene producer/sensitive split is well-established horticultural science; a university extension source is the cleanest citation.
 3. Same slug conflict as 12 and 13 — this brief specified `/pantry-organization` and `/kitchen-organization`; I've used `/pantry-organization-ideas` and `/kitchen-organization-ideas` for consistency across the pillar. Still needs your ruling.
 4. Kitchen pillar split: **15 owns the refrigerator specifically.** Pantry in 11, small-space in 12, family workflow in 13, tracking in 14.

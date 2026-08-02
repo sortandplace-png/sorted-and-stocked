@@ -300,7 +300,7 @@ const GROUPS: {
   {
     key: 'house',
     label: 'House',
-    // memory-timeline hidden pending a build-or-kill decision (SS-318/
+    // memory-timeline hidden pending a build-or-kill decision (SS-037/
     // SS-096) -- no backing table, currently live/clickable but goes
     // nowhere. Route and component left in place; don't "restore" this
     // without resolving that decision first.

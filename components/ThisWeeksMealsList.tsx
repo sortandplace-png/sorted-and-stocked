@@ -10,12 +10,15 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Square, Triangle, Circle } from 'lucide-react';
 import Pin from '@/components/PinAccent';
 
-// Bold Direction (Home only) -- saturated fill instead of the app-wide
-// softer rust/dairy/sage, matching the approved mockup's high-contrast tags.
+// Kashrut chips use the canonical functional triple -- rust/dairy/sage --
+// under the standing never-restyle rule (Racquel, 2 Aug: Concept B is
+// universal). The Bold Direction era briefly swapped these for saturated
+// "Bold" variants; that was the drift SS-500's audit caught, fixed at the
+// source (the Bold kashrut tokens are retired from the config).
 const KASHRUT_INFO = {
-  Fleishig: { bg: 'bg-fleishigBold', Icon: Square },
-  Milchig: { bg: 'bg-milchigBold', Icon: Triangle },
-  Parve: { bg: 'bg-parveBold', Icon: Circle },
+  Fleishig: { bg: 'bg-rust', Icon: Square },
+  Milchig: { bg: 'bg-dairy', Icon: Triangle },
+  Parve: { bg: 'bg-sage', Icon: Circle },
 } as const;
 
 function getKashrut(kosherType: string | null | undefined): keyof typeof KASHRUT_INFO {

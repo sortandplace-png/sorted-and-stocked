@@ -19,11 +19,17 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <div className="bg-linen min-h-screen font-interDisplay">
+    // No min-h-screen here (2 Aug, second report of the footer gap): on a
+    // short page a viewport-height floor plus this page's own bottom
+    // padding plus the footer's default top margin stacked into ~180px of
+    // dead linen between the submit button and the footer hairline. The
+    // content column keeps its top padding but ends tight (pb-8), and the
+    // footer mounts flush.
+    <div className="bg-linen font-interDisplay">
       <LocalBusinessJsonLd />
       <MarketingHeader />
 
-      <div className="max-w-[520px] mx-auto px-4 py-14 md:py-20">
+      <div className="max-w-[520px] mx-auto px-4 pt-14 md:pt-20 pb-8">
         <h1 className="font-display font-bold text-4xl md:text-5xl text-denim leading-[1.1] mb-3 text-center">
           Book Your Consultation
         </h1>
@@ -43,7 +49,7 @@ export default function ContactPage() {
         </p>
       </div>
 
-      <MarketingFooter />
+      <MarketingFooter flush />
     </div>
   );
 }

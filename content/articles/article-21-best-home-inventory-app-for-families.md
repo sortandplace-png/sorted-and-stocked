@@ -22,7 +22,7 @@ A **home inventory app** is a digital record of your household's items — what 
 Food, cleaning supplies, paper goods, personal care items. The goal is knowing what's running low before you run out, and not re-buying what you already own. This is the type that affects daily life most.
 
 **2. Insurance documentation.**
-A record of high-value possessions with photos, serial numbers, purchase dates, and receipts, kept for filing a claim after a fire, flood, or theft. Insurance industry guidance has long recommended maintaining a home inventory for exactly this reason — after a total loss, reconstructing a list of everything you owned from memory is close to impossible, and claims are settled on what you can document.
+A record of high-value possessions with photos, serial numbers, purchase dates, and receipts, kept for filing a claim after a fire, flood, or theft. Insurance industry guidance has long [recommended maintaining a home inventory](https://www.iii.org/article/how-create-home-inventory) for exactly this reason — after a total loss, reconstructing a list of everything you owned from memory is close to impossible, and claims are settled on what you can document.
 
 **3. Locating and organizing.**
 Knowing which bin in the garage holds the holiday decorations, where the extra HDMI cable went, which closet has the size-8 hand-me-downs. Storage-mapping rather than quantity-tracking.
@@ -41,7 +41,7 @@ An inventory doesn't require discipline to prevent this. It just requires a phon
 
 ### The invisible-expiration problem
 
-Food you can't see is food you'll throw away. Household food waste is a well-documented and substantial cost — U.S. estimates from the USDA and EPA consistently put food waste at a significant share of the food supply, with households responsible for a large portion of it. The mechanism in most homes is simple: something goes behind something else, and it stops existing until it's expired.
+Food you can't see is food you'll throw away. Household food waste is a well-documented and substantial cost. [USDA estimates put food waste at 30 to 40 percent of the U.S. food supply](https://www.usda.gov/about-food/food-safety/food-loss-and-waste), with its Economic Research Service estimating the loss at the retail and consumer levels at about 31 percent, roughly 133 billion pounds and $161 billion worth of food in 2010. The mechanism in most homes is simple: something goes behind something else, and it stops existing until it's expired.
 
 Visibility is the fix, and an inventory is visibility that survives a closed door.
 
@@ -80,7 +80,7 @@ Most home inventory apps get abandoned within a month. The cause is almost alway
 - **Low-stock alerts.** Set a threshold per item; get told before you run out rather than after.
 - **Expiration tracking.** Especially for food, medication, and anything with a shelf life.
 - **Shopping list generation.** The list builds itself from what's low. This is where an inventory stops being record-keeping and starts saving time.
-- **Photos per item.** Faster to recognize than text, and essential for insurance purposes.
+- **Photos per item.** Faster to recognize than text, and [essential for insurance purposes](https://www.iii.org/article/making-home-inventory).
 - **Multiple locations or properties.** Necessary if you run a second home, a storage unit, or an office.
 - **Offline capability.** Basements, garages, and large pantries have poor signal more often than you'd expect.
 
@@ -340,4 +340,4 @@ Those are all the same problem wearing different clothes: the household's inform
 - `/track-household-items` — setup section
 - `/household-management-apps` — Sorted & Stocked section
 
-**Note before publishing:** the USDA/EPA food waste reference and the insurance-industry home inventory recommendation are both directionally accurate but need a specific linked source before publication. E-E-A-T credit comes from the citation link, not the mention.
+**Note before publishing:** both claims are now sourced. The food waste figure links USDA (30 to 40 percent of the U.S. food supply, with the ERS estimate of about 31 percent at the retail and consumer levels, roughly 133 billion pounds and $161 billion in 2010), and the home inventory recommendation links the Insurance Information Institute's guidance, with its making-a-home-inventory article as a supporting link on photos.
