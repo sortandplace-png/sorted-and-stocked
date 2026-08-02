@@ -718,7 +718,11 @@
   "staffSlots": {
     "title": "Staff Slots",
     "description": "Renameable positions for this residence. Slots exist whether or not anyone is hired yet -- rename one when someone starts. Each residence has its own set.",
+    "connectsNote": "Each slot carries its duties, assignments and history. Renaming a slot keeps all three.",
     "slotNumber": "Slot {number}",
+    "open": "Open",
+    "rename": "Rename",
+    "cancel": "Cancel",
     "linked": "Account linked",
     "activate": "Activate",
     "deactivate": "Deactivate",

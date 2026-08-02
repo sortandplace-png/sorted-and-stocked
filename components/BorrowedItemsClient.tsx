@@ -59,15 +59,16 @@ export default function BorrowedItemsClient({ propertyId }: { propertyId: string
         .order('date_out', { ascending: false }),
       supabase
         .from('property_members')
-        .select('user_id, profiles(full_name)')
+        .select('user_id, profiles(full_name, email)')
         .eq('property_id', propertyId),
     ]);
     setItems(data ?? []);
     setMembers(
-      (memberRows ?? []).map((m) => ({
-        userId: m.user_id,
-        name: (m.profiles as unknown as { full_name: string | null } | null)?.full_name ?? null,
-      }))
+      (memberRows ?? []).map((m) => {
+        const prof = m.profiles as unknown as { full_name: string | null; email: string | null } | null;
+        // "Unnamed" is banned (SS-436 reopen): email is the fallback.
+        return { userId: m.user_id, name: prof?.full_name?.trim() || prof?.email || null };
+      })
     );
     setLoading(false);
   }, [propertyId, supabase]);
@@ -219,7 +220,7 @@ export default function BorrowedItemsClient({ propertyId }: { propertyId: string
               <option value="">Don&apos;t send a reminder</option>
               {members.map((m) => (
                 <option key={m.userId} value={m.userId}>
-                  {m.name ?? 'Unnamed'}
+                  {m.name ?? '—'}
                 </option>
               ))}
             </select>

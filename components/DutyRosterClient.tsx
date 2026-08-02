@@ -146,8 +146,13 @@ export default function DutyRosterClient({
   const es = locale === 'es';
   const supabase = createClient();
 
+  // SS-459 rule 2: house rows alphabetized by the label the viewer sees
+  // (All Houses always first -- it renders as its own leading pill below).
   const propertyOptions = useMemo(
-    () => (properties && properties.length > 0 ? properties : [{ id: propertyId, label: '' }]),
+    () =>
+      properties && properties.length > 0
+        ? [...properties].sort((a, b) => a.label.localeCompare(b.label))
+        : [{ id: propertyId, label: '' }],
     [properties, propertyId]
   );
   const propertyIds = useMemo(() => propertyOptions.map((p) => p.id), [propertyOptions]);
@@ -822,34 +827,53 @@ export default function DutyRosterClient({
   // the person reading it -- and accented characters need locale-aware
   // collation regardless.
   const sections = useMemo(() => {
-    const map = new Map<string, Task[]>();
+    const map = new Map<string, { roomLabel: string; houseLabel: string; items: Task[] }>();
     for (const x of filtered) {
       const room = x.room_id ? roomById.get(x.room_id) : null;
-      let label = room
+      const roomLabel = room
         ? (es ? room.name_es || room.name_en : room.name_en)
         : (es ? x.source_area_es || x.source_area_en : x.source_area_en) || t('noRoom');
-      // SS-436: under All Houses two houses can both have a Kitchen; the
-      // house label (household + property, e.g. "Strauss Main") rides on
-      // the section header so identically-named rooms never merge.
-      if (crossHouse && house === 'all') {
-        label = `${label} · ${labelByProperty.get(x.property_id) ?? ''}`.trim();
-      }
-      const list = map.get(label);
-      if (list) list.push(x);
-      else map.set(label, [x]);
+      // SS-436 reopen defect 5: never a concatenated house-room bar
+      // ("low baby room"). Under All Houses two houses can both have a
+      // Kitchen, so the house still keys the grouping -- but it renders as
+      // its own small eyebrow on the header, separate from the room name.
+      const houseLabel = crossHouse && house === 'all' ? (labelByProperty.get(x.property_id) ?? '') : '';
+      const key = `${houseLabel}|${roomLabel}`;
+      const entry = map.get(key);
+      if (entry) entry.items.push(x);
+      else map.set(key, { roomLabel, houseLabel, items: [x] });
     }
+    // SS-459 rule 1: within each room group, tiles flow DAILY first
+    // (alphabetical), then WEEKLY (alphabetical), then lower frequencies --
+    // frequency rank comes from frequencies.sort_order (daily < weekly <
+    // monthly...), tasks with no frequency last, alphabetical inside each
+    // rank.
+    const freqRank = (x: Task) => {
+      const f = x.frequency_id ? freqById.get(x.frequency_id) : undefined;
+      return f ? f.sort_order : Number.MAX_SAFE_INTEGER;
+    };
     return [...map.entries()]
-      .map(([label, items]) => ({
-        label,
-        items: [...items].sort((a, b) =>
-          (es ? a.task_es || a.task_en : a.task_en).localeCompare(
-            es ? b.task_es || b.task_en : b.task_en,
-            locale
-          )
+      .map(([key, { roomLabel, houseLabel, items }]) => ({
+        label: key,
+        roomLabel,
+        houseLabel,
+        items: [...items].sort(
+          (a, b) =>
+            freqRank(a) - freqRank(b) ||
+            (es ? a.task_es || a.task_en : a.task_en).localeCompare(
+              es ? b.task_es || b.task_en : b.task_en,
+              locale
+            )
         ),
       }))
-      .sort((a, b) => a.label.localeCompare(b.label, locale));
-  }, [filtered, roomById, es, locale, t, crossHouse, house, labelByProperty]);
+      // House groups stay together (alphabetical), rooms alphabetical
+      // within each house.
+      .sort(
+        (a, b) =>
+          a.houseLabel.localeCompare(b.houseLabel, locale) ||
+          a.roomLabel.localeCompare(b.roomLabel, locale)
+      );
+  }, [filtered, roomById, es, locale, t, crossHouse, house, labelByProperty, freqById]);
 
   // Every room for this property, A-Z, for the inline room editor. Distinct
   // from `roomOptions` above, which is deliberately narrowed by the other
@@ -1319,8 +1343,17 @@ export default function DutyRosterClient({
                       aria-expanded={!sectionCollapsed}
                       className="relative w-full flex items-center justify-between gap-3 bg-denim rounded-xl2 py-[11px] pl-5 pr-8 mb-[14px] text-left"
                     >
-                      <span className="text-[10px] font-semibold tracking-[0.17em] uppercase text-white truncate">
-                        {section.label}
+                      {/* Reopen defect 5: the house is its own eyebrow, the
+                          room its own line -- never one concatenated bar. */}
+                      <span className="min-w-0">
+                        {section.houseLabel && (
+                          <span className="block text-[9px] font-semibold tracking-[0.2em] uppercase text-white/60 truncate">
+                            {section.houseLabel}
+                          </span>
+                        )}
+                        <span className="block text-[10px] font-semibold tracking-[0.17em] uppercase text-white truncate">
+                          {section.roomLabel}
+                        </span>
                       </span>
                       <span className="text-[10px] font-semibold tracking-[0.17em] uppercase text-white/70 shrink-0">
                         {section.items.length}

@@ -718,7 +718,11 @@
   "staffSlots": {
     "title": "Puestos del personal",
     "description": "Puestos renombrables para esta residencia. Los puestos existen aunque todavía no haya nadie contratado: renombre uno cuando alguien empiece. Cada residencia tiene su propio conjunto.",
+    "connectsNote": "Cada puesto lleva sus tareas, asignaciones e historial. Renombrar un puesto conserva los tres.",
     "slotNumber": "Puesto {number}",
+    "open": "Abierto",
+    "rename": "Renombrar",
+    "cancel": "Cancelar",
     "linked": "Cuenta vinculada",
     "activate": "Activar",
     "deactivate": "Desactivar",

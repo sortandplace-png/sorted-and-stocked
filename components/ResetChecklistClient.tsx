@@ -46,17 +46,18 @@ export default function ResetChecklistClient({ propertyId }: { propertyId: strin
         .order('template_name'),
       supabase
         .from('property_members')
-        .select('user_id, profiles(full_name)')
+        .select('user_id, profiles(full_name, email)')
         .eq('property_id', propertyId),
     ]);
 
     const loadedTemplates = (templatesRes.data ?? []) as Template[];
     setTemplates(loadedTemplates);
     setMembers(
-      (membersRes.data ?? []).map((m) => ({
-        user_id: m.user_id,
-        full_name: (m.profiles as unknown as { full_name: string | null } | null)?.full_name ?? null,
-      }))
+      (membersRes.data ?? []).map((m) => {
+        const prof = m.profiles as unknown as { full_name: string | null; email: string | null } | null;
+        // "Unnamed" is banned (SS-436 reopen): email is the fallback.
+        return { user_id: m.user_id, full_name: prof?.full_name?.trim() || prof?.email || null };
+      })
     );
 
     const templateIds = loadedTemplates.map((t) => t.id);
@@ -265,7 +266,7 @@ function ChecklistCard({
                         <option value="">Unassigned</option>
                         {members.map((m) => (
                           <option key={m.user_id} value={m.user_id}>
-                            {m.full_name ?? 'Unnamed'}
+                            {m.full_name ?? '—'}
                           </option>
                         ))}
                       </select>

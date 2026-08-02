@@ -164,6 +164,10 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
   const [selectedPropertyIds, setSelectedPropertyIds] = useState<string[]>([propertyId]);
   const [offboardingUserId, setOffboardingUserId] = useState<string | null>(null);
   const [zoneEditorMemberId, setZoneEditorMemberId] = useState<string | null>(null);
+  // SS-436 reopen defect 1: Racquel maintains display names from here.
+  const [editingNameMemberId, setEditingNameMemberId] = useState<string | null>(null);
+  const [nameDraft, setNameDraft] = useState('');
+  const [savingNameId, setSavingNameId] = useState<string | null>(null);
   const [savingZonesId, setSavingZonesId] = useState<string | null>(null);
 
   const supabase = createClient();
@@ -408,6 +412,27 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     loadActivity();
   }
 
+  // SS-436 reopen defect 1: owner/manager maintains member display names.
+  // Server-side authorization lives in the SECURITY DEFINER RPC (migration
+  // 174) -- caller must share a property with the target as owner/manager.
+  async function saveMemberName(member: { id: string; user_id: string }) {
+    const newName = nameDraft.trim();
+    if (!newName) return;
+    setSavingNameId(member.id);
+    const { error } = await supabase.rpc('set_member_full_name', {
+      target_user: member.user_id,
+      new_name: newName,
+    });
+    setSavingNameId(null);
+    if (error) {
+      showToast(`Name update failed: ${error.message}`, { variant: 'error' });
+      return;
+    }
+    setMembers((prev) => prev.map((m) => (m.user_id === member.user_id ? { ...m, full_name: newName } : m)));
+    setEditingNameMemberId(null);
+    showToast('Name updated.', { variant: 'success' });
+  }
+
   async function changeRole(memberId: string, role: PropertyRole) {
     const previous = members.find((m) => m.id === memberId)?.role;
     setMembers((prev) => prev.map((m) => (m.id === memberId ? { ...m, role } : m)));
@@ -523,9 +548,51 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
                 <div key={member.id} className="bg-card rounded-xl2 border border-cardBorder p-4">
                   <div className="flex items-center gap-3 mb-3">
                     <Avatar fullName={member.full_name} size="md" />
-                    <span className="flex-1 truncate text-denim font-medium">
-                      {member.full_name ?? member.email ?? 'Unnamed user'}
-                    </span>
+                    {/* SS-436 reopen defect 1: "Unnamed" is banned -- the
+                        display falls back to email, and owners/managers can
+                        set the name right here (set_member_full_name RPC,
+                        migration 174). */}
+                    {editingNameMemberId === member.id ? (
+                      <span className="flex-1 flex items-center gap-1.5 min-w-0">
+                        <input
+                          value={nameDraft}
+                          onChange={(e) => setNameDraft(e.target.value)}
+                          placeholder="Full name"
+                          aria-label="Member name"
+                          className="flex-1 min-w-0 border border-cardBorder focus:border-brass focus:outline-none rounded-xl2 px-2.5 py-1 text-sm text-denim"
+                        />
+                        <button
+                          onClick={() => saveMemberName(member)}
+                          disabled={savingNameId === member.id || !nameDraft.trim()}
+                          className="text-xs font-medium bg-denim text-white px-3 py-1 rounded-full disabled:opacity-40 shrink-0"
+                        >
+                          {savingNameId === member.id ? '…' : 'Save'}
+                        </button>
+                        <button
+                          onClick={() => setEditingNameMemberId(null)}
+                          className="text-xs text-dusk underline underline-offset-2 shrink-0"
+                        >
+                          Cancel
+                        </button>
+                      </span>
+                    ) : (
+                      <span className="flex-1 min-w-0">
+                        <span className="block truncate text-denim font-medium">
+                          {member.full_name ?? member.email ?? '(email unavailable)'}
+                        </span>
+                        {canManage(viewerRole) && (
+                          <button
+                            onClick={() => {
+                              setEditingNameMemberId(member.id);
+                              setNameDraft(member.full_name ?? '');
+                            }}
+                            className="text-[11px] text-dusk hover:text-denim underline underline-offset-2"
+                          >
+                            Edit name
+                          </button>
+                        )}
+                      </span>
+                    )}
                     <span className={`text-[10px] font-medium px-2.5 py-1 rounded-full shrink-0 ${ROLE_BADGE_CLASSES[member.role]}`}>
                       {member.role}
                     </span>

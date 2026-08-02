@@ -3,17 +3,25 @@
 // should work off 1 page and only on lax". Team, Settings and the Task
 // Center stop being three destinations and become ONE operator console,
 // existing only where feature_flags.operator_console is true (Lax today).
-// The three are one workflow -- Settings defines the slots, Team puts
-// people in them, Tasks assigns work to them -- and splitting them is why
-// 16 slots sat empty while 900+ tasks sat unassigned.
 //
-// V1 composes the three existing, individually-verified surfaces under
-// Concept B section strips: PEOPLE (staff slots + who is in each; the
-// invite-by-email flow itself still lives on /staff and is linked, not
-// duplicated -- folding it in is the SS-425 half still to come),
-// CONFIGURATION (the Settings sections), WORK (the cross-house Task Center
-// ruled in SS-410 -- every task across every house, filtered by house).
-// Server-side gate, not a hidden nav tile (SS-381).
+// REOPENED 2 Aug (on-device inspection; her defects are the spec):
+// 1. Names: "Unnamed" is banned -- display falls back to email (profiles.
+//    email, synced by migration 174; admin lookup no longer needed here).
+// 2. Slots render as compact fixed-size tiles (StaffSlotsEditor rework).
+// 3. SCOPING: this is a single-house console. Cross-house content (members
+//    per residence) moved OUT of the mid-page PEOPLE flow into its own
+//    clearly-labeled fold at the END, collapsed by default.
+// 4. ORDERING: the Task Center is the console's reason to exist -- WORK is
+//    the FIRST section. Implemented order (for her approval): WORK ->
+//    PEOPLE -> CONFIGURATION -> ACROSS THE HOUSES (fold). House lists
+//    inside stay alphabetical (SS-459 rule 2).
+// 5. Per-house tiles say the house -- short property name ("Low", "Main"),
+//    never a concatenated label.
+// 6. Members grouped by role; duplicate-looking rows (Racquel's two owner
+//    accounts share a full_name) are disambiguated by the email line under
+//    each name, so nothing looks like an unexplained duplicate.
+// Re-close rule: this row returns to resolved ONLY on her screenshot
+// approval (SS-444 governance) -- code here is "built", never "resolved".
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
@@ -39,6 +47,8 @@ function SectionStrip({ label }: { label: string }) {
     </div>
   );
 }
+
+const ROLE_ORDER = ['owner', 'manager', 'staff'] as const;
 
 export default async function OperatorConsolePage({
   params,
@@ -83,24 +93,64 @@ export default async function OperatorConsolePage({
     .eq('property_id', id)
     .order('sort_order');
 
-  // Members per residence (SS-436 PM ruling: "Team page NOT needed --
-  // fold members per residence into console"). Read-only roster here;
-  // role changes/offboarding stay on /staff, which remains reachable for
-  // client houses.
+  // Short house names for the cross-house fold (defect 5: tiles say "Low",
+  // "Main" -- the household-prefixed labels stay on surfaces that need
+  // them, not here).
+  const { data: propNames } = await supabase
+    .from('properties')
+    .select('id, name')
+    .in('id', properties.map((p) => p.id));
+  const shortName = new Map((propNames ?? []).map((p) => [p.id as string, p.name as string]));
+
+  // Members per residence -- cross-house content, so it lives in the fold
+  // at the END (defect 3). profiles.email (migration 174) makes the
+  // email fallback a plain join; "Unnamed" is banned (defect 1).
   const { data: memberRows } = await supabase
     .from('property_members')
-    .select('property_id, role, profiles(full_name)')
+    .select('property_id, user_id, role, profiles(full_name, email)')
     .in('property_id', properties.map((p) => p.id));
-  const membersByProperty = properties.map((p) => ({
-    ...p,
-    members: (memberRows ?? [])
-      .filter((m) => m.property_id === p.id)
-      .map((m) => ({
-        name: ((m.profiles as unknown as { full_name: string | null } | null)?.full_name ?? 'Unnamed') as string,
-        role: m.role as string,
-      }))
-      .sort((a, b) => a.role.localeCompare(b.role) || a.name.localeCompare(b.name)),
-  }));
+
+  type MemberEntry = { name: string; email: string | null; role: string };
+  const membersByProperty = [...properties]
+    .sort((a, b) => (shortName.get(a.id) ?? '').localeCompare(shortName.get(b.id) ?? ''))
+    .map((p) => {
+      const members: MemberEntry[] = (memberRows ?? [])
+        .filter((m) => m.property_id === p.id)
+        .map((m) => {
+          const prof = m.profiles as unknown as { full_name: string | null; email: string | null } | null;
+          return {
+            name: (prof?.full_name?.trim() || prof?.email || '(no account details)') as string,
+            email: prof?.email ?? null,
+            role: m.role as string,
+          };
+        });
+      const byRole = ROLE_ORDER.map((role) => ({
+        role,
+        members: members
+          .filter((m) => m.role === role)
+          .sort((a, b) => a.name.localeCompare(b.name) || (a.email ?? '').localeCompare(b.email ?? '')),
+      })).filter((g) => g.members.length > 0);
+      // Same display name appearing twice in one house (Racquel's personal
+      // + business logins) -> show the email line on both so neither reads
+      // as an unexplained duplicate (defect 6).
+      const nameCounts = new Map<string, number>();
+      for (const m of members) nameCounts.set(m.name, (nameCounts.get(m.name) ?? 0) + 1);
+      return { id: p.id, name: shortName.get(p.id) ?? '', byRole, nameCounts };
+    });
+
+  // Names for the slot tiles (defect 2: a linked slot shows the person,
+  // from their own account -- never a seeded name).
+  const slotUserIds = (slots ?? []).map((s) => s.user_id).filter((v): v is string => !!v);
+  const assignedNames: Record<string, string> = {};
+  if (slotUserIds.length > 0) {
+    const { data: slotProfiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .in('id', slotUserIds);
+    for (const p of slotProfiles ?? []) {
+      assignedNames[p.id] = (p.full_name?.trim() || p.email || '') as string;
+    }
+  }
 
   return (
     <div className="bg-linen min-h-screen">
@@ -111,7 +161,7 @@ export default async function OperatorConsolePage({
         <div className="flex items-end justify-between gap-4 flex-wrap">
           <div>
             <h1 className="font-display text-[34px] font-normal text-denim">Operator Console</h1>
-            <p className="text-[13px] text-dusk">People, configuration and work. One page.</p>
+            <p className="text-[13px] text-dusk">Work, people and configuration. One page.</p>
           </div>
           {/* Prominent register link (2 Aug spec) -- owner-only, matching
               the route's own gate; the Staff-sheet entry is the primary
@@ -135,43 +185,21 @@ export default async function OperatorConsolePage({
           )}
         </div>
 
-        {/* PEOPLE -- slots, who is in each, the whole team per residence
-            (Team-page fold, PM ruling 3), and the invite form itself
-            (SS-425 fold-in; no more link out to /staff). */}
+        {/* WORK FIRST (reopen defect 4) -- the cross-house Task Center
+            (SS-410 ruling) is the console's reason to exist. */}
+        <section className="rounded-xl3 border border-cardBorder shadow-card overflow-hidden bg-card">
+          <SectionStrip label="Work" />
+          <div className="p-5">
+            <DutyRosterClient propertyId={id} properties={properties} />
+          </div>
+        </section>
+
+        {/* PEOPLE -- THIS house's slots, plus the invite/TestFlight/replies
+            flows. Cross-house membership content moved to the end fold. */}
         <section className="rounded-xl3 border border-cardBorder shadow-card overflow-hidden bg-card">
           <SectionStrip label="People" />
           <div className="p-5 space-y-5">
-            <StaffSlotsEditor propertyId={id} initialSlots={slots ?? []} />
-
-            <div>
-              <p className="text-sm font-medium text-denim mb-2">Members per residence</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {membersByProperty.map((p) => (
-                  <div key={p.id} className="border border-cardBorder rounded-xl2 bg-card px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brass mb-1.5">{p.label}</p>
-                    {p.members.length === 0 ? (
-                      <p className="text-xs text-dusk">No members yet.</p>
-                    ) : (
-                      <ul className="space-y-0.5">
-                        {p.members.map((m, i) => (
-                          <li key={`${m.name}-${i}`} className="flex items-center justify-between gap-3 text-sm">
-                            <span className="text-denim min-w-0 truncate">{m.name}</span>
-                            <span className="text-xs text-dusk shrink-0">{m.role}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <p className="text-[11px] text-dusk mt-1.5">
-                Role changes and offboarding stay on the{' '}
-                <Link href={`/properties/${id}/staff`} className="text-denim underline underline-offset-2">
-                  Team page
-                </Link>
-                .
-              </p>
-            </div>
+            <StaffSlotsEditor propertyId={id} initialSlots={slots ?? []} assignedNames={assignedNames} />
 
             {/* SS-436 both-yes ruling (2 Aug): invite-by-email and the
                 TestFlight invite side by side, alert replies below. */}
@@ -187,9 +215,8 @@ export default async function OperatorConsolePage({
           </div>
         </section>
 
-        {/* CONFIGURATION -- the per-house module switches (their first and
-            only UI, SS-429's largest recorded gap) above the Settings
-            sections, unchanged, composed. */}
+        {/* CONFIGURATION -- the per-house module switches above the
+            Settings sections, unchanged, composed. */}
         <section className="rounded-xl3 border border-cardBorder shadow-card overflow-hidden bg-card">
           <SectionStrip label="Configuration" />
           <div className="p-5 border-b border-cardBorder">
@@ -205,14 +232,55 @@ export default async function OperatorConsolePage({
           </div>
         </section>
 
-        {/* WORK -- the cross-house Task Center (SS-410 ruling): every task
-            across every house the operator manages, filtered by house. */}
-        <section className="rounded-xl3 border border-cardBorder shadow-card overflow-hidden bg-card">
-          <SectionStrip label="Work" />
+        {/* ACROSS THE HOUSES -- the one cross-house block, clearly labeled,
+            LAST, collapsed by default (reopen defect 3). Tiles carry the
+            short house name only (defect 5); members grouped by role with
+            email disambiguation for same-name accounts (defects 1 + 6). */}
+        <details className="rounded-xl3 border border-cardBorder shadow-card overflow-hidden bg-card">
+          <summary className="cursor-pointer list-none">
+            <SectionStrip label="Across the Houses — cross-house view" />
+          </summary>
           <div className="p-5">
-            <DutyRosterClient propertyId={id} properties={properties} />
+            <p className="text-sm font-medium text-denim mb-2">Members per residence</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {membersByProperty.map((p) => (
+                <div key={p.id} className="border border-cardBorder rounded-xl2 bg-card px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brass mb-1.5">{p.name}</p>
+                  {p.byRole.length === 0 ? (
+                    <p className="text-xs text-dusk">No members yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {p.byRole.map((g) => (
+                        <div key={g.role}>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-dusk">
+                            {g.role === 'owner' ? 'Owners' : g.role === 'manager' ? 'Managers' : 'Staff'}
+                          </p>
+                          <ul className="space-y-0.5 mt-0.5">
+                            {g.members.map((m, i) => (
+                              <li key={`${m.email ?? m.name}-${i}`} className="text-sm">
+                                <span className="text-denim">{m.name}</span>
+                                {m.email && ((p.nameCounts.get(m.name) ?? 0) > 1 || m.name === m.email) && (
+                                  <span className="block text-[11px] text-dusk">{m.email}</span>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-dusk mt-1.5">
+              Role changes, offboarding and member names live on the{' '}
+              <Link href={`/properties/${id}/staff`} className="text-denim underline underline-offset-2">
+                Team page
+              </Link>
+              .
+            </p>
           </div>
-        </section>
+        </details>
       </div>
     </div>
   );

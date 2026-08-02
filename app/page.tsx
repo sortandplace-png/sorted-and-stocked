@@ -215,7 +215,7 @@ export default async function RootMarketingPage() {
 
       </div>
 
-      <MarketingFooter extraLinks={[{ href: '/terms.html', label: 'Terms' }]} />
+      <MarketingFooter homepage extraLinks={[{ href: '/terms.html', label: 'Terms' }]} />
     </div>
   );
 }
