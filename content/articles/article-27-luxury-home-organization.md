@@ -298,7 +298,7 @@ That's the work we do: zones built around your household's real traffic, documen
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She works primarily with large households running multiple properties and employing staff, and holds that the real test of a premium project is whether it still works six months after everyone has gone home.*
+*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She works primarily with large households running multiple properties and employing staff, and holds that the real test of a premium project is whether it still works six months after everyone has gone home.*
 
 ---
 
@@ -315,7 +315,7 @@ That's the work we do: zones built around your household's real traffic, documen
 - `/home-that-runs-itself` — closing section
 
 **Notes before publishing:**
-1. **No rates quoted, deliberately.** You told me Sort & Place sits well above the ranges in the pricing article, so any figure here would either undercut you or contradict that piece. Instead the article explains what drives the difference, which does the positioning work without pinning a number.
+1. **No rates quoted, deliberately.** You told me Sort + Place sits well above the ranges in the pricing article, so any figure here would either undercut you or contradict that piece. Instead the article explains what drives the difference, which does the positioning work without pinning a number.
 2. **The "when it isn't worth it" section is doing real work.** Telling readers not to hire you for a single closet is what makes the rest of the article credible, and it filters out the enquiries that waste your consultation time. I'd resist cutting it.
 3. The confidentiality and staff-training sections are written as things a reader should *demand*, which positions you well if you offer them — confirm you actually do all of what's listed before this publishes, since it sets an expectation for your own enquiries.
 4. No fabricated statistics. No collision with any other article in the set.

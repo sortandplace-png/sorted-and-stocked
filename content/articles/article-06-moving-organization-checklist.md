@@ -332,7 +332,7 @@ That's the part we're usually called in for. We declutter before the boxes, pack
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She has managed moves of every size and maintains that the first week after the truck leaves matters more than everything before it.*
+*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She has managed moves of every size and maintains that the first week after the truck leaves matters more than everything before it.*
 
 ---
 

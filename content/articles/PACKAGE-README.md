@@ -1,4 +1,4 @@
-# Sort & Place — SEO Article Package
+# Sort + Place — SEO Article Package
 
 Written 2 Aug 2026. 26 articles, each with a matched 1376x768 featured image.
 
