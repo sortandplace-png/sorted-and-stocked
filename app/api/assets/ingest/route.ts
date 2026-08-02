@@ -162,6 +162,43 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, entryCount: entries.length });
     }
 
+    if (job.mode === 'fetch-url') {
+      // Copy files the deployment can reach into storage -- built for the
+      // blog featured images (staged in this repo's public/ so production
+      // serves them, then copied to the marketing bucket to match the
+      // seven live posts' URL convention). STRICT origin allowlist: this
+      // must never become an arbitrary-URL SSRF/upload primitive.
+      const payload = (job.payload ?? {}) as {
+        files?: { url: string; bucket: string; path: string; contentType: string }[];
+      };
+      if (!payload.files?.length) throw new Error('payload needs files');
+      if (payload.files.length > MAX_FILES_PER_CALL) throw new Error(`max ${MAX_FILES_PER_CALL} files per job`);
+      const ALLOWED_ORIGINS = ['https://app.sortandplace.com', 'https://sortandplace.com', 'https://drive.usercontent.google.com'];
+      const results: { path: string; ok: boolean; detail: string }[] = [];
+      for (const f of payload.files) {
+        try {
+          const origin = new URL(f.url).origin;
+          if (!ALLOWED_ORIGINS.includes(origin)) throw new Error(`origin not allowed: ${origin}`);
+          const res = await fetch(f.url, { redirect: 'follow' });
+          if (!res.ok) throw new Error(`fetch ${res.status}`);
+          const data = Buffer.from(await res.arrayBuffer());
+          if (data.length < 1000) throw new Error(`suspiciously small (${data.length}B)`);
+          const { error: upErr } = await admin.storage
+            .from(f.bucket)
+            .upload(f.path, data, { contentType: f.contentType, upsert: true });
+          if (upErr) throw new Error(`upload: ${upErr.message}`);
+          results.push({ path: `${f.bucket}/${f.path}`, ok: true, detail: `${data.length} bytes` });
+        } catch (e) {
+          results.push({ path: `${f.bucket}/${f.path}`, ok: false, detail: e instanceof Error ? e.message : String(e) });
+        }
+      }
+      await admin
+        .from('asset_ingest_jobs')
+        .update({ status: 'done', result: { results }, finished_at: new Date().toISOString() })
+        .eq('id', jobId);
+      return NextResponse.json({ ok: true, results });
+    }
+
     // mode === 'ingest'
     const payload = (job.payload ?? {}) as {
       scanJobId?: string;
