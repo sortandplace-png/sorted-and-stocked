@@ -36,7 +36,7 @@ Most people recognise the pattern: deciding gets harder as the day goes on. A di
 
 This is the heaviest one and the least discussed.
 
-A cluttered room isn't just untidy — for a lot of people it reads as evidence. *I should have handled this. I'm behind.* Researchers looking at how people describe their own homes have found that [language characterizing a home as cluttered or unfinished tracks with elevated stress markers over the day](https://journals.sagepub.com/doi/10.1177/0146167209352864), particularly for women.
+A cluttered room isn't just untidy — for a lot of people it reads as evidence. *I should have handled this. I'm behind.* Researchers looking at how people describe their own homes have found that language characterizing a home as cluttered or unfinished tracks with elevated stress markers over the day, particularly for women.
 
 **Which means the stress isn't only about the objects. It's about what you tell yourself the objects mean.**
 

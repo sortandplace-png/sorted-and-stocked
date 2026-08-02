@@ -20,7 +20,7 @@ Before you move a single item, get the settings right. Placement decisions only 
 
 ### The two numbers
 
-Keep the refrigerator at or below **40°F (4°C)** and the freezer at **0°F (-18°C)**. This is [standard U.S. food safety guidance](https://www.foodsafety.gov/food-safety-charts/safe-minimum-internal-temperatures) from the USDA, and the reason is specific: bacteria multiply rapidly in the [range between 40°F and 140°F](https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/danger-zone-40f-140f).
+Keep the refrigerator at or below **40°F (4°C)** and the freezer at **0°F (-18°C)**. This is standard U.S. food safety guidance from the USDA, and the reason is specific: bacteria multiply rapidly in the range between 40°F and 140°F.
 
 **Buy a fridge thermometer.** Built-in displays are frequently inaccurate, and a $7 thermometer is the cheapest food-safety purchase available.
 
@@ -74,7 +74,7 @@ The coldest shelf, and critically, **the lowest**. This is the single most impor
 
 Raw meat goes on the bottom **in a sealed container or on a tray**, so that if anything leaks it cannot drip onto food below. There is nothing below the bottom shelf except the drawers, which are enclosed.
 
-**[Never store raw meat above produce or ready-to-eat food](https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/refrigeration-and-food-safety).** This is the most common cause of preventable cross-contamination in home kitchens.
+**Never store raw meat above produce or ready-to-eat food.** This is the most common cause of preventable cross-contamination in home kitchens.
 
 ### Drawers — humidity control
 
@@ -142,7 +142,7 @@ New groceries go behind older stock. Every time. Ten seconds per item, and it pr
 
 Clear containers, a piece of tape with the date, and a fixed location at the front of the top shelf.
 
-**Undated leftovers are food you'll throw away**, because nobody wants to gamble on something of unknown age. As a general working guideline, most cooked leftovers are good for [about three to four days refrigerated](https://www.foodsafety.gov/food-safety-charts/cold-food-storage-charts) — but date them so you're not guessing.
+**Undated leftovers are food you'll throw away**, because nobody wants to gamble on something of unknown age. As a general working guideline, most cooked leftovers are good for about three to four days refrigerated — but date them so you're not guessing.
 
 ---
 
