@@ -330,7 +330,7 @@ That's the part we do — the zones, the labels, the sourcing and the fitting, s
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She has sourced and fitted containers for kitchens of every size and maintains that a hundred dollars of bins and a label maker beats a photogenic canister set almost every time.*
+*Sort + Place is a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area.*
 
 ---
 

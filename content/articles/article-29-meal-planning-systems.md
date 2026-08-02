@@ -331,7 +331,7 @@ We build the whole chain: kitchen zones that make cooking possible, an inventory
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She cooks for a large household with a standing weekly menu and maintains that the single biggest meal planning mistake is planning before checking what's already in the kitchen.*
+*Sort + Place is a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area.*
 
 ---
 

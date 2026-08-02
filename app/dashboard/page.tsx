@@ -16,14 +16,26 @@ export default async function DashboardRedirect() {
 
   if (!user) redirect('/login');
 
-  const { data: memberships } = await supabase
+  const { data: rawMemberships } = await supabase
     .from('property_members')
-    .select('property_id, role')
+    .select('property_id, role, properties(archived_at)')
     .eq('user_id', user.id);
+
+  // Archived properties are excluded, same rule as /properties/page.tsx and
+  // the procurement surfaces (SS-519: a column exists to hide things and
+  // several surfaces were not reading it). This route had NO archived
+  // awareness at all, which meant a user whose single membership was an
+  // archived test fixture got redirected straight into it, and a user with
+  // one live property plus one archived one was sent to the picker instead
+  // of landing on the only real house they have.
+  const memberships = (rawMemberships ?? []).filter((m) => {
+    const property = m.properties as unknown as { archived_at: string | null } | null;
+    return property && !property.archived_at;
+  });
 
   // Staff don't land on Dashboard even via this old bookmarked route --
   // same My Day redirect as the real landing flow in /properties/page.tsx.
-  if (memberships && memberships.length === 1) {
+  if (memberships.length === 1) {
     const destination = memberships[0].role === 'staff' ? 'my-day' : 'dashboard';
     redirect(`/properties/${memberships[0].property_id}/${destination}`);
   }

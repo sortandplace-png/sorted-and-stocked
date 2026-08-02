@@ -318,7 +318,7 @@ That's the work we do in a new home: not just unpacking, but standing the househ
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She maintains that the first hour in a new house should be spent photographing shut-off valves, not opening boxes.*
+*Sort + Place is a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area.*
 
 ---
 

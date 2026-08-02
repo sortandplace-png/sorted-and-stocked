@@ -295,7 +295,7 @@ We build the structure that decision sits on: documented procedures your staff c
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She works with households running multiple properties and employing staff, and holds that the most valuable decision most household managers never make is which standards to lower on purpose.*
+*Sort + Place is a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area.*
 
 ---
 

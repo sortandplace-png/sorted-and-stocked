@@ -286,7 +286,7 @@ We do this part alongside families, and we're faster at it because we carry no h
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She works with large kosher kitchens where the sets multiply and the volume does too, and holds that most people already know what they don't use.*
+*Sort + Place is a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area.*
 
 ---
 

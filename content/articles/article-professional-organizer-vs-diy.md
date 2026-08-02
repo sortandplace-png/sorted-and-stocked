@@ -271,7 +271,7 @@ If the answer is that you've started three times, there's a deadline, or other p
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She routinely tells prospective clients that a single closet doesn't need her, and holds that the strongest reason to hire anyone is simply that the project will otherwise never finish.*
+*Sort + Place is a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area.*
 
 ---
 

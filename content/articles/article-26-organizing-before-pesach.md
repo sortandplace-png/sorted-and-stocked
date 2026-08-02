@@ -339,7 +339,7 @@ We work with families through exactly this season: the decluttering, the timelin
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She works with large frum households through the pre-Pesach season and is emphatic that the organizing layer and the halachic layer are different projects — the second belongs to your Rav.*
+*Sort + Place is a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area.*
 
 ---
 

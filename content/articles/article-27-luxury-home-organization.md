@@ -298,7 +298,7 @@ That's the work we do: zones built around your household's real traffic, documen
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She works primarily with large households running multiple properties and employing staff, and holds that the real test of a premium project is whether it still works six months after everyone has gone home.*
+*Sort + Place is a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area.*
 
 ---
 

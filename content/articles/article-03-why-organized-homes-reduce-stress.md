@@ -279,7 +279,7 @@ We build for that specifically: fewer open loops, fewer daily decisions, and sys
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She holds that most of the relief people are after arrives in the first fifth of the work, and that the last fifth is rarely worth what it costs.*
+*Sort + Place is a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area.*
 
 ---
 
