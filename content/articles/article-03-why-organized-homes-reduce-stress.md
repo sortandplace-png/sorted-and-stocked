@@ -36,7 +36,7 @@ Psychologists studying choice have long documented that decision quality degrade
 
 This is the heaviest one and the least discussed.
 
-A cluttered room isn't just untidy — for a lot of people it reads as evidence. *I should have handled this. I'm behind.* Researchers looking at how people describe their own homes have found that language characterizing a home as cluttered or unfinished tracks with elevated stress markers over the day, particularly for women.
+A cluttered room isn't just untidy — for a lot of people it reads as evidence. *I should have handled this. I'm behind.* Researchers looking at how people describe their own homes have found that [language characterizing a home as cluttered or unfinished tracks with elevated stress markers over the day](https://journals.sagepub.com/doi/10.1177/0146167209352864), particularly for women.
 
 **Which means the stress isn't only about the objects. It's about what you tell yourself the objects mean.**
 
@@ -296,7 +296,7 @@ We build for that specifically: fewer open loops, fewer daily decisions, and sys
 
 **Notes before publishing — read 1 and 2:**
 
-1. **Two research references need citation links.** Decision fatigue (well-established, cite a general source). And the home-language/stress-marker finding — that's **Saxbe & Repetti's UCLA work on how people describe their homes and their cortisol patterns**. I have phrased it carefully as a tracking relationship rather than causation. **Verify the study before linking and do not let an editor strengthen the wording into "clutter causes stress"** — that isn't what the research shows.
+1. **Citation status (2 Aug):** the home-language/stress-marker finding is now linked to Saxbe & Repetti 2010, "No Place Like Home: Home Tours Correlate With Daily Patterns of Mood and Cortisol," Personality and Social Psychology Bulletin 36(1): 71–81 (doi 10.1177/0146167209352864, cross-checked against PubMed 19934011). The wording was left exactly as written — a tracking relationship, not causation, per the study's own correlational design. **Still open: the decision-fatigue reference needs a general source before publish.** Do not let an editor strengthen the wording into "clutter causes stress" — that isn't what the research shows.
 
 2. **The "when it's not about the house" section is deliberate and should not be cut.** An article telling people organizing will make them feel better has an obligation to say when it won't. It also names that persistent distress is worth taking to a professional, without diagnosing anything or naming conditions. Keep that framing exactly — no clinical terms, no conditions listed, no self-assessment prompts.
 
