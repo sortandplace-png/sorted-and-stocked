@@ -31,6 +31,10 @@ const STAFF_LINKS: {
   segment: string;
   labelKey: string;
   managerOnly?: boolean;
+  // Stricter than managerOnly: the register is the operator's own working
+  // record and its route redirects managers too -- offering it wider would
+  // be a dead click (the exact Suppliers-tile bug SS-025 fixed).
+  ownerOnly?: boolean;
   dividerBefore?: boolean;
   href?: string;
   operatorOnly?: boolean;
@@ -42,6 +46,9 @@ const STAFF_LINKS: {
   // hide there (routes untouched, R21) and the console entry appears.
   // Client houses keep Team; Task Center was operator-only already.
   { segment: 'console', labelKey: 'console', managerOnly: true, operatorOnly: true },
+  // Racquel's expected sheet order on Lax: My Day, Operator Console,
+  // Register, Staff Handbook. Owner-only -- staff must not see it exists.
+  { segment: 'register', labelKey: 'register', ownerOnly: true, operatorOnly: true },
   // Hours and Training Videos removed here too -- these two lists mirror
   // each other, and a dropdown that differs between desktop and phone is
   // worse than either version alone. Both ROUTES are untouched (R21); see
@@ -84,6 +91,7 @@ export default function MobileBottomNav({
   const operator = isOperatorConsole(flags);
   const staffLinks = STAFF_LINKS.filter(
     (l) =>
+      (!l.ownerOnly || role === 'owner') &&
       (!l.managerOnly || role === 'owner' || role === 'manager') &&
       (!l.operatorOnly || operator) &&
       (!l.hideOnOperator || !operator)
