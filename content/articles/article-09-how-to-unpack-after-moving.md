@@ -283,7 +283,7 @@ We do this work in days rather than weeks — not by moving faster, but by decid
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She has unpacked households of every size and holds that the twenty minutes spent planning a room before filling it is the highest-return time in any move.*
+*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She has unpacked households of every size and holds that the twenty minutes spent planning a room before filling it is the highest-return time in any move.*
 
 ---
 

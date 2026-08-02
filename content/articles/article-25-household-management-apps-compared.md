@@ -321,7 +321,7 @@ That's the work we do first: the routines, the documentation, the systems. Then 
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She built Sorted & Stocked after years of watching households try to run multi-person operations on tools designed for one person, and advises most clients to fix their routines before buying any software at all.*
+*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She built Sorted & Stocked after years of watching households try to run multi-person operations on tools designed for one person, and advises most clients to fix their routines before buying any software at all.*
 
 ---
 

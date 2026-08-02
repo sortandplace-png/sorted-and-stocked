@@ -297,7 +297,7 @@ For the family-workflow side of a kitchen — zones, kid access, weeknight syste
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She has organized kitchens of every size and maintains that most small kitchens are not short on space — they're short on triage.*
+*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She has organized kitchens of every size and maintains that most small kitchens are not short on space — they're short on triage.*
 
 ---
 

@@ -427,7 +427,7 @@ That's what we build. Not a beautiful afternoon, but zones, labels, and routines
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She works with busy households — many running multiple properties and household staff — to build organizational systems that hold up without her. She is also the creator of Sorted & Stocked, a household inventory and management platform.*
+*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She works with busy households — many running multiple properties and household staff — to build organizational systems that hold up without her. She is also the creator of Sorted & Stocked, a household inventory and management platform.*
 
 ---
 

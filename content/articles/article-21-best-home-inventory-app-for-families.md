@@ -324,7 +324,7 @@ Those are all the same problem wearing different clothes: the household's inform
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She built Sorted & Stocked after years of watching households with staff and multiple properties struggle with tools designed for one person tracking their own belongings.*
+*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She built Sorted & Stocked after years of watching households with staff and multiple properties struggle with tools designed for one person tracking their own belongings.*
 
 ---
 

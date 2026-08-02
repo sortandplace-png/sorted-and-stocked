@@ -319,7 +319,7 @@ It also changes what's possible with household help. Once what's in the house is
 
 ---
 
-*About the author: Racquel Schwartz is a co-founder of Sort + Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She built Sorted & Stocked after watching households with staff try to run shared inventories on tools designed for one person, and holds that the best inventory is the shortest one you'll actually maintain.*
+*About the author: Racquel Schwartz is a co-founder of Sort & Place, a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area. She built Sorted & Stocked after watching households with staff try to run shared inventories on tools designed for one person, and holds that the best inventory is the shortest one you'll actually maintain.*
 
 ---
 
