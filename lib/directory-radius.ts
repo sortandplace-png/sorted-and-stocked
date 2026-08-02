@@ -5,16 +5,20 @@
 // filters itself to nothing -- Country (Mountain Dale NY 12763) is the
 // motivating case.
 //
-// No geocoding dependency: with only zips on both sides, distance is
-// approximated by zip structure, and the approximation is deliberately
-// PERMISSIVE -- this filter exists to keep a dense-metro list from
-// drowning in far-away entries, never to hide a curated row someone
-// added on purpose. Rows with no zip and no city at all always show:
-// they were hand-entered for this property and the curator outranks the
-// heuristic.
-//   5 mi  (dense): same 5-digit zip, or same city name.
-//   25 mi (wide):  same 3-digit zip prefix (a USPS sectional center --
-//                  a reasonable wide-area proxy), or same city/state.
+// Distance is REAL MILES now (directed 1 Aug, replacing this file's
+// original zip-prefix structural proxy): haversine between US Census
+// ZCTA zip centroids, served by /api/zip-distance from the server-only
+// table in lib/zip-distance.ts -- static data, no external API, no keys,
+// works offline. This filter still exists to keep a list local, never to
+// hide a curated row: anything unmeasurable stays visible.
+//   - Row with no zip and no city: always shows (the curator outranks
+//     the rule).
+//   - Property with no locality data of its own: everything shows
+//     (Henderson today, SS-478).
+//   - Same city name: shows without needing a centroid.
+//   - Measurable distance: shows iff within the density radius.
+//   - Zips present but centroid missing (PO-box-only zips) or distance
+//     not yet loaded: shows -- unmeasurable is never "far away".
 
 // 3-digit zip prefixes that count as dense metro. Includes the metros
 // this app's real properties sit in today (Lakewood NJ 087, Henderson/
@@ -45,7 +49,11 @@ export function directoryRadiusMiles(zip: string | null | undefined): 5 | 25 {
 
 export function isWithinDirectoryRadius(
   property: { zip: string | null; city: string | null; state?: string | null },
-  row: { zip?: string | null; city?: string | null; state?: string | null }
+  row: { zip?: string | null; city?: string | null; state?: string | null },
+  // Real centroid miles between property.zip and row.zip, from
+  // /api/zip-distance. null = looked up but unmeasurable; undefined =
+  // not loaded (yet) -- both stay permissive.
+  distanceMiles?: number | null
 ): boolean {
   const rowZip = row.zip?.trim() || null;
   const rowCity = row.city?.trim().toLowerCase() || null;
@@ -57,13 +65,11 @@ export function isWithinDirectoryRadius(
   // show everything rather than blank the list (Henderson today, SS-478).
   if (!propZip && !propCity) return true;
 
-  const radius = directoryRadiusMiles(propZip);
   if (propCity && rowCity && propCity === rowCity) return true;
-  if (propZip && rowZip) {
-    if (radius === 5) return rowZip === propZip;
-    return rowZip.slice(0, 3) === propZip.slice(0, 3);
+  if (typeof distanceMiles === 'number') {
+    return distanceMiles <= directoryRadiusMiles(propZip);
   }
-  // One side has only a city, the other only a zip -- not comparable;
-  // stay permissive for the same reason as above.
+  // No measurable distance (missing zip on either side, PO-box-only zip,
+  // or the lookup hasn't answered yet): stay permissive.
   return true;
 }
