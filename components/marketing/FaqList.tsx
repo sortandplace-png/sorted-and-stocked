@@ -19,9 +19,13 @@ export default function FaqList({ items }: { items: FaqItem[] }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
       {items.map(({ q, a, bannerSrc }) => (
-        <details
+        // The tile is a DIV wrapping the disclosure, not the <details>
+        // itself: a closed <details> hides every child except its
+        // <summary>, which silently swallowed the picture slot and the
+        // pin (caught on the priority-zero screenshot pass, 2 Aug).
+        <div
           key={q}
-          className="group relative bg-card border border-cardBorder rounded-xl2 shadow-card overflow-hidden"
+          className="relative bg-card border border-cardBorder rounded-xl2 shadow-card overflow-hidden"
         >
           <Pin size="sm" />
           {/* Picture slot, shared config shape with the /services banner
@@ -39,11 +43,13 @@ export default function FaqList({ items }: { items: FaqItem[] }) {
               aria-hidden="true"
             />
           )}
-          <summary className="cursor-pointer list-none px-5 py-4 font-display font-bold text-lg text-denim">
-            {q}
-          </summary>
-          <p className="px-5 pb-4 text-sm text-dusk leading-relaxed">{a}</p>
-        </details>
+          <details className="group">
+            <summary className="cursor-pointer list-none px-5 py-4 font-display font-bold text-lg text-denim">
+              {q}
+            </summary>
+            <p className="px-5 pb-4 text-sm text-dusk leading-relaxed">{a}</p>
+          </details>
+        </div>
       ))}
     </div>
   );
