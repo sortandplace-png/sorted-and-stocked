@@ -13,7 +13,12 @@ const LOCAL_BUSINESS = {
   '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
   name: 'Sort + Place',
-  telephone: '718-938-4342',
+  // telephone removed on the SS-454/SS-434 zero-numbers ruling. Known NAP
+  // tradeoff, accepted: a LocalBusiness schema without a phone weakens
+  // Google's name/address/phone consistency signal for local ranking --
+  // but a schema number the visible site never shows is itself the NAP
+  // inconsistency SS-434 flagged. Email is the public contact channel.
+  email: 'SortandPlace@gmail.com',
   url: 'https://sortandplace.com',
   address: {
     '@type': 'PostalAddress',

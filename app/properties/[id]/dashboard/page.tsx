@@ -473,6 +473,29 @@ async function getPropertyName(propertyId: string): Promise<string | null> {
 // against information_schema before assuming one) — every recipe counts.
 async function getRecipeCount(propertyId: string): Promise<number> {
   const supabase = await createClient()
+  // Operator console (Lax): the tile must agree with what the Recipes page
+  // shows there -- the aggregate across every property the signed-in
+  // operator belongs to, counted by recipes.property_id (the recipe's
+  // HOME), exactly like app/properties/[id]/recipes/page.tsx. Counting via
+  // recipe_property_links here is why the tile read "0 recipes" on Lax:
+  // Lax has zero link rows by design (the aggregate deliberately does not
+  // backfill them, to keep the source tag).
+  const { data: property } = await supabase.from('properties').select('feature_flags').eq('id', propertyId).single()
+  if (isOperatorConsole(property?.feature_flags as Record<string, unknown> | null)) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    const { data: memberships } = user
+      ? await supabase.from('property_members').select('property_id').eq('user_id', user.id)
+      : { data: null }
+    const memberPropertyIds = (memberships ?? []).map((m) => m.property_id)
+    if (memberPropertyIds.length === 0) return 0
+    const { count } = await supabase
+      .from('recipes')
+      .select('id', { count: 'exact', head: true })
+      .in('property_id', memberPropertyIds)
+    return count ?? 0
+  }
   // Recipes are shared across every property Racquel owns (migration 072).
   const { count } = await supabase
     .from('recipes')

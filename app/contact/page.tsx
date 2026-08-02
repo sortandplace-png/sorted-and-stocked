@@ -33,10 +33,12 @@ export default function ContactPage() {
 
         <ContactPageForm />
 
+        {/* SS-454/SS-434: email only -- the "Prefer to call?" line and its
+            number are gone on the site-wide zero-numbers ruling. */}
         <p className="mt-10 text-sm text-dusk text-center">
-          Prefer to call?{' '}
-          <a href="tel:+17189384342" className="text-denim hover:text-brass transition-colors">
-            (718) 938-4342
+          Prefer email?{' '}
+          <a href="mailto:SortandPlace@gmail.com" className="text-denim hover:text-brass transition-colors">
+            SortandPlace@gmail.com
           </a>
         </p>
       </div>

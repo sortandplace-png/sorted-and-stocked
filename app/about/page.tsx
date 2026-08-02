@@ -58,15 +58,9 @@ export default function AboutPage() {
             <span className="font-medium text-denim">Serving:</span> Lakewood NJ, Ocean County, and the surrounding
             communities.
           </p>
+          {/* SS-454/SS-434: email only, no phone numbers anywhere on the
+              marketing site. */}
           <p className="text-sm text-dusk">
-            <a href="tel:+17189384342" className="hover:text-denim transition-colors">
-              (718) 938-4342
-            </a>{' '}
-            ·{' '}
-            <a href="tel:+17189162518" className="hover:text-denim transition-colors">
-              (718) 916-2518
-            </a>{' '}
-            ·{' '}
             <a href="mailto:SortandPlace@gmail.com" className="hover:text-denim transition-colors">
               SortandPlace@gmail.com
             </a>
