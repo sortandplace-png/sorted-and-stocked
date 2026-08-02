@@ -110,7 +110,11 @@ export default async function RootMarketingPage() {
         {/* Hero */}
         <section className="py-14 md:py-20 text-center max-w-[820px] mx-auto">
           <h1 className="font-display font-bold text-4xl md:text-6xl text-denim leading-[1.08] mb-6">
-            You don&apos;t need another pretty pantry. You need someone to run the backend of your home.
+            {/* SS-531: non-breaking space binds "pretty pantry" so the line
+                never breaks between them. Deliberately NOT text-balance --
+                that would rewrap the whole headline at every width and this
+                is a fix for one specific break, not a layout change. */}
+            You don&apos;t need another pretty&nbsp;pantry. You need someone to run the backend of your home.
           </h1>
           <p className="text-lg text-dusk mb-9">We take the mental load off your plate.</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

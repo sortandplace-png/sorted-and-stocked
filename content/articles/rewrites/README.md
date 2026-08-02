@@ -1,6 +1,6 @@
 # Voice rewrites — prepared, NOT yet loaded
 
-18 articles rewritten for voice and length (SS-521 / SS-508), received 2 Aug
+All 31 articles rewritten for voice and length (SS-521 / SS-508), received 2 Aug
 across four drops. These files are the STAGING-READY versions: renamed to
 their true slugs and with the internal NOTES blocks removed. The originals
 as delivered are not kept here, because the two differences below are the
@@ -65,7 +65,7 @@ Check this folder's filenames before loading anything from any package.
 
 ## Precedence detail
 
-A complete 31-article package (files_40) also exists, with header images and
+A complete 31-article package (files_40) also exists, carrying the ORIGINAL LONG copy, with header images and
 Pinterest pins. It is the ORIGINAL long copy for the slugs listed here --
 e.g. article 11 is 4,335 words there against 1,347 here. THIS FOLDER WINS
 for every slug it contains. The package supplies the other 13 articles and
