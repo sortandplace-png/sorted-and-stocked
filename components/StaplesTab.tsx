@@ -240,10 +240,15 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
       >
         <PhotoOrFallback src={staple.photo_url} alt="" sizeClass="w-10 h-10" rounded="rounded-lg" className="shrink-0" />
 
-        {/* Item Info */}
+        {/* Item Info. Status lives IN this column's normal flow now -- the
+            old right-side status column collided with names and photos the
+            moment the card got narrow (same class of bug as the inventory
+            card's absolutely-pinned retailer chips, SS-489). Names and the
+            meta line wrap instead of truncating, so long items and the
+            longer ES strings lay out clean rather than clipping. */}
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-sm text-denim truncate">{staple.staple_name}</h4>
-          <div className="flex items-center gap-2 mt-1 text-xs text-dusk">
+          <h4 className="font-medium text-sm text-denim break-words">{staple.staple_name}</h4>
+          <div className="flex items-center gap-2 mt-1 text-xs text-dusk flex-wrap">
             <span className="bg-mist px-2 py-0.5 rounded-full text-denim font-medium">
               {categoryLabel(staple.staple_category)}
             </span>
@@ -254,26 +259,26 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
               </span>
             )}
           </div>
-        </div>
-
-        {/* Stock Status */}
-        <div className="flex flex-col items-end gap-1">
-          <div
-            className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-              staple.last_counted_at === null
-                ? 'bg-mist text-dusk'
-                : staple.is_low
-                  ? 'bg-rust/15 text-rust'
-                  : 'bg-sage/10 text-sage'
-            }`}
-          >
-            {staple.last_counted_at === null
-              ? 'Not Yet Audited'
-              : staple.is_low
-                ? 'Low Stock'
-                : `${staple.current_qty} in stock`}
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            {staple.last_counted_at !== null && (
+              <span
+                className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                  staple.is_low ? 'bg-rust/15 text-rust' : 'bg-sage/10 text-sage'
+                }`}
+              >
+                {staple.is_low ? 'Low Stock' : `${staple.current_qty} in stock`}
+              </span>
+            )}
+            {staple.is_low && <span className="text-[11px] text-dusk">Min: {staple.min_qty}</span>}
+            {/* Deliberately subordinate: small, muted, no chip fill -- the
+                stock state is the primary fact on this card, and a loud
+                audit badge on every row was reading as a contradiction of
+                the group tile's "All stocked" summary. Same words, same
+                fact, quieter voice (copy unchanged per the ruling). */}
+            {staple.last_counted_at === null && (
+              <span className="text-[10px] text-dusk/80">Not Yet Audited</span>
+            )}
           </div>
-          {staple.is_low && <span className="text-[11px] text-dusk">Min: {staple.min_qty}</span>}
         </div>
 
         {/* Add Button */}
@@ -425,7 +430,11 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
             </p>
           </div>
         ) : groups ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-[14px] items-stretch">
+          // Single column on phones -- grid-cols-2 gave each category tile
+          // half the viewport, which cramped every staple row inside an
+          // expanded tile and left an empty right gutter whenever a filter
+          // narrowed the list to one tile (the Lax Shopping-tab bug).
+          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-[14px] items-stretch">
             {groups.map(([key, groupStaples]) => {
               const collapsed = collapsedGroups.has(key);
               const lowCount = groupStaples.filter((s) => s.is_low).length;

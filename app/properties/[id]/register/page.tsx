@@ -31,7 +31,10 @@ export default async function RegisterPage({ params }: { params: Promise<{ id: s
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (!membership || membership.role === 'staff') {
+  // Tightened to OWNER exactly (2 Aug directive: MIN_ROLE owner) -- the
+  // register is the operator's own working record; a manager tier that
+  // can read every finding about every house was wider than ruled.
+  if (!membership || membership.role !== 'owner') {
     redirect(`/properties/${id}/inventory`);
   }
   const flags = (membership.properties as unknown as { feature_flags: Record<string, unknown> | null } | null)

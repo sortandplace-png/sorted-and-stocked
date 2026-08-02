@@ -4,7 +4,7 @@
 // bento cards (Pin, icon circle, denim title, dusk body) so this reads as
 // a sibling page, not a different site.
 import type { Metadata } from 'next';
-import { Home, ChefHat, Users, HeartHandshake, Sparkles, RotateCw } from 'lucide-react';
+import { Home, ChefHat, Users, HeartHandshake, Sparkles, RotateCw, Boxes } from 'lucide-react';
 import Pin from '@/components/PinAccent';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
@@ -23,36 +23,59 @@ export const metadata: Metadata = {
   },
 };
 
-const SERVICES = [
+// SS-488 (Option 1): every card carries a banner slot. bannerSrc is the
+// per-card config Racquel fills with her REAL photos as she supplies them
+// (intended assignments noted per card) -- until then the slot renders
+// the Concept B placeholder gradient, never a stock or fabricated photo
+// (R18/no-invented-imagery).
+const SERVICES: {
+  icon: typeof Home;
+  title: string;
+  body: string;
+  bannerSrc: string | null;
+}[] = [
   {
     icon: Home,
     title: 'Full Home Organization',
     body: 'Every room, every closet, every drawer. We build systems that match how your family actually lives — labeled, sourced, and maintainable without us.',
+    bannerSrc: null, // Racquel: flat-lay photo
   },
   {
     icon: ChefHat,
     title: 'Kitchen & Pantry Setup',
     body: 'Kosher kitchen flow, labeled storage, expiration tracking, and a stocked pantry that staff can maintain on their own. Fleishig, milchig, pareve — everything in its place.',
+    bannerSrc: null, // Racquel: fridge photo
   },
   {
     icon: Users,
     title: 'Household Operations & Staff Management',
     body: 'Task systems, daily checklists, bilingual SOPs, shift handover protocols, and accountability tools so your home runs whether you’re there or not.',
+    bannerSrc: null, // Racquel: TBD
   },
   {
     icon: HeartHandshake,
     title: 'Newlywed Package',
     body: 'Setting up your first home right: kitchen essentials, closet systems, pantry stocking, and the organizational foundation that saves arguments later.',
+    bannerSrc: null, // Racquel: TBD
   },
   {
     icon: Sparkles,
     title: 'Pesach Prep',
     body: 'Full Pesach kitchen turnover, covering, labeling, inventory of Pesach supplies, and a system your staff can follow every year without retraining.',
+    bannerSrc: null, // Racquel: pantry photo
   },
   {
     icon: RotateCw,
     title: 'Ongoing Management',
     body: 'Weekly meal planning, grocery ordering, vendor coordination, inventory monitoring, and regular check-ins. The invisible work that keeps everything running.',
+    bannerSrc: null, // Racquel: TBD
+  },
+  {
+    // SS-488: new service, same card system as the six above.
+    icon: Boxes,
+    title: 'Moving & Packing',
+    body: 'Pack-up, move coordination, and unpacking into systems from day one — every box labeled by room, and the new home organized before the first night, not months after.',
+    bannerSrc: null, // Racquel: TBD
   },
 ];
 
@@ -74,17 +97,36 @@ export default function ServicesPage() {
 
         <section className="pb-16 md:pb-24">
           <div className="grid md:grid-cols-2 gap-5">
-            {SERVICES.map(({ icon: Icon, title, body }) => (
+            {SERVICES.map(({ icon: Icon, title, body, bannerSrc }) => (
               <div
                 key={title}
-                className="relative bg-card border border-cardBorder rounded-2xl shadow-card p-6"
+                className="relative bg-card border border-cardBorder rounded-2xl shadow-card overflow-hidden"
               >
                 <Pin size="sm" />
-                <div className="w-11 h-11 rounded-full bg-brass/15 flex items-center justify-center mb-4">
-                  <Icon className="w-5 h-5 text-brass" strokeWidth={1.75} aria-hidden="true" />
+                {/* SS-488 banner slot: 140px, 16:9-framed via object-cover
+                    when a real photo is configured; the Concept B gradient
+                    (mist -> linen -> brass wash) stands in until Racquel
+                    supplies each image -- never a stock photo. */}
+                {bannerSrc ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={bannerSrc} alt="" className="w-full h-[140px] object-cover" />
+                ) : (
+                  <div
+                    className="w-full h-[140px]"
+                    style={{
+                      backgroundImage:
+                        'linear-gradient(135deg, #E8EEF6 0%, #FFFAF3 62%, rgba(198,164,110,0.28) 100%)',
+                    }}
+                    aria-hidden="true"
+                  />
+                )}
+                <div className="p-6">
+                  <div className="w-11 h-11 rounded-full bg-brass/15 flex items-center justify-center mb-4">
+                    <Icon className="w-5 h-5 text-brass" strokeWidth={1.75} aria-hidden="true" />
+                  </div>
+                  <h2 className="font-display font-bold text-xl text-denim mb-2">{title}</h2>
+                  <p className="text-sm text-dusk leading-relaxed">{body}</p>
                 </div>
-                <h2 className="font-display font-bold text-xl text-denim mb-2">{title}</h2>
-                <p className="text-sm text-dusk leading-relaxed">{body}</p>
               </div>
             ))}
           </div>

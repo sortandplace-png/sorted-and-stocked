@@ -22,6 +22,8 @@ const VALID_SERVICES = new Set([
   'Household Operations & Staff Management',
   'Pesach Prep',
   'Ongoing Management',
+  // SS-488: Moving & Packing added alongside its /services card.
+  'Moving & Packing',
   'Other',
 ]);
 

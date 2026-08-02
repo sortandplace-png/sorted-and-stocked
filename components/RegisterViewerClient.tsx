@@ -71,7 +71,9 @@ export default function RegisterViewerClient({ rows }: { rows: WorkItemRow[] }) 
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const sorted = useMemo(() => [...rows].sort((a, b) => idNum(a.id) - idNum(b.id)), [rows]);
+  // id DESC (2 Aug directive): newest findings first -- the register is
+  // read from a phone to see what just happened, not from SS-001 up.
+  const sorted = useMemo(() => [...rows].sort((a, b) => idNum(b.id) - idNum(a.id)), [rows]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { total: rows.length };
@@ -217,8 +219,65 @@ export default function RegisterViewerClient({ rows }: { rows: WorkItemRow[] }) 
         </div>
       </div>
 
-      {/* The full table */}
-      <div className="bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
+      {/* Mobile-first card list (2 Aug directive: Racquel reads this from
+          her phone) -- one card per row, tap to expand the same detail
+          block the table shows. The table below stays for md+ screens;
+          a five-column table squeezed into a phone was the thing this
+          replaces, not a layout worth shrinking. */}
+      <div className="md:hidden space-y-2">
+        {filtered.length === 0 && (
+          <p className="py-8 text-center text-denim/60 text-sm bg-card rounded-xl2 border border-cardBorder">
+            Nothing matches these filters.
+          </p>
+        )}
+        {filtered.map((r) => {
+          const expanded = expandedId === r.id;
+          return (
+            <div key={r.id} className="bg-card rounded-xl2 border border-cardBorder shadow-card overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setExpandedId(expanded ? null : r.id)}
+                aria-expanded={expanded}
+                className="w-full text-left px-4 py-3"
+              >
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className="font-display text-[15px] text-denim tabular-nums">{r.id}</span>
+                  <span
+                    className={`inline-block border rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                      STATUS_PILL[r.status] ?? 'border-cardBorder text-denim/60'
+                    }`}
+                  >
+                    {r.status}
+                  </span>
+                  <span title={r.evidence ?? undefined}>{EVIDENCE_DOT[r.evidence ?? ''] ?? '·'}</span>
+                  <span className="text-[11px] text-denim/70">{r.owner ?? '—'}</span>
+                  {(r.updated_at ?? r.created_at) && (
+                    <span className="text-[11px] text-denim/60 ml-auto">{fmtDate(r.updated_at ?? r.created_at)}</span>
+                  )}
+                </div>
+                <p className={`text-[13px] leading-snug ${r.status === 'superseded' ? 'text-denim/50' : 'text-denim'}`}>
+                  {r.title}
+                </p>
+              </button>
+              {expanded && (
+                <div className="border-t border-cardBorder/60 bg-mist/60 px-4 py-3">
+                  {r.detail && (
+                    <p className="text-[13px] text-denim leading-relaxed whitespace-pre-wrap mb-2">{r.detail}</p>
+                  )}
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-denim/70">
+                    {r.verified_how && <span>verified: {r.verified_how}</span>}
+                    {r.superseded_by && <span>superseded by {r.superseded_by}</span>}
+                    {r.updated_at && <span>updated {fmtDate(r.updated_at)}</span>}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* The full table (md+) */}
+      <div className="hidden md:block bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[13px]">
             <thead>
