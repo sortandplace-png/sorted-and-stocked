@@ -19,14 +19,22 @@
 // and every answer is real DOM text for the crawler -- which matters
 // more here than anywhere, since this page's entire content IS the
 // crawlable text.
+//
+// ICONS (SS-528): one per question, BRASS STROKE ONLY. This is the
+// sanctioned brass use -- icon strokes, eyebrow labels, the pin dot --
+// and deliberately NOT a brass background circle, which would repeat the
+// fill violation SS-527 just removed from the CTA. Stroke weight 1.75,
+// 18px, under the 20px ceiling. They are the replacement visual weight
+// for the image blocks removed in SS-504, not a reinstatement of images.
+import type { LucideIcon } from 'lucide-react';
 import Pin from '@/components/PinAccent';
 
-export type FaqItem = { q: string; a: string };
+export type FaqItem = { q: string; a: string; icon: LucideIcon };
 
 export default function FaqList({ items }: { items: FaqItem[] }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-      {items.map(({ q, a }) => (
+      {items.map(({ q, a, icon: Icon }) => (
         // The tile is a DIV wrapping the disclosure, not the <details>
         // itself: a closed <details> hides every child except its
         // <summary>, which silently swallowed the pin (caught on the
@@ -43,8 +51,13 @@ export default function FaqList({ items }: { items: FaqItem[] }) {
                 question's first line instead of over the image, so the
                 text needs clearance past it or a long question runs
                 under the dot. */}
-            <summary className="cursor-pointer list-none pl-5 pr-8 py-4 font-display font-bold text-lg text-denim">
-              {q}
+            <summary className="cursor-pointer list-none pl-5 pr-8 py-4 font-display font-bold text-lg text-denim flex items-start gap-3">
+              <Icon
+                className="w-[18px] h-[18px] text-brass shrink-0 mt-[5px]"
+                strokeWidth={1.75}
+                aria-hidden="true"
+              />
+              <span>{q}</span>
             </summary>
             <p className="px-5 pb-4 text-sm text-dusk leading-relaxed">{a}</p>
           </details>

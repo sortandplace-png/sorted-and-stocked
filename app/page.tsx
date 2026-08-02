@@ -116,7 +116,7 @@ export default async function RootMarketingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
               href="#consultation"
-              className="bg-brass text-denim font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-full hover:opacity-90 transition-opacity shadow-card"
+              className="bg-denim text-white font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-full hover:opacity-90 transition-opacity shadow-card"
             >
               Book Your Consultation
             </a>

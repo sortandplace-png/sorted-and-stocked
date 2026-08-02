@@ -218,7 +218,7 @@ export default function ServicesPage() {
         <section className="pb-16 md:pb-24 text-center">
           <a
             href="/contact"
-            className="inline-block bg-brass text-denim font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-full hover:opacity-90 transition-opacity shadow-card"
+            className="inline-block bg-denim text-white font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-full hover:opacity-90 transition-opacity shadow-card"
           >
             Book Your Consultation
           </a>
