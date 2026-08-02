@@ -40,16 +40,25 @@ export default function AboutPage() {
             house runs them instead of the other way around. The problem was never the clutter. The problem is that
             nobody built the backend.
           </p>
+          {/* SS-532 Option A (Racquel ruling): the service is Sort + Place
+              DOING the work, not teaching the client's staff to. Paragraphs
+              1 and 2 above are deliberately untouched -- "hired staff" in
+              paragraph 2 describes what the client already tried and why it
+              failed, so removing it would weaken the point.
+              SCOPE WARNING: this reframes the SERVICE copy only. The product
+              genuinely is staff-facing (Handbook, training videos, bilingual
+              SOPs, staff dashboard) and a product page must NOT inherit this
+              ruling by reflex -- do not strip "staff" site-wide the way the
+              ampersand was over-applied. */}
           <p>
-            We build household operating systems: task management, procurement workflows, meal planning, staff
-            training materials, and accountability tools, all designed for homes where multiple people need to
-            maintain the same standard without constant supervision.
+            We build household operating systems: task management, procurement workflows, meal planning, documented
+            procedures, and accountability tools, designed for homes where the same standard has to hold whether or
+            not anyone is watching.
           </p>
           <p>
             Our approach is different because we stay. We don’t organize your pantry and leave. We set up the
-            reorder system, train your staff on it, monitor it remotely, and adjust it when something stops working.
-            The goal isn’t a beautiful before-and-after. It’s a house that works on Tuesday at 4pm when nobody’s
-            watching.
+            reorder system, we run it, we watch it, and we fix it when something stops working. The goal isn’t a
+            beautiful before-and-after. It’s a house that works on Tuesday at 4pm when nobody’s watching.
           </p>
         </div>
 
