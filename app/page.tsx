@@ -35,7 +35,7 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import Pin from '@/components/PinAccent';
 import ConsultationForm from '@/components/ConsultationForm';
-import { ClipboardList, Users, Package, Boxes } from 'lucide-react';
+import { ClipboardList, Users, Package, Boxes, PartyPopper } from 'lucide-react';
 import { TESTFLIGHT_URL } from '@/lib/testflight';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
@@ -83,6 +83,13 @@ const SERVICES = [
     title: 'Moving, Packing & Unpacking',
     body: 'Professional packing before the move, full unpacking after, and every kitchen, closet, and playroom set up to function from day one. No garage of boxes you are still living out of in six months.',
   },
+  {
+    // 2 Aug ruling: sixth service, ADDED like Moving -- copy verbatim,
+    // dash-free.
+    icon: PartyPopper,
+    title: 'Simcha & Event Prep',
+    body: 'The house guest ready before the simcha and put back together after. Extra hands scheduled, linens counted, and the kitchen turned around while you enjoy the event.',
+  },
 ];
 
 export default async function RootMarketingPage() {
@@ -96,16 +103,11 @@ export default async function RootMarketingPage() {
     <div className="bg-mist min-h-screen font-interDisplay">
       <LocalBusinessJsonLd />
 
-      {/* Contact bar. SS-454/SS-434 ruling: zero phone numbers site-wide,
-          email only -- the two business lines that used to sit here are
-          deliberately gone, and the if-any-number-then-both parity rule
-          still applies should numbers ever be ruled back. */}
-      <div className="bg-denim text-white text-xs text-center py-2 px-4">
-        <a href="mailto:SortandPlace@gmail.com" className="hover:underline">
-          SortandPlace@gmail.com
-        </a>
-      </div>
-
+      {/* The top contact strip is GONE entirely (2 Aug ruling) -- first it
+          lost its phone numbers (SS-454/SS-434), then the email-only band
+          itself was removed. Email lives in the footer and on /contact
+          only. The if-any-number-then-both parity rule stays recorded
+          should numbers ever be ruled back anywhere. */}
       <MarketingHeader />
 
       <div className="max-w-[1080px] mx-auto px-4">
@@ -166,10 +168,12 @@ export default async function RootMarketingPage() {
 
         {/* Service bento cards */}
         <section className="py-10 md:py-14">
-          {/* Four cards since the Moving addition -- 2x2 on tablets, one
-              row of four on desktop, so the new card sits inline rather
-              than wrapping alone under a 3-column row. */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Five cards since the Moving + Simcha additions. Even-count
+              rebalance ruling: 2-up on tablets wraps 2/2/1, 3-up on desktop
+              wraps 3/2 -- with an odd card count no grid divides evenly, so
+              this is the closest-to-even layout without inventing a sixth
+              homepage card nobody ruled. */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {SERVICES.map(({ icon: Icon, title, body }) => (
               <div
                 key={title}

@@ -11,8 +11,10 @@ const SERVICE_OPTIONS = [
   'Kitchen/Pantry Setup',
   'Newlywed Package',
   'Household Operations/Staff Management',
-  // SS-488: new service, mirrored on /services and in the API allowlist.
+  // SS-488 + 2 Aug ruling: new services, mirrored on /services and in the
+  // API allowlist.
   'Moving, Packing & Unpacking',
+  'Simcha & Event Prep',
 ];
 
 export default function ConsultationForm() {

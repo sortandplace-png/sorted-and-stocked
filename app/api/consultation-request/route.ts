@@ -22,8 +22,9 @@ const VALID_SERVICES = new Set([
   'Household Operations & Staff Management',
   'Pesach Prep',
   'Ongoing Management',
-  // SS-488: added alongside its /services card (amended label).
+  // SS-488 + 2 Aug ruling: added alongside their /services cards.
   'Moving, Packing & Unpacking',
+  'Simcha & Event Prep',
   'Other',
 ]);
 

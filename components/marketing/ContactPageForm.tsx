@@ -25,8 +25,10 @@ const SERVICE_OPTIONS = [
   'Household Operations & Staff Management',
   'Pesach Prep',
   'Ongoing Management',
-  // SS-488: new service, mirrored on /services and in the API allowlist.
+  // SS-488 + 2 Aug ruling: new services, mirrored on /services and in the
+  // API allowlist.
   'Moving, Packing & Unpacking',
+  'Simcha & Event Prep',
   'Other',
 ];
 

@@ -4,7 +4,7 @@
 // bento cards (Pin, icon circle, denim title, dusk body) so this reads as
 // a sibling page, not a different site.
 import type { Metadata } from 'next';
-import { Home, ChefHat, Users, HeartHandshake, Sparkles, RotateCw, Boxes } from 'lucide-react';
+import { Home, ChefHat, Users, HeartHandshake, Sparkles, RotateCw, Boxes, PartyPopper } from 'lucide-react';
 import Pin from '@/components/PinAccent';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
@@ -96,6 +96,20 @@ const SERVICES: {
     icon: Boxes,
     title: 'Moving, Packing & Unpacking',
     body: 'Professional packing before the move, full unpacking after, and every kitchen, closet, and playroom set up to function from day one. No garage of boxes you are still living out of in six months.',
+    bannerSrc: null, // Racquel: TBD
+  },
+  {
+    // 2 Aug ruling: sixth service (eighth card here), ADDED like Moving.
+    // Copy verbatim, dash-free. Brings this grid to 8 cards -- four even
+    // 2-up rows, per the even-counts rebalance ruling. ES (usted) staged
+    // like Moving's, same no-locale-path caveat:
+    //   "Preparacion de Simjas y Eventos" / "La casa lista para recibir
+    //   invitados antes de la simja y ordenada de nuevo despues. Ayuda
+    //   extra programada, la ropa de cama contada, y la cocina lista de
+    //   nuevo mientras usted disfruta del evento."
+    icon: PartyPopper,
+    title: 'Simcha & Event Prep',
+    body: 'The house guest ready before the simcha and put back together after. Extra hands scheduled, linens counted, and the kitchen turned around while you enjoy the event.',
     bannerSrc: null, // Racquel: TBD
   },
 ];
