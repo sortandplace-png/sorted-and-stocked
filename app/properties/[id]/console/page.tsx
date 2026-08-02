@@ -22,6 +22,9 @@ import SettingsClient from '@/components/SettingsClient';
 import StaffSlotsEditor from '@/components/StaffSlotsEditor';
 import ModuleFlagsEditor from '@/components/ModuleFlagsEditor';
 import ConsoleInviteCard from '@/components/ConsoleInviteCard';
+import ConsoleTestFlightCard from '@/components/ConsoleTestFlightCard';
+import ConsoleAlertReplies from '@/components/ConsoleAlertReplies';
+import ConsoleLeadsCard from '@/components/ConsoleLeadsCard';
 import { isOperatorConsole } from '@/lib/module-flags';
 import { getOperatorProperties } from '@/lib/operator-properties';
 
@@ -148,7 +151,17 @@ export default async function OperatorConsolePage({
               </p>
             </div>
 
-            <ConsoleInviteCard properties={properties} defaultPropertyId={id} />
+            {/* SS-436 both-yes ruling (2 Aug): invite-by-email and the
+                TestFlight invite side by side, alert replies below. */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <ConsoleInviteCard properties={properties} defaultPropertyId={id} />
+              <ConsoleTestFlightCard />
+            </div>
+            <ConsoleAlertReplies propertyIds={properties.map((p) => p.id)} />
+
+            {/* Leads backup (2 Aug ruling): OWNER-only, default collapsed,
+                unread badge -- out of her way until she wants it. */}
+            {membership.role === 'owner' && <ConsoleLeadsCard />}
           </div>
         </section>
 

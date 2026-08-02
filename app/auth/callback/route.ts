@@ -29,8 +29,22 @@ export async function GET(request: Request) {
       ? requestedRedirect
       : '/properties';
 
+  // SS-452 diagnostics (2 Aug): this route used to collapse every failure
+  // into one generic auth-callback-failed, which is why the recurring
+  // sign-in bug has been un-debuggable from Racquel's screenshots three
+  // times running. Each distinct failure now names itself, so the login
+  // page can say WHAT failed and the register can record which mode it was.
   if (!code) {
-    return NextResponse.redirect(`${origin}/login?error=auth-callback-failed`);
+    // The provider may have sent an explicit error instead of a code
+    // (e.g. access_denied when the person cancels the Google prompt).
+    const providerError = searchParams.get('error');
+    if (providerError) {
+      return NextResponse.redirect(`${origin}/login?error=oauth-provider&reason=${encodeURIComponent(providerError)}`);
+    }
+    // No code AND no provider error: the redirect arrived stripped --
+    // typically an in-app browser or blocked cookies dropping the state,
+    // or a direct visit to this URL.
+    return NextResponse.redirect(`${origin}/login?error=no-code`);
   }
 
   // Build the response we're going to return FIRST, and have the cookie
@@ -72,7 +86,23 @@ export async function GET(request: Request) {
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
-    return NextResponse.redirect(`${origin}/login?error=auth-callback-failed`);
+    // Classify the exchange failure (SS-452). The PKCE verifier lives in a
+    // cookie set when sign-in STARTED -- if it's missing here, the browser
+    // dropped/blocked cookies between start and callback (private mode,
+    // in-app browsers, cross-site cookie settings): the exact phone-only
+    // failure mode. An invalid/expired/used code is a different mode
+    // (double-tap, stale link, clock skew). Everything else keeps a
+    // generic tag but carries the sanitized reason.
+    const msg = (error.message || '').toLowerCase();
+    const kind = msg.includes('verifier') || msg.includes('pkce')
+      ? 'cookie-blocked'
+      : msg.includes('invalid') || msg.includes('expired') || msg.includes('grant')
+        ? 'code-invalid'
+        : 'code-exchange';
+    console.error(`auth/callback exchange failed [${kind}]:`, error.message);
+    return NextResponse.redirect(
+      `${origin}/login?error=${kind}&reason=${encodeURIComponent(error.message.slice(0, 120))}`
+    );
   }
 
   // Google sign-in (the only OAuth provider) auto-creates a brand-new

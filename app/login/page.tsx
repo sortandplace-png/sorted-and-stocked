@@ -20,6 +20,17 @@ const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   'no-invite': "No account found for that Google sign-in — you'll need an invite first.",
   'auth-callback-failed': 'Sign-in failed. Please try again.',
   'auth-link-failed': "That link didn't work or has expired — request a new one and try again.",
+  // SS-452 diagnostics: the callback now names each failure mode so this
+  // stops being an opaque, recurring mystery. cookie-blocked is the
+  // phone-only signature: the sign-in started but the browser dropped the
+  // security cookie before returning (private mode, an in-app browser, or
+  // blocked cross-site cookies).
+  'cookie-blocked':
+    'Sign-in could not finish because the browser blocked or dropped a required cookie. Try Safari or Chrome directly (not an in-app browser), and allow cookies for this site.',
+  'code-invalid': 'That sign-in attempt expired or was already used. Please try again fresh.',
+  'code-exchange': 'Sign-in failed while completing the secure handshake. Please try again.',
+  'oauth-provider': 'Google did not complete the sign-in (it was cancelled or refused). Please try again.',
+  'no-code': 'The sign-in returned without its security code — often an in-app browser. Open this site in Safari or Chrome and try again.',
 };
 
 function LoginForm() {

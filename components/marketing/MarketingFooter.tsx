@@ -42,11 +42,12 @@ export default function MarketingFooter({
           <span aria-hidden="true">·</span>
           <span className="whitespace-nowrap">© Sort + Place</span>
           <span aria-hidden="true">·</span>
-          {/* Google branding verification: the OAuth app name ("Sorted and
-              Stocked" / Sorted & Stocked) must appear on the home page,
-              and this shared footer renders there. Small, beside the (c)
-              line, dash-free, EN only per the ruling. */}
-          <span>Sorted &amp; Stocked is the household app by Sort + Place</span>
+          {/* Google branding verification: the OAuth consent screen
+              registers the app name as "Sorted and Stocked" (the word,
+              not the ampersand -- Racquel confirmed from the screen), and
+              this line must match VERBATIM for the reviewer. Do not
+              "fix" and back to &. */}
+          <span>Sorted and Stocked is the household app by Sort + Place</span>
         </p>
 
         <nav className="flex items-center gap-x-4 gap-y-1 flex-wrap justify-center">
