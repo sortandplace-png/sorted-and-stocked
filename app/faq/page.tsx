@@ -11,6 +11,7 @@ import type { Metadata } from 'next';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
 import LocalBusinessJsonLd from '@/components/marketing/LocalBusinessJsonLd';
+import { Workflow, Users, RotateCw, MapPin, Clock, HeartHandshake, UtensilsCrossed, Smartphone } from 'lucide-react';
 import FaqList from '@/components/marketing/FaqList';
 
 export const metadata: Metadata = {
@@ -28,34 +29,42 @@ export const metadata: Metadata = {
 
 const FAQS = [
   {
+    icon: Workflow,
     q: 'How is this different from a regular organizer?',
     a: 'Most organizers focus on the visible result, the pretty pantry, the color-coded closet. We focus on the system behind it: who restocks it, how they know what to buy, where the reorder link is, and what happens when someone new starts. The organization is a byproduct of the system, not the other way around.',
   },
   {
+    icon: Users,
     q: 'Do you work with household staff?',
     a: 'Yes, staff management is one of our core services. We build bilingual task checklists, standard operating procedures, shift handover protocols, and visual reference materials so your staff can maintain your standards independently.',
   },
   {
+    icon: RotateCw,
     q: 'What does "ongoing management" include?',
     a: 'Weekly meal planning with grocery orders actually placed, vendor scheduling and confirmation, inventory monitoring, supply reordering, and regular check-ins. Think of it as a fractional house manager.',
   },
   {
+    icon: MapPin,
     q: 'Do you only work in Lakewood?',
     a: 'We’re based in Lakewood NJ and serve Ocean County and the surrounding area. For larger projects or ongoing management contracts, we’ll travel further. Reach out and we’ll discuss.',
   },
   {
+    icon: Clock,
     q: 'How long does a full home organization take?',
     a: 'It depends on the size of the home and the scope. A single room can be done in a day. A full home with pantry, closets, playroom, and staff systems typically takes 1-2 weeks of active work, plus a training and handover period.',
   },
   {
+    icon: HeartHandshake,
     q: 'What’s the newlywed package?',
     a: 'Everything you need to set up your first home right: kitchen essentials sourced and organized, closet systems built, pantry stocked and labeled, and a basic household operations guide so you start with systems instead of building them under pressure later.',
   },
   {
+    icon: UtensilsCrossed,
     q: 'Is everything kosher-aware?',
     a: 'Yes. Fleishig, milchig, pareve separation is built into every kitchen system we design. Pesach prep is a separate service with its own protocol.',
   },
   {
+    icon: Smartphone,
     q: 'Can I just get the app?',
     a: 'Sorted & Stocked, our household management app, is currently available to Sort + Place clients. It includes inventory tracking, meal planning, staff task management, and more. Ask about it during your consultation.',
   },
@@ -80,7 +89,7 @@ export default function FaqPage() {
         <div className="mt-14 text-center">
           <a
             href="/contact"
-            className="inline-block bg-brass text-denim font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-full hover:opacity-90 transition-opacity shadow-card"
+            className="inline-block bg-denim text-white font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-full hover:opacity-90 transition-opacity shadow-card"
           >
             Book Your Consultation
           </a>
