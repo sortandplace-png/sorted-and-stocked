@@ -28,7 +28,7 @@ Individually trivial. Across a year, across every category, not trivial at all.
 
 ### Food you paid for and threw away
 
-Food waste in American households is substantial and well documented. [USDA estimates put food waste at 30 to 40 percent of the U.S. food supply](https://www.usda.gov/about-food/food-safety/food-loss-and-waste), with its Economic Research Service estimating the loss at the retail and consumer levels at about 31 percent, roughly 133 billion pounds and $161 billion worth of food in 2010.
+Food waste in American households is substantial and well documented. USDA estimates put food waste at 30 to 40 percent of the U.S. food supply, with its Economic Research Service estimating the loss at the retail and consumer levels at about 31 percent, roughly 133 billion pounds and $161 billion worth of food in 2010.
 
 In most kitchens the mechanism isn't carelessness. **Something goes behind something else and stops existing.** It reappears three weeks past its point, and into the trash it goes — having been paid for twice, once at purchase and once in the space it occupied.
 
@@ -42,7 +42,7 @@ Fifteen minutes here, ten there. It's the least visible cost and one of the larg
 
 This is the cost that stays invisible until it's catastrophic.
 
-Insurance industry guidance has long [recommended maintaining a home inventory](https://www.iii.org/article/how-create-home-inventory), and the reason is blunt: **claims are settled on what you can document.** After a fire, flood, or burglary, adjusters ask what you owned. Reconstructing a full household from memory — under stress, possibly displaced — is close to impossible, and most people substantially under-report. The Insurance Information Institute's own suggestion is a [video walkthrough of each room, describing the contents as you go](https://www.iii.org/article/making-home-inventory), with a copy stored outside the home.
+Insurance industry guidance has long recommended maintaining a home inventory, and the reason is blunt: **claims are settled on what you can document.** After a fire, flood, or burglary, adjusters ask what you owned. Reconstructing a full household from memory — under stress, possibly displaced — is close to impossible, and most people substantially under-report. The Insurance Information Institute's own suggestion is a video walkthrough of each room, describing the contents as you go, with a copy stored outside the home.
 
 The gap between what you owned and what you can prove you owned is money you don't get back.
 

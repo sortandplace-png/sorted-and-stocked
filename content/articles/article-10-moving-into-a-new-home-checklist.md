@@ -31,7 +31,7 @@ Ideally done at a walkthrough, or in the first hours before the truck arrives.
 ### Test the safety equipment
 
 - Press the test button on every smoke and carbon monoxide alarm
-- Check the manufacture date on each — alarms have a [service life of about ten years](https://www.nfpa.org/education-and-research/home-fire-safety/smoke-alarms) regardless of battery changes, and previous owners rarely replace them
+- Check the manufacture date on each — NFPA puts the service life of a smoke alarm at about ten years regardless of battery changes, and previous owners rarely replace them
 - Locate fire extinguishers, or buy one for the kitchen
 - Check that every window and exterior door locks properly
 
@@ -98,7 +98,7 @@ Covers: HVAC, water heater, washer, dryer, refrigerator, dishwasher, oven, garba
 ### Find out what's on a schedule
 
 - When was the HVAC last serviced?
-- When was the chimney last swept, if there is one? [Annual inspection is the standard recommendation](https://www.csia.org/homeowner-resources/)
+- When was the chimney last swept, if there is one? The Chimney Safety Institute of America recommends an annual inspection
 - Is there a septic system, and when was it last inspected?
 - Are there any service contracts you're inheriting?
 

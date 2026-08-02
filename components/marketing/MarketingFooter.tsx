@@ -4,13 +4,16 @@
 // Privacy points at /privacy.html, which is the real existing file -- the
 // app's own footer already links it that way. /privacy would 404.
 //
-// BRAND-NAME DEDUPE (Racquel ruling, 2 Aug late): the brand name renders
-// ONCE in the footer, plus the email.
-// - Every page EXCEPT the homepage: "SortandPlace@gmail.com · (c) Sort +
-//   Place" + nav links. No credit line.
+// BRAND-NAME DEDUPE (Racquel ruling, 2 Aug late; REOPENED and completed
+// the same evening -- the first pass left the footer still saying the same
+// thing three ways: the email, the (c) line, and the Contact nav link).
+// The standalone email is now GONE: Contact covers it, and an address sat
+// in a footer is scraper bait. Result:
+// - Every page EXCEPT the homepage: "(c) Sort + Place" left, nav right.
+//   Nothing repeated.
 // - Homepage ONLY (homepage prop): keeps the Google credit line, and the
-//   (c) drops its name so the brand still appears exactly twice there
-//   (credit line + email address) -- the minimum possible.
+//   (c) drops its name, so the brand name appears exactly ONCE there.
+// The email address still lives on /contact and in the Contact nav link.
 // These marketing pages render EN-only today (no locale path), so there is
 // no ES footer variant to update.
 import Link from 'next/link';
@@ -27,7 +30,6 @@ const LINKS = [
 export default function MarketingFooter({
   extraLinks = [],
   homepage = false,
-  flush = false,
 }: {
   // The homepage's existing footer already linked Terms before this shared
   // component existed -- an optional extra rather than baking Terms into
@@ -36,28 +38,24 @@ export default function MarketingFooter({
   extraLinks?: { href: string; label: string }[];
   /** Homepage keeps the Google-verification credit line; see below. */
   homepage?: boolean;
-  /** Drop the default mt-16: for short pages (/contact) whose own bottom
-      padding already provides the gap -- the two stacked into the dead
-      band reported twice on 2 Aug. */
-  flush?: boolean;
 }) {
+  // NO top margin (2 Aug, FOURTH report of the dead-space defect). This
+  // component used to carry mt-16, which stacked on top of whatever bottom
+  // padding the page already had -- py-20 on most marketing pages -- for
+  // 144px of empty background above the footer hairline. The first fix
+  // added an opt-in `flush` prop and applied it to /contact only, which
+  // fixed the one page reported and left the identical gap on /faq,
+  // /services, /about, /blog and the homepage. Removing the margin here
+  // fixes all of them at once and deletes the prop: each page's own
+  // bottom padding is now the only spacing, which is the thing that was
+  // always meant to govern it.
   return (
-    <footer className={`bg-linen border-t border-cardBorder ${flush ? '' : 'mt-16'}`}>
+    <footer className="bg-linen border-t border-cardBorder">
       <div className="max-w-[1100px] mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[13px] text-dusk">
         <p className="flex items-center gap-2 flex-wrap justify-center">
-          {/* SS-454: NO phone numbers anywhere in the footers (supersedes
-              both earlier states -- the single 938 number and the SS-444
-              both-numbers build). Rule: one number shown anywhere means
-              both must be; default is none. The email link stays. */}
-          <a
-            href="https://mail.google.com/mail/?view=cm&fs=1&to=sortandplace@gmail.com&su=Sort%20%2B%20Place"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-denim transition-colors"
-          >
-            SortandPlace@gmail.com
-          </a>
-          <span aria-hidden="true">·</span>
+          {/* SS-454: NO phone numbers anywhere in the footers. SS-498: no
+              standalone email either -- the Contact nav link on the right
+              is the single route to reach us from the footer. */}
           {homepage ? (
             <>
               <span className="whitespace-nowrap">© {new Date().getFullYear()}</span>

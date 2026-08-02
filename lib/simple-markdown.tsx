@@ -8,36 +8,21 @@
 // dangerouslySetInnerHTML/XSS surface even though this content is
 // manager-authored and trusted.
 //
-// Links render as anchors ONLY for site-internal paths (leading "/") or
-// for the citation-host allowlist below: the blog must never grow off-site
-// links by accident through a pasted draft -- anything else renders as its
-// plain text.
+// Links render as anchors ONLY for site-internal paths (leading "/").
+// NO OUTBOUND LINKS (Racquel ruling, 2 Aug late). A citation-host allowlist
+// briefly lived here so verified primary sources could render as real
+// anchors; it is gone. The deciding incident: a III URL verified working in
+// the afternoon rendered as a 404 by evening. Every outbound link is a
+// permanent liability someone has to keep re-checking, and attribution --
+// "NFPA finds...", "the Insurance Information Institute recommends..." --
+// is what carries E-E-A-T, not the hyperlink. Named sources stay in prose;
+// the anchor does not.
+//
+// This is also the enforcement point: because nothing but a leading-"/"
+// path can become an <a>, any external URL that reaches body_markdown
+// renders as inert text. A future link sweep returning anything other than
+// /welcome or /contact is therefore a defect by definition.
 import type { ReactNode } from 'react';
-
-// Verified-citation hosts (Racquel, 2 Aug: primary-source links checked by
-// her for articles 15/16/21/22 + maintenance tracker). Off-site anchors
-// render ONLY for these hosts -- a deliberate, reviewed list, so a pasted
-// draft still can't mint an arbitrary external link. Subdomains of a listed
-// host count (www.usda.gov, fsis.usda.gov).
-const CITATION_HOSTS = [
-  'foodsafety.gov',
-  'usda.gov',
-  'journals.sagepub.com',
-  'iii.org',
-  'nfpa.org',
-  'cpsc.gov',
-  'csia.org',
-];
-
-function isAllowedCitation(href: string): boolean {
-  if (!href.startsWith('https://')) return false;
-  try {
-    const host = new URL(href).hostname.toLowerCase();
-    return CITATION_HOSTS.some((h) => host === h || host.endsWith(`.${h}`));
-  } catch {
-    return false;
-  }
-}
 
 function renderInline(text: string): ReactNode[] {
   const parts = text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\)|\*[^*\n]+\*)/g);
@@ -59,21 +44,7 @@ function renderInline(text: string): ReactNode[] {
           </a>
         );
       }
-      if (isAllowedCitation(href)) {
-        // External citation: new tab + noopener so the opened site gets no
-        // window.opener handle back to this page.
-        return (
-          <a
-            key={i}
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-denim underline underline-offset-2 hover:text-brass"
-          >
-            {label}
-          </a>
-        );
-      }
+      // Anything not site-internal renders as its plain label, never a link.
       return <span key={i}>{label}</span>;
     }
     if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {

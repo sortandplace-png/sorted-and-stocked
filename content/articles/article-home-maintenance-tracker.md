@@ -44,7 +44,7 @@ Organized by frequency. Adapt to your home — a house with a fireplace, a well,
 
 ### Quarterly
 
-- **Dryer vent and lint pathway** — beyond the lint trap you empty each load. NFPA finds [failure to clean is the leading factor contributing to home clothes-dryer fires](https://www.nfpa.org/education-and-research/home-fire-safety/dryers-and-washing-machines), at roughly one third of them (33%), with dust, fiber, or lint (27%) and clothing (26%) the leading items first ignited. That is why this one earns a real interval rather than "when I think of it"
+- **Dryer vent and lint pathway** — beyond the lint trap you empty each load. NFPA finds failure to clean is the leading factor contributing to home clothes-dryer fires, at roughly one third of them (33%), with dust, fiber, or lint (27%) and clothing (26%) the leading items first ignited. That is why this one earns a real interval rather than "when I think of it"
 - **Range hood filter** — degrease or replace
 - **Water softener salt**, if you have one
 - **Garage door** — test the auto-reverse safety feature, lubricate the track
@@ -54,7 +54,7 @@ Organized by frequency. Adapt to your home — a house with a fireplace, a well,
 
 - **HVAC service** — cooling in spring, heating in fall
 - **Gutters** — after leaf fall and again in spring, more often under trees
-- **Smoke and CO detector batteries** — if yours aren't [sealed ten-year units](https://www.cpsc.gov/Safety-Education/Safety-Education-Centers/Smoke-and-Carbon-Monoxide-Alarm-Information-Center)
+- **Smoke and CO detector batteries** — if yours aren't sealed ten-year units
 - **Mattresses** — rotate
 - **Refrigerator coils** — vacuum
 - **Faucets and toilets** — check for slow leaks
@@ -62,7 +62,7 @@ Organized by frequency. Adapt to your home — a house with a fireplace, a well,
 ### Annual
 
 - **Water heater** — flush the sediment
-- **Chimney and fireplace** — inspection and cleaning before the season. [Annual inspection is the standard recommendation](https://www.csia.org/homeowner-resources/) for any solid-fuel appliance
+- **Chimney and fireplace** — inspection and cleaning before the season. Annual inspection is the standard recommendation for any solid-fuel appliance
 - **Roof and exterior** — visual inspection
 - **Caulking and weatherstripping** — check and refresh
 - **Septic system** — inspect, if applicable
@@ -71,7 +71,7 @@ Organized by frequency. Adapt to your home — a house with a fireplace, a well,
 
 ### Every several years
 
-- **Smoke alarms** — replace the units themselves, not just the batteries. Alarms have a [service life of roughly ten years](https://www.nfpa.org/education-and-research/home-fire-safety/smoke-alarms) regardless of battery changes
+- **Smoke alarms** — replace the units themselves, not just the batteries. Alarms have a service life of roughly ten years regardless of battery changes
 - **Carbon monoxide alarms** — replace per manufacturer, typically shorter than smoke alarms
 - **Water heater** — plan for replacement rather than be surprised by it
 - **Exterior paint, sealing, and major appliances** — on their own cycles
