@@ -4,6 +4,7 @@
 // bento cards (Pin, icon circle, denim title, dusk body) so this reads as
 // a sibling page, not a different site.
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import { Home, ChefHat, Users, HeartHandshake, Sparkles, RotateCw, Boxes, PartyPopper } from 'lucide-react';
 import Pin from '@/components/PinAccent';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
@@ -41,6 +42,9 @@ export const metadata: Metadata = {
 // (intended assignments noted per card) -- until then the slot renders
 // the Concept B placeholder gradient, never a stock or fabricated photo
 // (R18/no-invented-imagery).
+// 2 Aug midnight batch: five of Racquel's real photos landed (optimized to
+// 1200x675 in public/services/, rendered via next/image -- NOT Supabase
+// transforms, SS-451). The remaining three cards keep the placeholder.
 const SERVICES: {
   icon: typeof Home;
   title: string;
@@ -69,19 +73,19 @@ const SERVICES: {
     icon: HeartHandshake,
     title: 'Newlywed Package',
     body: 'Setting up your first home right: kitchen essentials, closet systems, pantry stocking, and the organizational foundation that saves arguments later.',
-    bannerSrc: null, // Racquel: TBD
+    bannerSrc: '/services/newlywed-package.jpg', // Pantry_being_organized_with_containers
   },
   {
     icon: Sparkles,
     title: 'Pesach Prep',
     body: 'Full Pesach kitchen turnover, covering, labeling, inventory of Pesach supplies, and a system your staff can follow every year without retraining.',
-    bannerSrc: null, // Racquel: pantry photo
+    bannerSrc: '/services/pesach-prep.jpg', // Kosher_kitchen_prepared_for_Pesach
   },
   {
     icon: RotateCw,
     title: 'Ongoing Management',
     body: 'Weekly meal planning, grocery ordering, vendor coordination, inventory monitoring, and regular check-ins. The invisible work that keeps everything running.',
-    bannerSrc: null, // Racquel: TBD
+    bannerSrc: '/services/ongoing-management.jpg', // Luxury_home_management_workspace
   },
   {
     // SS-488 amendment: ADDED as a new service, nothing replaced. Copy is
@@ -96,7 +100,7 @@ const SERVICES: {
     icon: Boxes,
     title: 'Moving, Packing & Unpacking',
     body: 'Professional packing before the move, full unpacking after, and every kitchen, closet, and playroom set up to function from day one. No garage of boxes you are still living out of in six months.',
-    bannerSrc: null, // Racquel: TBD
+    bannerSrc: '/services/moving-packing-unpacking.jpg', // Moving_boxes_in_luxury_home
   },
   {
     // 2 Aug ruling: sixth service (eighth card here), ADDED like Moving.
@@ -110,7 +114,7 @@ const SERVICES: {
     icon: PartyPopper,
     title: 'Simcha & Event Prep',
     body: 'The house guest ready before the simcha and put back together after. Extra hands scheduled, linens counted, and the kitchen turned around while you enjoy the event.',
-    bannerSrc: null, // Racquel: TBD
+    bannerSrc: '/services/simcha-event-prep.jpg', // Dining_room_prepared_for_celebration
   },
 ];
 
@@ -179,8 +183,13 @@ export default function ServicesPage() {
                     (mist -> linen -> brass wash) stands in until Racquel
                     supplies each image -- never a stock photo. */}
                 {bannerSrc ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={bannerSrc} alt="" className="w-full h-[140px] object-cover" />
+                  <Image
+                    src={bannerSrc}
+                    alt=""
+                    width={1200}
+                    height={675}
+                    className="w-full h-[140px] object-cover"
+                  />
                 ) : (
                   <div
                     className="w-full h-[140px]"

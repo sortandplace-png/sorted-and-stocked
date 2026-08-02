@@ -23,7 +23,7 @@ type ShiftRow = {
   clocked_in_at: string;
   clocked_out_at: string | null;
 };
-type Member = { user_id: string; full_name: string | null };
+type Member = { user_id: string; full_name: string | null; email: string | null };
 
 /** Monday-start week key, as an ISO date, in the viewer's local time. */
 function weekStart(iso: string): string {
@@ -71,14 +71,14 @@ export default function ShiftHoursClient({
         .select('id, user_id, clocked_in_at, clocked_out_at')
         .eq('property_id', propertyId)
         .order('clocked_in_at', { ascending: false }),
-      supabase.from('property_members').select('user_id, profiles(full_name)').eq('property_id', propertyId),
+      supabase.from('property_members').select('user_id, profiles(full_name, email)').eq('property_id', propertyId),
     ]);
     setShifts((shiftRows as ShiftRow[]) ?? []);
     setMembers(
-      (memberRows ?? []).map((m) => ({
-        user_id: m.user_id,
-        full_name: (m.profiles as unknown as { full_name: string | null } | null)?.full_name ?? null,
-      }))
+      (memberRows ?? []).map((m) => {
+        const prof = m.profiles as unknown as { full_name: string | null; email: string | null } | null;
+        return { user_id: m.user_id, full_name: prof?.full_name ?? null, email: prof?.email ?? null };
+      })
     );
     setLoading(false);
   }, [propertyId, supabase]);
@@ -87,9 +87,10 @@ export default function ShiftHoursClient({
     load();
   }, [load]);
 
+  // "Unnamed" is banned (SS-436 reopen) -- email is the fallback identity.
   const nameByUser = useMemo(
-    () => new Map(members.map((m) => [m.user_id, m.full_name ?? (es ? 'Sin nombre' : 'Unnamed')])),
-    [members, es]
+    () => new Map(members.map((m) => [m.user_id, m.full_name?.trim() || m.email || m.user_id.slice(0, 8)])),
+    [members]
   );
 
   // week -> user -> { hours, shifts, openShifts }
@@ -165,7 +166,7 @@ export default function ShiftHoursClient({
               {rows.map(([userId, v]) => (
                 <li key={userId} className="flex items-center gap-3 px-4 py-2.5">
                   <span className="flex-1 min-w-0 text-sm text-denim truncate">
-                    {nameByUser.get(userId) ?? (es ? 'Sin nombre' : 'Unnamed')}
+                    {nameByUser.get(userId) ?? userId.slice(0, 8)}
                   </span>
                   {v.open > 0 && (
                     <span className="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full bg-briar-bg border border-briar-border text-briar">

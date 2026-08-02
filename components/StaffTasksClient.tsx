@@ -260,7 +260,7 @@ export default function StaffTasksClient({
         .order('sort_order'),
       supabase.from('rooms').select('id, name_en, name_es').eq('property_id', propertyId).eq('active', true),
       supabase.from('frequencies').select('id, code, label_en, label_es, interval_days').order('sort_order'),
-      supabase.from('property_members').select('id, user_id, profiles(full_name)').eq('property_id', propertyId),
+      supabase.from('property_members').select('id, user_id, profiles(full_name, email)').eq('property_id', propertyId),
       // SS-429 B: which slots belong to the viewer decides which slot
       // assignments count as "mine".
       supabase.from('staff_slots').select('id, user_id').eq('property_id', propertyId),
@@ -272,11 +272,15 @@ export default function StaffTasksClient({
     setRooms((roomRows as Room[]) ?? []);
     setFrequencies((freqRows as Frequency[]) ?? []);
     setMembers(
-      (memberRows ?? []).map((m) => ({
-        id: m.id,
-        user_id: m.user_id,
-        full_name: (m.profiles as unknown as { full_name: string | null } | null)?.full_name ?? null,
-      }))
+      (memberRows ?? []).map((m) => {
+        const prof = m.profiles as unknown as { full_name: string | null; email: string | null } | null;
+        return {
+          id: m.id,
+          user_id: m.user_id,
+          // "Unnamed" is banned (SS-436 reopen): email is the fallback.
+          full_name: prof?.full_name?.trim() || prof?.email || null,
+        };
+      })
     );
 
     const taskIds = taskList.map((t) => t.id);
@@ -378,6 +382,9 @@ export default function StaffTasksClient({
         .from('sop_library')
         .select('id, sop_code, zone_type, task_en, task_es, sop_en, sop_es, estimated_minutes, default_frequency_id')
         .eq('active', true)
+        // Migration 172 (Tineco ruling): property_scope arrays gate a
+        // procedure to specific houses; NULL stays global.
+        .or(`property_scope.is.null,property_scope.cs.{${propertyId}}`)
         .order('zone_type')
         .order('task_en');
       setSopLibrary((sopRows as SopRow[]) ?? []);
@@ -679,7 +686,7 @@ export default function StaffTasksClient({
                               <option value="">Unassigned</option>
                               {members.map((m) => (
                                 <option key={m.id} value={m.id}>
-                                  {m.full_name ?? 'Unnamed'}
+                                  {m.full_name ?? '—'}
                                 </option>
                               ))}
                             </select>
@@ -865,7 +872,7 @@ export default function StaffTasksClient({
                           <option value="">Unassigned</option>
                           {members.map((m) => (
                             <option key={m.id} value={m.id}>
-                              {m.full_name ?? 'Unnamed'}
+                              {m.full_name ?? '—'}
                             </option>
                           ))}
                         </select>

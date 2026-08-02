@@ -32,6 +32,7 @@
 // sees the request).
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import Image from 'next/image';
 import type { Metadata } from 'next';
 import Pin from '@/components/PinAccent';
 import ConsultationForm from '@/components/ConsultationForm';
@@ -59,21 +60,27 @@ export const metadata: Metadata = {
   },
 };
 
+// Banners (2 Aug midnight batch): Racquel's real photos, optimized into
+// public/services/ at 1200x675 (16:9) and rendered through next/image --
+// NOT Supabase render transforms (SS-451). Never stock imagery (R18).
 const SERVICES = [
   {
     icon: ClipboardList,
     title: 'Weekly Meal Planning + Grocery Orders Placed',
     body: 'A real plan for the week, and the order actually placed. Not just a list you still have to shop yourself.',
+    bannerSrc: '/services/meal-planning.jpg', // Organized_refrigerator (1128 version, ruled)
   },
   {
     icon: Users,
     title: 'Vendor Scheduling',
     body: 'Cleaners, handyman, simcha help. Coordinated and confirmed, so it is off your plate and actually on the calendar.',
+    bannerSrc: '/services/vendor-scheduling.jpg', // Desk_planning_with_planner
   },
   {
     icon: Package,
     title: 'Systems That Stick',
     body: 'Closets, playrooms, papers, pantries. Built to hold up under a real, busy household, not just for the after photo.',
+    bannerSrc: '/services/systems-that-stick.jpg', // Walk-in_pantry
   },
   // Moving and Simcha were briefly cards here too -- RULED OFF the
   // homepage (Racquel, 2 Aug, from her screenshots): they live on
@@ -158,17 +165,26 @@ export default async function RootMarketingPage() {
         {/* Service bento cards */}
         <section className="py-10 md:py-14">
           <div className="grid md:grid-cols-3 gap-5">
-            {SERVICES.map(({ icon: Icon, title, body }) => (
+            {SERVICES.map(({ icon: Icon, title, body, bannerSrc }) => (
               <div
                 key={title}
-                className="relative bg-card border border-cardBorder rounded-2xl shadow-card p-6"
+                className="relative bg-card border border-cardBorder rounded-2xl shadow-card overflow-hidden"
               >
                 <Pin size="sm" />
-                <div className="w-11 h-11 rounded-full bg-brass/15 flex items-center justify-center mb-4">
-                  <Icon className="w-5 h-5 text-brass" strokeWidth={1.75} aria-hidden="true" />
+                <Image
+                  src={bannerSrc}
+                  alt=""
+                  width={1200}
+                  height={675}
+                  className="w-full h-[140px] object-cover"
+                />
+                <div className="p-6">
+                  <div className="w-11 h-11 rounded-full bg-brass/15 flex items-center justify-center mb-4">
+                    <Icon className="w-5 h-5 text-brass" strokeWidth={1.75} aria-hidden="true" />
+                  </div>
+                  <h3 className="font-display font-bold text-xl text-denim mb-2">{title}</h3>
+                  <p className="text-sm text-dusk leading-relaxed">{body}</p>
                 </div>
-                <h3 className="font-display font-bold text-xl text-denim mb-2">{title}</h3>
-                <p className="text-sm text-dusk leading-relaxed">{body}</p>
               </div>
             ))}
           </div>
@@ -199,7 +215,7 @@ export default async function RootMarketingPage() {
 
       </div>
 
-      <MarketingFooter extraLinks={[{ href: '/terms.html', label: 'Terms' }]} />
+      <MarketingFooter homepage extraLinks={[{ href: '/terms.html', label: 'Terms' }]} />
     </div>
   );
 }

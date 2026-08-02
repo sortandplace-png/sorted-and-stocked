@@ -24,6 +24,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/contact`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE}/blog`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE}/help`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
+    // Live since the Google-consent work (rewrites to static .html); listed
+    // for the Search Console submission (2 Aug). App routes stay out.
+    { url: `${BASE}/privacy`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${BASE}/terms`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
   ];
 
   // A sitemap must never be the reason a deploy fails, so a database problem

@@ -1,8 +1,10 @@
 // lib/dashboard-tips.ts
-// SS-408: tip-of-the-day selection. The dashboard_tips table (149 bilingual
-// tips) is the content; properties.tip_sets (text[] of audiences --
-// 'jewish' / 'universal') decides which sets a house sees: Henderson
-// {universal}, Lax {universal,jewish}, Main/Country/Low {jewish}.
+// SS-408: tip-of-the-day selection. The dashboard_tips table (bilingual
+// tips) is the content; the caller passes the audience sets a house sees.
+// SS-474 gating ruling (2 Aug midnight): those sets now derive from
+// properties.calendar_layers -- universal everywhere, plus jewish where the
+// jewish layer is on. (properties.tip_sets, the old per-house config, is no
+// longer read; it withheld universal tips from jewish-only houses.)
 //
 // Calendar-awareness leans ENTIRELY on lib/calendar-trigger-type.ts
 // (R1: Hebcal-computed, never stored) -- this file adds no second date
