@@ -30,7 +30,7 @@ Put the mail in a defined tray and the loop closes. Nothing got done. It just st
 
 A cluttered surface isn't neutral. Every time you use it you decide what to move, where to put it, and whether to deal with it now.
 
-Psychologists studying choice have long documented that decision quality degrades as decisions accumulate — the effect commonly called decision fatigue. A disorganized home taxes that budget all day, in increments too small to notice individually, so that by 6 p.m. the tank is emptier than the day's actual events explain.
+Most people recognise the pattern: deciding gets harder as the day goes on. A disorganized home draws on that all day, in increments too small to notice individually, so that by 6 p.m. the tank is emptier than the day's actual events explain.
 
 ### 3. It's a visible record of what you haven't done
 
@@ -296,7 +296,7 @@ We build for that specifically: fewer open loops, fewer daily decisions, and sys
 
 **Notes before publishing — read 1 and 2:**
 
-1. **Citation status (2 Aug):** the home-language/stress-marker finding is now linked to Saxbe & Repetti 2010, "No Place Like Home: Home Tours Correlate With Daily Patterns of Mood and Cortisol," Personality and Social Psychology Bulletin 36(1): 71–81 (doi 10.1177/0146167209352864, cross-checked against PubMed 19934011). The wording was left exactly as written — a tracking relationship, not causation, per the study's own correlational design. **Still open: the decision-fatigue reference needs a general source before publish.** Do not let an editor strengthen the wording into "clutter causes stress" — that isn't what the research shows.
+1. **Citation status (2 Aug, both references resolved):** the home-language/stress-marker finding is linked to Saxbe & Repetti 2010, "No Place Like Home: Home Tours Correlate With Daily Patterns of Mood and Cortisol," Personality and Social Psychology Bulletin 36(1): 71–81 (doi 10.1177/0146167209352864, cross-checked against PubMed 19934011); wording untouched — a tracking relationship, not causation, per the study's own correlational design. The decision-fatigue framing has been rewritten as plain observation rather than a research claim, because the ego-depletion literature has a significant replication problem (Hagger et al. 2016 multi-lab replication failed; the Danziger parole study was re-analysed by Weinshall-Margel & Shapard 2011 and Glöckner 2016). **Do not add a decision-fatigue citation, and do not let an editor strengthen the wording into "clutter causes stress"** — that isn't what the research shows.
 
 2. **The "when it's not about the house" section is deliberate and should not be cut.** An article telling people organizing will make them feel better has an obligation to say when it won't. It also names that persistent distress is worth taking to a professional, without diagnosing anything or naming conditions. Keep that framing exactly — no clinical terms, no conditions listed, no self-assessment prompts.
 

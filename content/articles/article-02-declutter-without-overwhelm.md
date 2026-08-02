@@ -4,7 +4,7 @@ You've watched the videos. You know how it's supposed to go: someone empties a c
 
 Then you open your own closet and the feeling is not clarity. It's dread — and then a strange, heavy tiredness that arrives before you've moved a single thing.
 
-That reaction isn't laziness or a lack of willpower. **Learning how to declutter your home without feeling overwhelmed is mostly a matter of reducing the number of decisions you face at once**, because decision fatigue — not physical effort — is what actually stops people. Every item is a small judgment call, and a full closet is four hundred of them stacked in a row.
+That reaction isn't laziness or a lack of willpower. **Learning how to declutter your home without feeling overwhelmed is mostly a matter of reducing the number of decisions you face at once**, because the deciding, not the physical effort, is what actually stops people. Every item is a small judgment call, and a full closet is four hundred of them stacked in a row.
 
 This guide gives you a different approach: how to start small enough to finish, clear criteria so decisions get faster, scripts for the genuinely hard items, and a maintenance routine so it doesn't quietly refill.
 
@@ -20,7 +20,7 @@ Understanding the mechanism makes it much easier to work around.
 
 ### Every item is a decision
 
-Psychologists studying choice have long documented that the quality of decision-making degrades as the number of consecutive decisions rises — the effect commonly described as decision fatigue. Decluttering is an unusually pure form of this. There's no coasting; each object requires an independent judgment.
+Anyone who has done it recognises the pattern: the first twenty items are easy, the next twenty are slower, and somewhere past that you stop being able to decide at all. Decluttering is an unusually pure form of this. There's no coasting — each object requires an independent judgment, and they don't get easier as they accumulate.
 
 **This is why you start strong and stall.** Not weakness — a predictable pattern.
 
@@ -249,7 +249,7 @@ Decluttering that lasts is one component of a working **[household management sy
 
 ### How do I declutter my home without feeling overwhelmed?
 
-Work in small defined areas — one drawer, one shelf, one box — rather than whole rooms, and set a fifteen-minute timer. Overwhelm comes from decision fatigue, not physical effort, so limiting the number of decisions per session is the actual fix. Finish each small area completely before starting another.
+Work in small defined areas — one drawer, one shelf, one box — rather than whole rooms, and set a fifteen-minute timer. Overwhelm comes from the volume of decisions rather than the physical effort, so limiting how many you face per session is the actual fix. Finish each small area completely before starting another.
 
 ### Where should I start decluttering?
 
@@ -285,7 +285,7 @@ Consider it if you've started several times without finishing, if the volume is 
       "name": "How do I declutter my home without feeling overwhelmed?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Work in small defined areas — one drawer, one shelf, one box — rather than whole rooms, and set a fifteen-minute timer. Overwhelm comes from decision fatigue, not physical effort, so limiting the number of decisions per session is the actual fix. Finish each small area completely before starting another."
+        "text": "Work in small defined areas — one drawer, one shelf, one box — rather than whole rooms, and set a fifteen-minute timer. Overwhelm comes from the volume of decisions rather than the physical effort, so limiting how many you face per session is the actual fix. Finish each small area completely before starting another."
       }
     },
     {
@@ -373,4 +373,4 @@ We work alongside families, not around them. We make the decisions faster becaus
 - `/home-organization-checklist` — maintenance section
 - `/household-management-system` — maintenance section
 
-**Note before publishing:** the decision-fatigue and endowment-effect references are well-established concepts but are stated here without citation. Attach a source link to each before publishing — E-E-A-T credit comes from the link, not the mention.
+**Note before publishing:** the decision-fatigue framing has been rewritten as plain observation rather than a research claim — the ego-depletion literature has a significant replication problem, so **do not add a citation for it**. The endowment effect is separate and well-established; that one can carry a source link.
