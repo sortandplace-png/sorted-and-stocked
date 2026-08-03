@@ -1122,5 +1122,159 @@
     "linkHouseManual": "House Manual",
     "linkSops": "Procedures",
     "linkTraining": "Training"
+  },
+  "toolsPage": {
+    "title": "Tools",
+    "groups": {
+      "scanners": "Scanners",
+      "kitchen": "Kitchen",
+      "house": "House",
+      "prep-reset": "Prep & Reset",
+      "calendar": "Calendar",
+      "reference": "Reference",
+      "capture-tools": "Capture Tools",
+      "admin-cleanup": "Admin Cleanup"
+    },
+    "tiles": {
+      "price-scanner": {
+        "title": "Price Scanner",
+        "description": "Photograph a product, find a cheaper equivalent."
+      },
+      "ingredient-scanner": {
+        "title": "Ingredient Scanner",
+        "description": "Photograph a label, get a plain-language, evidence-based read."
+      },
+      "recipe-stealer": {
+        "title": "Recipe Scanner",
+        "description": "Photograph a dish, get a home-cookable recipe."
+      },
+      "knowledge-base": {
+        "title": "House Manual",
+        "description": "The answers staff and family keep asking for."
+      },
+      "tasks": {
+        "title": "Staff Task Center",
+        "description": "What needs doing, and by whom."
+      },
+      "contacts": {
+        "title": "Contacts & Vendors",
+        "description": "Everyone the household calls on — repairs, deliveries, help."
+      },
+      "suppliers": {
+        "title": "Suppliers",
+        "description": "Every store this property buys from, and what to reorder where."
+      },
+      "backup": {
+        "title": "Full Backup",
+        "description": "Download every table this property owns as a zip."
+      },
+      "pantry-zones": {
+        "title": "Pantry Zone Map",
+        "description": "Where things live within each storage location."
+      },
+      "borrowed-items": {
+        "title": "Borrowed & Lent",
+        "description": "Keep track of what's out and who has it."
+      },
+      "reset-checklist": {
+        "title": "Reset for Next",
+        "description": "Clear checklists & start fresh."
+      },
+      "guest-scaler": {
+        "title": "Scale Servings",
+        "description": "Adjust for guests or batch size."
+      },
+      "needs-linking": {
+        "title": "Needs Linking",
+        "description": "Ingredients that still need a real inventory link."
+      },
+      "duplicate-ingredients": {
+        "title": "Duplicate Ingredients",
+        "description": "Same ingredient, spelled differently — merge them."
+      },
+      "capture-inbox": {
+        "title": "Capture Inbox",
+        "description": "Review submitted recipe, inventory, and meal plan captures before they go live."
+      },
+      "photo-worklist": {
+        "title": "Photo Worklist",
+        "description": "Items a web search couldn't confirm — photograph what's actually on the shelf."
+      },
+      "takeout-directory": {
+        "title": "Local Takeout Directory",
+        "description": "Restaurants and takeout near this house.",
+        "descriptionCity": "Restaurants and takeout near {city}.",
+        "descriptionCityJewish": "Restaurants and takeout near {city}, with hashgacha noted.",
+        "descriptionEmpty": "Add the places this house orders from."
+      },
+      "halachic-calendar": {
+        "title": "Halachic Calendar",
+        "description": "Sefiras HaOmer, Erev Pesach countdown, Bedikas Tolaim reference."
+      },
+      "prep-timeline": {
+        "title": "Prep Timeline",
+        "description": "Working backward from when you want dinner ready."
+      },
+      "memory-timeline": {
+        "title": "Home Memory Timeline",
+        "description": "A running record of photos, milestones, and moments."
+      },
+      "yom-tov-year-view": {
+        "title": "Yom Tov Year View",
+        "description": "Every Yom Tov date on the calendar, at a glance."
+      },
+      "capture-photo": {
+        "title": "Capture Photo",
+        "description": "Snap a photo — match it to a room or item later."
+      },
+      "identify-item": {
+        "title": "Identify New Item",
+        "description": "Photograph something new — AI suggests a name, you confirm before it's added."
+      },
+      "link-captured-photos": {
+        "title": "Link Captured Photos",
+        "description": "Match photos staff took to a real inventory item or room."
+      },
+      "hechsher-verification": {
+        "title": "Hechsher Verification",
+        "description": "Confirm hechsher against OU/OK for every item missing one."
+      },
+      "kosher-type-tagging": {
+        "title": "Kosher Type Tagging",
+        "description": "Bulk-tag Meat/Dairy/Parve by category for items missing one."
+      },
+      "allergen-verification": {
+        "title": "Allergen Verification",
+        "description": "Confirm the allergen list for every food item missing a reviewed one."
+      },
+      "dietary-tagging": {
+        "title": "Dietary Tagging",
+        "description": "Bulk-tag Vegan/Vegetarian/Gluten-Free by category for items missing tags."
+      },
+      "translation-worklist": {
+        "title": "Translation Worklist",
+        "description": "Recipes, ingredients, and items still missing a Spanish name."
+      },
+      "digest": {
+        "title": "Household Digest",
+        "description": "A preview of what's low and what's coming up this week."
+      },
+      "blog": {
+        "title": "Blog & Articles",
+        "description": "Household management tips, recipes, and insights."
+      },
+      "taste-memory": {
+        "title": "Guest & Family Taste Memory",
+        "description": "Likes, dislikes, allergies, and sensitivities — kept with the person."
+      },
+      "seasonal-home-prep": {
+        "title": "Seasonal & Home Prep",
+        "description": "Where the year stands, and what the house should be getting ready for."
+      },
+      "year-at-a-glance": {
+        "title": "Year at a Glance",
+        "description": "Every holiday on the calendar, at a glance."
+      }
+    }
   }
 }

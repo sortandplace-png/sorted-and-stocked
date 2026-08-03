@@ -44,7 +44,16 @@ export const CANONICAL_ORIGIN = 'https://sortandplace.com';
 // remaining work; the footer wiring is done.
 export const PINTEREST_PROFILE_URL: string | null = null;
 
-const KNOWN_PRODUCTION_HOSTS = [APP_HOSTNAME, 'www.sortandplace.com', 'sortandplace.com'];
+// SS-587: the two production hostnames that serve ONLY marketing pages.
+// The root layout passes an empty i18n bundle on these hosts -- no
+// marketing component uses translations, and the full app string table
+// (halachic guidance, cross-house messages, staff copy) was being
+// serialized into every public page's payload. Deliberately production
+// hostnames only: localhost and previews serve the app too and must keep
+// the full bundle.
+export const MARKETING_HOSTNAMES = ['sortandplace.com', 'www.sortandplace.com'];
+
+const KNOWN_PRODUCTION_HOSTS = [APP_HOSTNAME, ...MARKETING_HOSTNAMES];
 
 export function getEmailLinkOrigin(currentOrigin: string | null | undefined): string {
   if (currentOrigin) {

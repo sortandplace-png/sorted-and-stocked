@@ -16,7 +16,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 // /privacy and /terms (clean, extension-less) rewrite to the .html files in
 // next.config.js -- Google consent-screen verification hits the clean URLs,
 // so they must be public here too, not just the .html variants.
-const PUBLIC_PATHS = ['/login', '/auth/callback', '/auth/confirm', '/forgot-password', '/reset-password', '/signup', '/welcome', '/entry', '/privacy.html', '/terms.html', '/privacy', '/terms', '/cookie-policy.html', '/blog', '/services', '/about', '/faq', '/contact'];
+// /sitemap: the human sitemap page (SS-432 part 2). startsWith() also
+// covers /sitemap.xml, which was previously public only via the matcher
+// exclusion in middleware.ts -- harmless overlap, both are public.
+const PUBLIC_PATHS = ['/login', '/auth/callback', '/auth/confirm', '/forgot-password', '/reset-password', '/signup', '/welcome', '/entry', '/privacy.html', '/terms.html', '/privacy', '/terms', '/cookie-policy.html', '/blog', '/services', '/about', '/faq', '/contact', '/sitemap'];
 
 export async function updateSession(request: NextRequest) {
   // request.headers (the incoming request's own Headers object) is

@@ -1,7 +1,7 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
-import { APP_HOSTNAME } from '@/lib/site-url';
+import { APP_HOSTNAME, MARKETING_HOSTNAMES } from '@/lib/site-url';
 import { Cormorant_Garamond, Nunito_Sans, Playfair_Display, Inter } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
@@ -97,7 +97,18 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const messages = await getMessages();
+  // SS-587: on the production marketing hostnames the provider gets an
+  // empty bundle. Every public page was shipping the app's entire string
+  // table in its payload -- ~60 app strings per page, including internal
+  // product copy (bracha guidance, kashrut warnings, cross-house
+  // messages) readable in the public source. No marketing page or
+  // component calls useTranslations (verified before this change), so
+  // nothing renders differently; the payload just stops carrying the
+  // table. The app hostname, localhost and previews keep the full bundle
+  // -- localhost serves the app in dev, so stripping anything-not-app
+  // would have broken dev i18n.
+  const hostname = ((await headers()).get('host') ?? '').split(':')[0].toLowerCase();
+  const messages = MARKETING_HOSTNAMES.includes(hostname) ? {} : await getMessages();
 
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${playfair.variable} ${inter.variable}`}>
