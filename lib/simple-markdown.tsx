@@ -119,6 +119,22 @@ function isBullet(l: string) {
   return t.startsWith('* ') || t.startsWith('- ');
 }
 
+// Editorial measure (3 Aug batch, item 3): the article card widened to
+// max-w-4xl, so PROSE now carries its own measure and centers inside the
+// card while images break out to the full card width -- the standard
+// editorial pattern: text stays readable, graphics get room. 34rem
+// at the body's 14px size lands in the asked-for 70-80
+// characters per line (34rem measured at 76 cpl on the rig; 36rem came
+// out at 81, just over the band); a rem value rather than `ch` so headings (larger
+// font, larger ch) keep exactly the same left edge as the paragraphs.
+// w-full keeps mobile unchanged: below 36rem the constraint never binds.
+const PROSE_W = 'max-w-[34rem] mx-auto w-full';
+
+// A block that is ONLY an image gets no prose wrapper at all, so the
+// figure spans the full card width. Inside a text paragraph an image still
+// flows at prose width, which is what a wrapped inline figure should do.
+const IMAGE_ONLY_RE = /^!\[[^\]]*\]\([^)]+\)$/;
+
 // GitHub-style heading slugs. The "On This Page" tables of contents already
 // written into four LIVE posts (blog-11, 16, 21, 22) use anchors of exactly
 // this shape -- #building-your-system-schedules -- and until now this
@@ -169,25 +185,25 @@ export function renderSimpleMarkdown(markdown: string): ReactNode[] {
   }
   function renderBlock(block: string, i: number | string): ReactNode {
     if (block.trim() === '---') {
-      return <hr key={i} className="border-cardBorder my-6" />;
+      return <hr key={i} className={`border-cardBorder my-6 ${PROSE_W}`} />;
     }
     if (block.startsWith('### ')) {
       return (
-        <h3 key={i} id={headingId(block.slice(4))} className="scroll-mt-24 font-display text-lg font-semibold text-denim mt-5 mb-2">
+        <h3 key={i} id={headingId(block.slice(4))} className={`scroll-mt-24 font-display text-lg font-semibold text-denim mt-5 mb-2 ${PROSE_W}`}>
           {renderInline(block.slice(4))}
         </h3>
       );
     }
     if (block.startsWith('## ')) {
       return (
-        <h2 key={i} id={headingId(block.slice(3))} className="scroll-mt-24 font-display text-xl font-semibold text-denim mt-6 mb-2">
+        <h2 key={i} id={headingId(block.slice(3))} className={`scroll-mt-24 font-display text-xl font-semibold text-denim mt-6 mb-2 ${PROSE_W}`}>
           {renderInline(block.slice(3))}
         </h2>
       );
     }
     if (block.startsWith('# ')) {
       return (
-        <h1 key={i} id={headingId(block.slice(2))} className="scroll-mt-24 font-display text-2xl font-semibold text-denim mt-2 mb-3">
+        <h1 key={i} id={headingId(block.slice(2))} className={`scroll-mt-24 font-display text-2xl font-semibold text-denim mt-2 mb-3 ${PROSE_W}`}>
           {renderInline(block.slice(2))}
         </h1>
       );
@@ -198,7 +214,7 @@ export function renderSimpleMarkdown(markdown: string): ReactNode[] {
     if (lines.every((l) => l.trimStart().startsWith('>'))) {
       const inner = lines.map((l) => l.trimStart().replace(/^>\s?/, ''));
       return (
-        <div key={i} className="bg-mist border border-brass/30 rounded-xl2 px-5 py-4 my-5 space-y-1">
+        <div key={i} className={`bg-mist border border-brass/30 rounded-xl2 px-5 py-4 my-5 space-y-1 ${PROSE_W}`}>
           {inner
             .filter((l) => l.trim() !== '')
             .map((l, j) => (
@@ -211,7 +227,7 @@ export function renderSimpleMarkdown(markdown: string): ReactNode[] {
     }
     if (lines.length > 0 && lines.every(isBullet)) {
       return (
-        <ul key={i} className="list-disc pl-5 mb-4 space-y-1">
+        <ul key={i} className={`list-disc pl-5 mb-4 space-y-1 ${PROSE_W}`}>
           {lines.map((l, j) => (
             <li key={j} className="text-sm text-denim leading-relaxed">
               {renderInline(l.trimStart().slice(2))}
@@ -220,8 +236,11 @@ export function renderSimpleMarkdown(markdown: string): ReactNode[] {
         </ul>
       );
     }
+    if (IMAGE_ONLY_RE.test(block.trim())) {
+      return <div key={i}>{renderInline(block.trim())}</div>;
+    }
     return (
-      <p key={i} className="text-sm text-denim leading-relaxed mb-4">
+      <p key={i} className={`text-sm text-denim leading-relaxed mb-4 ${PROSE_W}`}>
         {renderInline(block)}
       </p>
     );
@@ -254,7 +273,7 @@ export function renderSimpleMarkdown(markdown: string): ReactNode[] {
       }
       if (faqItems.length > 0) {
         out.push(
-          <div key={`faq-${i}`} className="space-y-2.5 mb-4">
+          <div key={`faq-${i}`} className={`space-y-2.5 mb-4 ${PROSE_W}`}>
             {faqItems.map((item, k) => (
               <details key={k} className="group bg-mist/60 border border-cardBorder rounded-xl2 px-4">
                 <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden py-3 flex items-start justify-between gap-3">
