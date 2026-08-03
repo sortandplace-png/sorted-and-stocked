@@ -88,6 +88,12 @@ type Task = {
   task_es: string;
   job_type: string | null;
   assigned_role: string | null;
+  // SS-517: the "With Procedures" tile counts this FK directly. Verified
+  // live before the change: zero active tasks carry sop_id without sop_en
+  // text, so the id is strictly the stronger signal (Racquel's chat-side
+  // resolution, 2 Aug). The 83 tasks with text but NO id are SS-534, a
+  // separate data defect this tile must not paper over by counting text.
+  sop_id: string | null;
   source_area_en: string | null;
   source_area_es: string | null;
   photo_url: string | null;
@@ -123,10 +129,15 @@ const NO_ROOM = '__noroom__';
 // data, not a gap to chase -- so they are excluded from Rooms Missing
 // rather than counted and quietly ignored.
 //
-// This must stay in step with the select below: source_area_en was NOT
-// fetched before this change, and a filter on a field the query never
-// returns matches nothing while looking entirely reasonable.
-const NON_ROOM_AREAS = ['Maintenance', 'Childcare', 'Outdoors'];
+// SS-517: keyed on job_type, NOT source_area_en. The old list
+// (['Maintenance', 'Childcare', 'Outdoors'] against source_area_en) did
+// match rows -- the register's "matches nothing" theory was wrong, checked
+// live before this edit -- but it excluded by DISPLAY AREA, so a
+// shades_windows task filed under the "Outdoors" area was wrongly excused
+// from needing a room. job_type is the work classification the 96
+// legitimately-area-level tasks were actually counted by, and these three
+// lowercase values are the stored ones.
+const NON_ROOM_JOB_TYPES = ['maintenance', 'childcare', 'outdoor_perimeter'];
 
 export default function DutyRosterClient({
   propertyId,
@@ -526,7 +537,7 @@ export default function DutyRosterClient({
     const settled = await Promise.allSettled([
       supabase
         .from('master_tasks')
-        .select('id, task_number, property_id, room_id, frequency_id, task_en, task_es, job_type, assigned_role, source_area_en, source_area_es, photo_url, active, sort_order, day_of_week, time_of_day, estimated_minutes')
+        .select('id, task_number, property_id, room_id, frequency_id, task_en, task_es, job_type, assigned_role, sop_id, source_area_en, source_area_es, photo_url, active, sort_order, day_of_week, time_of_day, estimated_minutes')
         .in('property_id', propertyIds)
         .order('sort_order'),
       supabase.from('frequencies').select('id, code, label_en, label_es, recurrence_kind, sort_order').order('sort_order'),
@@ -921,16 +932,27 @@ export default function DutyRosterClient({
   // Derived from `filtered`, so the tiles answer "of what I'm looking at
   // right now" and move as the filters move. That is the whole reason they
   // stayed in this component rather than being hoisted into a page shell.
+  //
+  // SS-517 note on "Total": the register compared this tile (928) against a
+  // global count of 930 and called it wrong. It is not -- the two extra
+  // rows are QA Demo's, and this page deliberately scopes to propertyIds.
+  // Filtered-derived stats are correct behaviour, kept.
   const stats = useMemo(
     () => ({
       total: filtered.length,
       unassigned: filtered.filter(isUnassigned).length,
-      withSop: filtered.filter((x) => (sopCounts[x.id] ?? 0) > 0).length,
+      // SS-517: count the sop_id FK on the task, not the sopCounts join
+      // map -- the join (master_task_sops) links only 160 tasks while 642
+      // carry sop_id, and Racquel's chat-side resolution ruled sop_id IS
+      // the definition of "has a procedure".
+      withSop: filtered.filter((x) => x.sop_id !== null).length,
       roomsMissing: filtered.filter(
-        (x) => x.room_id === null && !NON_ROOM_AREAS.includes(x.source_area_en ?? '')
+        (x) => x.room_id === null && !NON_ROOM_JOB_TYPES.includes(x.job_type ?? '')
       ).length,
     }),
-    [filtered, sopCounts]
+    // assignmentByTask (memoized), not isUnassigned (recreated per render):
+    // the closure the unassigned count actually varies with.
+    [filtered, assignmentByTask]
   );
 
   // SS-273. Fixed order (not alphabetical, not sort_order) so the tab row
