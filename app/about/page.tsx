@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="bg-linen min-h-screen font-interDisplay">
+    <div className="bg-linen min-h-screen flex flex-col font-interDisplay">
       <LocalBusinessJsonLd />
       <MarketingHeader />
 

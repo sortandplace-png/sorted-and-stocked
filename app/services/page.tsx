@@ -154,7 +154,7 @@ const SERVICES_JSONLD = {
 
 export default function ServicesPage() {
   return (
-    <div className="bg-linen min-h-screen font-interDisplay">
+    <div className="bg-linen min-h-screen flex flex-col font-interDisplay">
       <LocalBusinessJsonLd />
       <script
         type="application/ld+json"

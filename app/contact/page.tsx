@@ -26,7 +26,7 @@ export default function ContactPage() {
     // content column keeps its top padding but ends tight (pb-8).
     // The footer's own mt-16 was removed globally on the fourth report --
     // this page no longer needs a special prop, because no page does.
-    <div className="bg-linen font-interDisplay">
+    <div className="bg-linen font-interDisplay min-h-screen flex flex-col">
       <LocalBusinessJsonLd />
       <MarketingHeader />
 

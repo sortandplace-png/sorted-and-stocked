@@ -96,7 +96,7 @@ export default async function RootMarketingPage() {
   }
 
   return (
-    <div className="bg-mist min-h-screen font-interDisplay">
+    <div className="bg-mist min-h-screen flex flex-col font-interDisplay">
       <LocalBusinessJsonLd />
 
       {/* The top contact strip is GONE entirely (2 Aug ruling) -- first it

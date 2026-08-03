@@ -72,7 +72,7 @@ const FAQS = [
 
 export default function FaqPage() {
   return (
-    <div className="bg-linen min-h-screen font-interDisplay">
+    <div className="bg-linen min-h-screen flex flex-col font-interDisplay">
       <LocalBusinessJsonLd />
       <MarketingHeader />
 
