@@ -45,8 +45,12 @@ export default async function BlogIndexPage() {
             sortandplace.com/blog should be steered toward hiring
             Sort + Place; the app already has waitlist callouts inside the
             articles. Wordmark is "Sort + Place" with the plus -- correct
-            for text; the ampersand form is the logo lockup only (SS-582). */}
-        <p className="text-sm text-dusk mb-8 max-w-xl">
+            for text; the ampersand form is the logo lockup only (SS-582).
+            Measure: max-w-3xl (Racquel, Option A, 3 Aug) so the subtitle
+            ends with the card grid's band. Independent of the 34rem
+            article reading measure in lib/simple-markdown -- do not
+            reconcile the two, that system stays untouched. */}
+        <p className="text-sm text-dusk mb-8 max-w-3xl">
           Notes from running real households. Kitchens, pantries, staff, Yom Tov, and the systems that hold when
           nobody is watching. From the Sort + Place team.
         </p>
