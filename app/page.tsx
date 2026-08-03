@@ -26,11 +26,19 @@
 // NEXT_PUBLIC_SITE_URL or similar, since the same deployment serves both
 // hostnames. Deliberately an ALLOW-list of exactly one hostname (app.*)
 // that redirects, with everything else (www, bare apex, localhost, Vercel
-// preview URLs) falling through to marketing. (An earlier version of this
-// comment claimed the apex 308s to www at the hosting layer; live fetches
-// on 3 Aug DISPROVED that -- both hosts served byte-identical 200s. The
-// real redirect now lives in next.config.js and points the OTHER way:
-// www 308s to the apex, which Racquel ruled canonical -- SS-578.)
+// preview URLs) falling through to marketing. The apex DOES redirect to
+// www at the Vercel domain layer: the project's Domains panel shows
+// "sortandplace.com -- Redirects to www.sortandplace.com" in plain text.
+// TRUST THIS OVER ANY FETCH-BASED CHECK. A redirect-following client
+// (curl default, pg_net, a browser) lands on www's 200 and reports the
+// apex as serving directly -- byte-identical bodies on "both" hosts are
+// exactly what a platform redirect produces, not evidence against one.
+// Two independent investigations (3 Aug) both made that inference, this
+// comment was "corrected" to match, and an app-level www->apex 308 built
+// on that reading put BOTH hosts in a redirect loop for ~15 minutes
+// (SS-578). Racquel has ruled the apex canonical; the pending fix is
+// flipping the Domains panel (primary = apex), never an app-level
+// redirect while the platform points the other way.
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Image from 'next/image';

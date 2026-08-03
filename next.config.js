@@ -76,10 +76,12 @@ const nextConfig = {
   // SS-578 REVERTED 3 Aug, minutes after deploy: with this app-level
   // www->apex 308 live, BOTH marketing hosts entered a REDIRECT LOOP
   // (pg_net: "Number of redirects hit maximum amount" on apex and www
-  // alike). That is only possible if something OUTSIDE this repo -- the
-  // Vercel domain configuration -- redirects apex->www, the exact
-  // behaviour app/page.tsx's old comment described and live fetches
-  // earlier today did not show. The platform side must be aligned first
+  // alike). Cause confirmed from the Vercel Domains panel: the platform
+  // config redirects apex->www ("sortandplace.com -- Redirects to
+  // www.sortandplace.com"), exactly as app/page.tsx's original comment
+  // said. The earlier fetches that seemed to disprove it COULD NOT have
+  // shown it -- a redirect-following client lands on www's 200 either
+  // way. The platform side must be aligned first
   // (primary domain = apex, www redirecting at the edge), at which point
   // no app-level redirect is needed at all. Do NOT reintroduce this block
   // while the platform config points the other way.
