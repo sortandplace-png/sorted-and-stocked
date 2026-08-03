@@ -37,7 +37,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const post = await fetchPost(slug);
-  if (!post) return { title: 'Blog — Sort + Place' };
+  // SS-586: no em dashes in page chrome.
+  if (!post) return { title: 'Blog | Sort + Place' };
   return {
     title: `${post.title} | Sort + Place`,
     description: post.excerpt ?? undefined,
@@ -144,7 +145,7 @@ export default async function BlogPostPage({
               </p>
               <h1 className="font-display text-3xl font-semibold text-denim mb-6 leading-tight">{post.title}</h1>
             </div>
-            {renderSimpleMarkdown(before)}
+            {renderSimpleMarkdown(before, { pin: { slug: post.slug } })}
 
             <RelatedReadingCards posts={related} />
 

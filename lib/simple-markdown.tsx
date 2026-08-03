@@ -29,6 +29,8 @@
 // links between posts are standard as of 3 Aug -- all 11 live posts carry
 // them) is therefore a defect by definition.
 import type { ReactNode } from 'react';
+import PinterestSaveButton from '@/components/blog/PinterestSaveButton';
+import { CANONICAL_ORIGIN } from '@/lib/site-url';
 
 // Images follow the SAME source policy as links, for the same reason: an
 // external src is a permanent liability someone has to keep re-checking,
@@ -63,11 +65,15 @@ function renderInline(text: string): ReactNode[] {
       const dim = rawSrc.match(/#(\d{2,5})x(\d{2,5})$/);
       const src = dim ? rawSrc.slice(0, -dim[0].length) : rawSrc;
       const size = dim ? { width: Number(dim[1]), height: Number(dim[2]) } : {};
-      // my-4, matching the paragraph rhythm (p is mb-4): images sit in the
-      // same 16px vertical beat as the prose instead of floating in extra
-      // air -- "inline image spacing is still loose" (Racquel, 3 Aug) was
-      // the my-5 this replaces.
-      const cls = 'w-full h-auto rounded-xl2 border border-cardBorder shadow-card my-4';
+      // NO frame classes (SS-584, Racquel's measured ruling, 3 Aug): the
+      // inline graphics are already designed as pinned cards on a linen
+      // ground -- their own rounded corners, background and pin dot --
+      // so the border/rounded/shadow wrapper this replaces double-framed
+      // them, "a card inside a card". The image sits directly on the
+      // article background and supplies its own framing. Margins live on
+      // the standalone-block wrapper in renderSimpleMarkdown, which knows
+      // whether a heading precedes the image; this element carries none.
+      const cls = 'w-full h-auto';
       // Plain <img>, not next/image, matching how the blog already renders
       // header images -- storage srcs would otherwise need remotePatterns
       // config, and a config miss renders a broken image at request time.
@@ -137,7 +143,9 @@ const PROSE_W = 'max-w-[34rem] mx-auto w-full';
 // A block that is ONLY an image gets no prose wrapper at all, so the
 // figure spans the full card width. Inside a text paragraph an image still
 // flows at prose width, which is what a wrapped inline figure should do.
-const IMAGE_ONLY_RE = /^!\[[^\]]*\]\([^)]+\)$/;
+// Alt and src are captured so the pin overlay can describe the figure and
+// point Pinterest at its pixels.
+const IMAGE_ONLY_RE = /^!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)$/;
 
 // GitHub-style heading slugs. The "On This Page" tables of contents already
 // written into four LIVE posts (blog-11, 16, 21, 22) use anchors of exactly
@@ -172,7 +180,16 @@ function slugifyHeading(text: string): string {
 // decorating it.
 const FAQ_HEADING = 'Frequently Asked Questions';
 
-export function renderSimpleMarkdown(markdown: string): ReactNode[] {
+// opts.pin: when the caller is a public post page, standalone figures get
+// a hover Save-to-Pinterest overlay pinning THIS post's apex URL with the
+// figure's own pixels and alt text -- readers pin the graphics to their
+// boards with the post link attached (the domain is claimed, so saves
+// attribute to Sort + Place). No pin context (internal views, previews)
+// means no overlay, same markup as before.
+export function renderSimpleMarkdown(
+  markdown: string,
+  opts?: { pin?: { slug: string } }
+): ReactNode[] {
   const blocks = markdown.trim().split(/\n\s*\n/);
   // Duplicate slugs are real here, not hypothetical: blog-16 has an H2
   // "What Is a Household Management System?" and an FAQ H3 "What is a
@@ -241,7 +258,10 @@ export function renderSimpleMarkdown(markdown: string): ReactNode[] {
       );
     }
     if (IMAGE_ONLY_RE.test(block.trim())) {
-      return <div key={i}>{renderInline(block.trim())}</div>;
+      // Fallback margins for image-only blocks reached OUTSIDE the main
+      // loop (FAQ answers); the loop's own branch handles heading
+      // adjacency for article-body figures.
+      return <div key={i} className="mt-4 mb-4">{renderInline(block.trim())}</div>;
     }
     return (
       <p key={i} className={`text-sm text-denim leading-relaxed mb-4 ${PROSE_W}`}>
@@ -253,6 +273,33 @@ export function renderSimpleMarkdown(markdown: string): ReactNode[] {
   const out: ReactNode[] = [];
   for (let i = 0; i < blocks.length; i++) {
     const block = blocks[i];
+    const imageOnly = block.trim().match(IMAGE_ONLY_RE);
+    if (imageOnly) {
+      // Heading-adjacent figures sit TIGHT under their heading (SS-584,
+      // measured ruling): an image directly under an h2/h3 illustrates
+      // that section, so the gap above it (heading mb-2 wins the margin
+      // collapse: 8px) is noticeably tighter than the 16px below it.
+      // A figure between paragraphs keeps the paragraph rhythm on both
+      // sides.
+      const afterHeading = i > 0 && /^#{1,3} /.test(blocks[i - 1]);
+      const [, alt, rawSrc] = imageOnly;
+      const src = rawSrc.replace(/#\d{2,5}x\d{2,5}$/, '');
+      const pinnable = opts?.pin && isAllowedImageSrc(rawSrc);
+      out.push(
+        <div key={i} className={`${afterHeading ? 'mt-1' : 'mt-4'} mb-4${pinnable ? ' relative group' : ''}`}>
+          {renderInline(block.trim())}
+          {pinnable && (
+            <PinterestSaveButton
+              slug={opts.pin!.slug}
+              imageUrl={src.startsWith('/') ? `${CANONICAL_ORIGIN}${src}` : src}
+              description={alt}
+              variant="hover"
+            />
+          )}
+        </div>
+      );
+      continue;
+    }
     if (block.startsWith('## ') && block.slice(3).trim() === FAQ_HEADING) {
       // Group the ### question blocks (and each question's following
       // answer blocks) until the next H1/H2 or end of body. headingId is
