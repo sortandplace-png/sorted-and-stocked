@@ -73,6 +73,9 @@ export default function SopLibraryClient({
 
   const [sops, setSops] = useState<Sop[]>(initialSops);
   const [search, setSearch] = useState('');
+  // SS-550: the poster-gap filter. Off by default -- it is a work queue,
+  // not the normal reading view of the library.
+  const [missingPosterOnly, setMissingPosterOnly] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ url: string; label: string } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -131,10 +134,20 @@ export default function SopLibraryClient({
   // real decision (unaccent is not installed; pg_trgm is) and doing it half
   // way in the client would give inconsistent results against a later
   // server-side search.
+  // SS-550: a poster is MISSING when expected_appearance_url is null OR an
+  // empty/whitespace string. Both states exist in the data, and treating
+  // only null as missing would under-report the gap.
+  const hasPoster = (s: Sop) => (s.expected_appearance_url ?? '').trim() !== '';
+  const missingPosterCount = useMemo(() => sops.filter((s) => !hasPoster(s)).length, [sops]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return sops;
-    return sops.filter((s) =>
+    // Poster filter applies BEFORE search, so the count in the toggle label
+    // always describes the whole library rather than the current search --
+    // otherwise the number moves as you type and stops being a backlog.
+    const base = missingPosterOnly ? sops.filter((s) => !hasPoster(s)) : sops;
+    if (!q) return base;
+    return base.filter((s) =>
       // Both zone spellings are searchable regardless of UI language: a
       // Spanish reader who knows the zone as "Baño" and one who typed
       // "Bathroom" should both find it.
@@ -142,7 +155,7 @@ export default function SopLibraryClient({
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(q))
     );
-  }, [sops, search]);
+  }, [sops, search, missingPosterOnly]);
 
   const byZone = useMemo(() => {
     const map = new Map<string, Sop[]>();
@@ -230,6 +243,29 @@ export default function SopLibraryClient({
           className={`${FIELD} pl-9`}
         />
       </div>
+
+      {/* SS-550: the poster-gap filter. A real toggle button, not a chip that
+          only looks pressable, and it carries its own count so the size of
+          the backlog is visible without turning it on. Hidden entirely when
+          the gap is zero -- a filter that can only ever return nothing is
+          worse than no filter. Brass stays a STROKE/text accent here; the
+          active fill is denim (SS-527). */}
+      {missingPosterCount > 0 && (
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => setMissingPosterOnly((v) => !v)}
+            aria-pressed={missingPosterOnly}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
+              missingPosterOnly
+                ? 'bg-denim text-white border-denim'
+                : 'bg-card text-denim border-cardBorder hover:border-brass'
+            }`}
+          >
+            {t('missingPosterFilter', { count: missingPosterCount })}
+          </button>
+        </div>
+      )}
 
       {byZone.length === 0 ? (
         <p className="text-sm text-dusk text-center py-8 bg-card rounded-xl2 border border-cardBorder shadow-card">

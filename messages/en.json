@@ -607,7 +607,7 @@
       "tools": "Tools",
       "staff": "Staff",
       "settings": "Settings",
-        "procurement": "Shop All Houses",
+      "procurement": "Shop All Houses",
       "help": "Help"
     },
     "shabbosModeBanner": "Shabbos Mode • Editing disabled",
@@ -794,7 +794,8 @@
     "bulkConfirm": "Upload {count} posters",
     "bulkUploading": "Uploading {done} of {total}…",
     "bulkDone": "{count} posters uploaded.",
-    "bulkPartial": "{ok} uploaded, {failed} failed — the failed ones are still listed, try them again."
+    "bulkPartial": "{ok} uploaded, {failed} failed — the failed ones are still listed, try them again.",
+    "missingPosterFilter": "No poster yet ({count})"
   },
   "training": {
     "title": "Training",
