@@ -1,4 +1,4 @@
-# Lead-magnet PDFs — SS-567
+# Lead-magnet PDFs — SS-569
 
 Files here are served publicly at `/downloads/<name>.pdf` and are linked
 from `blog_posts.body_markdown` on 24 posts.

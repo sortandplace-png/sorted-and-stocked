@@ -47,7 +47,7 @@ export const config = {
      *   none of them need or want middleware's redirect behavior.
      */
     /*
-     * - downloads/ (SS-567, and the THIRD instance of the exact bug already
+     * - downloads/ (SS-569, and the THIRD instance of the exact bug already
      *   documented twice above for sw.js and robots.txt: a real file in
      *   public/ that middleware intercepts and 307s to /login, so the file
      *   exists and is unreachable. The extension list below is images only,
