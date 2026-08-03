@@ -6,8 +6,11 @@ import Image from 'next/image';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
 import LocalBusinessJsonLd from '@/components/marketing/LocalBusinessJsonLd';
+import { CANONICAL_ORIGIN } from '@/lib/site-url';
 
 export const metadata: Metadata = {
+  // SS-578: canonical is the apex, one address per page whichever host serves it.
+  alternates: { canonical: `${CANONICAL_ORIGIN}/about` },
   title: 'About Sort + Place | Who We Are',
   description:
     'Sort + Place was founded to solve the problem behind the mess. Not the clutter itself, but the missing systems. Meet the team behind Lakewood’s trusted home management company.',

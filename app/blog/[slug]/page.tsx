@@ -12,7 +12,7 @@ import { createClient } from '@/lib/supabase/server';
 import { renderSimpleMarkdown } from '@/lib/simple-markdown';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
-import { SITE_URL } from '@/lib/site-url';
+import { SITE_URL, CANONICAL_ORIGIN } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +38,8 @@ export async function generateMetadata({
   return {
     title: `${post.title} | Sort + Place`,
     description: post.excerpt ?? undefined,
-    alternates: { canonical: `${SITE_URL}/blog/${post.slug}` },
+    // SS-578: canonical pinned to the apex constant, not the env-overridable SITE_URL.
+    alternates: { canonical: `${CANONICAL_ORIGIN}/blog/${post.slug}` },
     openGraph: {
       type: 'article',
       title: post.title,

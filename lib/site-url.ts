@@ -29,6 +29,13 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://sortandplac
 // call sites would silently split the behaviours.
 export const APP_HOSTNAME = 'app.sortandplace.com';
 
+// SS-578, Racquel ruled: the canonical marketing origin is the APEX, no
+// www. Every rel=canonical on the marketing pages points here; the www
+// host 308s here (next.config.js). Deliberately a literal rather than
+// NEXT_PUBLIC_SITE_URL: an env override must not be able to silently move
+// the canonical.
+export const CANONICAL_ORIGIN = 'https://sortandplace.com';
+
 const KNOWN_PRODUCTION_HOSTS = [APP_HOSTNAME, 'www.sortandplace.com', 'sortandplace.com'];
 
 export function getEmailLinkOrigin(currentOrigin: string | null | undefined): string {

@@ -5,8 +5,11 @@ import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
 import LocalBusinessJsonLd from '@/components/marketing/LocalBusinessJsonLd';
 import ContactPageForm from '@/components/marketing/ContactPageForm';
+import { CANONICAL_ORIGIN } from '@/lib/site-url';
 
 export const metadata: Metadata = {
+  // SS-578: canonical is the apex, one address per page whichever host serves it.
+  alternates: { canonical: `${CANONICAL_ORIGIN}/contact` },
   title: 'Contact Us | Sort + Place',
   description: 'Ready to bring order to your home? Book a consultation with Sort + Place. Serving Lakewood NJ and Ocean County.',
   openGraph: {

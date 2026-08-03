@@ -26,10 +26,11 @@
 // NEXT_PUBLIC_SITE_URL or similar, since the same deployment serves both
 // hostnames. Deliberately an ALLOW-list of exactly one hostname (app.*)
 // that redirects, with everything else (www, bare apex, localhost, Vercel
-// preview URLs) falling through to marketing -- not a check for the bare
-// apex specifically, which would never fire for a real visitor (apex 308s
-// to www at the DNS/hosting layer, outside this repo, before Next.js ever
-// sees the request).
+// preview URLs) falling through to marketing. (An earlier version of this
+// comment claimed the apex 308s to www at the hosting layer; live fetches
+// on 3 Aug DISPROVED that -- both hosts served byte-identical 200s. The
+// real redirect now lives in next.config.js and points the OTHER way:
+// www 308s to the apex, which Racquel ruled canonical -- SS-578.)
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Image from 'next/image';
@@ -42,11 +43,14 @@ import { APP_HOSTNAME } from '@/lib/site-url';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
 import LocalBusinessJsonLd from '@/components/marketing/LocalBusinessJsonLd';
+import { CANONICAL_ORIGIN } from '@/lib/site-url';
 
 // Exact copy from the SEO content package, pasted verbatim per the brief --
 // title/description differ from what shipped earlier tonight (that version
 // predates having the actual content package; this is the real, final copy).
 export const metadata: Metadata = {
+  // SS-578: canonical is the apex, one address per page whichever host serves it.
+  alternates: { canonical: `${CANONICAL_ORIGIN}` },
   title: 'Sort + Place | Professional Home Organization & Household Management, Lakewood NJ',
   description:
     'Sort + Place brings order to busy homes. Professional organization, household staff management, and meal planning systems built to last, not just for the after photo. Serving Lakewood NJ and Ocean County.',

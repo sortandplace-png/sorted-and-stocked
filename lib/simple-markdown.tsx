@@ -49,20 +49,36 @@ function renderInline(text: string): ReactNode[] {
   return parts.map((part, i) => {
     const image = part.match(/^!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)$/);
     if (image) {
-      const [, alt, src] = image;
-      if (!isAllowedImageSrc(src)) return null;
+      const [, alt, rawSrc] = image;
+      if (!isAllowedImageSrc(rawSrc)) return null;
+      // Optional #WxH fragment carries intrinsic dimensions -- e.g.
+      // ![alt](/blog-images/x.webp#1536x1024). A fragment is legal URL
+      // syntax the server never sees, so authors can state the size without
+      // any non-standard markdown, and the width/height attributes reserve
+      // the box so the article does not reflow as images lazy-load below
+      // the fold. Stripped from the emitted src; absent fragment = no
+      // dimension attributes, exactly the old behaviour.
+      const dim = rawSrc.match(/#(\d{2,5})x(\d{2,5})$/);
+      const src = dim ? rawSrc.slice(0, -dim[0].length) : rawSrc;
+      const size = dim ? { width: Number(dim[1]), height: Number(dim[2]) } : {};
+      const cls = 'w-full h-auto rounded-xl2 border border-cardBorder shadow-card my-5';
+      // Plain <img>, not next/image, matching how the blog already renders
+      // header images -- storage srcs would otherwise need remotePatterns
+      // config, and a config miss renders a broken image at request time.
+      /* eslint-disable @next/next/no-img-element */
+      const img = <img key={i} src={src} alt={alt} loading="lazy" {...size} className={cls} />;
+      /* eslint-enable @next/next/no-img-element */
+      if (!src.endsWith('.webp')) return img;
+      // .webp ships with a same-path .png sibling (the asset pipeline
+      // delivers both; preflight-blog.py warns when the sibling is missing
+      // for site-relative srcs). <picture> serves the webp to everything
+      // modern and the png to anything that cannot decode webp.
       return (
-        // Plain <img>, not next/image, matching how the blog already renders
-        // header images -- storage srcs would otherwise need remotePatterns
-        // config, and a config miss renders a broken image at request time.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={i}
-          src={src}
-          alt={alt}
-          loading="lazy"
-          className="w-full h-auto rounded-xl2 border border-cardBorder shadow-card my-5"
-        />
+        <picture key={i}>
+          <source srcSet={src} type="image/webp" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={src.replace(/\.webp$/, '.png')} alt={alt} loading="lazy" {...size} className={cls} />
+        </picture>
       );
     }
     if (part.startsWith('**') && part.endsWith('**')) {
