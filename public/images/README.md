@@ -12,9 +12,11 @@ Present (content-read at full size before placing, per SS-560/SS-566):
     hidden-costs-no-home-inventory-iceberg     1344x1792  blog-22
     stop-buying-olive-oil-pantry-inventory-duplicate  1408x1760  (unassigned)
 
-DELIBERATELY ABSENT: pantry-organization-reach-hierarchy-pyramid (blog-11).
-The delivered render carries a generation-prompt leak as its footer
-("Sort + Place with plus sign"), mislabels the waist-to-eye tier LOW where
-the article's hierarchy says GOOD, and has a "long-ang-term" typo plus
-duplicated tier labels. Needs a re-render; do not place or reference the
-delivered file.
+    pantry-organization-reach-hierarchy-pyramid       1920x1280  blog-11
+
+The pyramid is the 3 Aug RE-RENDER, read at full size before placing: the
+prompt-leak footer is gone (reads "Sort + Place"), waist-to-eye is GOOD
+with a single LOW tier, no typo. Its .png sibling was generated FROM THIS
+RENDER -- the original zip's png is the DEFECTIVE first render, and using
+it as the <picture> fallback would serve the prompt-leak version to every
+client that cannot decode webp. Never restore that file.
