@@ -1122,5 +1122,159 @@
     "linkHouseManual": "Manual de la Casa",
     "linkSops": "Procedimientos",
     "linkTraining": "Capacitación"
+  },
+  "toolsPage": {
+    "title": "Herramientas",
+    "groups": {
+      "scanners": "Escáneres",
+      "kitchen": "Cocina",
+      "house": "Casa",
+      "prep-reset": "Preparación y Reinicio",
+      "calendar": "Calendario",
+      "reference": "Referencia",
+      "capture-tools": "Herramientas de Captura",
+      "admin-cleanup": "Limpieza Administrativa"
+    },
+    "tiles": {
+      "price-scanner": {
+        "title": "Escáner de Precios",
+        "description": "Fotografía un producto y encuentra un equivalente más barato."
+      },
+      "ingredient-scanner": {
+        "title": "Escáner de Ingredientes",
+        "description": "Fotografía una etiqueta y recibe una lectura clara y basada en evidencia."
+      },
+      "recipe-stealer": {
+        "title": "Escáner de Recetas",
+        "description": "Fotografía un platillo y recibe una receta para cocinar en casa."
+      },
+      "knowledge-base": {
+        "title": "Manual de la Casa",
+        "description": "Las respuestas que el personal y la familia siempre preguntan."
+      },
+      "tasks": {
+        "title": "Centro de Tareas del Personal",
+        "description": "Qué hay que hacer y quién lo hace."
+      },
+      "contacts": {
+        "title": "Contactos y Proveedores",
+        "description": "Todas las personas a las que llama la casa: reparaciones, entregas, ayuda."
+      },
+      "suppliers": {
+        "title": "Tiendas Proveedoras",
+        "description": "Cada tienda donde compra esta casa y qué se reordena en cada una."
+      },
+      "backup": {
+        "title": "Respaldo Completo",
+        "description": "Descarga todas las tablas de esta casa en un zip."
+      },
+      "pantry-zones": {
+        "title": "Mapa de Zonas de Despensa",
+        "description": "Dónde vive cada cosa dentro de cada lugar de almacenamiento."
+      },
+      "borrowed-items": {
+        "title": "Prestado y Devuelto",
+        "description": "Lleva el control de lo que salió y quién lo tiene."
+      },
+      "reset-checklist": {
+        "title": "Reinicio para lo Siguiente",
+        "description": "Limpia las listas y empieza de nuevo."
+      },
+      "guest-scaler": {
+        "title": "Ajustar Porciones",
+        "description": "Ajusta para invitados o para tandas grandes."
+      },
+      "needs-linking": {
+        "title": "Faltan Vínculos",
+        "description": "Ingredientes que todavía necesitan un vínculo real al inventario."
+      },
+      "duplicate-ingredients": {
+        "title": "Ingredientes Duplicados",
+        "description": "El mismo ingrediente escrito de formas distintas: únelos."
+      },
+      "capture-inbox": {
+        "title": "Bandeja de Capturas",
+        "description": "Revisa las capturas de recetas, inventario y planes de comida antes de que se publiquen."
+      },
+      "photo-worklist": {
+        "title": "Lista de Fotos Pendientes",
+        "description": "Artículos que la búsqueda web no pudo confirmar: fotografía lo que realmente está en el estante."
+      },
+      "takeout-directory": {
+        "title": "Directorio de Comida Local",
+        "description": "Restaurantes y comida para llevar cerca de esta casa.",
+        "descriptionCity": "Restaurantes y comida para llevar cerca de {city}.",
+        "descriptionCityJewish": "Restaurantes y comida para llevar cerca de {city}, con hashgajá indicada.",
+        "descriptionEmpty": "Agrega los lugares donde ordena esta casa."
+      },
+      "halachic-calendar": {
+        "title": "Calendario Halájico",
+        "description": "Sefiras HaOmer, cuenta regresiva de Erev Pesach y referencia de Bedikas Tolaim."
+      },
+      "prep-timeline": {
+        "title": "Línea de Tiempo de Preparación",
+        "description": "Trabajando hacia atrás desde la hora en que quieres la cena lista."
+      },
+      "memory-timeline": {
+        "title": "Línea del Tiempo del Hogar",
+        "description": "Un registro continuo de fotos, hitos y momentos."
+      },
+      "yom-tov-year-view": {
+        "title": "Vista Anual de Yom Tov",
+        "description": "Cada fecha de Yom Tov en el calendario, de un vistazo."
+      },
+      "capture-photo": {
+        "title": "Capturar Foto",
+        "description": "Toma una foto y asígnala después a un cuarto o artículo."
+      },
+      "identify-item": {
+        "title": "Identificar Artículo Nuevo",
+        "description": "Fotografía algo nuevo: la IA sugiere un nombre y tú confirmas antes de agregarlo."
+      },
+      "link-captured-photos": {
+        "title": "Vincular Fotos Capturadas",
+        "description": "Asigna las fotos que tomó el personal a un artículo o cuarto real."
+      },
+      "hechsher-verification": {
+        "title": "Verificación de Hechsher",
+        "description": "Confirma el hechsher contra OU/OK para cada artículo que no tenga uno."
+      },
+      "kosher-type-tagging": {
+        "title": "Etiquetado de Tipo Kosher",
+        "description": "Etiqueta en bloque Carne/Lácteo/Parve por categoría para artículos sin etiqueta."
+      },
+      "allergen-verification": {
+        "title": "Verificación de Alérgenos",
+        "description": "Confirma la lista de alérgenos de cada alimento que no tenga una revisada."
+      },
+      "dietary-tagging": {
+        "title": "Etiquetado Dietético",
+        "description": "Etiqueta en bloque Vegano/Vegetariano/Sin Gluten por categoría para artículos sin etiquetas."
+      },
+      "translation-worklist": {
+        "title": "Lista de Traducciones",
+        "description": "Recetas, ingredientes y artículos que aún no tienen nombre en español."
+      },
+      "digest": {
+        "title": "Resumen del Hogar",
+        "description": "Un adelanto de lo que está bajo y lo que viene esta semana."
+      },
+      "blog": {
+        "title": "Blog y Artículos",
+        "description": "Consejos de administración del hogar, recetas e ideas."
+      },
+      "taste-memory": {
+        "title": "Memoria de Gustos de Invitados y Familia",
+        "description": "Gustos, disgustos, alergias y sensibilidades, guardados con la persona."
+      },
+      "seasonal-home-prep": {
+        "title": "Preparación de Temporada y Hogar",
+        "description": "En qué punto del año estamos y para qué debe prepararse la casa."
+      },
+      "year-at-a-glance": {
+        "title": "El Año de un Vistazo",
+        "description": "Cada día festivo en el calendario, de un vistazo."
+      }
+    }
   }
 }

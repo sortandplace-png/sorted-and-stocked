@@ -26,6 +26,9 @@ const LINKS = [
   { href: '/faq', label: 'FAQ' },
   { href: '/contact', label: 'Contact' },
   { href: '/privacy.html', label: 'Privacy' },
+  // SS-432 part 2: the human sitemap page. The XML sibling stays a
+  // robots/Search Console concern and is deliberately not footer-linked.
+  { href: '/sitemap', label: 'Sitemap' },
 ];
 
 export default function MarketingFooter({

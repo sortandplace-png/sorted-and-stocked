@@ -1,4 +1,5 @@
 // app/properties/[id]/tools/page.tsx
+import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import ToolsGroupList from '@/components/ToolsGroupList';
 import { isJewishObservant, resolveToolForObservance } from '@/lib/observance-gating';
@@ -359,6 +360,12 @@ const OPERATOR_CLEANUP_SLUGS = new Set([
 export default async function ToolsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
+  // SS-555: the ES app served a Spanish nav leading to an English page --
+  // every string below now resolves through the toolsPage namespace. The
+  // TOOLS array above stays the structural source (slugs, icons, roles,
+  // grouping) and keeps its English text as the reference copy the keys
+  // were minted from; what renders is always t().
+  const tPage = await getTranslations('toolsPage');
 
   const {
     data: { user },
@@ -395,6 +402,11 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
     .eq('audience', 'staff');
 
   const tools = (flags.guest_taste_memory ? [...TOOLS, TASTE_MEMORY_TOOL] : TOOLS)
+    .map((t) => ({
+      ...t,
+      title: tPage(`tiles.${t.slug}.title`),
+      description: tPage(`tiles.${t.slug}.description`),
+    }))
     .filter((t) => canSeeTile(t.slug, role))
     // Suppliers is operator-level, not per-house (Racquel, 30 Jul): who the
     // operation buys from is one business-wide directory, not a copy each
@@ -420,8 +432,13 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
         ? {
             ...t,
             description: property?.city
-              ? `Restaurants and takeout near ${property.city}${jewish ? ', with hashgacha noted.' : '.'}`
-              : 'Add the places this house orders from.',
+              ? tPage(
+                  jewish
+                    ? 'tiles.takeout-directory.descriptionCityJewish'
+                    : 'tiles.takeout-directory.descriptionCity',
+                  { city: property.city }
+                )
+              : tPage('tiles.takeout-directory.descriptionEmpty'),
           }
         : t
     );
@@ -435,18 +452,36 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
   const bySlug = new Map(
     tools.flatMap((t) => {
       const resolved = resolveToolForObservance(t, jewish);
-      return resolved ? ([[t.slug, resolved]] as const) : [];
+      if (!resolved) return [];
+      // A swap tile came back from OBSERVANCE_TOOL_SWAPS with hardcoded
+      // English -- re-key it through the namespace. The yom-tov swap keeps
+      // its slug (same route, civil rendering), so its translation key is
+      // the distinct 'year-at-a-glance'.
+      if (resolved !== t) {
+        const key = resolved.slug === 'yom-tov-year-view' ? 'year-at-a-glance' : resolved.slug;
+        return [
+          [
+            t.slug,
+            {
+              ...resolved,
+              title: tPage(`tiles.${key}.title`),
+              description: tPage(`tiles.${key}.description`),
+            },
+          ],
+        ] as const;
+      }
+      return [[t.slug, resolved]] as const;
     })
   );
 
   const groups = GROUPS.map((group) => ({
     key: group.key,
-    label: group.label,
+    label: tPage(`groups.${group.key}`),
     tools: group.slugs.map((slug) => bySlug.get(slug)).filter((t): t is (typeof TOOLS)[number] => !!t),
     subgroups: (group.subgroups ?? [])
       .map((sg) => ({
         key: sg.key,
-        label: sg.label,
+        label: tPage(`groups.${sg.key}`),
         lockIcon: !!sg.lockIcon,
         tools: sg.slugs.map((slug) => bySlug.get(slug)).filter((t): t is (typeof TOOLS)[number] => !!t),
       }))
@@ -455,7 +490,7 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="max-w-md lg:max-w-4xl mx-auto p-4">
-      <h1 className="text-2xl font-display text-denim mb-4">Tools</h1>
+      <h1 className="text-2xl font-display text-denim mb-4">{tPage('title')}</h1>
       <ToolsGroupList propertyId={id} groups={groups} />
     </div>
   );
