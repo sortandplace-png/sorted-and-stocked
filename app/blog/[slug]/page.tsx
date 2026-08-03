@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/server';
 import { renderSimpleMarkdown } from '@/lib/simple-markdown';
 import { extractRelatedReading } from '@/lib/related-reading';
 import RelatedReadingCards, { type RelatedCard } from '@/components/blog/RelatedReadingCards';
+import PinterestSaveButton from '@/components/blog/PinterestSaveButton';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
 import { SITE_URL, CANONICAL_ORIGIN } from '@/lib/site-url';
@@ -36,7 +37,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const post = await fetchPost(slug);
-  if (!post) return { title: 'Blog — Sort + Place' };
+  // SS-586: no em dashes in page chrome.
+  if (!post) return { title: 'Blog | Sort + Place' };
   return {
     title: `${post.title} | Sort + Place`,
     description: post.excerpt ?? undefined,
@@ -120,8 +122,15 @@ export default async function BlogPostPage({
 
         <article className="bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
           {post.header_image_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={post.header_image_url} alt="" className="w-full max-h-72 object-cover" />
+            <div className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={post.header_image_url} alt="" className="w-full max-h-72 object-cover" />
+              <PinterestSaveButton
+                slug={post.slug}
+                imageUrl={post.header_image_url}
+                description={post.excerpt ?? post.title}
+              />
+            </div>
           )}
           <div className="p-6 sm:p-8">
             {/* Date + title share the prose measure so the whole text
@@ -136,7 +145,7 @@ export default async function BlogPostPage({
               </p>
               <h1 className="font-display text-3xl font-semibold text-denim mb-6 leading-tight">{post.title}</h1>
             </div>
-            {renderSimpleMarkdown(before)}
+            {renderSimpleMarkdown(before, { pin: { slug: post.slug } })}
 
             <RelatedReadingCards posts={related} />
 

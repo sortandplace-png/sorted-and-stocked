@@ -36,6 +36,14 @@ export const APP_HOSTNAME = 'app.sortandplace.com';
 // the canonical.
 export const CANONICAL_ORIGIN = 'https://sortandplace.com';
 
+// The Pinterest profile for the footer Follow button. DELIBERATELY null
+// until Racquel supplies the real profile URL -- a guessed handle would
+// publish a wrong link on every marketing page, so the button renders
+// nothing until this is filled with the verified URL (e.g.
+// 'https://www.pinterest.com/<real-handle>/'). Filling it is the entire
+// remaining work; the footer wiring is done.
+export const PINTEREST_PROFILE_URL: string | null = null;
+
 const KNOWN_PRODUCTION_HOSTS = [APP_HOSTNAME, 'www.sortandplace.com', 'sortandplace.com'];
 
 export function getEmailLinkOrigin(currentOrigin: string | null | undefined): string {

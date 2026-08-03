@@ -13,9 +13,11 @@ import MarketingFooter from '@/components/marketing/MarketingFooter';
 import { SITE_URL, CANONICAL_ORIGIN } from '@/lib/site-url';
 
 export const metadata = {
-  title: 'Blog — Kosher Household Management | Sort + Place',
+  // SS-586: no em dashes in page chrome -- titles and meta descriptions
+  // are what Google renders, the most publicly visible copy on the site.
+  title: 'Blog: Kosher Household Management | Sort + Place',
   description:
-    'Practical articles on kosher household management from Sort + Place in Lakewood, NJ — staff training, Shabbos and Yom Tov preparation, inventory, and multi-property care.',
+    'Practical articles on kosher household management from Sort + Place in Lakewood, NJ: staff training, Shabbos and Yom Tov preparation, inventory, and multi-property care.',
   // SS-578: canonical pinned to the apex constant, not the env-overridable SITE_URL.
   alternates: { canonical: `${CANONICAL_ORIGIN}/blog` },
 };
@@ -37,8 +39,16 @@ export default async function BlogIndexPage() {
       <MarketingHeader />
       <main className="flex-1 max-w-[1100px] w-full mx-auto px-4 py-10">
         <h1 className="font-display text-3xl font-semibold text-denim mb-2">Blog</h1>
+        {/* SS-586, Racquel's locked-in replacement verbatim. Three fixes:
+            the stilted opener is gone, the em dash is gone, and the
+            attribution moves from the app to the practice -- a reader on
+            sortandplace.com/blog should be steered toward hiring
+            Sort + Place; the app already has waitlist callouts inside the
+            articles. Wordmark is "Sort + Place" with the plus -- correct
+            for text; the ampersand form is the logo lockup only (SS-582). */}
         <p className="text-sm text-dusk mb-8 max-w-xl">
-          Practical writing on running a kosher household well — from the team behind Sorted &amp; Stocked.
+          Notes from running real households. Kitchens, pantries, staff, Yom Tov, and the systems that hold when
+          nobody is watching. From the Sort + Place team.
         </p>
 
         {(!posts || posts.length === 0) && <p className="text-sm text-dusk">No posts yet.</p>}
