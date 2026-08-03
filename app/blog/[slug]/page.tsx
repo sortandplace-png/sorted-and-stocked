@@ -110,7 +110,7 @@ export default async function BlogPostPage({
       )}
       <MarketingHeader />
       {/* 3 Aug batch item 3: card widened from max-w-2xl -- the prose
-          inside carries its own 36rem measure (see PROSE_W in
+          inside carries its own 34rem measure (see PROSE_W in
           lib/simple-markdown.tsx) while images and the Related Reading
           card grid break out to the full card width. */}
       <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-10">
