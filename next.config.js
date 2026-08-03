@@ -61,6 +61,24 @@ const withPWA = require('next-pwa')({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // SS-577 root cause: Next 15 streams metadata for dynamic pages, so the
+  // whole merged metadata block -- <title>, rel=canonical, the Pinterest
+  // p:domain_verify tag -- was emitted in the BODY (measured: </head>
+  // closes ~1.5KB in, first metadata ~7-16KB in). Browsers reparent stray
+  // metas into the head at parse time, which is why every substring check
+  // passed while Pinterest's raw-HTML verifier failed: "is the string
+  // present" and "is the element in the head" are different questions.
+  // Next's only lever here is this UA regex -- matched agents get BLOCKING
+  // metadata rendered inside <head>. Match-everything makes metadata
+  // blocking for every client. Verified safe: this config feeds ONLY
+  // shouldServeStreamingMetadata (server/base-server.js:1023); bot
+  // classification (botType / supportsDynamicResponse) uses the static
+  // default regex on a separate path and is unaffected. The cost is
+  // metadata resolving before first byte -- a headers() read, microseconds
+  // -- against every raw-HTML parser reading an effectively head-less page.
+  // VERIFICATION STANDARD for this fix (per SS-577): position of the
+  // element must be BEFORE position of </head>, never a substring match.
+  htmlLimitedBots: /.*/,
   // /privacy and /terms as clean live URLs -- Google's OAuth consent-screen
   // verification needs both reachable at stable paths, and the only real
   // pages are the static public/*.html files. Rewrites (not redirects) so
