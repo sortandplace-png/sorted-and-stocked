@@ -607,7 +607,7 @@
       "tools": "Herramientas",
       "staff": "Personal",
       "settings": "Configuración",
-        "procurement": "Compras Todas las Casas",
+      "procurement": "Compras Todas las Casas",
       "help": "Ayuda"
     },
     "shabbosModeBanner": "Modo Shabat • Edición desactivada",
@@ -794,7 +794,8 @@
     "bulkConfirm": "Subir {count} pósters",
     "bulkUploading": "Subiendo {done} de {total}…",
     "bulkDone": "{count} pósters subidos.",
-    "bulkPartial": "{ok} subidos, {failed} fallaron — los fallidos siguen en la lista, inténtelo de nuevo."
+    "bulkPartial": "{ok} subidos, {failed} fallaron — los fallidos siguen en la lista, inténtelo de nuevo.",
+    "missingPosterFilter": "Sin póster todavía ({count})"
   },
   "training": {
     "title": "Capacitación",

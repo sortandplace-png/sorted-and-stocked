@@ -50,7 +50,18 @@ export default function MarketingFooter({
   // bottom padding is now the only spacing, which is the thing that was
   // always meant to govern it.
   return (
-    <footer className="bg-linen border-t border-cardBorder">
+    // mt-auto is the whole footer-gap fix, and it belongs HERE rather than on
+    // each page (SS-501/SS-505, reported four times, "fixed" three times).
+    // History: the page wrapper had min-h-screen and the footer had a default
+    // mt-16, which stacked into dead space ABOVE the footer. Removing both
+    // cleared that but made the wrapper SHORTER than the viewport, so on any
+    // screen taller than the content a band of body background sat BELOW the
+    // footer instead -- 856px of it on /contact at 1280x1800. Same defect,
+    // moved. In a min-h-screen flex-col wrapper, mt-auto absorbs the slack in
+    // exactly one place: zero when the page is long, and enough to pin the
+    // footer to the bottom when it is short. Neither gap can occur.
+    // Every marketing wrapper must therefore carry "min-h-screen flex flex-col".
+    <footer className="mt-auto bg-linen border-t border-cardBorder">
       <div className="max-w-[1100px] mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[13px] text-dusk">
         <p className="flex items-center gap-2 flex-wrap justify-center">
           {/* SS-454: NO phone numbers anywhere in the footers. SS-498: no
