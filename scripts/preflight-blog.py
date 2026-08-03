@@ -21,9 +21,11 @@ error, no typecheck failure, no visible symptom until a wrong page was live.
                             mainEntity, which Google treats as a
                             structured-data violation: worse than no schema
 
-Plus the standing content rules: no outbound links (SS-506), no inline images
-(the renderer has no image support and emits alt text as literal body copy),
-no personal byline, and no retired ampersand wordmark in any form -- literal,
+Plus the standing content rules: no outbound links (SS-506), images only
+from allowed sources (site-relative or this project's public storage -- the
+renderer gained image support 3 Aug and silently drops anything else, so a
+disallowed src is invisible content loss, not a rendering error), no
+personal byline, and no retired ampersand wordmark in any form -- literal,
 URL-encoded or HTML-entity (SS-556, where %26 survived three sweeps).
 
 ERRORS block (exit 1). WARNINGS are informational and do not block: the em
@@ -47,10 +49,12 @@ META = '**Meta Description:**'
 SLUG_RE = re.compile(r'^article-(?:(\d{2})-)?([a-z0-9-]+)\.md$')
 FENCE_RE = re.compile(r'```json\s*(\{.*?\})\s*```', re.S)
 H3_RE = re.compile(r'^### (.+?)\s*$', re.M)
-LINK_RE = re.compile(r'\[([^\]]+)\]\(([^)]+)\)')
-# Deliberately NOT anchored to line start: an image dropped mid-paragraph
-# renders exactly as badly as one on its own line, and anchoring missed it.
-IMG_RE = re.compile(r'!\[')
+# Lookbehind so ![alt](src) does not ALSO match as a link -- before the
+# renderer had image support that double-match was harmless (both were
+# errors); now an allowed image must not trip the internal-link rule.
+LINK_RE = re.compile(r'(?<!!)\[([^\]]+)\]\(([^)]+)\)')
+IMG_RE = re.compile(r'!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)')
+STORAGE_PUBLIC_PREFIX = 'https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/'
 NAME_RE = re.compile(r'racquel|about the author', re.I)
 WORKING_TITLE_RE = re.compile(r'voice|fixed|template|rewrite|final|copy|-v\d+', re.I)
 # SS-556: an audit for a literal must also search its encoded forms.
@@ -145,8 +149,12 @@ def check(path: pathlib.Path) -> tuple[list[str], list[str]]:
                     errors.append(f'    on page, not in schema: {q}')
 
     # --- Standing content rules --------------------------------------------
-    if IMG_RE.search(body):
-        errors.append('inline image syntax in body; the renderer emits the alt text as literal copy')
+    for alt, src in IMG_RE.findall(body):
+        # Mirrors lib/simple-markdown.tsx isAllowedImageSrc exactly. A src
+        # outside the allowlist renders as NOTHING, so shipping one is
+        # silent content loss -- block it here where it is visible.
+        if not (src.startswith('/') or src.startswith(STORAGE_PUBLIC_PREFIX)):
+            errors.append(f'image src outside site/storage (renders as nothing): {src[:70]}')
 
     for label, target in LINK_RE.findall(body):
         if target.startswith('http'):

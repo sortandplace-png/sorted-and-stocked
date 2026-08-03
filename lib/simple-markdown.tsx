@@ -3,7 +3,11 @@
 // exactly the constructs the SEO content package's articles use (confirmed
 // against the actual files, 2 Aug): #/##/### headers, **bold** and *italic*
 // spans, `* ` / `- ` bullet lists, `> ` blockquote CTA panels, `---` rules,
-// [text](/internal-path) links, and blank-line-separated paragraphs.
+// [text](/internal-path) links, ![alt](src) images (added 3 Aug -- before
+// that, image syntax half-matched the link pattern and the ALT TEXT leaked
+// into the rendered copy as literal prose, which is why the preflight
+// treated any inline image as a defect), and blank-line-separated
+// paragraphs.
 // Returns real JSX elements, never an HTML string, so there's no
 // dangerouslySetInnerHTML/XSS surface even though this content is
 // manager-authored and trusted.
@@ -24,9 +28,43 @@
 // /welcome or /contact is therefore a defect by definition.
 import type { ReactNode } from 'react';
 
+// Images follow the SAME source policy as links, for the same reason: an
+// external src is a permanent liability someone has to keep re-checking,
+// and a hotlinked host can swap the pixels after review. Allowed sources
+// are site-relative paths and THIS project's public storage -- everything
+// else renders as NOTHING (not the alt text: alt-as-copy is the exact
+// defect this feature replaces, and a visible placeholder would ship
+// reviewer-facing noise as reader-facing copy).
+const STORAGE_PUBLIC_PREFIX = 'https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/';
+
+function isAllowedImageSrc(src: string): boolean {
+  return src.startsWith('/') || src.startsWith(STORAGE_PUBLIC_PREFIX);
+}
+
 function renderInline(text: string): ReactNode[] {
-  const parts = text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\)|\*[^*\n]+\*)/g);
+  // The image alternative must precede the link alternative: ![alt](src)
+  // contains [alt](src), so without it the link pattern consumes that span
+  // and strands the "!" in copy -- the old alt-leak bug in miniature.
+  const parts = text.split(/(!\[[^\]]*\]\([^)]+\)|\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\)|\*[^*\n]+\*)/g);
   return parts.map((part, i) => {
+    const image = part.match(/^!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)$/);
+    if (image) {
+      const [, alt, src] = image;
+      if (!isAllowedImageSrc(src)) return null;
+      return (
+        // Plain <img>, not next/image, matching how the blog already renders
+        // header images -- storage srcs would otherwise need remotePatterns
+        // config, and a config miss renders a broken image at request time.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={i}
+          src={src}
+          alt={alt}
+          loading="lazy"
+          className="w-full h-auto rounded-xl2 border border-cardBorder shadow-card my-5"
+        />
+      );
+    }
     if (part.startsWith('**') && part.endsWith('**')) {
       return (
         <strong key={i} className="font-semibold text-denim">
