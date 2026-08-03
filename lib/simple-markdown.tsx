@@ -29,6 +29,8 @@
 // links between posts are standard as of 3 Aug -- all 11 live posts carry
 // them) is therefore a defect by definition.
 import type { ReactNode } from 'react';
+import { ClipboardList, Clock, Users, Home, Package, CalendarDays, Sparkles, ListChecks } from 'lucide-react';
+import Pin from '@/components/PinAccent';
 import PinterestSaveButton from '@/components/blog/PinterestSaveButton';
 import { CANONICAL_ORIGIN } from '@/lib/site-url';
 
@@ -168,17 +170,27 @@ function slugifyHeading(text: string): string {
     .replace(/\s+/g, '-');
 }
 
-// The FAQ section renders as a native <details> accordion (SS-584): seven
-// questions of unbroken prose were a large share of every post's perceived
-// length, and collapsing them to one line each fixes that at the foot of
-// every post at once. Presentation only -- the FAQPage JSON-LD lives in
-// blog_posts.faq_jsonld, a separate column this file never touches, so
-// rich-results parity (SS-557 trap 5 checks it against these same ###
-// questions) is unaffected. <details>/<summary> needs no client JS, works
-// in a server component, and search engines read closed-by-default content
-// fine. Chosen over cards/dividers because it removes the wall rather than
-// decorating it.
+// The FAQ section renders as Concept B TILES matching /faq exactly
+// (SS-584 reopened, Racquel's screenshot ruling, 3 Aug): the first pass
+// here shipped full-width mist pills stacked seven deep -- the same
+// defect SS-434 recorded on the marketing FAQ, rebuilt to a superseded
+// design while the corrected FaqList was already live on /faq. THE
+// MARKETING FAQ TILES ARE THE CANONICAL TREATMENT FOR ANY QUESTION-LIST
+// SURFACE; check /faq before building the next one. Two across on
+// desktop, stacked on mobile; white card, brass ICON STROKE (never a
+// fill), 10px gold-radial pin top right OUTSIDE the <details> (a closed
+// details hides every child but its summary and would swallow the pin --
+// the exact bug FaqList documents); default grid stretch + h-full for
+// equal heights within a row (SS-529). Still native <details>: answers
+// expand in place, no client JS, real DOM text for the crawler.
+// Presentation only -- faq_jsonld is a separate column this file never
+// touches, so rich-results parity is unaffected.
 const FAQ_HEADING = 'Frequently Asked Questions';
+
+// Blog questions are arbitrary text, so tiles draw brass stroke icons
+// from a fixed household-flavored pool by position -- deterministic
+// (server render stays stable) and varied within any post's set of 4-7.
+const FAQ_ICONS = [ClipboardList, Clock, Users, Home, Package, CalendarDays, Sparkles, ListChecks];
 
 // opts.pin: when the caller is a public post page, standalone figures get
 // a hover Save-to-Pinterest overlay pinning THIS post's apex URL with the
@@ -324,26 +336,58 @@ export function renderSimpleMarkdown(
       }
       if (faqItems.length > 0) {
         out.push(
-          <div key={`faq-${i}`} className={`space-y-2.5 mb-4 ${PROSE_W}`}>
-            {faqItems.map((item, k) => (
-              <details key={k} className="group bg-mist/60 border border-cardBorder rounded-xl2 px-4">
-                <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden py-3 flex items-start justify-between gap-3">
-                  {/* The h3 keeps its anchor id inside the summary, so the
-                      heading outline and any future #fragment links are
-                      unchanged by the accordion. */}
-                  <h3 id={item.id} className="scroll-mt-24 font-display text-[15px] font-semibold text-denim leading-snug">
-                    {renderInline(item.q)}
-                  </h3>
-                  <span
-                    aria-hidden
-                    className="text-brass text-lg leading-none mt-0.5 shrink-0 transition-transform duration-200 group-open:rotate-45"
-                  >
-                    +
-                  </span>
-                </summary>
-                <div className="pb-3">{item.answers.map((a, m) => renderBlock(a, `faq-${i}-${k}-${m}`))}</div>
-              </details>
-            ))}
+          // Full card width like the Related Reading grid -- two tiles do
+          // not fit the 34rem prose measure. No items-start (SS-529):
+          // default stretch + h-full gives every tile its row's height,
+          // so a two-line question cannot unbalance its neighbour.
+          <div key={`faq-${i}`} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            {faqItems.map((item, k) => {
+              const Icon = FAQ_ICONS[k % FAQ_ICONS.length];
+              return (
+                <div key={k} className="relative h-full bg-card border border-cardBorder rounded-xl2 shadow-card">
+                  <Pin size="sm" />
+                  <details className="group">
+                    {/* pr-8 clears the pin, exactly as FaqList documents.
+                        The h3 keeps its anchor id inside the summary, so
+                        the heading outline and any future #fragment links
+                        are unchanged by the tiles. */}
+                    <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden pl-5 pr-8 py-4 flex items-start gap-3">
+                      <Icon
+                        className="w-[18px] h-[18px] text-brass shrink-0 mt-[5px]"
+                        strokeWidth={1.75}
+                        aria-hidden="true"
+                      />
+                      <h3 id={item.id} className="scroll-mt-24 font-display font-bold text-lg text-denim leading-snug">
+                        {renderInline(item.q)}
+                      </h3>
+                    </summary>
+                    {/* Answers match /faq's text-dusk treatment; bullets
+                        keep list form. Rendered here rather than through
+                        renderBlock so the tile interior matches the
+                        canonical build, not the article prose. */}
+                    <div className="px-5 pb-4 space-y-2">
+                      {item.answers.map((a, m) => {
+                        const ls = a.split('\n');
+                        if (ls.length > 0 && ls.every(isBullet)) {
+                          return (
+                            <ul key={m} className="list-disc pl-5 space-y-1 text-sm text-dusk leading-relaxed">
+                              {ls.map((l, n) => (
+                                <li key={n}>{renderInline(l.trimStart().slice(2))}</li>
+                              ))}
+                            </ul>
+                          );
+                        }
+                        return (
+                          <p key={m} className="text-sm text-dusk leading-relaxed">
+                            {renderInline(a)}
+                          </p>
+                        );
+                      })}
+                    </div>
+                  </details>
+                </div>
+              );
+            })}
           </div>
         );
         i = j - 1;
