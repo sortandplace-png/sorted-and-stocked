@@ -46,6 +46,17 @@ export const config = {
      *   checks they run internally) all handle "no session" themselves;
      *   none of them need or want middleware's redirect behavior.
      */
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|icons/|robots\\.txt|sitemap\\.xml|sw\\.js|workbox-.*\\.js|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    /*
+     * - downloads/ (SS-567, and the THIRD instance of the exact bug already
+     *   documented twice above for sw.js and robots.txt: a real file in
+     *   public/ that middleware intercepts and 307s to /login, so the file
+     *   exists and is unreachable. The extension list below is images only,
+     *   so .pdf was never covered. Found because three LIVE blog posts
+     *   already link lead-magnet PDFs at /downloads/*.pdf: those URLs
+     *   currently return the sign-in page with status 200 -- not a 404, so
+     *   nothing monitors it and nothing alerts. Placing the PDF files alone
+     *   would NOT have fixed it; they would have kept redirecting.)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|icons/|downloads/|robots\\.txt|sitemap\\.xml|sw\\.js|workbox-.*\\.js|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
