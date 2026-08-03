@@ -42,7 +42,24 @@
       "googleSignIn": "Iniciar sesión con Google",
       "googleSigningIn": "Iniciando sesión…",
       "newHere": "¿Primera vez aquí?",
-      "createAnAccount": "Crear una cuenta"
+      "createAnAccount": "Crear una cuenta",
+      "breakoutTitle": "Abre en Safari para continuar con Google",
+      "breakoutLine1": "Toca el menú ••• arriba a la derecha y elige Abrir en Safari.",
+      "breakoutLine2": "O copia este enlace y pégalo en Safari.",
+      "breakoutCopyLink": "Copiar enlace",
+      "breakoutCopied": "Copiado",
+      "breakoutAlsoEmail": "También puedes iniciar sesión con tu correo y contraseña aquí abajo.",
+      "oauthErrorFallback": "No se pudo iniciar sesión. Inténtalo de nuevo.",
+      "oauthErrors": {
+        "no-invite": "No hay ninguna cuenta para ese acceso con Google. Primero necesitas una invitación.",
+        "auth-callback-failed": "No se pudo iniciar sesión. Inténtalo de nuevo.",
+        "auth-link-failed": "Ese enlace no funcionó o ya venció. Pide uno nuevo e inténtalo otra vez.",
+        "cookie-blocked": "El acceso con Google no está disponible aquí. Esta página se está abriendo dentro de otra aplicación. Ábrela en Safari o Chrome, o inicia sesión con tu correo y contraseña arriba.",
+        "code-invalid": "Ese intento de acceso venció o ya se usó. Inténtalo de nuevo desde el principio.",
+        "code-exchange": "No se pudo completar el intercambio seguro. Inténtalo de nuevo.",
+        "oauth-provider": "Google no completó el acceso (se canceló o se rechazó). Inténtalo de nuevo.",
+        "no-code": "El acceso con Google no está disponible aquí. Esta página se está abriendo dentro de otra aplicación. Ábrela en Safari o Chrome, o inicia sesión con tu correo y contraseña arriba."
+      }
     },
     "signUp": {
       "heading": "Crea tu cuenta",
