@@ -17,6 +17,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
+import Link from 'next/link';
 import Pin from '@/components/PinAccent';
 import { Search, X } from 'lucide-react';
 import SopPosterUpload from '@/components/SopPosterUpload';
@@ -87,6 +88,32 @@ export default function SopLibraryClient({
   // id; a key present with an empty array means "checked, none" and stops a
   // refetch on every reopen.
   const [suppliesBySop, setSuppliesBySop] = useState<Map<string, TaskSupply[]>>(new Map());
+  // SS-551: which procedures have a training video. One 24-row fetch on
+  // mount (training_videos.sop_id FK, backfilled from module_ref), keyed
+  // by sop id; the Watch link renders on exactly those cards and points
+  // at the Handbook's Videos tab.
+  const [videoBySop, setVideoBySop] = useState<Map<string, { titleEn: string; titleEs: string | null }>>(new Map());
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from('training_videos')
+      .select('sop_id, title_en, title_es')
+      .eq('active', true)
+      .not('sop_id', 'is', null)
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        const m = new Map<string, { titleEn: string; titleEs: string | null }>();
+        for (const v of data) {
+          if (v.sop_id && !m.has(v.sop_id)) m.set(v.sop_id, { titleEn: v.title_en, titleEs: v.title_es });
+        }
+        setVideoBySop(m);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!openId || suppliesBySop.has(openId)) return;
@@ -439,6 +466,19 @@ export default function SopLibraryClient({
                               <p className="text-sm text-denim whitespace-pre-wrap">
                                 {pick(s.sop_en, s.sop_es) || t('noMethod')}
                               </p>
+                              {/* SS-551: this procedure has a training
+                                  video -- the other direction of the same
+                                  link (the video card links back here via
+                                  ?sop=). Named with the video's own title
+                                  so it is findable in the Videos tab. */}
+                              {videoBySop.has(s.id) && (
+                                <Link
+                                  href={`/properties/${propertyId}/staff/handbook?tab=videos`}
+                                  className="inline-block text-[12px] font-medium text-denim underline underline-offset-2"
+                                >
+                                  {t('watchVideo')}: {pick(videoBySop.get(s.id)!.titleEn, videoBySop.get(s.id)!.titleEs ?? videoBySop.get(s.id)!.titleEn)}
+                                </Link>
+                              )}
                               {pick(s.pass_fail_en, s.pass_fail_es) && (
                                 <p className="text-xs text-dusk">
                                   <span className="font-medium text-dusk uppercase tracking-wider">

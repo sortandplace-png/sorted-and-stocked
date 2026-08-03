@@ -62,7 +62,9 @@ export default async function ProcurementPage() {
 
   // Household size counted against the whole table, not just this user's
   // own memberships -- see app/properties/[id]/layout.tsx for why.
-  const { data: allHouseholdIds } = await supabase.from('properties').select('household_id').not('household_id', 'is', null);
+  // SS-519 audit: archived test properties must not inflate the per-
+  // household counts (decorative since SS-459, but wrong is wrong).
+  const { data: allHouseholdIds } = await supabase.from('properties').select('household_id').not('household_id', 'is', null).is('archived_at', null);
   const householdCounts = new Map<string, number>();
   for (const row of allHouseholdIds ?? []) {
     const hid = row.household_id as string;
