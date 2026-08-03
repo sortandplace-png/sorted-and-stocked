@@ -24,6 +24,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { inflateRawSync } from 'node:zlib';
+import sharp from 'sharp';
 
 export const maxDuration = 60;
 
@@ -177,6 +178,35 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, entryCount: entries.length });
     }
 
+    if (job.mode === 'thumb') {
+      // Pixel VERIFICATION channel (3 Aug): the Code container has no
+      // egress to storage or Drive, so before this mode existed nothing
+      // could actually LOOK at an image that only exists production-side
+      // -- transport checks passed while defective pixels shipped twice
+      // (legacy-03, the first pyramid render). This returns a small
+      // resized JPEG as base64 IN THE JOB ROW, where database-side SQL
+      // can read it out and the container can decode and view it.
+      // Same jobId auth as everything else; read-only against storage.
+      const tp = (job.payload ?? {}) as { bucket?: string; path?: string; width?: number };
+      if (!tp.bucket || !tp.path) throw new Error('payload needs bucket + path');
+      const width = Math.min(Math.max(tp.width ?? 480, 64), 1024);
+      const { data: blob, error: dlErr } = await admin.storage.from(tp.bucket).download(tp.path);
+      if (dlErr || !blob) throw new Error(`download: ${dlErr?.message ?? 'no data'}`);
+      const buf = Buffer.from(await blob.arrayBuffer());
+      const thumb = await sharp(buf).resize({ width }).jpeg({ quality: 72 }).toBuffer();
+      const result = {
+        source: `${tp.bucket}/${tp.path}`,
+        sourceBytes: buf.length,
+        width,
+        thumbBase64: thumb.toString('base64'),
+      };
+      await admin
+        .from('asset_ingest_jobs')
+        .update({ status: 'done', result, finished_at: new Date().toISOString() })
+        .eq('id', jobId);
+      return NextResponse.json({ ok: true, thumbBytes: thumb.length });
+    }
+
     if (job.mode === 'fetch-url') {
       // Copy files the deployment can reach into storage -- built for the
       // blog featured images (staged in this repo's public/ so production
@@ -216,7 +246,7 @@ export async function POST(request: Request) {
     // mode === 'ingest'
     const payload = (job.payload ?? {}) as {
       scanJobId?: string;
-      files?: { name: string; kind: 'sop-image' | 'clip'; target: string }[];
+      files?: { name: string; kind: 'sop-image' | 'clip' | 'storage'; target: string }[];
     };
     if (!payload.scanJobId || !payload.files?.length) {
       throw new Error('payload needs scanJobId + files');
@@ -244,7 +274,24 @@ export async function POST(request: Request) {
         const data = await fetchEntryBytes(zipUrl, entry);
         if (data.length !== entry.size) throw new Error(`inflated ${data.length} != expected ${entry.size}`);
 
-        if (f.kind === 'sop-image') {
+        if (f.kind === 'storage') {
+          // Generic extraction (3 Aug): pull a zip entry straight into a
+          // bucket path with NO row write -- for assets that live in a
+          // link-shared zip (e.g. the 159-image Pinterest library) and
+          // are wanted individually. target = "bucket/path/inside".
+          const slash = f.target.indexOf('/');
+          if (slash < 1) throw new Error('storage target must be bucket/path');
+          const bucket = f.target.slice(0, slash);
+          const objectPath = f.target.slice(slash + 1);
+          const ext = objectPath.split('.').pop()?.toLowerCase() ?? '';
+          const contentType =
+            ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+          const { error: upErr } = await admin.storage
+            .from(bucket)
+            .upload(objectPath, data, { contentType, upsert: true });
+          if (upErr) throw new Error(`upload: ${upErr.message}`);
+          results.push({ name: f.name, ok: true, detail: `${f.target} <- ${data.length} bytes` });
+        } else if (f.kind === 'sop-image') {
           // target = sop_code, e.g. "SOP-099"
           const objectPath = `${f.target}_reference_${safeName(f.name)}`;
           const { error: upErr } = await admin.storage
