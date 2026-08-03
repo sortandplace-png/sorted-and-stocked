@@ -73,24 +73,16 @@ const nextConfig = {
       { source: '/terms', destination: '/terms.html' },
     ];
   },
-  // SS-578 (Racquel ruled: apex). www 308s to sortandplace.com, permanent,
-  // path-preserving. Host-conditioned, so app.sortandplace.com and previews
-  // are untouched. SEQUENCING NOTE: this deliberately shipped AFTER SS-577's
-  // Pinterest tag was verified live on both hostnames -- a redirect
-  // introduced mid-verification can break it, which is why SS-577 carried
-  // no redirect. The old comment in app/page.tsx claiming the hosting layer
-  // already apex-308s-to-www was DISPROVED by live fetches (both hosts
-  // served byte-identical 200s); this is where the redirect actually lives.
-  async redirects() {
-    return [
-      {
-        source: '/:path*',
-        has: [{ type: 'host', value: 'www.sortandplace.com' }],
-        destination: 'https://sortandplace.com/:path*',
-        permanent: true,
-      },
-    ];
-  },
+  // SS-578 REVERTED 3 Aug, minutes after deploy: with this app-level
+  // www->apex 308 live, BOTH marketing hosts entered a REDIRECT LOOP
+  // (pg_net: "Number of redirects hit maximum amount" on apex and www
+  // alike). That is only possible if something OUTSIDE this repo -- the
+  // Vercel domain configuration -- redirects apex->www, the exact
+  // behaviour app/page.tsx's old comment described and live fetches
+  // earlier today did not show. The platform side must be aligned first
+  // (primary domain = apex, www redirecting at the edge), at which point
+  // no app-level redirect is needed at all. Do NOT reintroduce this block
+  // while the platform config points the other way.
   // Two dev servers on this repo (a human on :3000, an agent on :3100) were
   // both writing to the same .next directory, which on Windows produces
   // EBUSY "resource busy or locked" errors on
