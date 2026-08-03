@@ -1,6 +1,7 @@
 // app/properties/[id]/tools/duplicate-ingredients/page.tsx
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { isOperatorConsole } from '@/lib/module-flags';
 import DuplicateIngredientsClient from '@/components/DuplicateIngredientsClient';
 
 export default async function DuplicateIngredientsPage({
@@ -22,13 +23,22 @@ export default async function DuplicateIngredientsPage({
   // variants across every recipe on the property, a real bulk mutation.
   const { data: membership } = await supabase
     .from('property_members')
-    .select('role')
+    .select('role, properties(feature_flags)')
     .eq('property_id', id)
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (!membership || membership.role === 'staff') {
     redirect(`/properties/${id}/inventory`);
+  }
+
+  // SS-552: operator data-cleanup tool, operator_console only -- the tile
+  // filter on the Tools hub hides the discovery path, this enforces the
+  // route itself, same split as Suppliers.
+  const hostFlags = (membership.properties as unknown as { feature_flags: Record<string, unknown> | null } | null)
+    ?.feature_flags;
+  if (!isOperatorConsole(hostFlags)) {
+    redirect(`/properties/${id}/tools`);
   }
 
   return <DuplicateIngredientsClient propertyId={id} />;
