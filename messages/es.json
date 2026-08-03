@@ -13,7 +13,8 @@
     "navigate": "navegar",
     "open": "abrir",
     "close": "cerrar",
-    "partialFailure": "Algunos resultados no se pudieron cargar ({sources}). Esto es un error, no un resultado vacío — inténtelo de nuevo."
+    "partialFailure": "Algunos resultados no se pudieron cargar ({sources}). Esto es un error, no un resultado vacío — inténtelo de nuevo.",
+    "kindDestination": "Ir a"
   },
   "auth": {
     "contact": "Contacto",

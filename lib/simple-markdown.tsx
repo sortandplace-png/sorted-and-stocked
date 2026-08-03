@@ -63,29 +63,63 @@ function isBullet(l: string) {
   return t.startsWith('* ') || t.startsWith('- ');
 }
 
+// GitHub-style heading slugs. The "On This Page" tables of contents already
+// written into four LIVE posts (blog-11, 16, 21, 22) use anchors of exactly
+// this shape -- #building-your-system-schedules -- and until now this
+// renderer emitted no id on any heading at all, so every one of those jump
+// links did nothing. Verified against blog-16's real headings before
+// writing this: all 9 of its anchors reproduce exactly.
+//
+// Inline markers are stripped BEFORE slugging, because the heading text is
+// markdown, not plain text: "1. Schedules, *when things happen*" must slug
+// as 1-schedules-when-things-happen, not carry the asterisks through.
+function slugifyHeading(text: string): string {
+  return text
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
+}
+
 export function renderSimpleMarkdown(markdown: string): ReactNode[] {
   const blocks = markdown.trim().split(/\n\s*\n/);
+  // Duplicate slugs are real here, not hypothetical: blog-16 has an H2
+  // "What Is a Household Management System?" and an FAQ H3 "What is a
+  // household management system?", which slug identically. GitHub's rule --
+  // first occurrence keeps the bare slug, later ones get -1, -2 -- is what
+  // the TOC needs anyway, since the TOC always points at the first. Without
+  // the counter the page would ship duplicate ids, which is invalid HTML.
+  const seen = new Map<string, number>();
+  function headingId(raw: string): string {
+    const base = slugifyHeading(raw);
+    const n = seen.get(base) ?? 0;
+    seen.set(base, n + 1);
+    return n === 0 ? base : `${base}-${n}`;
+  }
   return blocks.map((block, i) => {
     if (block.trim() === '---') {
       return <hr key={i} className="border-cardBorder my-6" />;
     }
     if (block.startsWith('### ')) {
       return (
-        <h3 key={i} className="font-display text-lg font-semibold text-denim mt-5 mb-2">
+        <h3 key={i} id={headingId(block.slice(4))} className="scroll-mt-24 font-display text-lg font-semibold text-denim mt-5 mb-2">
           {renderInline(block.slice(4))}
         </h3>
       );
     }
     if (block.startsWith('## ')) {
       return (
-        <h2 key={i} className="font-display text-xl font-semibold text-denim mt-6 mb-2">
+        <h2 key={i} id={headingId(block.slice(3))} className="scroll-mt-24 font-display text-xl font-semibold text-denim mt-6 mb-2">
           {renderInline(block.slice(3))}
         </h2>
       );
     }
     if (block.startsWith('# ')) {
       return (
-        <h1 key={i} className="font-display text-2xl font-semibold text-denim mt-2 mb-3">
+        <h1 key={i} id={headingId(block.slice(2))} className="scroll-mt-24 font-display text-2xl font-semibold text-denim mt-2 mb-3">
           {renderInline(block.slice(2))}
         </h1>
       );

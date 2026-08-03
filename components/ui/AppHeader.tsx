@@ -35,6 +35,7 @@ export default function AppHeader({
   avatarUrl,
   observance,
   homeSegment = 'dashboard',
+  canReachConsole = false,
 }: {
   /** Absent on cross-property pages -- see the note above. */
   propertyId?: string;
@@ -49,6 +50,9 @@ export default function AppHeader({
    *  on my-day, everyone else on dashboard (bottom-nav rebalance made
    *  this icon the sole route home). */
   homeSegment?: 'dashboard' | 'my-day';
+  /** SS-567: forwarded to search so console destinations are offered only
+   *  where the console is actually reachable. */
+  canReachConsole?: boolean;
 }) {
   return (
     <header className="flex items-center justify-between px-4 py-3 bg-denim text-white sticky top-0 z-30 print:hidden">
@@ -75,7 +79,7 @@ export default function AppHeader({
             </span>
           </div>
         )}
-        {propertyId && <HeaderSearchClient propertyId={propertyId} />}
+        {propertyId && <HeaderSearchClient propertyId={propertyId} canReachConsole={canReachConsole} />}
         <LocaleToggle />
         <HeaderAvatarUpload userId={userId} fullName={fullName} email={userEmail} avatarUrl={avatarUrl} propertyId={propertyId} />
         <LogoutButton variant="dark" />
