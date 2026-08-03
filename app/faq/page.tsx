@@ -13,8 +13,11 @@ import MarketingFooter from '@/components/marketing/MarketingFooter';
 import LocalBusinessJsonLd from '@/components/marketing/LocalBusinessJsonLd';
 import { Workflow, Users, RotateCw, MapPin, Clock, HeartHandshake, UtensilsCrossed, Smartphone } from 'lucide-react';
 import FaqList from '@/components/marketing/FaqList';
+import { CANONICAL_ORIGIN } from '@/lib/site-url';
 
 export const metadata: Metadata = {
+  // SS-578: canonical is the apex, one address per page whichever host serves it.
+  alternates: { canonical: `${CANONICAL_ORIGIN}/faq` },
   title: 'FAQ | Sort + Place, Common Questions',
   description:
     'Answers to common questions about home organization, household management, staff training, and our process. Sort + Place, Lakewood NJ.',

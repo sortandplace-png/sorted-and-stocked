@@ -10,13 +10,14 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
-import { SITE_URL } from '@/lib/site-url';
+import { SITE_URL, CANONICAL_ORIGIN } from '@/lib/site-url';
 
 export const metadata = {
   title: 'Blog — Kosher Household Management | Sort + Place',
   description:
     'Practical articles on kosher household management from Sort + Place in Lakewood, NJ — staff training, Shabbos and Yom Tov preparation, inventory, and multi-property care.',
-  alternates: { canonical: `${SITE_URL}/blog` },
+  // SS-578: canonical pinned to the apex constant, not the env-overridable SITE_URL.
+  alternates: { canonical: `${CANONICAL_ORIGIN}/blog` },
 };
 
 // Public content that changes whenever a post is published -- must never

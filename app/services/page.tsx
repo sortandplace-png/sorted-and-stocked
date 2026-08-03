@@ -10,12 +10,15 @@ import Pin from '@/components/PinAccent';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
 import LocalBusinessJsonLd from '@/components/marketing/LocalBusinessJsonLd';
+import { CANONICAL_ORIGIN } from '@/lib/site-url';
 
 // SEO extended for the Moving service (SS-488 amendment): packing,
 // unpacking, and move-in setup terms live in the metadata and the
 // OfferCatalog JSON-LD below, phrased naturally. Nothing keyword-stuffed
 // appears in the visible page copy.
 export const metadata: Metadata = {
+  // SS-578: canonical is the apex, one address per page whichever host serves it.
+  alternates: { canonical: `${CANONICAL_ORIGIN}/services` },
   title: 'Our Services | Sort + Place. Home Organization, Household Management, Moving & Packing',
   description:
     'Full-home organization, kitchen and pantry setup, staff management, newlywed packages, and packing and unpacking services with complete move-in setup. Systems that work for real families. Serving Lakewood NJ.',

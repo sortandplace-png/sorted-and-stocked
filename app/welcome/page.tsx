@@ -13,8 +13,11 @@
 import type { Metadata } from 'next';
 import { CalendarDays, Package, ShoppingCart, Users } from 'lucide-react';
 import RequestAccessForm from '@/components/RequestAccessForm';
+import { CANONICAL_ORIGIN } from '@/lib/site-url';
 
 export const metadata: Metadata = {
+  // SS-578: canonical is the apex, one address per page whichever host serves it.
+  alternates: { canonical: `${CANONICAL_ORIGIN}/welcome` },
   title: 'Sorted & Stocked. Built for the way your kitchen actually runs',
   description:
     'Meal planning, inventory, and staff coordination built for Orthodox Jewish households. Kashrut-aware from day one, by a professional organizer.',

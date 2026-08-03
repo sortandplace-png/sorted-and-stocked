@@ -155,6 +155,19 @@ def check(path: pathlib.Path) -> tuple[list[str], list[str]]:
         # silent content loss -- block it here where it is visible.
         if not (src.startswith('/') or src.startswith(STORAGE_PUBLIC_PREFIX)):
             errors.append(f'image src outside site/storage (renders as nothing): {src[:70]}')
+            continue
+        # The renderer strips an optional #WxH dimensions fragment; strip it
+        # here too before any filesystem checks.
+        base = re.sub(r'#\d{2,5}x\d{2,5}$', '', src)
+        if base == src:
+            warnings.append(f'image without #WxH dimensions fragment (page reflows on load): {src[:60]}')
+        if base.startswith('/') and base.endswith('.webp'):
+            # The renderer emits a <picture> whose fallback is the same path
+            # with .png -- a missing sibling means broken images for any
+            # client that cannot decode webp.
+            png = pathlib.Path('public') / (base[1:].rsplit('.', 1)[0] + '.png')
+            if not png.exists():
+                warnings.append(f'.webp with no .png sibling in public/ (fallback 404s): {base[:60]}')
 
     for label, target in LINK_RE.findall(body):
         if target.startswith('http'):
