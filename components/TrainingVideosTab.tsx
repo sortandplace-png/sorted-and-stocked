@@ -200,9 +200,21 @@ export default function TrainingVideosTab({ videos, userId }: { videos: Training
                   {v.href && (
                     <Link
                       href={v.href}
-                      className="inline-block mt-2.5 text-[12px] font-medium text-denim underline underline-offset-2"
+                      className="inline-block mt-2.5 mr-4 text-[12px] font-medium text-denim underline underline-offset-2"
                     >
                       {t('goThere')}
+                    </Link>
+                  )}
+                  {/* SS-551: the written procedure this video demonstrates,
+                      via the ?sop= deep link the Procedures tab already
+                      honours. Only the 24 SOP-linked videos carry it; the
+                      8 curriculum videos have no single procedure. */}
+                  {v.sopHref && (
+                    <Link
+                      href={v.sopHref}
+                      className="inline-block mt-2.5 text-[12px] font-medium text-denim underline underline-offset-2"
+                    >
+                      {t('writtenProcedure')}
                     </Link>
                   )}
                 </div>

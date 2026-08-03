@@ -813,7 +813,8 @@
     "bulkUploading": "Uploading {done} of {total}…",
     "bulkDone": "{count} posters uploaded.",
     "bulkPartial": "{ok} uploaded, {failed} failed — the failed ones are still listed, try them again.",
-    "missingPosterFilter": "No poster yet ({count})"
+    "missingPosterFilter": "No poster yet ({count})",
+    "watchVideo": "Watch the training video"
   },
   "training": {
     "title": "Training",
@@ -1039,7 +1040,8 @@
     "captionsEs": "Spanish captions",
     "goThere": "Open this page",
     "allCategories": "All",
-    "play": "Play"
+    "play": "Play",
+    "writtenProcedure": "Read the written procedure"
   },
   "trainingOnboarding": {
     "close": "Close",

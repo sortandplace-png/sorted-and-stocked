@@ -813,7 +813,8 @@
     "bulkUploading": "Subiendo {done} de {total}…",
     "bulkDone": "{count} pósters subidos.",
     "bulkPartial": "{ok} subidos, {failed} fallaron — los fallidos siguen en la lista, inténtelo de nuevo.",
-    "missingPosterFilter": "Sin póster todavía ({count})"
+    "missingPosterFilter": "Sin póster todavía ({count})",
+    "watchVideo": "Ver el video de capacitación"
   },
   "training": {
     "title": "Capacitación",
@@ -1039,7 +1040,8 @@
     "captionsEs": "Subtítulos en español",
     "goThere": "Abrir esta página",
     "allCategories": "Todos",
-    "play": "Reproducir"
+    "play": "Reproducir",
+    "writtenProcedure": "Leer el procedimiento escrito"
   },
   "trainingOnboarding": {
     "close": "Cerrar",

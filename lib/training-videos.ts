@@ -55,6 +55,11 @@ export type TrainingVideo = {
   /** Route this video is about, already resolved. Null when it teaches no
    *  single page (the welcome video and the overview). */
   href: string | null;
+  /** SS-551: deep link to the WRITTEN procedure this video demonstrates
+   *  (/staff/sops?sop=<id>, the deep link SopLibraryClient already
+   *  honours), already resolved like `href`. Null for the 8
+   *  curriculum-level videos, which have no single procedure. */
+  sopHref: string | null;
   /** Null when signing failed -- callers render an honest "unavailable" row
    *  rather than a dead <video> element. */
   signedUrl: string | null;
@@ -75,7 +80,7 @@ export async function getSignedTrainingVideos(
   const { data: rows, error } = await supabase
     .from('training_videos')
     .select(
-      'id, slug, bucket, storage_path, title_en, title_es, description_en, description_es, duration_seconds, caption_path, category_en, category_es, poster_path, poster_alt_en, poster_alt_es'
+      'id, slug, bucket, storage_path, title_en, title_es, description_en, description_es, duration_seconds, caption_path, category_en, category_es, poster_path, poster_alt_en, poster_alt_es, sop_id'
     )
     .eq('active', true)
     .order('sort_order');
@@ -123,6 +128,7 @@ export async function getSignedTrainingVideos(
     posterAltEn: r.poster_alt_en,
     posterAltEs: r.poster_alt_es,
     href: HREF_BY_SLUG[r.slug] ? HREF_BY_SLUG[r.slug](propertyId) : null,
+    sopHref: r.sop_id ? `/properties/${propertyId}/staff/sops?sop=${r.sop_id}` : null,
     signedUrl: signed.get(`${r.bucket}/${r.storage_path}`) ?? null,
     captionSignedUrl: r.caption_path ? signed.get(`${r.bucket}/${r.caption_path}`) ?? null : null,
   }));

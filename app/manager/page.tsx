@@ -21,7 +21,9 @@ export default async function ManagerPage() {
   const { data: isManager, error } = await supabase.rpc('is_platform_manager');
   if (error || !isManager) redirect('/properties');
 
-  const { data: properties } = await supabase.from('properties').select('id, name').order('name');
+  // SS-519 audit: the one property list the SS-390 archive sweep missed --
+  // without the filter the five archived test properties render here too.
+  const { data: properties } = await supabase.from('properties').select('id, name').is('archived_at', null).order('name');
 
   return <ManagerDashboardClient properties={properties ?? []} />;
 }
