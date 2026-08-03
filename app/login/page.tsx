@@ -15,23 +15,26 @@ import AuthErrorBox from '@/components/auth/AuthErrorBox';
 import AuthSubmitButton from '@/components/auth/AuthSubmitButton';
 import AuthContactLink from '@/components/auth/AuthContactLink';
 import LocaleToggle from '@/components/LocaleToggle';
+import { isInAppBrowser, isAndroid, BREAKOUT_TARGET, ANDROID_INTENT_URL } from '@/lib/in-app-browser';
 
-const OAUTH_ERROR_MESSAGES: Record<string, string> = {
-  'no-invite': "No account found for that Google sign-in — you'll need an invite first.",
-  'auth-callback-failed': 'Sign-in failed. Please try again.',
-  'auth-link-failed': "That link didn't work or has expired — request a new one and try again.",
-  // SS-452 diagnostics: the callback now names each failure mode so this
-  // stops being an opaque, recurring mystery. cookie-blocked is the
-  // phone-only signature: the sign-in started but the browser dropped the
-  // security cookie before returning (private mode, an in-app browser, or
-  // blocked cross-site cookies).
-  'cookie-blocked':
-    'Sign-in could not finish because the browser blocked or dropped a required cookie. Try Safari or Chrome directly (not an in-app browser), and allow cookies for this site.',
-  'code-invalid': 'That sign-in attempt expired or was already used. Please try again fresh.',
-  'code-exchange': 'Sign-in failed while completing the secure handshake. Please try again.',
-  'oauth-provider': 'Google did not complete the sign-in (it was cancelled or refused). Please try again.',
-  'no-code': 'The sign-in returned without its security code — often an in-app browser. Open this site in Safari or Chrome and try again.',
-};
+// SS-562 §3/§5: this used to be a hardcoded English map — every OAuth
+// error reached Spanish-speaking staff in English, the exact
+// chrome-translated-content-not pattern SS-555 found on the Tools page.
+// The strings now live in messages/{en,es}.json under
+// auth.signIn.oauthErrors, keyed by the same callback error codes. The
+// cookie-blocked and no-code copy is the spec's replacement: the old text
+// told users to "allow cookies for this site", a remedy they cannot act
+// on inside an in-app browser.
+const OAUTH_ERROR_KEYS = new Set([
+  'no-invite',
+  'auth-callback-failed',
+  'auth-link-failed',
+  'cookie-blocked',
+  'code-invalid',
+  'code-exchange',
+  'oauth-provider',
+  'no-code',
+]);
 
 function LoginForm() {
   const t = useTranslations('auth.signIn');
@@ -45,9 +48,52 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const oauthError = searchParams.get('error');
-  const oauthErrorMessage = oauthError ? OAUTH_ERROR_MESSAGES[oauthError] ?? 'Sign-in failed. Please try again.' : null;
+  const oauthErrorMessage = oauthError
+    ? OAUTH_ERROR_KEYS.has(oauthError)
+      ? t(`oauthErrors.${oauthError}`)
+      : t('oauthErrorFallback')
+    : null;
+
+  // SS-562: shown only after the Google button is tapped inside an in-app
+  // browser -- the page looks normal until the user chooses that path.
+  const [showBreakout, setShowBreakout] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  async function copyBreakoutLink() {
+    try {
+      await navigator.clipboard.writeText(BREAKOUT_TARGET);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    } catch {
+      // Clipboard API can be denied inside webviews -- fall back to the
+      // widely-supported legacy path rather than failing silently.
+      const el = document.createElement('textarea');
+      el.value = BREAKOUT_TARGET;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    }
+  }
 
   async function handleGoogleSignIn() {
+    // SS-562: Google refuses OAuth inside embedded webviews by policy, so
+    // in an in-app browser the button hands off to the real browser
+    // instead of starting OAuth in place. The button itself stays --
+    // Racquel's ruling -- only its destination changes.
+    if (isInAppBrowser()) {
+      if (isAndroid()) {
+        // Android: the intent URL opens Chrome directly. One tap.
+        window.location.href = ANDROID_INTENT_URL;
+        return;
+      }
+      // iOS has no programmatic escape from a webview -- show the
+      // instruction with a copyable link instead.
+      setShowBreakout(true);
+      return;
+    }
     setGoogleLoading(true);
     setError(null);
     const supabase = createClient();
@@ -175,6 +221,26 @@ function LoginForm() {
             <AuthGoogleButton onClick={handleGoogleSignIn} disabled={googleLoading}>
               {googleLoading ? t('googleSigningIn') : t('googleSignIn')}
             </AuthGoogleButton>
+
+            {/* SS-562 iOS breakout notice. bg-mist with the standard card
+                border, deliberately NOT red: nothing has failed, this is a
+                handoff. Rendered only after the Google button is tapped
+                inside an in-app browser. */}
+            {showBreakout && (
+              <div className="bg-mist border border-cardBorder rounded-xl2 px-4 py-3.5 text-left">
+                <p className="font-interDisplay text-sm font-semibold text-denim">{t('breakoutTitle')}</p>
+                <p className="font-interDisplay text-[13px] text-dusk mt-1.5">{t('breakoutLine1')}</p>
+                <p className="font-interDisplay text-[13px] text-dusk mt-1">{t('breakoutLine2')}</p>
+                <button
+                  type="button"
+                  onClick={copyBreakoutLink}
+                  className="mt-2.5 inline-block text-[13px] font-semibold text-denim border border-brass/30 bg-card px-4 py-1.5 rounded-full hover:border-brass transition-colors"
+                >
+                  {linkCopied ? t('breakoutCopied') : t('breakoutCopyLink')}
+                </button>
+                <p className="font-interDisplay text-[12px] text-dusk mt-2.5">{t('breakoutAlsoEmail')}</p>
+              </div>
+            )}
 
             {displayError && <AuthErrorBox>{displayError}</AuthErrorBox>}
 

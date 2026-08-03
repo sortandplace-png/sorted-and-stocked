@@ -42,7 +42,24 @@
       "googleSignIn": "Sign in with Google",
       "googleSigningIn": "Signing in…",
       "newHere": "New here?",
-      "createAnAccount": "Create an account"
+      "createAnAccount": "Create an account",
+      "breakoutTitle": "Open in Safari to continue with Google",
+      "breakoutLine1": "Tap the ••• menu at the top right, then Open in Safari.",
+      "breakoutLine2": "Or copy this link and paste it into Safari.",
+      "breakoutCopyLink": "Copy link",
+      "breakoutCopied": "Copied",
+      "breakoutAlsoEmail": "You can also sign in with your email and password below.",
+      "oauthErrorFallback": "Sign-in failed. Please try again.",
+      "oauthErrors": {
+        "no-invite": "No account found for that Google sign-in — you'll need an invite first.",
+        "auth-callback-failed": "Sign-in failed. Please try again.",
+        "auth-link-failed": "That link didn't work or has expired — request a new one and try again.",
+        "cookie-blocked": "Google sign-in is not available here. This page is running inside another app. Open it in Safari or Chrome, or sign in with your email and password above.",
+        "code-invalid": "That sign-in attempt expired or was already used. Please try again fresh.",
+        "code-exchange": "Sign-in failed while completing the secure handshake. Please try again.",
+        "oauth-provider": "Google did not complete the sign-in (it was cancelled or refused). Please try again.",
+        "no-code": "Google sign-in is not available here. This page is running inside another app. Open it in Safari or Chrome, or sign in with your email and password above."
+      }
     },
     "signUp": {
       "heading": "Create your account",
