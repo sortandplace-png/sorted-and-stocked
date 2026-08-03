@@ -341,6 +341,21 @@ const GROUPS: {
   },
 ];
 
+// SS-552: the eight operator data-cleanup tools. Kept as one named set so
+// the tile filter and anyone auditing the gate read the same list the
+// ruling names. The three that have real routes (duplicate-ingredients,
+// needs-linking, translation-worklist) enforce the same gate route-side.
+const OPERATOR_CLEANUP_SLUGS = new Set([
+  'duplicate-ingredients',
+  'needs-linking',
+  'link-captured-photos',
+  'hechsher-verification',
+  'allergen-verification',
+  'kosher-type-tagging',
+  'dietary-tagging',
+  'translation-worklist',
+]);
+
 export default async function ToolsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
@@ -385,6 +400,17 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
     // operation buys from is one business-wide directory, not a copy each
     // client's house keeps. Its own route enforces the same gate.
     .filter((t) => t.slug !== 'suppliers' || flags.operator_console === true)
+    // SS-552 (Racquel, 2 Aug: "why should any residence besides lax have
+    // admin clean up?"): the eight data-cleanup tools are operator
+    // machinery, gated on operator_console like Suppliers -- NOT on
+    // module_tools, whose default-true-when-absent convention was exactly
+    // how Henderson (a client's house, empty flags) inherited them.
+    // Scoping was checked first and is fine (each tool queries only the
+    // current property, with RLS as a second barrier) -- this is a
+    // wrong-audience fix, not a leak fix. 'backup' stays per-house
+    // deliberately: the ruling names these eight, and exporting a house's
+    // own data is a house-level feature, not system administration.
+    .filter((t) => !OPERATOR_CLEANUP_SLUGS.has(t.slug) || flags.operator_console === true)
     .map((t) => (t.slug === 'knowledge-base' ? { ...t, count: knowledgeCount ?? 0 } : t))
     // Generated, never hardcoded: the directory tile names the property's
     // own city, mentions hashgacha only for an observant household, and
