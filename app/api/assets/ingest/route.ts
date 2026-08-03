@@ -27,8 +27,16 @@ import { inflateRawSync } from 'node:zlib';
 
 export const maxDuration = 60;
 
-const ZIP_URL =
+// The original 143.9MB library zip stays the default; a scan job may name
+// a DIFFERENT zip via payload.zipUrl (origin-allowlisted below) -- added
+// 3 Aug to identify anonymous drops like "download (11).zip" without
+// pulling 119MB anywhere: the central directory alone says what's inside.
+const DEFAULT_ZIP_URL =
   'https://drive.usercontent.google.com/download?id=1RSR2iDlOaImp3MAbsOuDIBf-fVipCWkJ&export=download&confirm=t';
+
+// Shared by fetch-url mode and scan-mode zipUrl validation: this must
+// never become an arbitrary-URL SSRF primitive.
+const ALLOWED_ORIGINS = ['https://app.sortandplace.com', 'https://sortandplace.com', 'https://drive.usercontent.google.com'];
 const PROJECT_PUBLIC = 'https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public';
 const MAX_FILES_PER_CALL = 4;
 
@@ -48,10 +56,10 @@ function u32(b: Uint8Array, o: number) {
   return (b[o] | (b[o + 1] << 8) | (b[o + 2] << 16) | ((b[o + 3] << 24) >>> 0)) >>> 0;
 }
 
-async function fetchRange(start: number | null, endOrSuffix: number): Promise<{ bytes: Uint8Array; total: number }> {
+async function fetchRange(zipUrl: string, start: number | null, endOrSuffix: number): Promise<{ bytes: Uint8Array; total: number }> {
   // start=null means suffix range (last N bytes).
   const range = start === null ? `bytes=-${endOrSuffix}` : `bytes=${start}-${endOrSuffix}`;
-  const res = await fetch(ZIP_URL, { headers: { Range: range }, redirect: 'follow' });
+  const res = await fetch(zipUrl, { headers: { Range: range }, redirect: 'follow' });
   if (res.status !== 206) throw new Error(`Drive range fetch returned ${res.status} (want 206)`);
   const contentRange = res.headers.get('content-range') ?? '';
   const total = Number(contentRange.split('/')[1] ?? 0);
@@ -103,11 +111,11 @@ function parseCentralDirectory(tail: Uint8Array, tailStartAbs: number): ZipEntry
   return entries;
 }
 
-async function fetchEntryBytes(entry: ZipEntry): Promise<Buffer> {
+async function fetchEntryBytes(zipUrl: string, entry: ZipEntry): Promise<Buffer> {
   // Local header is 30 bytes + name + extra (extra can differ from the
   // central record); pad generously, then compute the exact data start.
   const padded = 30 + 4096 + entry.compressed;
-  const { bytes } = await fetchRange(entry.headerOffset, entry.headerOffset + padded - 1);
+  const { bytes } = await fetchRange(zipUrl, entry.headerOffset, entry.headerOffset + padded - 1);
   if (!(bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04)) {
     throw new Error(`local header signature missing for ${entry.name}`);
   }
@@ -151,10 +159,17 @@ export async function POST(request: Request) {
 
   try {
     if (job.mode === 'scan') {
-      const { bytes: tail, total } = await fetchRange(null, 66000);
+      const scanPayload = (job.payload ?? {}) as { zipUrl?: string };
+      const zipUrl = scanPayload.zipUrl ?? DEFAULT_ZIP_URL;
+      if (!ALLOWED_ORIGINS.includes(new URL(zipUrl).origin)) {
+        throw new Error(`zipUrl origin not allowed: ${new URL(zipUrl).origin}`);
+      }
+      const { bytes: tail, total } = await fetchRange(zipUrl, null, 66000);
       const tailStartAbs = total - tail.length;
       const entries = parseCentralDirectory(tail, tailStartAbs);
-      const result = { zipBytes: total, entryCount: entries.length, entries };
+      // zipUrl recorded so a later ingest job pulls entries from the SAME
+      // zip the scan described, not the default.
+      const result = { zipUrl, zipBytes: total, entryCount: entries.length, entries };
       await admin
         .from('asset_ingest_jobs')
         .update({ status: 'done', result, finished_at: new Date().toISOString() })
@@ -173,7 +188,6 @@ export async function POST(request: Request) {
       };
       if (!payload.files?.length) throw new Error('payload needs files');
       if (payload.files.length > MAX_FILES_PER_CALL) throw new Error(`max ${MAX_FILES_PER_CALL} files per job`);
-      const ALLOWED_ORIGINS = ['https://app.sortandplace.com', 'https://sortandplace.com', 'https://drive.usercontent.google.com'];
       const results: { path: string; ok: boolean; detail: string }[] = [];
       for (const f of payload.files) {
         try {
@@ -217,7 +231,9 @@ export async function POST(request: Request) {
       .eq('mode', 'scan')
       .eq('status', 'done')
       .maybeSingle();
-    const entries: ZipEntry[] = (scanJob?.result as { entries?: ZipEntry[] } | null)?.entries ?? [];
+    const scanResult = scanJob?.result as { entries?: ZipEntry[]; zipUrl?: string } | null;
+    const entries: ZipEntry[] = scanResult?.entries ?? [];
+    const zipUrl = scanResult?.zipUrl ?? DEFAULT_ZIP_URL;
     if (!entries.length) throw new Error('scan job not found or empty');
 
     const results: { name: string; ok: boolean; detail: string }[] = [];
@@ -225,7 +241,7 @@ export async function POST(request: Request) {
       try {
         const entry = entries.find((e) => e.name === f.name);
         if (!entry) throw new Error('not in scan listing');
-        const data = await fetchEntryBytes(entry);
+        const data = await fetchEntryBytes(zipUrl, entry);
         if (data.length !== entry.size) throw new Error(`inflated ${data.length} != expected ${entry.size}`);
 
         if (f.kind === 'sop-image') {
