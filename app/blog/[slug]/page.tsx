@@ -109,7 +109,11 @@ export default async function BlogPostPage({
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(post.faq_jsonld) }} />
       )}
       <MarketingHeader />
-      <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-10">
+      {/* 3 Aug batch item 3: card widened from max-w-2xl -- the prose
+          inside carries its own 36rem measure (see PROSE_W in
+          lib/simple-markdown.tsx) while images and the Related Reading
+          card grid break out to the full card width. */}
+      <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-10">
         <Link href="/blog" className="text-sm text-dusk hover:text-denim underline underline-offset-2 mb-6 inline-block">
           ← Blog
         </Link>
@@ -120,14 +124,18 @@ export default async function BlogPostPage({
             <img src={post.header_image_url} alt="" className="w-full max-h-72 object-cover" />
           )}
           <div className="p-6 sm:p-8">
-            <p className="text-xs text-dusk mb-2">
-              {new Date(post.published_at!).toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-              })}
-            </p>
-            <h1 className="font-display text-3xl font-semibold text-denim mb-6 leading-tight">{post.title}</h1>
+            {/* Date + title share the prose measure so the whole text
+                column keeps one left edge. */}
+            <div className="max-w-[34rem] mx-auto w-full">
+              <p className="text-xs text-dusk mb-2">
+                {new Date(post.published_at!).toLocaleDateString('en-US', {
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </p>
+              <h1 className="font-display text-3xl font-semibold text-denim mb-6 leading-tight">{post.title}</h1>
+            </div>
             {renderSimpleMarkdown(before)}
 
             <RelatedReadingCards posts={related} />
