@@ -49,6 +49,7 @@ function renderInline(text: string): ReactNode[] {
   return parts.map((part, i) => {
     const image = part.match(/^!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)$/);
     if (image) {
+<<<<<<< HEAD
       const [, alt, rawSrc] = image;
       if (!isAllowedImageSrc(rawSrc)) return null;
       // Optional #WxH fragment carries intrinsic dimensions -- e.g.
@@ -79,6 +80,22 @@ function renderInline(text: string): ReactNode[] {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={src.replace(/\.webp$/, '.png')} alt={alt} loading="lazy" {...size} className={cls} />
         </picture>
+=======
+      const [, alt, src] = image;
+      if (!isAllowedImageSrc(src)) return null;
+      return (
+        // Plain <img>, not next/image, matching how the blog already renders
+        // header images -- storage srcs would otherwise need remotePatterns
+        // config, and a config miss renders a broken image at request time.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={i}
+          src={src}
+          alt={alt}
+          loading="lazy"
+          className="w-full h-auto rounded-xl2 border border-cardBorder shadow-card my-5"
+        />
+>>>>>>> origin/main
       );
     }
     if (part.startsWith('**') && part.endsWith('**')) {
