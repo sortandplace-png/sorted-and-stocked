@@ -312,7 +312,11 @@ export function renderSimpleMarkdown(
       );
       continue;
     }
-    if (block.startsWith('## ') && block.slice(3).trim() === FAQ_HEADING) {
+    // Case-insensitive: the 3 Aug staging package (blog-39/40) writes
+    // "Frequently asked questions" in sentence case while the live 11 use
+    // title case -- both must get the tile treatment, or the next staged
+    // post silently ships the wall the tiles replaced.
+    if (block.startsWith('## ') && block.slice(3).trim().toLowerCase() === FAQ_HEADING.toLowerCase()) {
       // Group the ### question blocks (and each question's following
       // answer blocks) until the next H1/H2 or end of body. headingId is
       // still called for every heading IN DOCUMENT ORDER, so the id
@@ -344,7 +348,14 @@ export function renderSimpleMarkdown(
             {faqItems.map((item, k) => {
               const Icon = FAQ_ICONS[k % FAQ_ICONS.length];
               return (
-                <div key={k} className="relative h-full bg-card border border-cardBorder rounded-xl2 shadow-card">
+                // Tight shadow, NOT shadow-card (SS-584 follow-up, Racquel's
+                // screenshot): there is no group wrapper with a shadow --
+                // verified by enumerating every shadowed element -- but
+                // shadow-card is 0 16px 40px, and seven of those blurs
+                // overlapping in a dense grid merge into one large soft
+                // rectangle "behind" the grid, bleeding past the odd last
+                // tile. Tiles keep a shadow; it just ends at their edges.
+                <div key={k} className="relative h-full bg-card border border-cardBorder rounded-xl2 shadow-[0_2px_8px_rgba(90,120,150,.08)]">
                   <Pin size="sm" />
                   <details className="group">
                     {/* pr-8 clears the pin, exactly as FaqList documents.
