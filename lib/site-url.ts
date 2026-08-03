@@ -23,7 +23,13 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://sortandplac
 // from localhost or a Vercel preview URL must still fall back to SITE_URL
 // above, not leak that origin into a real person's inbox -- preserves the
 // exact guarantee this file was originally created for.
-const KNOWN_PRODUCTION_HOSTS = ['app.sortandplace.com', 'www.sortandplace.com', 'sortandplace.com'];
+// The app's own hostname -- the ONE host that is the product rather than
+// the marketing site. Root layout metadata (SS-577) and the homepage's
+// redirect branch both key off this; a string drifting between those two
+// call sites would silently split the behaviours.
+export const APP_HOSTNAME = 'app.sortandplace.com';
+
+const KNOWN_PRODUCTION_HOSTS = [APP_HOSTNAME, 'www.sortandplace.com', 'sortandplace.com'];
 
 export function getEmailLinkOrigin(currentOrigin: string | null | undefined): string {
   if (currentOrigin) {

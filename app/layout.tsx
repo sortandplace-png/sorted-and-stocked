@@ -1,5 +1,7 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from 'next';
+import { headers } from 'next/headers';
+import { APP_HOSTNAME } from '@/lib/site-url';
 import { Cormorant_Garamond, Nunito_Sans, Playfair_Display, Inter } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
@@ -34,7 +36,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'sw
 // two always agree and dev never shows a false-positive mismatch.
 const APP_BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA ?? 'development';
 
-export const metadata: Metadata = {
+const BASE_METADATA: Metadata = {
   title: 'Sorted & Stocked',
   manifest: '/manifest.json',
   other: { 'app-build-id': APP_BUILD_ID },
@@ -53,6 +55,25 @@ export const metadata: Metadata = {
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
 };
+
+// SS-577: Pinterest domain verification, host-conditional. The same
+// deployment serves the marketing hostnames AND app.sortandplace.com (see
+// the Host-header branch in app/page.tsx), and the ruling is marketing
+// only -- the app subdomain must not carry it. Checked via the Host header
+// with an ALLOW-list of exactly one hostname that omits the tag, everything
+// else (www, apex, localhost, previews) carrying it -- the same shape as
+// the homepage's redirect branch, for the same reason. The token is
+// designed to be publicly readable; it is not a secret and needs no
+// rotation handling. Every page here is already dynamically rendered, so
+// reading headers() adds no rendering-mode change.
+export async function generateMetadata(): Promise<Metadata> {
+  const hostname = ((await headers()).get('host') ?? '').split(':')[0].toLowerCase();
+  if (hostname === APP_HOSTNAME) return BASE_METADATA;
+  return {
+    ...BASE_METADATA,
+    verification: { other: { 'p:domain_verify': '7113dd8431f8c47e18cd6a9d8fea41f3' } },
+  };
+}
 
 // themeColor used to live on `metadata` -- Next.js 15 split it into a
 // separate `viewport` export (metadata.themeColor is deprecated and logs a

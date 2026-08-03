@@ -38,11 +38,10 @@ import Pin from '@/components/PinAccent';
 import ConsultationForm from '@/components/ConsultationForm';
 import { ClipboardList, Users, Package } from 'lucide-react';
 import { TESTFLIGHT_URL } from '@/lib/testflight';
+import { APP_HOSTNAME } from '@/lib/site-url';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
 import LocalBusinessJsonLd from '@/components/marketing/LocalBusinessJsonLd';
-
-const APP_HOSTNAME = 'app.sortandplace.com';
 
 // Exact copy from the SEO content package, pasted verbatim per the brief --
 // title/description differ from what shipped earlier tonight (that version
