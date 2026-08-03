@@ -858,12 +858,16 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
       : todayTriggerType === 'omer' && omerOutlook?.state === 'inside'
         ? ['omer_day', omerOutlook.day]
         : [null, null]
+  // SS-595: a civil-only property (calendar_layers without 'jewish', e.g.
+  // Henderson) must not receive rosh_chodesh/omer/erev content rows -- the
+  // same tenancy rule as the Today card below. 'general' is the tier that
+  // exists for exactly this.
   const dailyContent = await getDailyContent(
     propertyId,
     locale,
-    todayTriggerType,
-    dailyContentMatch[0],
-    dailyContentMatch[1]
+    observance.jewish ? todayTriggerType : 'general',
+    observance.jewish ? dailyContentMatch[0] : null,
+    observance.jewish ? dailyContentMatch[1] : null
   )
 
   // Real bug found and fixed, not assumed: meal_plan_entries is one row per
@@ -875,7 +879,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
 
   return (
     <div
-      className={`min-h-screen p-4 md:p-6 font-interDisplay transition-all ${isShabbos ? 'bg-brass/10' : 'bg-linen'}`}
+      className={`min-h-screen p-4 md:p-6 font-interDisplay transition-all ${isShabbos && observance.jewish ? 'bg-brass/10' : 'bg-linen'}`}
       style={{
         backgroundImage: `linear-gradient(118deg, rgba(255,250,240,0) 0%, rgba(255,244,222,0.45) 42%, rgba(255,250,240,0) 78%),
           radial-gradient(circle at 10% 6%, rgba(214,228,240,0.6) 0%, transparent 42%),
@@ -909,7 +913,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               </div>
             }
             todayContent={
-              <div className={`flex-1 flex flex-col items-center justify-center text-center py-[16px] px-[20px] gap-[8px] ${isShabbos ? 'bg-brass/20' : 'bg-card'}`}>
+              <div className={`flex-1 flex flex-col items-center justify-center text-center py-[16px] px-[20px] gap-[8px] ${isShabbos && observance.jewish ? 'bg-brass/20' : 'bg-card'}`}>
                 {propertyName && (
                   <p className="text-[10px] tracking-[0.18em] uppercase font-normal text-brass border-b border-brass inline-block pb-1.5">
                     {propertyName}
@@ -922,9 +926,24 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                     gap-[8px] on this flex container so spacing between
                     elements stays uniform (and correctly skips elements that
                     don't render, like a manual-margin chain can't). */}
-                <p lang="he" dir="rtl" className="font-display font-normal text-[32px] text-denim leading-[1.05] tracking-[0.02em]">
-                  {hebrewInfo.hebrewText}
-                </p>
+                {/* SS-595 (Racquel's Henderson screenshot): the whole
+                    Jewish layer of this card -- Hebrew date, parsha,
+                    Tehillim, Shabbos chip, Diaspora badge, omer line,
+                    Rosh Chodesh line, Shabbos tints -- now reads
+                    properties.calendar_layers via observance.jewish, the
+                    flag this page already computed but never applied here.
+                    A civil-only property (Henderson: {civil}) renders the
+                    property name, the Gregorian date, and general daily
+                    content only. HELD FOR RACQUEL, deliberately not gated
+                    in this pass: the Quick Add candle-lighting line and
+                    the header's Erev countdown pill (lib/
+                    get-next-observance.ts) -- whether {civil} suppresses
+                    those too is her ruling to make. */}
+                {observance.jewish && (
+                  <p lang="he" dir="rtl" className="font-display font-normal text-[32px] text-denim leading-[1.05] tracking-[0.02em]">
+                    {hebrewInfo.hebrewText}
+                  </p>
+                )}
                 <p className="font-interDisplay text-[11px] uppercase tracking-[0.1em] text-dusk">
                   {/* Real bug found and fixed, not assumed: format(now, ...)
                       with no timeZone read the server's own UTC local time
@@ -937,18 +956,18 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                   {new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric' }).format(now)}
                 </p>
                 <div className="flex items-center justify-center gap-2 flex-wrap">
-                  {hebcal.parsha && (
+                  {observance.jewish && hebcal.parsha && (
                     <span lang="he" dir="rtl" className="bg-denim text-white text-xs font-medium px-4 py-1.5 rounded-full">
                       {hebcal.parsha}
                     </span>
                   )}
-                  {tehillim && (
+                  {observance.jewish && tehillim && (
                     <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">
                       Tehillim {tehillim.perek_start}
                       {tehillim.perek_end !== tehillim.perek_start ? `–${tehillim.perek_end}` : ''}
                     </span>
                   )}
-                  {isShabbos && (
+                  {observance.jewish && isShabbos && (
                     <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">{t('shabbosModeActive')}</span>
                   )}
                   {/* DRAFT (2026-07-21): proposedBadgeLabel text is not
@@ -958,14 +977,14 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
                       itself (which day counts as the Diaspora-added second
                       day) is verified against real Hebcal titles and isn't
                       what's in question here. */}
-                  {diasporaSecondDayInfo && (
+                  {observance.jewish && diasporaSecondDayInfo && (
                     <span className="bg-mist text-denim text-xs font-medium px-4 py-1.5 rounded-full">
                       {diasporaSecondDayInfo.proposedBadgeLabel}
                     </span>
                   )}
                 </div>
-                {omerTitle && <p className="text-xs text-dusk">{omerTitle}</p>}
-                {roshChodeshStatus && (
+                {observance.jewish && omerTitle && <p className="text-xs text-dusk">{omerTitle}</p>}
+                {observance.jewish && roshChodeshStatus && (
                   <p className="text-xs text-brass font-medium">
                     {roshChodeshStatus.isToday
                       ? t('roshChodesh.today', { month: roshChodeshStatus.monthName })

@@ -80,6 +80,10 @@ const SERVICES = [
     title: 'Weekly Meal Planning + Grocery Orders Placed',
     body: 'A real plan for the week, and the order actually placed. Not just a list you still have to shop yourself.',
     bannerSrc: '/services/meal-planning.jpg', // Organized_refrigerator (1128 version, ruled)
+    // Optional per-card object-position class; undefined = browser default
+    // (center). Declared on the first entry so the array's inferred type
+    // carries it for all three.
+    bannerPos: undefined as string | undefined,
   },
   {
     icon: Users,
@@ -199,7 +203,7 @@ export default async function RootMarketingPage() {
         {/* Service bento cards */}
         <section className="py-10 md:py-14">
           <div className="grid md:grid-cols-3 gap-5">
-            {SERVICES.map(({ icon: Icon, title, body, bannerSrc }) => (
+            {SERVICES.map(({ icon: Icon, title, body, bannerSrc, bannerPos }) => (
               <div
                 key={title}
                 className="relative bg-card border border-cardBorder rounded-2xl shadow-card overflow-hidden"
@@ -211,7 +215,11 @@ export default async function RootMarketingPage() {
                     alt=""
                     width={1200}
                     height={675}
-                    className="w-full h-[140px] object-cover"
+                    // bannerPos: per-card object-position (Racquel, 3 Aug:
+                    // "don't accept the default" -- a photo whose subject
+                    // sits low in the frame needs object-bottom at this
+                    // 2.5:1 crop, and center would show mostly wall).
+                    className={`w-full h-[140px] object-cover ${bannerPos ?? ''}`}
                   />
                 ) : (
                   <div
