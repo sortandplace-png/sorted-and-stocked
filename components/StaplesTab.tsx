@@ -260,14 +260,25 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
             )}
           </div>
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            {staple.last_counted_at !== null && (
-              <span
-                className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                  staple.is_low ? 'bg-rust/15 text-rust' : 'bg-sage/10 text-sage'
-                }`}
-              >
-                {staple.is_low ? 'Low Stock' : `${staple.current_qty} in stock`}
+            {/* SS-543: THREE states, not two. A staple with no inventory link
+                has no count, so is_low is false -- which used to render it in
+                the sage "in stock" branch. The page was asserting stock it had
+                never measured. Unknown is now its own neutral state and must
+                never read as stocked. */}
+            {!staple.inventory_item_id ? (
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-mist text-dusk">
+                Not tracked
               </span>
+            ) : (
+              staple.last_counted_at !== null && (
+                <span
+                  className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                    staple.is_low ? 'bg-rust/15 text-rust' : 'bg-sage/10 text-sage'
+                  }`}
+                >
+                  {staple.is_low ? 'Low Stock' : `${staple.current_qty} in stock`}
+                </span>
+              )
             )}
             {staple.is_low && <span className="text-[11px] text-dusk">Min: {staple.min_qty}</span>}
             {/* Deliberately subordinate: small, muted, no chip fill -- the
@@ -438,6 +449,10 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
             {groups.map(([key, groupStaples]) => {
               const collapsed = collapsedGroups.has(key);
               const lowCount = groupStaples.filter((s) => s.is_low).length;
+              // SS-543: unlinked staples have no count at all. Counting them
+              // as stocked is how the group summary came to claim "All
+              // stocked" over items nobody has ever measured.
+              const unknownCount = groupStaples.filter((s) => !s.inventory_item_id).length;
               const Icon = getStapleCategoryIcon(key);
               return (
                 <div
@@ -478,10 +493,18 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
                     </span>
                     <span
                       className={`text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${
-                        lowCount > 0 ? 'bg-rust/15 text-rust' : 'bg-sage/10 text-sage'
+                        lowCount > 0
+                          ? 'bg-rust/15 text-rust'
+                          : unknownCount > 0
+                            ? 'bg-mist text-dusk'
+                            : 'bg-sage/10 text-sage'
                       }`}
                     >
-                      {lowCount > 0 ? `${lowCount} below minimum` : 'All stocked'}
+                      {lowCount > 0
+                        ? `${lowCount} below minimum`
+                        : unknownCount > 0
+                          ? `${unknownCount} not tracked`
+                          : 'All stocked'}
                     </span>
                   </button>
                   {!collapsed && (
