@@ -14,7 +14,7 @@ import Footer from '@/components/Footer';
 import GlobalBackBar from '@/components/ui/GlobalBackBar';
 import { getNextObservance } from '@/lib/get-next-observance';
 import { formatPropertyLabel } from '@/lib/property-display';
-import { isPinkAccentProperty } from '@/lib/property-accent';
+import { buildSwitcherProperties } from '@/lib/property-display';
 import { isModuleEnabled, moduleForSegment, isOperatorConsole } from '@/lib/module-flags';
 
 export default async function PropertyLayout({
@@ -64,66 +64,42 @@ export default async function PropertyLayout({
     redirect(`/properties/${id}/dashboard`);
   }
 
-  // Whether a household's name is shown at all depends on how many
-  // properties it actually has -- not on whether this user happens to be a
-  // member of more than one of them. Counted against the whole table so the
-  // rule reflects the household's real shape, not this viewer's membership.
-  const { data: allHouseholdIds } = await supabase.from('properties').select('household_id').not('household_id', 'is', null);
-  const householdCounts = new Map<string, number>();
-  for (const row of allHouseholdIds ?? []) {
-    const hid = row.household_id as string;
-    householdCounts.set(hid, (householdCounts.get(hid) ?? 0) + 1);
-  }
-  function household(h: { household_id: string | null; households: { name: string } | null } | null) {
-    if (!h?.household_id || !h.households?.name) return null;
-    return { name: h.households.name, propertyCount: householdCounts.get(h.household_id) ?? 1 };
-  }
-
+  // SS-459 label rule needs only the names -- the whole-table property
+  // count this block used to fetch (SS-359's size-based rule) is gone, and
+  // with it one DB roundtrip per page render.
   const membershipProperty = membership.properties as unknown as {
     name: string;
     household_id: string | null;
     households: { name: string } | null;
   } | null;
-  const propertyName = formatPropertyLabel(membershipProperty?.name ?? '', household(membershipProperty));
+  const propertyName = formatPropertyLabel(membershipProperty?.name ?? '', membershipProperty?.households);
 
   // All properties this user belongs to, for the switcher -- not just the
   // one from the membership check above.
   const { data: allMemberships } = await supabase
     .from('property_members')
-    .select('properties(id, name, household_id, archived_at, households(name))')
+    .select('properties(id, name, household_id, archived_at, feature_flags, households(name))')
     .eq('user_id', user.id);
 
-  const switcherProperties = (allMemberships ?? [])
-    .map(
-      (m) =>
-        m.properties as unknown as {
-          id: string;
-          name: string;
-          household_id: string | null;
-          archived_at: string | null;
-          households: { name: string } | null;
-        } | null
-    )
-    .filter(
-      (p): p is { id: string; name: string; household_id: string | null; archived_at: string | null; households: { name: string } | null } =>
-        p !== null && !p.archived_at
-    )
-    // Group by household so sibling properties sort adjacent; properties
-    // with no household sort after ones that have one, then by name.
-    .sort((a, b) => {
-      const aHousehold = a.households?.name ?? null;
-      const bHousehold = b.households?.name ?? null;
-      if (aHousehold !== bHousehold) {
-        if (aHousehold === null) return 1;
-        if (bHousehold === null) return -1;
-        return aHousehold.localeCompare(bHousehold);
-      }
-      return a.name.localeCompare(b.name);
-    })
-    // pinkAccent decided HERE, where the raw property name is known -- the
-    // formatted label can carry a household prefix, so the switcher itself
-    // could not reliably spot Lax (see lib/property-accent.ts).
-    .map((p) => ({ id: p.id, label: formatPropertyLabel(p.name, household(p)), pinkAccent: isPinkAccentProperty(p.name) }));
+  // SS-459: ordering, labels and the console accent all come from the ONE
+  // shared implementation -- this layout and procurement's used to inline
+  // near-identical copies of this, which is how two surfaces came to
+  // disagree about what a house is called.
+  const switcherProperties = buildSwitcherProperties(
+    (allMemberships ?? [])
+      .map(
+        (m) =>
+          m.properties as unknown as {
+            id: string;
+            name: string;
+            household_id: string | null;
+            archived_at: string | null;
+            feature_flags: Record<string, unknown> | null;
+            households: { name: string } | null;
+          } | null
+      )
+      .filter((p): p is NonNullable<typeof p> => p !== null && !p.archived_at)
+  );
 
   const { data: profile } = await supabase
     .from('profiles')

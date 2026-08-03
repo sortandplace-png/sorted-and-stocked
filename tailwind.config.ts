@@ -41,6 +41,18 @@ const config: Config = {
         rust: '#B5636B',       // alerts/low-stock — dusty rose-red, not brown-rust
         dairy: '#4A6B8A',      // dusty blue — third kashrut-indicator color, same softened treatment as rust/sage
 
+        // SS-459. The operator-console rose treatment -- Racquel ruled it
+        // DELIBERATE AND PERMANENT, so it gets a named token here in the
+        // functional set (with sage/rust/dairy), NOT the aesthetic palette:
+        // do not normalise it to mist in any design pass, and do not key it
+        // off a property name -- it follows feature_flags->>'operator_console'
+        // (see lib/property-accent.ts). text-console for the label,
+        // bg-console-tint for the fill.
+        console: {
+          DEFAULT: '#D6336C',  // text
+          tint: '#F7E3ED',     // fill, replaces the mist ground on that card
+        },
+
         // SS-308. Overdue/needs-attention, as a three-part set: this badge
         // is always a fill + border + text together, which is why it is
         // three values rather than one like sage/rust/dairy above.

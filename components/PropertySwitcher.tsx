@@ -12,9 +12,9 @@ import { ChevronDown, Check } from 'lucide-react';
 // The household/property-count rule (SS-359) is applied once, server-side,
 // where the household's real property count is known -- see
 // app/properties/[id]/layout.tsx. This just renders whatever label it's given.
-// pinkAccent: Lax's ruled one-card exception (lib/property-accent.ts) --
-// hot-pink label text on its dropdown row, nothing else changes.
-export type SwitcherProperty = { id: string; label: string; pinkAccent?: boolean };
+// consoleAccent: the operator-console rose treatment (SS-459, permanent,
+// flag-driven -- lib/property-accent.ts) on its dropdown row.
+export type SwitcherProperty = { id: string; label: string; consoleAccent?: boolean };
 
 export default function PropertySwitcher({
   currentPropertyId,
@@ -98,8 +98,8 @@ export default function PropertySwitcher({
                 onClick={() => switchTo(p.id)}
                 className={`w-full flex items-center justify-between gap-2 px-4 py-2 text-sm text-left whitespace-nowrap transition-colors border-l-2 ${
                   active
-                    ? `font-semibold border-brass ${p.pinkAccent ? 'text-[#D6336C] bg-[#F7E3ED]' : 'text-denim bg-mist'}`
-                    : `hover:bg-mist/50 border-transparent ${p.pinkAccent ? 'text-[#D6336C]' : 'text-dusk'}`
+                    ? `font-semibold border-brass ${p.consoleAccent ? 'text-console bg-console-tint' : 'text-denim bg-mist'}`
+                    : `hover:bg-mist/50 border-transparent ${p.consoleAccent ? 'text-console' : 'text-dusk'}`
                 }`}
               >
                 <span className="font-display truncate">{p.label}</span>
