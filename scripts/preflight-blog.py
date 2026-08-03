@@ -70,6 +70,10 @@ AMPERSAND_FORMS = ['&', '%26', '&amp;', r'&', '&']
 # rules: read the name before assuming the ampersand is the bug.
 RETIRED_MARKS = ['Sort {} Place']
 ALLOWED_INTERNAL = {'/welcome', '/contact'}
+# SS-584: Related Reading cross-links between posts are standard -- all 11
+# live posts carry them, and the renderer turns the trailing section into
+# cards. A /blog/<slug> link is therefore allowed anywhere in the body.
+BLOG_LINK_RE = re.compile(r'^/blog/[a-z0-9-]+$')
 
 
 def check(path: pathlib.Path) -> tuple[list[str], list[str]]:
@@ -172,8 +176,8 @@ def check(path: pathlib.Path) -> tuple[list[str], list[str]]:
     for label, target in LINK_RE.findall(body):
         if target.startswith('http'):
             errors.append(f'outbound link (SS-506, none allowed): [{label[:30]}]({target[:48]})')
-        elif target.startswith('/') and target not in ALLOWED_INTERNAL:
-            errors.append(f'internal link outside /welcome and /contact: {target}')
+        elif target.startswith('/') and target not in ALLOWED_INTERNAL and not BLOG_LINK_RE.match(target):
+            errors.append(f'internal link outside /welcome, /contact, /blog/<slug>: {target}')
 
     if NAME_RE.search(body):
         errors.append('personal name or byline in the published body; the byline is "Sort + Place"')
