@@ -17,7 +17,7 @@
 //   pin       defaults true. Pure navigation tiles pass pin={false},
 //             matching the Dashboard Quick Actions precedent: the dot
 //             marks a card that holds or does something, not a signpost.
-//   pinkAccent  the Lax card's ruled one-card exception (see
+//   consoleAccent  the operator-console rose treatment, SS-459 (see
 //             lib/property-accent.ts): pink tint in place of the mist
 //             fill, hot-pink label text, everything else -- gold pin,
 //             brass eyebrow, border -- unchanged. Not a theme system;
@@ -37,7 +37,7 @@ export default function Tile({
   onClick,
   disabled = false,
   pin = true,
-  pinkAccent = false,
+  consoleAccent = false,
   children,
   className = '',
 }: {
@@ -52,7 +52,7 @@ export default function Tile({
   onClick?: () => void;
   disabled?: boolean;
   pin?: boolean;
-  pinkAccent?: boolean;
+  consoleAccent?: boolean;
   children?: React.ReactNode;
   className?: string;
 }) {
@@ -61,7 +61,7 @@ export default function Tile({
     // Literal class strings -- Tailwind's scanner cannot see interpolated
     // arbitrary values, so the pink hexes are written out here and only
     // DOCUMENTED in lib/property-accent.ts (keep the two in sync).
-    active ? 'bg-denim border-denim' : pinkAccent ? 'bg-[#F7E3ED] border-brass/30' : 'bg-mist border-brass/30',
+    active ? 'bg-denim border-denim' : consoleAccent ? 'bg-console-tint border-brass/30' : 'bg-mist border-brass/30',
     centered ? 'items-center text-center justify-center' : '',
     disabled ? 'opacity-40' : '',
     className,
@@ -90,7 +90,7 @@ export default function Tile({
       {label && (
         <span
           className={`font-display text-[18px] leading-snug ${
-            active ? 'text-white' : pinkAccent ? 'text-[#D6336C]' : 'text-denim'
+            active ? 'text-white' : consoleAccent ? 'text-console' : 'text-denim'
           }`}
         >
           {label}

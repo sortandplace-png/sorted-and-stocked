@@ -17,9 +17,9 @@
 // the grouping existed before the headings were ever drawn.
 import { Home, Plus } from 'lucide-react';
 import Tile from '@/components/ui/Tile';
-import { isPinkAccentProperty } from '@/lib/property-accent';
+import { isConsoleAccentProperty } from '@/lib/property-accent';
 
-export type PropertyEntry = { id: string; name: string; role: string };
+export type PropertyEntry = { id: string; name: string; role: string; featureFlags?: Record<string, unknown> | null };
 export type HouseholdGroup = { key: string; householdName: string | null; properties: PropertyEntry[] };
 
 export default function PropertiesPickerList({ groups }: { groups: HouseholdGroup[] }) {
@@ -44,13 +44,18 @@ export default function PropertiesPickerList({ groups }: { groups: HouseholdGrou
             // undefined, and putting a role in the slot for just those
             // cards would put two different kinds of thing in one place --
             // which is the exact complaint that started SS-372.
-            eyebrow={householdName ?? undefined}
+            // SS-459 conditional label rule in this card's idiom: when the
+            // household is named identically to the property (Lax/Lax,
+            // Low/Low, Henderson/Henderson) the eyebrow would duplicate the
+            // label directly above it -- so it is omitted, and only Country
+            // and Main gain their "Strauss" prefix.
+            eyebrow={householdName && householdName !== property.name ? householdName : undefined}
             label={property.name}
             icon={<Home size={20} className="text-denim" aria-hidden="true" />}
             centered
-            // Lax only: the owner's personal-brand pink treatment, a ruled
-            // one-card exception to Concept B (lib/property-accent.ts).
-            pinkAccent={isPinkAccentProperty(property.name)}
+            // The operator-console rose treatment (SS-459: permanent,
+            // flag-driven, never keyed on the property name).
+            consoleAccent={isConsoleAccentProperty(property.featureFlags)}
           />
         );
       })}

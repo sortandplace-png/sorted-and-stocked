@@ -5,6 +5,7 @@ import LogoutButton from '@/components/LogoutButton';
 import { LogoMark } from '@/components/Logo';
 import Footer from '@/components/Footer';
 import PropertiesPickerList, { type HouseholdGroup } from '@/components/PropertiesPickerList';
+import { isOperatorConsole } from '@/lib/module-flags';
 
 export default async function PropertiesPage() {
   const supabase = await createClient();
@@ -19,7 +20,7 @@ export default async function PropertiesPage() {
 
   const { data: memberships, error } = await supabase
     .from('property_members')
-    .select('role, properties(id, name, household_id, archived_at, households(name))')
+    .select('role, properties(id, name, household_id, archived_at, feature_flags, households(name))')
     .eq('user_id', user.id);
 
   // Archived properties (soft-archived test/throwaway fixtures -- see
@@ -52,11 +53,12 @@ export default async function PropertiesPage() {
       id: string;
       name: string;
       household_id: string | null;
+      feature_flags: Record<string, unknown> | null;
       households: { name: string } | null;
     } | null;
     if (!property) continue;
     const key = property.household_id ?? `property:${property.id}`;
-    const entry = { id: property.id, name: property.name, role: m.role };
+    const entry = { id: property.id, name: property.name, role: m.role, featureFlags: property.feature_flags };
     const existing = groupsByKey.get(key);
     if (existing) {
       existing.properties.push(entry);
@@ -68,7 +70,23 @@ export default async function PropertiesPage() {
       });
     }
   }
-  const groups = [...groupsByKey.values()];
+  // SS-459 ordering, expressed in this page's grouped idiom: the group
+  // holding the operator-console property first, the rest alphabetically by
+  // their display name (household name, or the property's own name for a
+  // null-household singleton like QA Demo -- which sorts with everyone,
+  // no null-last case; that it appears at all is SS-512). Properties
+  // within a group sort by name, giving the canonical live order
+  // Lax, Henderson, Low, Strauss Country, Strauss Main.
+  const groups = [...groupsByKey.values()]
+    .map((g) => ({ ...g, properties: [...g.properties].sort((a, b) => a.name.localeCompare(b.name)) }))
+    .sort((a, b) => {
+      const aConsole = a.properties.some((p) => isOperatorConsole(p.featureFlags));
+      const bConsole = b.properties.some((p) => isOperatorConsole(p.featureFlags));
+      if (aConsole !== bConsole) return aConsole ? -1 : 1;
+      const aLabel = a.householdName ?? a.properties[0]?.name ?? '';
+      const bLabel = b.householdName ?? b.properties[0]?.name ?? '';
+      return aLabel.localeCompare(bLabel);
+    });
 
   return (
     <div className="min-h-screen bg-linen px-6 pt-12">
