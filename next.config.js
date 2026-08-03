@@ -83,8 +83,6 @@ const nextConfig = {
   // (primary domain = apex, www redirecting at the edge), at which point
   // no app-level redirect is needed at all. Do NOT reintroduce this block
   // while the platform config points the other way.
-    ];
-  },
   // Two dev servers on this repo (a human on :3000, an agent on :3100) were
   // both writing to the same .next directory, which on Windows produces
   // EBUSY "resource busy or locked" errors on
