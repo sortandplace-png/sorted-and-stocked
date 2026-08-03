@@ -74,7 +74,17 @@ const SERVICES = [
     icon: Users,
     title: 'Vendor Scheduling',
     body: 'Cleaners, handyman, simcha help. Coordinated and confirmed, so it is off your plate and actually on the calendar.',
-    bannerSrc: '/services/vendor-scheduling.jpg', // Desk_planning_with_planner
+    // SS-572: the photo this card carried (vendor-scheduling.jpg,
+    // "Desk_planning_with_planner") is an open notebook whose pages are
+    // LEGIBLE AT DISPLAY SIZE and read out internal staff procedure --
+    // including "[SOP] Security Procedures / Procedimientos de Seguridad:
+    // Verify all perimeter access is locked" -- on the public homepage.
+    // Same photograph as the one pulled from blog-03 (SS-566), a second
+    // copy under a different filename and crop. All ten OTHER service
+    // banners were read at magnification in the same pass and are clean.
+    // bannerSrc stays null until Racquel supplies a replacement; the ruled
+    // Concept B gradient stands in, as on /services (SS-488).
+    bannerSrc: null as string | null,
   },
   {
     icon: Package,
@@ -175,13 +185,24 @@ export default async function RootMarketingPage() {
                 className="relative bg-card border border-cardBorder rounded-2xl shadow-card overflow-hidden"
               >
                 <Pin size="sm" />
-                <Image
-                  src={bannerSrc}
-                  alt=""
-                  width={1200}
-                  height={675}
-                  className="w-full h-[140px] object-cover"
-                />
+                {bannerSrc ? (
+                  <Image
+                    src={bannerSrc}
+                    alt=""
+                    width={1200}
+                    height={675}
+                    className="w-full h-[140px] object-cover"
+                  />
+                ) : (
+                  <div
+                    className="w-full h-[140px]"
+                    style={{
+                      backgroundImage:
+                        'linear-gradient(135deg, #E8EEF6 0%, #FFFAF3 62%, rgba(198,164,110,0.28) 100%)',
+                    }}
+                    aria-hidden="true"
+                  />
+                )}
                 <div className="p-6">
                   <div className="w-11 h-11 rounded-full bg-brass/15 flex items-center justify-center mb-4">
                     <Icon className="w-5 h-5 text-brass" strokeWidth={1.75} aria-hidden="true" />
