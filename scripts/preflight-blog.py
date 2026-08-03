@@ -55,7 +55,16 @@ NAME_RE = re.compile(r'racquel|about the author', re.I)
 WORKING_TITLE_RE = re.compile(r'voice|fixed|template|rewrite|final|copy|-v\d+', re.I)
 # SS-556: an audit for a literal must also search its encoded forms.
 AMPERSAND_FORMS = ['&', '%26', '&amp;', r'&', '&']
-RETIRED_MARKS = ['Sort {} Place', 'Sorted {} Stocked']
+# ONLY the company name is affected. "Sort & Place" is retired; the correct
+# form is "Sort + Place".
+#
+# "Sorted & Stocked" is NOT retired and must never be swept (Racquel, 3 Aug).
+# It is the APP's real name and its ampersand is correct. This list briefly
+# contained it, which would have made every article that legitimately names
+# the product fail a blocking check -- the gate itself manufacturing the
+# error it exists to catch. Two different names, one shared word, opposite
+# rules: read the name before assuming the ampersand is the bug.
+RETIRED_MARKS = ['Sort {} Place']
 ALLOWED_INTERNAL = {'/welcome', '/contact'}
 
 

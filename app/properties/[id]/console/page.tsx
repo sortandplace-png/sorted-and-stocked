@@ -48,6 +48,33 @@ function SectionStrip({ label }: { label: string }) {
   );
 }
 
+// SS-567. The console sections are anchor targets now, so the index below the
+// title can jump to them and so search can deep-link "task center" straight
+// here. scroll-mt clears the sticky app header plus the nav bar under it;
+// without it the anchor lands with the heading hidden behind the chrome,
+// which reads as the jump not having worked.
+const SECTIONS = [
+  { id: 'task-center', label: 'Task Center' },
+  { id: 'people', label: 'People' },
+  { id: 'configuration', label: 'Configuration' },
+] as const;
+
+function SectionIndex() {
+  return (
+    <nav aria-label="Console sections" className="flex flex-wrap items-center gap-2">
+      {SECTIONS.map((s) => (
+        <a
+          key={s.id}
+          href={`#${s.id}`}
+          className="text-[12px] font-medium text-denim border border-cardBorder bg-card px-3.5 py-1.5 rounded-full hover:border-brass/50 transition-colors"
+        >
+          {s.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
 const ROLE_ORDER = ['owner', 'manager', 'staff'] as const;
 
 export default async function OperatorConsolePage({
@@ -161,7 +188,10 @@ export default async function OperatorConsolePage({
         <div className="flex items-end justify-between gap-4 flex-wrap">
           <div>
             <h1 className="font-display text-[34px] font-normal text-denim">Operator Console</h1>
-            <p className="text-[13px] text-dusk">Work, people and configuration. One page.</p>
+            <p className="text-[13px] text-dusk">Task Center, people and configuration. One page.</p>
+            <div className="mt-3">
+              <SectionIndex />
+            </div>
           </div>
           {/* Prominent register link (2 Aug spec) -- owner-only, matching
               the route's own gate; the Staff-sheet entry is the primary
@@ -186,9 +216,19 @@ export default async function OperatorConsolePage({
         </div>
 
         {/* WORK FIRST (reopen defect 4) -- the cross-house Task Center
-            (SS-410 ruling) is the console's reason to exist. */}
-        <section className="rounded-xl3 border border-cardBorder shadow-card overflow-hidden bg-card">
-          <SectionStrip label="Work" />
+            (SS-410 ruling) is the console's reason to exist.
+
+            SS-567: the heading reads TASK CENTER, not "Work". Racquel typed
+            those exact words looking for this and found nothing, so the
+            section now carries the name she searched for. This is NOT the
+            nav entry coming back -- SS-410 and SS-436 folded that
+            deliberately and it stays folded. The page was always right; it
+            was unfindable, which is a different bug with a different fix. */}
+        <section
+          id="task-center"
+          className="scroll-mt-[124px] rounded-xl3 border border-cardBorder shadow-card overflow-hidden bg-card"
+        >
+          <SectionStrip label="Task Center" />
           <div className="p-5">
             <DutyRosterClient propertyId={id} properties={properties} />
           </div>
@@ -196,7 +236,7 @@ export default async function OperatorConsolePage({
 
         {/* PEOPLE -- THIS house's slots, plus the invite/TestFlight/replies
             flows. Cross-house membership content moved to the end fold. */}
-        <section className="rounded-xl3 border border-cardBorder shadow-card overflow-hidden bg-card">
+        <section id="people" className="scroll-mt-[124px] rounded-xl3 border border-cardBorder shadow-card overflow-hidden bg-card">
           <SectionStrip label="People" />
           <div className="p-5 space-y-5">
             <StaffSlotsEditor propertyId={id} initialSlots={slots ?? []} assignedNames={assignedNames} />
@@ -217,7 +257,7 @@ export default async function OperatorConsolePage({
 
         {/* CONFIGURATION -- the per-house module switches above the
             Settings sections, unchanged, composed. */}
-        <section className="rounded-xl3 border border-cardBorder shadow-card overflow-hidden bg-card">
+        <section id="configuration" className="scroll-mt-[124px] rounded-xl3 border border-cardBorder shadow-card overflow-hidden bg-card">
           <SectionStrip label="Configuration" />
           <div className="p-5 border-b border-cardBorder">
             <ModuleFlagsEditor properties={properties} />

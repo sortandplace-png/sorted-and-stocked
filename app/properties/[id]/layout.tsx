@@ -15,7 +15,7 @@ import GlobalBackBar from '@/components/ui/GlobalBackBar';
 import { getNextObservance } from '@/lib/get-next-observance';
 import { formatPropertyLabel } from '@/lib/property-display';
 import { isPinkAccentProperty } from '@/lib/property-accent';
-import { isModuleEnabled, moduleForSegment } from '@/lib/module-flags';
+import { isModuleEnabled, moduleForSegment, isOperatorConsole } from '@/lib/module-flags';
 
 export default async function PropertyLayout({
   params,
@@ -166,6 +166,9 @@ export default async function PropertyLayout({
           // land on My Day, everyone else on the dashboard -- the same
           // role split the property picker already applies.
           homeSegment={membership.role === 'staff' ? 'my-day' : 'dashboard'}
+          // SS-567: mirrors the console route's own gate exactly, so search
+          // never offers a destination that would redirect on click.
+          canReachConsole={isOperatorConsole(featureFlags) && membership.role !== 'staff'}
         />
         <div className="sticky top-[60px] z-20">
           <DesktopNav propertyId={id} role={membership.role as PropertyRole} flags={featureFlags} />

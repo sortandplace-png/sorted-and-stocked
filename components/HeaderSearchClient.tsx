@@ -21,7 +21,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Search, X } from 'lucide-react';
 import ToolModal, { type ToolModalSlug } from '@/components/ToolModal';
 
-type ResultKind = 'recipe' | 'inventory' | 'location' | 'knowledge' | 'contact' | 'preference';
+type ResultKind = 'destination' | 'recipe' | 'inventory' | 'location' | 'knowledge' | 'contact' | 'preference';
 
 type Result = {
   kind: ResultKind;
@@ -31,9 +31,44 @@ type Result = {
   href?: string;
 };
 
-const RESULT_ORDER: ResultKind[] = ['recipe', 'inventory', 'location', 'knowledge', 'contact', 'preference'];
+const RESULT_ORDER: ResultKind[] = ['destination', 'recipe', 'inventory', 'location', 'knowledge', 'contact', 'preference'];
 
-export default function HeaderSearchClient({ propertyId }: { propertyId: string }) {
+// SS-567. Every source above searches DATA. Nothing searched DESTINATIONS,
+// so typing the name of a place in the app returned nothing -- which is
+// exactly what happened when Racquel searched "task center" and got no
+// results while the page was sitting there working.
+//
+// Destinations are listed FIRST because a name-of-a-place query is almost
+// always navigational, and they are matched on keywords rather than on the
+// label alone, so the old folded names still find their new home.
+const DESTINATIONS: { id: string; label: string; hint: string; keywords: string[]; path: string }[] = [
+  {
+    id: 'task-center',
+    label: 'Task Center',
+    hint: 'Operator Console',
+    // "duty roster" and "tasks" are here because both were folded into this
+    // section by SS-156 and SS-436; someone who learned the old name must
+    // still land somewhere real (R21 applies to findability, not just routes).
+    keywords: ['task center', 'taskcenter', 'tasks', 'task', 'duty roster', 'roster', 'work'],
+    path: '/console#task-center',
+  },
+  { id: 'people', label: 'People', hint: 'Operator Console', keywords: ['people', 'staff', 'team', 'members', 'invite'], path: '/console#people' },
+  { id: 'configuration', label: 'Configuration', hint: 'Operator Console', keywords: ['configuration', 'config', 'settings', 'modules', 'flags'], path: '/console#configuration' },
+];
+
+export default function HeaderSearchClient({
+  propertyId,
+  canReachConsole = false,
+}: {
+  propertyId: string;
+  /** SS-567: console destinations are offered ONLY where the console is
+   *  actually reachable -- the operator_console flag AND an owner/manager
+   *  role, matching the route's own gate. Offering them anywhere else would
+   *  put a link in search that redirects on click, which is the dead-click
+   *  bug SS-025 fixed in the nav and must not be reintroduced through a
+   *  different door. */
+  canReachConsole?: boolean;
+}) {
   const t = useTranslations('search');
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -53,6 +88,7 @@ export default function HeaderSearchClient({ propertyId }: { propertyId: string 
     knowledge: t('kindKnowledge'),
     contact: t('kindContact'),
     preference: t('kindPreference'),
+    destination: t('kindDestination'),
   };
 
   useEffect(() => {
@@ -150,7 +186,25 @@ export default function HeaderSearchClient({ propertyId }: { propertyId: string 
 
       const [recipes, inventory, locations, knowledge, contacts, preferences] = rows.map((data) => ({ data }));
 
+      // Two-character floor: with a bare substring test a single letter
+      // matches nearly every keyword, so "t" would push all three
+      // destinations above the real results on the first keystroke.
+      // Matching runs both ways on purpose -- k.includes(needle) catches
+      // someone still typing ("task cen"), needle.includes(k) catches a
+      // longer phrase around the name ("open task center").
+      const needle = q.trim().toLowerCase();
+      const destinations: Result[] = canReachConsole && needle.length >= 2
+        ? DESTINATIONS.filter((d) => d.keywords.some((k) => k.includes(needle) || needle.includes(k))).map((d) => ({
+            kind: 'destination' as const,
+            id: d.id,
+            primary: d.label,
+            secondary: d.hint,
+            href: `/properties/${propertyId}${d.path}`,
+          }))
+        : [];
+
       const next: Result[] = [
+        ...destinations,
         ...(recipes.data ?? []).map((r) => ({
           kind: 'recipe' as const,
           id: r.id,
@@ -197,7 +251,7 @@ export default function HeaderSearchClient({ propertyId }: { propertyId: string 
       setActiveIndex(0);
       setLoading(false);
     },
-    [propertyId, supabase]
+    [propertyId, supabase, canReachConsole]
   );
 
   useEffect(() => {
