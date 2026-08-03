@@ -56,25 +56,34 @@ export default function AboutPage() {
             procedures, and accountability tools, designed for homes where the same standard has to hold whether or
             not anyone is watching.
           </p>
-          {/* SS-535 image 1 of 2. CROP IS DELIBERATE AND MUST NOT BE WIDENED.
-              Cropped from a larger illustration to exclude text carrying
-              generation errors: a misspelled pantry shelf label ("SWOAR"),
-              duplicated closet bin labels (SHIRTS twice, ACCESSORIES twice),
-              and an invalid calendar date (a "39" in a November grid). Any
-              wider framing reintroduces all three.
+          {/* SS-535. ONE image on About, the wide frame, replacing the two
+              1200x758 crops (Racquel, 3 Aug: the crops are "cut off and
+              wrong", use the wide picture only).
 
-              3 Aug: THE CROP AS SUPPLIED DID NOT ACTUALLY EXCLUDE THE THIRD
-              ONE. The top 26px still carried the date strip "26 27 28 39 30",
-              so the invalid 39 was live on this page. Re-cropped tighter (top
-              26px dropped, sides trimmed to hold the 1200x758 the pair shares)
-              and the strip is gone. Recorded on SS-535 -- the point is that a
-              crop is only as good as someone checking it, and the note saying
-              the errors were excluded had been trusted rather than verified. */}
+              THIS REVERSES THE OLD "NEVER SOURCE WIDER" RULE ON THIS ROW, and
+              the reason is worth keeping, because the original rule had it
+              backwards. The crops were tighter, so at the 688px column width
+              this page actually renders at they MAGNIFIED the generation
+              errors roughly 4x: "Order Pet Foed Delivery" was plainly
+              readable, the calendar row visibly skipped from 25 to 27 to 29,
+              and the inventory checklist was sliced mid-word. The wide frame
+              renders the same text at about a quarter the size, where it
+              reads as texture rather than as misspelt words, and nothing is
+              truncated. Wider is what hides the errors here; tighter is what
+              exposed them.
+
+              WHAT IS STILL DELIBERATELY CROPPED: the bottom 78px of the
+              source carried the retired "SORT & PLACE" ampersand wordmark
+              TWICE, once on a paper bag and once as a floor watermark. Both
+              are cut. Verified by magnifying the bottom-right corner of the
+              final file, not by eye at page scale (SS-549/SS-556: a wordmark
+              baked into pixels is invisible to every string audit we run).
+              DO NOT restore the bottom of this image. */}
           <Image
             src="/about-header.jpg"
-            alt="Two professional organizers in a home laundry and pantry, with household systems shown around them."
-            width={1200}
-            height={758}
+            alt="Two household managers in a kitchen, working from a family calendar, a weekly staff and vendor schedule, a daily errands list, and a household inventory checklist."
+            width={1600}
+            height={698}
             className="w-full h-auto rounded-xl3 border border-cardBorder shadow-card my-2"
           />
           <p>
@@ -82,26 +91,6 @@ export default function AboutPage() {
             reorder system, we run it, we watch it, and we fix it when something stops working. The goal isn’t a
             beautiful before-and-after. It’s a house that works on Tuesday at 4pm when nobody’s watching.
           </p>
-          {/* SS-535 image 2 of 2, placed after the closing line per the
-              ruling. SAME RULE: never re-source wider. The full generation
-              carries the retired "SORT & PLACE" ampersand wordmark twice, and
-              a calendar whose weekday headers are generated gibberish; this
-              crop excludes both.
-
-              KNOWN AND LEFT IN, recorded rather than silently shipped (SS-540)
-              -- the corkboard reads "Order Pet Foed Delivery", and the visible
-              calendar row runs 25, 27, 29. SS-535 describes that line as
-              correctly spelled and the broken date sequence as outside the
-              crop; both claims are wrong against the delivered file. Neither
-              is croppable without destroying the composition, so this needs a
-              regenerated asset, not a reframe. */}
-          <Image
-            src="/about-image-2.jpg"
-            alt="A household manager at a desk with a weekly staff and vendor schedule, a family calendar, and a daily errands list."
-            width={1200}
-            height={758}
-            className="w-full h-auto rounded-xl3 border border-cardBorder shadow-card mt-2"
-          />
         </div>
 
         <div className="mt-12 pt-8 border-t border-cardBorder text-center">
