@@ -43,10 +43,7 @@ import { APP_HOSTNAME } from '@/lib/site-url';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
 import LocalBusinessJsonLd from '@/components/marketing/LocalBusinessJsonLd';
-<<<<<<< HEAD
 import { CANONICAL_ORIGIN } from '@/lib/site-url';
-=======
->>>>>>> origin/main
 
 // Exact copy from the SEO content package, pasted verbatim per the brief --
 // title/description differ from what shipped earlier tonight (that version
