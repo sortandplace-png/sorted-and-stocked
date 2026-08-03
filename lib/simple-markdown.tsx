@@ -63,7 +63,11 @@ function renderInline(text: string): ReactNode[] {
       const dim = rawSrc.match(/#(\d{2,5})x(\d{2,5})$/);
       const src = dim ? rawSrc.slice(0, -dim[0].length) : rawSrc;
       const size = dim ? { width: Number(dim[1]), height: Number(dim[2]) } : {};
-      const cls = 'w-full h-auto rounded-xl2 border border-cardBorder shadow-card my-5';
+      // my-4, matching the paragraph rhythm (p is mb-4): images sit in the
+      // same 16px vertical beat as the prose instead of floating in extra
+      // air -- "inline image spacing is still loose" (Racquel, 3 Aug) was
+      // the my-5 this replaces.
+      const cls = 'w-full h-auto rounded-xl2 border border-cardBorder shadow-card my-4';
       // Plain <img>, not next/image, matching how the blog already renders
       // header images -- storage srcs would otherwise need remotePatterns
       // config, and a config miss renders a broken image at request time.
