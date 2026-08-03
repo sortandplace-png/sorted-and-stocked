@@ -10,6 +10,8 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { renderSimpleMarkdown } from '@/lib/simple-markdown';
+import { extractRelatedReading } from '@/lib/related-reading';
+import RelatedReadingCards, { type RelatedCard } from '@/components/blog/RelatedReadingCards';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
 import { SITE_URL, CANONICAL_ORIGIN } from '@/lib/site-url';
@@ -63,7 +65,27 @@ export default async function BlogPostPage({
   // body_markdown opens with "# <title>" -- the title renders separately
   // above, so the duplicate heading line is stripped (same treatment
   // BlogPostDetail.tsx applies on the internal view).
-  const body = post.body_markdown.replace(/^#\s+[^\n]*\r?\n+/, '');
+  const stripped = post.body_markdown.replace(/^#\s+[^\n]*\r?\n+/, '');
+
+  // SS-584: the "## Related Reading" bullets render as cards instead of
+  // text links -- thumbnail from each target post's header_image_url. The
+  // cards go exactly where the bullets sat (the long four posts follow the
+  // section with a CTA line and boilerplate, so it is not always last). If
+  // the section doesn't parse, `before` is the whole body and the bullets
+  // render as before; a target with no row or no image gets a text-only
+  // card rather than being dropped, so the authored links always survive.
+  const { before, after, items } = extractRelatedReading(stripped);
+  let related: RelatedCard[] = [];
+  if (items.length > 0) {
+    const supabase = await createClient();
+    const { data: targets } = await supabase
+      .from('blog_posts')
+      .select('slug, header_image_url')
+      .in('slug', items.map((i) => i.slug))
+      .not('published_at', 'is', null);
+    const imageBySlug = new Map((targets ?? []).map((t) => [t.slug, t.header_image_url]));
+    related = items.map((i) => ({ ...i, imageUrl: imageBySlug.get(i.slug) ?? null }));
+  }
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -106,7 +128,16 @@ export default async function BlogPostPage({
               })}
             </p>
             <h1 className="font-display text-3xl font-semibold text-denim mb-6 leading-tight">{post.title}</h1>
-            {renderSimpleMarkdown(body)}
+            {renderSimpleMarkdown(before)}
+
+            <RelatedReadingCards posts={related} />
+
+            {/* The tail after the Related Reading section (consultation CTA
+                + boilerplate on the long four). Rendered separately, which
+                resets the heading-id dedupe map -- safe because the tail
+                carries no headings in any live post, only a bold line, a
+                rule, and an italic line. */}
+            {after && renderSimpleMarkdown(after)}
 
             {post.cta_label && post.cta_url && (
               <div className="mt-8 pt-6 border-t border-cardBorder text-center">

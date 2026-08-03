@@ -24,8 +24,10 @@
 //
 // This is also the enforcement point: because nothing but a leading-"/"
 // path can become an <a>, any external URL that reaches body_markdown
-// renders as inert text. A future link sweep returning anything other than
-// /welcome or /contact is therefore a defect by definition.
+// renders as inert text. A future link sweep returning anything other
+// than /welcome, /contact, or a /blog/<slug> cross-link (Related Reading
+// links between posts are standard as of 3 Aug -- all 11 live posts carry
+// them) is therefore a defect by definition.
 import type { ReactNode } from 'react';
 
 // Images follow the SAME source policy as links, for the same reason: an
@@ -138,6 +140,18 @@ function slugifyHeading(text: string): string {
     .replace(/\s+/g, '-');
 }
 
+// The FAQ section renders as a native <details> accordion (SS-584): seven
+// questions of unbroken prose were a large share of every post's perceived
+// length, and collapsing them to one line each fixes that at the foot of
+// every post at once. Presentation only -- the FAQPage JSON-LD lives in
+// blog_posts.faq_jsonld, a separate column this file never touches, so
+// rich-results parity (SS-557 trap 5 checks it against these same ###
+// questions) is unaffected. <details>/<summary> needs no client JS, works
+// in a server component, and search engines read closed-by-default content
+// fine. Chosen over cards/dividers because it removes the wall rather than
+// decorating it.
+const FAQ_HEADING = 'Frequently Asked Questions';
+
 export function renderSimpleMarkdown(markdown: string): ReactNode[] {
   const blocks = markdown.trim().split(/\n\s*\n/);
   // Duplicate slugs are real here, not hypothetical: blog-16 has an H2
@@ -153,7 +167,7 @@ export function renderSimpleMarkdown(markdown: string): ReactNode[] {
     seen.set(base, n + 1);
     return n === 0 ? base : `${base}-${n}`;
   }
-  return blocks.map((block, i) => {
+  function renderBlock(block: string, i: number | string): ReactNode {
     if (block.trim() === '---') {
       return <hr key={i} className="border-cardBorder my-6" />;
     }
@@ -211,5 +225,63 @@ export function renderSimpleMarkdown(markdown: string): ReactNode[] {
         {renderInline(block)}
       </p>
     );
-  });
+  }
+
+  const out: ReactNode[] = [];
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+    if (block.startsWith('## ') && block.slice(3).trim() === FAQ_HEADING) {
+      // Group the ### question blocks (and each question's following
+      // answer blocks) until the next H1/H2 or end of body. headingId is
+      // still called for every heading IN DOCUMENT ORDER, so the id
+      // sequence -- including the blog-16 duplicate-slug -1 suffix -- is
+      // byte-identical to the flat rendering this replaces.
+      out.push(renderBlock(block, i));
+      const faqItems: { q: string; id: string; answers: string[] }[] = [];
+      let j = i + 1;
+      while (j < blocks.length && !blocks[j].startsWith('## ') && !blocks[j].startsWith('# ')) {
+        if (blocks[j].startsWith('### ')) {
+          const q = blocks[j].slice(4);
+          faqItems.push({ q, id: headingId(q), answers: [] });
+        } else if (faqItems.length > 0) {
+          faqItems[faqItems.length - 1].answers.push(blocks[j]);
+        } else {
+          // Prose between the heading and the first question is not FAQ
+          // shape -- leave everything to the normal flat path (fail open).
+          break;
+        }
+        j++;
+      }
+      if (faqItems.length > 0) {
+        out.push(
+          <div key={`faq-${i}`} className="space-y-2.5 mb-4">
+            {faqItems.map((item, k) => (
+              <details key={k} className="group bg-mist/60 border border-cardBorder rounded-xl2 px-4">
+                <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden py-3 flex items-start justify-between gap-3">
+                  {/* The h3 keeps its anchor id inside the summary, so the
+                      heading outline and any future #fragment links are
+                      unchanged by the accordion. */}
+                  <h3 id={item.id} className="scroll-mt-24 font-display text-[15px] font-semibold text-denim leading-snug">
+                    {renderInline(item.q)}
+                  </h3>
+                  <span
+                    aria-hidden
+                    className="text-brass text-lg leading-none mt-0.5 shrink-0 transition-transform duration-200 group-open:rotate-45"
+                  >
+                    +
+                  </span>
+                </summary>
+                <div className="pb-3">{item.answers.map((a, m) => renderBlock(a, `faq-${i}-${k}-${m}`))}</div>
+              </details>
+            ))}
+          </div>
+        );
+        i = j - 1;
+        continue;
+      }
+      continue;
+    }
+    out.push(renderBlock(block, i));
+  }
+  return out;
 }
