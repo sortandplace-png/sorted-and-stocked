@@ -2,6 +2,7 @@
 // Public marketing page. Body copy pasted verbatim from the SEO content
 // package, paragraph breaks preserved as given, not rewritten or shortened.
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
 import LocalBusinessJsonLd from '@/components/marketing/LocalBusinessJsonLd';
@@ -55,6 +56,23 @@ export default function AboutPage() {
             procedures, and accountability tools, designed for homes where the same standard has to hold whether or
             not anyone is watching.
           </p>
+          {/* SS-535. CROP IS DELIBERATE AND MUST NOT BE WIDENED. This file is
+              cropped from a larger illustration specifically to exclude text
+              carrying generation errors: a misspelled pantry shelf label
+              ("SWOAR"), duplicated closet bin labels (SHIRTS twice,
+              ACCESSORIES twice), and an invalid calendar date (a "39" in a
+              November grid). ANY wider framing reintroduces all three. Do not
+              source, request or substitute a wider crop -- place as supplied.
+              Decorative, so alt is empty: the paragraphs either side already
+              carry the meaning, and describing the illustration would make a
+              screen reader announce the very labels the crop removes. */}
+          <Image
+            src="/about-header.jpg"
+            alt=""
+            width={1200}
+            height={758}
+            className="w-full h-auto rounded-xl2 border border-cardBorder shadow-card my-2"
+          />
           <p>
             Our approach is different because we stay. We don’t organize your pantry and leave. We set up the
             reorder system, we run it, we watch it, and we fix it when something stops working. The goal isn’t a
