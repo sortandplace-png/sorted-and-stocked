@@ -97,18 +97,21 @@ const SERVICES = [
     // Same photograph as the one pulled from blog-03 (SS-566), a second
     // copy under a different filename and crop. All ten OTHER service
     // banners were read at magnification in the same pass and are clean.
-    // REPLACEMENT PLACED (3 Aug): Racquel's generated entryway photograph
-    // (keys on a rack, basket, toolbox, drop cloth -- no people), verified
-    // text-free two ways before placement: Drive OCR extracts ZERO text
-    // (the SS-585 method), and a full-size read confirmed no labels,
-    // signage, documents or wordmark. Renamed out of the colliding
-    // namespaces on ingest (was Residential_entryway_..._202608031418).
-    // Served from the marketing storage bucket, ingested via the fetch-url
-    // job pipeline (720,631 bytes verified end-to-end).
+    // SS-594 (3 Aug evening): swapped to the approved ledger photograph --
+    // open planner on a stand, keys tray, brass bell and gloves on a
+    // console (Entryway_console_table_in_home_202608031636, 1200x896,
+    // 682,878 bytes byte-verified end-to-end, Drive OCR empty, thumb
+    // visually confirmed server-side). The subject sits along the BOTTOM
+    // edge, so this card pins object-bottom: at the 140px banner crop the
+    // default center shows mostly wall and crops out the gloves
+    // (Racquel: "Do not accept the default centre"). The earlier
+    // entryway photo (vendor-scheduling-entryway.jpg) stays in storage,
+    // superseded not deleted (R21).
     bannerSrc:
-      'https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/marketing/services/vendor-scheduling-entryway.jpg' as
+      'https://jfaaqzrezcrkkidlsbwj.supabase.co/storage/v1/object/public/marketing/services/vendor-scheduling-ledger.jpeg' as
         | string
         | null,
+    bannerPos: 'object-bottom',
   },
   {
     icon: Package,
