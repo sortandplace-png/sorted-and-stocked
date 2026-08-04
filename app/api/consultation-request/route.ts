@@ -13,6 +13,10 @@ const NOTIFY_TO = 'sortandplace@gmail.com';
 // the homepage's inline form still only ever sends its original 4, and
 // those 4 spellings are unchanged so existing submissions and this list
 // stay consistent.
+// Kept as a named constant so the allowlist, the early-access detection
+// and the timestamp write can never drift to different spellings.
+const EARLY_ACCESS_SERVICE = 'Early access to the Sorted & Stocked app';
+
 const VALID_SERVICES = new Set([
   'Full Home Organization',
   'Kitchen/Pantry Setup',
@@ -29,7 +33,7 @@ const VALID_SERVICES = new Set([
   // this entry the allowlist filter silently drops it and the row lands
   // with an empty service_interest -- the request would look like it
   // worked while losing the only thing the person asked for.
-  'Early access to the Sorted & Stocked app',
+  EARLY_ACCESS_SERVICE,
   'Other',
 ]);
 
@@ -76,8 +80,23 @@ export async function POST(request: Request) {
   // against a tampered client request, not a real user-facing validation.
   const serviceInterest = (body.serviceInterest ?? []).filter((s) => VALID_SERVICES.has(s));
 
-  if (!name || !phone || !email || !isValidEmail(email)) {
-    return NextResponse.json({ error: 'A real name, phone number, and email address are required.' }, { status: 400 });
+  // Step 6 (4 Aug): when EARLY ACCESS is the only thing selected, phone
+  // goes optional. Asking a stranger for a phone number in exchange for a
+  // place in a queue is how you lose most of them -- and we are asking for
+  // a queue place, not a consultation. Name and a valid email stay
+  // required in both cases; without those there is nobody to grandfather.
+  const earlyAccessOnly =
+    serviceInterest.length > 0 && serviceInterest.every((s) => s === EARLY_ACCESS_SERVICE);
+
+  if (!name || !email || !isValidEmail(email) || (!phone && !earlyAccessOnly)) {
+    return NextResponse.json(
+      {
+        error: earlyAccessOnly
+          ? 'A real name and email address are required.'
+          : 'A real name, phone number, and email address are required.',
+      },
+      { status: 400 }
+    );
   }
 
   // Service-role client, not the request-scoped server helper -- this route
@@ -100,7 +119,19 @@ export async function POST(request: Request) {
 
   const { error: insertError } = await supabase
     .from('consultation_requests')
-    .insert({ name, phone, email, service_interest: serviceInterest, notes, heard_about: heardAbout });
+    .insert({
+      name,
+      phone: phone || null,
+      email,
+      service_interest: serviceInterest,
+      notes,
+      heard_about: heardAbout,
+      // The durable cohort record (migration 182). Set whenever early
+      // access was selected AT ALL, not only when it was the sole
+      // selection -- someone asking for a consultation AND early access
+      // is still in the beta.
+      early_access_at: serviceInterest.includes(EARLY_ACCESS_SERVICE) ? new Date().toISOString() : null,
+    });
   if (insertError) {
     console.error('consultation_requests insert failed:', insertError);
     return NextResponse.json({ error: "Couldn't save your request — try again in a moment." }, { status: 500 });
