@@ -26,12 +26,24 @@ export default function SubscribeForm({
   sourceDetail,
   heading = 'Get new posts by email',
   blurb = 'Notes on running a real household, when we publish them. No more than that.',
+  variant = 'panel',
+  line = 'New posts by email, when we publish them.',
 }: {
   source?: string;
   /** Which post or surface the sign-up came from, for attribution. */
   sourceDetail?: string;
   heading?: string;
   blurb?: string;
+  /**
+   * SS-639. 'panel' is the original card. 'inline' is Racquel's ruling for
+   * the foot of an article: ONE line of type and a field, not a headline
+   * plus a subheading to collect one address. The article foot already
+   * carries the real ask (Book Your Consultation); this sits under it and
+   * must stay quieter than it, or there are two asks competing.
+   */
+  variant?: 'panel' | 'inline';
+  /** The single line of type, inline variant only. */
+  line?: string;
 }) {
   const [email, setEmail] = useState('');
   // SS-630 spam protection. The consultation form took two bot
@@ -102,11 +114,65 @@ export default function SubscribeForm({
     setMessage("Thanks. Check your email to confirm — nothing else is sent until you do.");
   }
 
+  // The honeypot travels with BOTH variants. It is the spam guard, not
+  // decoration -- shipping the inline one without it would reopen the gap
+  // that PR #76 closed.
+  const honeypot = (
+    <div aria-hidden="true" className="absolute left-[-9999px] w-px h-px overflow-hidden">
+      <label htmlFor={`subscribe-company-${variant}`}>Company</label>
+      <input
+        id={`subscribe-company-${variant}`}
+        name="company"
+        type="text"
+        tabIndex={-1}
+        autoComplete="off"
+        value={botField}
+        onChange={(e) => setBotField(e.target.value)}
+      />
+    </div>
+  );
+
   if (state === 'done') {
-    return (
+    return variant === 'inline' ? (
+      <p className="text-[13px] text-dusk mt-6 pt-5 border-t border-cardBorder">{message}</p>
+    ) : (
       <div className="bg-mist border border-brass/30 rounded-xl2 px-5 py-4">
         <p className="text-sm text-denim">{message}</p>
       </div>
+    );
+  }
+
+  if (variant === 'inline') {
+    return (
+      <form onSubmit={onSubmit} className="relative mt-6 pt-5 border-t border-cardBorder">
+        {honeypot}
+        <p className="text-[13px] text-dusk mb-2.5">{line}</p>
+        <div className="flex flex-col sm:flex-row gap-2 max-w-md">
+          <label htmlFor="subscribe-email-inline" className="sr-only">
+            Email address
+          </label>
+          <input
+            id="subscribe-email-inline"
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            className="flex-1 bg-card border border-cardBorder rounded-xl2 px-4 py-2 text-sm text-denim placeholder:text-denim/40 focus:outline-none focus:ring-1 focus:ring-denim/40"
+          />
+          {/* Deliberately NOT the denim fill the consultation button uses:
+              two solid buttons stacked would read as two equal asks. */}
+          <button
+            type="submit"
+            disabled={state === 'sending'}
+            className="border border-cardBorder text-denim text-sm font-medium px-5 py-2 rounded-xl2 hover:border-brass transition-colors disabled:opacity-60"
+          >
+            {state === 'sending' ? 'Signing up…' : 'Sign up'}
+          </button>
+        </div>
+        {state === 'error' && <p className="text-[13px] text-rust mt-2">{message}</p>}
+      </form>
     );
   }
 
@@ -116,18 +182,7 @@ export default function SubscribeForm({
       <p className="text-[13px] text-dusk mt-0.5 mb-3">{blurb}</p>
       {/* Honeypot. Hidden from people and from screen readers, left in
           the tab order's dead zone; only a bot fills it. */}
-      <div aria-hidden="true" className="absolute left-[-9999px] w-px h-px overflow-hidden">
-        <label htmlFor="subscribe-company">Company</label>
-        <input
-          id="subscribe-company"
-          name="company"
-          type="text"
-          tabIndex={-1}
-          autoComplete="off"
-          value={botField}
-          onChange={(e) => setBotField(e.target.value)}
-        />
-      </div>
+      {honeypot}
 
       <div className="flex flex-col sm:flex-row gap-2">
         <label htmlFor="subscribe-email" className="sr-only">

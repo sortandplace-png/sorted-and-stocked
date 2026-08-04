@@ -13,6 +13,7 @@ import { renderSimpleMarkdown } from '@/lib/simple-markdown';
 import { extractRelatedReading } from '@/lib/related-reading';
 import RelatedReadingCards, { type RelatedCard } from '@/components/blog/RelatedReadingCards';
 import PinterestSaveButton from '@/components/blog/PinterestSaveButton';
+import SubscribeForm from '@/components/blog/SubscribeForm';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
 import { SITE_URL, CANONICAL_ORIGIN } from '@/lib/site-url';
@@ -166,6 +167,17 @@ export default async function BlogPostPage({
                 </a>
               </div>
             )}
+
+            {/* SS-639, and the ORDER is the ruling: article ends, then
+                Related Reading, then the consultation button, then this.
+                One ask per article -- Book Your Consultation -- with the
+                email line quiet underneath it. Last on the page and the
+                smallest thing on it, deliberately: a reader who has read
+                to here has already been given something, which is the
+                whole reason it is not on the index any more.
+                sourceDetail carries the slug so a sign-up can be
+                attributed to the article that earned it. */}
+            <SubscribeForm variant="inline" source="blog-article" sourceDetail={post.slug} />
           </div>
         </article>
       </main>

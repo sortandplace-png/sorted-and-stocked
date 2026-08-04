@@ -65,7 +65,14 @@ export default function WelcomePage() {
             <div className="w-[34px] h-[34px] rounded-lg bg-denim overflow-hidden">{HOUSE_MARK}</div>
             <span className="font-display font-bold text-xl text-denim">Sorted &amp; Stocked</span>
           </div>
-          <a href="#cta" className="text-[12.5px] font-extrabold tracking-wide bg-denim text-white px-5 py-2.5 rounded-full whitespace-nowrap hover:opacity-90 transition-opacity">
+          {/* SS-639: repointed at the consultation form, which now carries
+              "Early access to the Sorted & Stocked app" as one of its six
+              options (SS-633). One ask, one form -- this used to jump to
+              #cta below, a SECOND early-access form on this same page, so
+              a reader who wanted both a consultation and early access had
+              to fill in two. The #cta section stays for now and is marked
+              superseded there rather than removed. */}
+          <a href="/#consultation" className="text-[12.5px] font-extrabold tracking-wide bg-denim text-white px-5 py-2.5 rounded-full whitespace-nowrap hover:opacity-90 transition-opacity">
             Request Early Access
           </a>
         </nav>
@@ -203,6 +210,13 @@ export default function WelcomePage() {
           </div>
         </section>
 
+        {/* SS-639, SUPERSEDED, not removed (R21). Racquel's ruling is one
+            ask per surface, and the consultation form now carries the
+            early-access option, so this second form is the duplicate the
+            nav link above was repointed away from. Left standing because
+            request_access_submissions has live rows behind it and pulling
+            the form is Racquel's call, not a side effect of a link fix.
+            Nothing links here any more. */}
         <section id="cta" className="relative bg-card border border-cardBorder rounded-xl3 shadow-card p-10 md:p-14 text-center mb-16">
           <Pin />
           <h2 className="font-display font-semibold text-[28px] text-denim mb-3.5">Bring order to your kitchen.</h2>
