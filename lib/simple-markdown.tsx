@@ -75,7 +75,19 @@ function renderInline(text: string): ReactNode[] {
       // article background and supplies its own framing. Margins live on
       // the standalone-block wrapper in renderSimpleMarkdown, which knows
       // whether a heading precedes the image; this element carries none.
-      const cls = 'w-full h-auto';
+      // SS-610 (Racquel: "yse graphic is to big"): CAP THE IMAGE, NOT THE
+      // CONTAINER. The blog-22 iceberg is 1344x1792 portrait and at full
+      // figure width stood taller than a viewport, stranding its caption
+      // below the fold. max-h-[70vh] clamps height; w-auto lets the width
+      // scale with it so nothing distorts; max-w-full keeps wide images
+      // exactly as before (every current landscape source is wider than
+      // the container, so they still fill it); mx-auto centres a portrait
+      // in the leftover width. Deliberately ratio-independent rather than
+      // keyed to the #WxH hint: only 4 of the 5 inline images carry that
+      // hint, so a hint-driven rule would miss un-hinted portraits. The
+      // CONTAINER WIDTH IS UNTOUCHED -- narrowing it would reopen the
+      // exact drift the width ruling closed.
+      const cls = 'max-h-[70vh] w-auto max-w-full mx-auto block';
       // Plain <img>, not next/image, matching how the blog already renders
       // header images -- storage srcs would otherwise need remotePatterns
       // config, and a config miss renders a broken image at request time.

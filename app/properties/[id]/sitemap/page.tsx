@@ -151,6 +151,13 @@ function buildSections(propertyId: string): Section[] {
         // Was reachable only by typing the URL -- not in any nav, header,
         // tools page or this index. StaffSlotsEditor lives here.
         { href: p('/settings'), label: 'Settings', subtitle: 'Staff slots & preferences', icon: SettingsIcon },
+        // SS-616: the register was missing from this index entirely. The
+        // nav entry exists (Staff sheet, owner + operator only) and was
+        // never removed, but this page is the complete route index and a
+        // page absent from it is one nav restructure away from being
+        // unreachable. Owner-only via OWNER_ONLY_HREFS below, matching the
+        // route's own gate -- a signpost for the one role that can open it.
+        { href: p('/register'), label: 'Register', subtitle: 'Work items & blog drafts, owner only', icon: ClipboardList },
       ],
     },
   ];
@@ -187,6 +194,12 @@ const MANAGER_ONLY_HREFS = [
   '/settings',
 ];
 
+// Owner-only destinations, stricter than MANAGER_ONLY_HREFS. Their routes
+// redirect managers, so listing them wider would be a dead click.
+// /tools/backup is already commented as owner-only where it is listed;
+// this list is what the filter below actually enforces.
+const OWNER_ONLY_HREFS = ['/register'];
+
 export default async function SitemapPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: propertyId } = await params;
   const supabase = await createClient();
@@ -202,12 +215,18 @@ export default async function SitemapPage({ params }: { params: Promise<{ id: st
         .maybeSingle()
     : { data: null };
   const canManage = membership?.role === 'owner' || membership?.role === 'manager';
+  const isOwner = membership?.role === 'owner';
 
   const sections = buildSections(propertyId)
     .map((section) => ({
       ...section,
       entries: section.entries.filter(
-        (e) => canManage || !MANAGER_ONLY_HREFS.some((suffix) => e.href.endsWith(suffix))
+        (e) =>
+          (canManage || !MANAGER_ONLY_HREFS.some((suffix) => e.href.endsWith(suffix))) &&
+          // SS-616: owner tier, stricter than manager -- the register route
+          // redirects anyone who is not the owner, so offering it to a
+          // manager would be the dead-click bug SS-025 fixed for Suppliers.
+          (isOwner || !OWNER_ONLY_HREFS.some((suffix) => e.href.endsWith(suffix)))
       ),
     }))
     .filter((section) => section.entries.length > 0);
