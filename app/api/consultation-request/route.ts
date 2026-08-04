@@ -25,6 +25,11 @@ const VALID_SERVICES = new Set([
   // SS-488 + 2 Aug ruling: added alongside their /services cards.
   'Moving, Packing & Unpacking',
   'Simcha & Event Prep',
+  // Step 6 (4 Aug): early access submits through THIS form now. Without
+  // this entry the allowlist filter silently drops it and the row lands
+  // with an empty service_interest -- the request would look like it
+  // worked while losing the only thing the person asked for.
+  'Early access to the Sorted & Stocked app',
   'Other',
 ]);
 
