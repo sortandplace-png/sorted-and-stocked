@@ -157,15 +157,31 @@ function isBullet(l: string) {
   return t.startsWith('* ') || t.startsWith('- ');
 }
 
-// WIDTH RULE (Racquel, 3 Aug late: "i wnt the text to fit the page"):
-// no text container on the marketing site carries an independent width
-// cap. Prose inherits the SAME container the inline figures use -- the
-// full article card -- so text and images end at the same edge. The
-// earlier 34rem editorial measure (and the 76cpl reasoning that chose
-// it) is SUPERSEDED by this ruling; line length rises to roughly 110
-// characters, and if that reads badly the lever is font size or line
-// height, not the width. Do not reintroduce a max-w here.
-const PROSE_W = 'w-full';
+// WIDTH RULE, superseded 4 Aug by SS-636 2b -- read both halves before
+// changing this line.
+//
+// The 3 Aug ruling ("i wnt the text to fit the page") removed every
+// independent width cap: prose inherited the article card so text and
+// images ended at the same edge, and line length rose to ~110
+// characters. SS-610 is the same ruling and IT STILL STANDS: text
+// widens to match content and never shrinks to fit an image.
+//
+// 2b is not that decision. Racquel, 4 Aug: "Do not read SS-610 as
+// blocking a magazine column." SS-610 was about not SQUEEZING content.
+// Choosing a reading measure and putting a real margin beside it is a
+// different choice, and the margin is what makes every other device
+// possible -- a pull quote in a single column can only say "set apart"
+// by getting bigger, which is how Stage C ended up with quotes outranking
+// their own headings.
+//
+// So: 34rem of reading column, 15rem of margin beside it at lg and up
+// (Racquel's pick). Below lg there is no margin -- the column is full
+// width and margin items fall back into the flow, quieter rather than
+// wider. Anything that must BREAK the column (figures) uses BLEED, not a
+// wider MEASURE; the two are different and only one of them is capped.
+const MEASURE = 'max-w-[34rem]';
+const BLEED = 'w-full';
+const MARGIN_COL = 'lg:float-right lg:w-[15rem] lg:ml-8 lg:clear-right';
 
 // A block that is ONLY an image gets no prose wrapper at all, so the
 // figure spans the full card width. Inside a text paragraph an image still
@@ -261,14 +277,14 @@ export function renderSimpleMarkdown(
   // paragraph where no positional rule would ever reach it.
   function renderBlock(block: string, i: number | string, afterHeading = false): ReactNode {
     if (block.trim() === '---') {
-      return <hr key={i} className={`border-cardBorder my-6 ${PROSE_W}`} />;
+      return <hr key={i} className={`border-cardBorder my-6 ${MEASURE}`} />;
     }
     if (block.startsWith('### ')) {
       return (
         // Subheadings get weight and air but NO brass rule -- the rule
         // marks major sections, and one on every h3 would make the page
         // read as stripes rather than as sections.
-        <h3 key={i} id={headingId(block.slice(4))} className={`scroll-mt-24 font-display text-xl font-semibold text-denim mt-6 mb-1.5 ${PROSE_W}`}>
+        <h3 key={i} id={headingId(block.slice(4))} className={`scroll-mt-24 font-display text-xl font-semibold text-denim mt-6 mb-1.5 ${MEASURE}`}>
           {renderInline(block.slice(4))}
         </h3>
       );
@@ -288,66 +304,72 @@ export function renderSimpleMarkdown(
         // heading. The rule is the section break -- it does the work the
         // old barely-heavier heading could not, without touching the
         // measure (SS-610: text widens to match content, never shrinks).
-        <h2 key={i} id={headingId(block.slice(3))} className={`scroll-mt-24 font-display text-[32px] leading-tight font-bold text-denim border-t border-brass/50 pt-7 mt-16 mb-4 ${PROSE_W}`}>
+        <h2 key={i} id={headingId(block.slice(3))} className={`scroll-mt-24 font-display text-[32px] leading-tight font-bold text-denim border-t border-brass/50 pt-7 mt-16 mb-4 ${MEASURE}`}>
           {renderInline(block.slice(3))}
         </h2>
       );
     }
     if (block.startsWith('# ')) {
       return (
-        <h1 key={i} id={headingId(block.slice(2))} className={`scroll-mt-24 font-display text-2xl font-semibold text-denim mt-2 mb-3 ${PROSE_W}`}>
+        <h1 key={i} id={headingId(block.slice(2))} className={`scroll-mt-24 font-display text-2xl font-semibold text-denim mt-2 mb-3 ${MEASURE}`}>
           {renderInline(block.slice(2))}
         </h1>
       );
     }
     const lines = block.split('\n');
-    // SS-636 2c, PULL QUOTE. `>> ` -- checked before the single-`>` panel
-    // below, because ">>" also starts with ">" and the panel would eat it.
-    // Racquel's spec, verbatim: "renders large in Cormorant, full measure,
-    // brass rule above". Full measure means PROSE_W like everything else;
-    // a pull quote indented into its own column would be the narrowed
-    // measure SS-610 removed, arriving by the back door.
-    // NOT a card. The two mist tiles in an article are containers for
-    // things (a list, a takeaway); a pull quote is the prose itself,
-    // louder, so it sits on the page with only the rule above it.
+    // SS-636 2b, PULL QUOTE -> THE MARGIN. `>> ` -- checked before the
+    // single-`>` panel below, because ">>" also starts with ">" and the
+    // panel would eat it.
+    //
+    // Stage C put this in the reading column at 26px and Racquel's
+    // verdict was that it read as a heading: on the live page the quote
+    // under "Search that works on a phone" was set larger than its own
+    // heading, so the hierarchy inverted. That is not a size that can be
+    // tuned down. In ONE column there is no "beside", so the only way a
+    // quote can say "set apart" is by getting bigger, and bigger is the
+    // one thing that also means "ranks higher".
+    //
+    // The margin fixes it structurally: being OUT of the column is what
+    // marks it, so the type gets SMALLER (15px against 14px body, in the
+    // display face) instead of larger, and it no longer competes with
+    // headings because it is not in the same column as them.
+    //
+    // Below lg there is no margin. It falls back into the flow as a
+    // short indented line with a brass rule down its left edge -- still
+    // quieter than body copy, never wider.
     if (lines.every((l) => l.trimStart().startsWith('>>'))) {
       const inner = lines.map((l) => l.trimStart().replace(/^>>\s?/, '')).filter((l) => l.trim() !== '');
-      // The rule is a BREAK IN PROSE, so it is only drawn when there is
-      // prose to break. Directly under a heading there is none, and the
-      // rule then reads as a second section divider that strands the
-      // heading above it -- visible in the blog-21 "Search that works on
-      // a phone" subsection, where the pull quote replaced the whole of
-      // that subsection's body. Same type, same spacing, no rule.
       return (
-        <div key={i} className={`${afterHeading ? 'pt-1 mt-2 mb-7' : 'border-t border-brass/50 pt-5 mt-8 mb-7'} ${PROSE_W}`}>
+        <aside
+          key={i}
+          className={`${MARGIN_COL} border-l-2 border-brass/60 pl-4 py-1 my-6 lg:my-2 lg:border-l-0 lg:border-t-2 lg:pl-0 lg:pt-3 max-w-[34rem]`}
+        >
           {inner.map((l, j) => (
-            <p key={j} className="font-display text-[26px] leading-[1.35] text-denim">
+            <p key={j} className="font-display text-[15px] leading-[1.5] text-dusk">
               {renderInline(l)}
             </p>
           ))}
-        </div>
+        </aside>
       );
     }
-    // SS-636 2c, TAKEAWAY TILE. A `>` block whose first line is
-    // "Eyebrow: ..." -- which is exactly how Racquel drafted them, so the
-    // convention is the shape the copy already arrives in rather than a
-    // new syntax an author has to remember.
+    // SS-636 2b, TAKEAWAY -> NO TILE. A `>` block whose first line is
+    // "Eyebrow: ..." -- the shape Racquel's copy already arrives in.
     //
-    // Mist, on her ruling ("renders as a mist tile closing the section,
-    // eyebrow in brass, one sentence in navy"). Worth naming the cost:
-    // that makes three mist-family blocks in one article -- list tile,
-    // CTA panel, takeaway. The eyebrow is what separates them, and it
-    // only works because no other tile has one.
+    // Stage C made this a mist tile and her verdict was that it read as a
+    // system alert: a wide pale box with a small label means NOTICE in an
+    // app, and in an article it stops the reading. The tile shape belongs
+    // to the app. What is left is what a magazine actually does to close
+    // a section -- a short brass rule and a line of italic.
     if (isTakeawayBlock(block)) {
       const inner = lines.map((l) => l.trimStart().replace(/^>\s?/, ''));
       const eyebrow = inner[0].replace(/^Eyebrow:\s*/i, '');
       const body = inner.slice(1).filter((l) => l.trim() !== '');
       return (
-        <div key={i} className={`relative bg-mist border border-cardBorder rounded-xl2 shadow-card px-5 py-4 my-6 ${PROSE_W}`}>
-          <Pin size="sm" />
+        <div key={i} className={`my-7 ${MEASURE}`}>
+          <div className="w-16 border-t border-brass/60 mb-3" />
           <p className="text-[11px] uppercase tracking-[0.14em] text-brass font-medium mb-1">{eyebrow}</p>
           {body.map((l, j) => (
-            <p key={j} className="text-sm text-denim leading-relaxed">
+            <p key={j} className="text-sm italic text-dusk leading-relaxed">
               {renderInline(l)}
             </p>
           ))}
@@ -359,7 +381,7 @@ export function renderSimpleMarkdown(
     if (lines.every((l) => l.trimStart().startsWith('>'))) {
       const inner = lines.map((l) => l.trimStart().replace(/^>\s?/, ''));
       return (
-        <div key={i} className={`bg-mist border border-brass/30 rounded-xl2 px-5 py-4 my-5 space-y-1 ${PROSE_W}`}>
+        <div key={i} className={`bg-mist border border-brass/30 rounded-xl2 px-5 py-4 my-5 space-y-1 ${MEASURE}`}>
           {inner
             .filter((l) => l.trim() !== '')
             .map((l, j) => (
@@ -378,7 +400,7 @@ export function renderSimpleMarkdown(
         // narrower BY CONSTRUCTION (the padding), which gives a
         // comfortable measure as a side effect of a structural change --
         // WITHOUT narrowing any container. SS-610 stands untouched.
-        <ul key={i} className={`relative bg-mist border border-cardBorder rounded-xl2 shadow-card list-disc pl-9 pr-6 py-5 my-5 space-y-1.5 ${PROSE_W}`}>
+        <ul key={i} className={`relative bg-mist border border-cardBorder rounded-xl2 shadow-card list-disc pl-9 pr-6 py-5 my-5 space-y-1.5 ${MEASURE}`}>
           <Pin size="sm" />
           {lines.map((l, j) => (
             <li key={j} className="text-sm text-denim leading-relaxed">
@@ -404,8 +426,8 @@ export function renderSimpleMarkdown(
         key={i}
         className={
           isLead
-            ? `text-[17px] text-denim leading-[1.7] mb-6 ${PROSE_W}`
-            : `text-sm text-denim leading-relaxed mb-4 ${PROSE_W}`
+            ? `text-[17px] text-denim leading-[1.7] mb-6 ${MEASURE}`
+            : `text-sm text-denim leading-relaxed mb-4 ${MEASURE}`
         }
       >
         {renderInline(block)}
@@ -429,7 +451,7 @@ export function renderSimpleMarkdown(
       const src = rawSrc.replace(/#\d{2,5}x\d{2,5}$/, '');
       const pinnable = opts?.pin && isAllowedImageSrc(rawSrc);
       out.push(
-        <div key={i} className={`${afterHeading ? 'mt-1' : 'mt-4'} mb-4${pinnable ? ' relative group' : ''}`}>
+        <div key={i} className={`${afterHeading ? 'mt-1' : 'mt-4'} mb-4 lg:clear-right ${BLEED}${pinnable ? ' relative group' : ''}`}>
           {renderInline(block.trim())}
           {pinnable && (
             <PinterestSaveButton
