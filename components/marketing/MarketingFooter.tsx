@@ -113,6 +113,19 @@ export default function MarketingFooter({
           )}
         </nav>
       </div>
+
+      {/* SS-621, approved by Racquel with her Rav. Wording is FINAL -- do
+          not paraphrase, shorten or "improve" it. These marketing pages
+          render EN-only (no locale path), which is why there is no ES
+          variant here; the approved Spanish is recorded on SS-621 and
+          goes in the moment this tree becomes bilingual. */}
+      <div className="border-t border-cardBorder">
+        <p className="max-w-[1100px] mx-auto px-4 py-5 text-[12px] leading-relaxed text-dusk">
+          Sort + Place builds organizing systems for homes. Our software tracks what a household tells
+          it — it does not rule on kashrus, and it is not a halachic authority. Every household&apos;s
+          practice is set by that family and their Rav.
+        </p>
+      </div>
     </footer>
   );
 }

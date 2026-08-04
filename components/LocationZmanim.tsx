@@ -32,6 +32,7 @@ export default function LocationZmanim({
   variant?: 'light' | 'dark';
 }) {
   const t = useTranslations('dashboard.candle');
+  const tHalacha = useTranslations('halachicDisclaimer');
   const [status, setStatus] = useState<'default' | 'loading' | 'located'>('default');
   const [result, setResult] = useState<LocatedResult | null>(null);
 
@@ -76,6 +77,16 @@ export default function LocationZmanim({
 
   const located = status === 'located' && result;
   const dark = variant === 'dark';
+  // SS-621, approved by Racquel with her Rav. Wording is FINAL -- do not
+  // paraphrase, shorten or "improve" it. This component computes a
+  // candle-lighting time from a zip code (or the device location), which
+  // is not the same as the shul's published time; the note travels with
+  // the time itself so it cannot be separated from it.
+  const zmanimNote = (
+    <p className={`text-[10px] leading-snug ${dark ? 'text-white/70 px-2' : 'text-dusk'}`}>
+      {tHalacha('times')}
+    </p>
+  );
 
   // Dark variant (Candle Lighting footer): matches the Concept B Figma spec's
   // centered, time-first layout -- large serif time is the dominant element,
@@ -112,11 +123,13 @@ export default function LocationZmanim({
             ? `${result.dateLabel ? `${result.dateLabel} — ` : ''}${t('labelNearYou')}`
             : `${defaultDateLabel ? `${defaultDateLabel}` : ''}${propertyName ? ` — ${propertyName}` : ''}`}
         </div>
+        {zmanimNote}
       </div>
     );
   }
 
   return (
+    <div className="space-y-1.5">
     <div className="flex items-end justify-between gap-3">
       <div>
         <div className="text-[10px] tracking-[0.16em] uppercase mb-1.5 text-dusk">
@@ -152,6 +165,8 @@ export default function LocationZmanim({
           <MapPin size={14} aria-hidden="true" />
         )}
       </button>
+    </div>
+    {zmanimNote}
     </div>
   );
 }

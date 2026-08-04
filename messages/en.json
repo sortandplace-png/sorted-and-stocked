@@ -1276,5 +1276,10 @@
         "description": "Every holiday on the calendar, at a glance."
       }
     }
+  },
+  "halachicDisclaimer": {
+    "app": "Sorted & Stocked is an organizing tool. It does not make halachic decisions. For any question of halacha, ask your Rav.",
+    "tags": "These labels show what this household has decided, not what halacha requires. If something looks wrong, ask before you act.",
+    "times": "Times are calculated from your zip code. Confirm against your shul's published times."
   }
 }

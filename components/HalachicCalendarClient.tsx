@@ -62,6 +62,7 @@ type CalendarData = {
 };
 
 export default function HalachicCalendarClient() {
+  const tHalachaCal = useTranslations('halachicDisclaimer');
   const t = useTranslations('halachicCalendar');
   const [data, setData] = useState<CalendarData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,6 +101,11 @@ export default function HalachicCalendarClient() {
   return (
     <div className="bg-mist p-4 space-y-4">
       <h1 className="text-2xl font-display text-denim mb-1">Halachic Calendar</h1>
+      {/* SS-621, approved by Racquel with her Rav. Wording is FINAL -- do
+          not paraphrase, shorten or "improve" it. Zmanim here are computed
+          from a zip code, which is not the same as the shul's published
+          times, and that difference matters most on exactly this page. */}
+      <p className="text-[12px] leading-relaxed text-dusk">{tHalachaCal('times')}</p>
 
       {upcoming && upcoming.length > 0 && (
         <Card title="Upcoming">

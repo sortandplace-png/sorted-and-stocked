@@ -10,6 +10,8 @@
 // alone, someone always clicks Meat/Dairy/Parve explicitly.
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
@@ -22,6 +24,7 @@ type KosherType = 'Meat' | 'Dairy' | 'Parve';
 const KOSHER_TYPES: KosherType[] = ['Meat', 'Dairy', 'Parve'];
 
 export default function KosherTypeTaggingClient({ propertyId }: { propertyId: string }) {
+  const tHalacha = useTranslations('halachicDisclaimer');
   const role = usePropertyRole();
   const supabase = createClient();
   const showToast = useToast();
@@ -102,6 +105,13 @@ export default function KosherTypeTaggingClient({ propertyId }: { propertyId: st
       <p className="text-sm text-dusk mb-5">
         {items.length} item{items.length === 1 ? '' : 's'} with no kosher type on file yet, grouped by category.
         Select all, uncheck any real exceptions, then tag the rest in one click.
+      </p>
+      {/* SS-621, approved by Racquel with her Rav. Wording is FINAL -- do
+          not paraphrase, shorten or "improve" it. Placed on the kashrus
+          tagging surface because that is where a label is created, and the
+          label describes THIS HOUSEHOLD's decision, not a p'sak. */}
+      <p className="text-[12px] leading-relaxed text-dusk bg-mist border border-brass/30 rounded-xl2 px-4 py-3 mb-5">
+        {tHalacha('tags')}
       </p>
 
       {groups.length === 0 ? (

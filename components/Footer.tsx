@@ -30,6 +30,11 @@ import { useTranslations } from 'next-intl';
 export default function Footer({ propertyId }: { propertyId?: string }) {
   const pathname = usePathname();
   const t = useTranslations('common');
+  // SS-621: approved by Racquel with her Rav, Version C. Wording is FINAL --
+  // do not paraphrase, shorten or "improve" it. Rendered on every app
+  // screen because the footer is the one component every screen carries.
+  // The long-form version is FAQ-112 in help_articles.
+  const tHalacha = useTranslations('halachicDisclaimer');
   const conceptB = (pathname?.endsWith('/dashboard') || pathname === '/properties') ?? false;
 
   // Concept B (Dashboard only): one unified line, uniform 12px Inter/denim
@@ -62,6 +67,7 @@ export default function Footer({ propertyId }: { propertyId?: string }) {
           <span className="text-brass mx-[13px] text-[13px] font-bold select-none">&bull;</span>
           <span className="text-[12px] text-denim tracking-[0.02em]">Powered by Sort + Place</span>
         </div>
+        <p className="mt-3 mx-auto max-w-xl px-4 text-[11px] leading-relaxed text-dusk">{tHalacha('app')}</p>
       </footer>
     );
   }
@@ -97,6 +103,7 @@ export default function Footer({ propertyId }: { propertyId?: string }) {
         </a>
       </div>
       <div className="text-[11px] text-dusk">Powered by Sort + Place</div>
+      <p className="mx-auto max-w-xl px-4 pt-1 text-[11px] leading-relaxed text-dusk">{tHalacha('app')}</p>
     </footer>
   );
 }
