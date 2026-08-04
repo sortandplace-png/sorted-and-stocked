@@ -112,15 +112,13 @@ export default async function BlogPostPage({
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(post.faq_jsonld) }} />
       )}
       <MarketingHeader />
-      {/* SS-636 2b: sized TO the magazine layout, not rounded to a Tailwind
-          step. 34rem reading column + 2rem gutter + 15rem margin = 51rem of
-          inner width; add the card's p-8 (4rem) and the main's px-4 (2rem)
-          and the container is 57rem. max-w-5xl was tried first and left
-          142px of slack between the column and the margin, which read as
-          the margin being detached from the text rather than beside it.
-          The READING MEASURE is what is capped here; the container is
-          WIDER than the max-w-4xl it replaced, not narrower. */}
-      <main className="flex-1 w-full max-w-[57rem] mx-auto px-4 py-10">
+      {/* Back to max-w-4xl. 2b widened this to 57rem to hold a 34rem
+          reading column plus a 15rem margin; both are gone (see the WIDTH
+          RULE in lib/simple-markdown.tsx), so the extra width was only
+          holding a blank gutter. Every text container inherits this card,
+          which is the SS-611 mechanism: prose and figures end at the same
+          edge because they share one constant. */}
+      <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-10">
         <Link href="/blog" className="text-sm text-dusk hover:text-denim underline underline-offset-2 mb-6 inline-block">
           ← Blog
         </Link>
@@ -138,10 +136,8 @@ export default async function BlogPostPage({
             </div>
           )}
           <div className="p-6 sm:p-8">
-            {/* Title and date stay FULL CARD WIDTH, not on the reading
-                measure. They are the masthead of the page, not part of the
-                reading column, and a 32px h1 wrapping early inside 34rem
-                would read as a cramped column heading rather than a title. */}
+            {/* Full card width, same as everything below it now. There is
+                no separate reading measure to sit outside of any more. */}
             <div className="w-full">
               <p className="text-xs text-dusk mb-2">
                 {new Date(post.published_at!).toLocaleDateString('en-US', {
