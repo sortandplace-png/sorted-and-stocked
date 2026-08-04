@@ -132,8 +132,11 @@ export default async function RootMarketingPage() {
     redirect('/properties');
   }
 
+  // SS-633: the PAGE ground was mist. Mist is the inner tile colour; the
+  // page is linen and cards sit on top of it. That one class is the
+  // "light blue-grey page" in Racquel's captures.
   return (
-    <div className="bg-mist min-h-screen flex flex-col font-interDisplay">
+    <div className="bg-linen min-h-screen flex flex-col font-interDisplay">
       <LocalBusinessJsonLd />
 
       {/* The top contact strip is GONE entirely (2 Aug ruling) -- first it
@@ -157,7 +160,7 @@ export default async function RootMarketingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
               href="#consultation"
-              className="bg-denim text-white font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-full hover:opacity-90 transition-opacity shadow-card"
+              className="bg-denim text-white font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-xl2 hover:opacity-90 transition-opacity shadow-card"
             >
               Book Your Consultation
             </a>
@@ -185,7 +188,7 @@ export default async function RootMarketingPage() {
               href={TESTFLIGHT_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2.5 border-2 border-denim text-denim font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-full hover:bg-denim hover:text-white transition-colors"
+              className="inline-flex items-center gap-2.5 border-2 border-denim text-denim font-bold text-sm uppercase tracking-widest px-8 py-4 rounded-xl2 hover:bg-denim hover:text-white transition-colors"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -265,7 +268,12 @@ export default async function RootMarketingPage() {
             <p className="text-sm text-dusk mb-8">
               Tell us a bit about your household, and we&apos;ll be in touch to set up a conversation.
             </p>
-            <ConsultationForm />
+            {/* SS-633: the form had no card, so the required pin dot had
+                nothing to sit on -- same gap as /contact (PR #77). */}
+            <div className="relative bg-card border border-cardBorder rounded-xl3 shadow-card p-6 text-left">
+              <Pin />
+              <ConsultationForm />
+            </div>
           </div>
         </section>
 

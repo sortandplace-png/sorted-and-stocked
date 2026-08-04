@@ -6,6 +6,8 @@
 
 import { useState } from 'react';
 
+export const EARLY_ACCESS_OPTION = 'Early access to the Sorted & Stocked app';
+
 const SERVICE_OPTIONS = [
   'Full Home Organization',
   'Kitchen/Pantry Setup',
@@ -15,6 +17,11 @@ const SERVICE_OPTIONS = [
   // API allowlist.
   'Moving, Packing & Unpacking',
   'Simcha & Event Prep',
+  // Step 6 ruling (4 Aug): waitlist and early access collapse into THIS
+  // form. One destination, one place to look -- two people run this
+  // business from phones, and three capture paths meant three places to
+  // check and three ways to miss someone.
+  EARLY_ACCESS_OPTION,
 ];
 
 export default function ConsultationForm() {
@@ -77,7 +84,7 @@ export default function ConsultationForm() {
         aria-labelledby="service-interest-label"
         className="border border-cardBorder rounded-xl2 px-4 py-3 bg-card"
       >
-        <p id="service-interest-label" className="text-xs font-semibold uppercase tracking-wide text-dusk">
+        <p id="service-interest-label" className="text-xs font-semibold uppercase tracking-wide text-brass">
           Service Interest
         </p>
         <div className="flex flex-col gap-2 mt-1.5">
