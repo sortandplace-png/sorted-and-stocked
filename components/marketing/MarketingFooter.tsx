@@ -81,7 +81,12 @@ export default function MarketingFooter({
                   confirmed from the screen), and this line must match
                   VERBATIM for the reviewer. Do not "fix" and back to &.
                   The dedupe ruling keeps this line homepage-only. */}
-              <span>Sorted and Stocked is the household app by Sort + Place</span>
+              {/* SS-652: the app keeps its AMPERSAND everywhere in text.
+                  "Sorted and Stocked" was the only instance in the repo
+                  and the database is clean, so this string was the whole
+                  defect. Not the same rule as the practice wordmark,
+                  which is "Sort + Place" with the plus (SS-582). */}
+              <span>Sorted &amp; Stocked is the household app by Sort + Place</span>
             </>
           ) : (
             <span className="whitespace-nowrap">© Sort + Place</span>

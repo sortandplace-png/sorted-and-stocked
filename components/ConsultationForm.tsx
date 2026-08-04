@@ -55,6 +55,15 @@ export default function ConsultationForm() {
     );
   }
 
+  // SS-652 radius. The controls carried rounded-xl2 (20px) and a report
+  // reading this file called them correct. Measured on the RENDERED
+  // element instead: they are 46px tall, so a 20px radius leaves 6px of
+  // straight edge on a 46px side -- geometrically not a pill, visually a
+  // pill, which is exactly why the capture and the file disagreed.
+  // rounded-xl (12px) leaves 22px of straight edge and reads as a rounded
+  // rectangle. Cards keep xl2: the same radius reads soft on a tall box
+  // and semicircular on a short one, so radius has to follow the control
+  // height rather than the token.
   return (
     <form onSubmit={handleSubmit} className="max-w-[440px] mx-auto flex flex-col gap-3 text-left">
       <input
@@ -62,21 +71,21 @@ export default function ConsultationForm() {
         name="name"
         placeholder="Full Name"
         required
-        className="px-4 py-3 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 bg-card text-sm text-denim"
+        className="px-4 py-3 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl bg-card text-sm text-denim"
       />
       <input
         type="tel"
         name="phone"
         placeholder={earlyAccessOnly ? 'Phone Number (optional)' : 'Phone Number'}
         required={!earlyAccessOnly}
-        className="px-4 py-3 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 bg-card text-sm text-denim"
+        className="px-4 py-3 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl bg-card text-sm text-denim"
       />
       <input
         type="email"
         name="email"
         placeholder="Email"
         required
-        className="px-4 py-3 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 bg-card text-sm text-denim"
+        className="px-4 py-3 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl bg-card text-sm text-denim"
       />
 
       {/* Was a <fieldset> with a <legend> riding the border: the legend
@@ -119,13 +128,13 @@ export default function ConsultationForm() {
         name="notes"
         placeholder="Notes (optional)"
         rows={3}
-        className="px-4 py-3 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 bg-card text-sm text-denim resize-none"
+        className="px-4 py-3 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl bg-card text-sm text-denim resize-none"
       />
 
       <button
         type="submit"
         disabled={status === 'sending'}
-        className="bg-denim text-white font-bold text-sm py-3.5 rounded-xl2 disabled:opacity-50 hover:opacity-90 transition-opacity"
+        className="bg-denim text-white font-bold text-sm py-3.5 rounded-xl disabled:opacity-50 hover:opacity-90 transition-opacity"
       >
         {status === 'sending' ? 'Sending…' : 'Book Your Consultation'}
       </button>
