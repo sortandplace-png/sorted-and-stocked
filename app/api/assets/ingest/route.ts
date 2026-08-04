@@ -24,6 +24,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { inflateRawSync } from 'node:zlib';
+import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 
 export const maxDuration = 60;
@@ -205,6 +206,85 @@ export async function POST(request: Request) {
         .update({ status: 'done', result, finished_at: new Date().toISOString() })
         .eq('id', jobId);
       return NextResponse.json({ ok: true, thumbBytes: thumb.length });
+    }
+
+    if (job.mode === 'register-export') {
+      // SS-092/SS-438: the register is the ONE artefact this project cannot
+      // reconstruct -- everything else is derivable from the app. Until
+      // this mode existed it had no copy anywhere off the database, and
+      // SS-001 records 240 rows deleted in two unattributed bulk events
+      // whose evidence was gone before anyone looked (24h log retention).
+      //
+      // Postgres -> file, with NO model in the path (the SS-438 rule): the
+      // rows go straight from the query into .md and .csv bytes here and
+      // into a PRIVATE storage bucket. Nothing summarises at any stage,
+      // which is the only basis on which the word "complete" is true.
+      // Called daily by pg_cron; the row count and md5 come back in the
+      // job result so a silent partial write is detectable.
+      const { data: rows, error: rErr } = await admin
+        .from('work_items')
+        .select('*')
+        .order('id');
+      if (rErr) throw new Error(`work_items read: ${rErr.message}`);
+      const items = rows ?? [];
+      if (items.length === 0) throw new Error('refusing to write an empty export');
+
+      // SS-100 sorts after SS-99: numeric on the suffix, never lexicographic.
+      const num = (id: string) => parseInt(String(id).replace(/\D/g, ''), 10) || 0;
+      items.sort((a, b) => num(a.id) - num(b.id));
+
+      const cols = Object.keys(items[0]);
+      const csvCell = (v: unknown) =>
+        v === null || v === undefined ? '' : `"${String(v).replace(/"/g, '""')}"`;
+      const csv = [cols.join(','), ...items.map((r) => cols.map((c) => csvCell(r[c])).join(','))].join('\n');
+
+      const md = [
+        `# Sorted & Stocked work register`,
+        ``,
+        `${items.length} rows, exported ${new Date().toISOString()}.`,
+        `Direct from Postgres, nothing summarised. The table remains the source of truth;`,
+        `this file is a snapshot and goes stale the moment anything is written to work_items.`,
+        ``,
+        ...items.flatMap((r) => [
+          `---`,
+          ``,
+          `## ${r.id} — ${r.title ?? ''}`,
+          ``,
+          `- status: ${r.status ?? ''} · evidence: ${r.evidence ?? ''} · owner: ${r.owner ?? ''}`,
+          `- sent to Code: ${r.sent_to_code_at ?? ''} · Code reported: ${r.code_reported_at ?? ''}`,
+          `- verified: ${r.verified_at ?? ''} ${r.verified_how ? `(${r.verified_how})` : ''}`,
+          r.superseded_by ? `- superseded by: ${r.superseded_by}` : '',
+          ``,
+          r.detail ?? '',
+          ``,
+        ]),
+      ].join('\n');
+
+      const stamp = new Date().toISOString().slice(0, 10);
+      const md5 = (s: string) => createHash('md5').update(s, 'utf8').digest('hex');
+      const written: { path: string; bytes: number; md5: string }[] = [];
+      for (const [name, body, type] of [
+        [`work_items-${stamp}.md`, md, 'text/markdown'],
+        [`work_items-${stamp}.csv`, csv, 'text/csv'],
+        // latest.* overwrites daily so there is always one stable path to
+        // grab without knowing today's date; the dated copies accumulate.
+        [`work_items-latest.md`, md, 'text/markdown'],
+        [`work_items-latest.csv`, csv, 'text/csv'],
+      ] as const) {
+        const buf = Buffer.from(body, 'utf8');
+        const { error: upErr } = await admin.storage
+          .from('backups')
+          .upload(`register/${name}`, buf, { contentType: type, upsert: true });
+        if (upErr) throw new Error(`upload ${name}: ${upErr.message}`);
+        written.push({ path: `backups/register/${name}`, bytes: buf.length, md5: md5(body) });
+      }
+
+      const result = { rows: items.length, detailChars: items.reduce((n, r) => n + (r.detail?.length ?? 0), 0), written };
+      await admin
+        .from('asset_ingest_jobs')
+        .update({ status: 'done', result, finished_at: new Date().toISOString() })
+        .eq('id', jobId);
+      return NextResponse.json({ ok: true, ...result });
     }
 
     if (job.mode === 'fetch-url') {
