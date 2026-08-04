@@ -81,7 +81,7 @@ export default function SubscribeForm({
       // Deliberately indistinguishable from success: telling a bot which
       // check caught it is telling whoever wrote it how to pass.
       setState('done');
-      setMessage("Thanks. Check your email to confirm — nothing else is sent until you do.");
+      setMessage("Thanks. Check your email to confirm. Nothing else is sent until you do.");
       return;
     }
 
@@ -111,7 +111,7 @@ export default function SubscribeForm({
     }
 
     setState('done');
-    setMessage("Thanks. Check your email to confirm — nothing else is sent until you do.");
+    setMessage("Thanks. Check your email to confirm. Nothing else is sent until you do.");
   }
 
   // The honeypot travels with BOTH variants. It is the spam guard, not

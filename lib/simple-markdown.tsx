@@ -157,31 +157,31 @@ function isBullet(l: string) {
   return t.startsWith('* ') || t.startsWith('- ');
 }
 
-// WIDTH RULE, superseded 4 Aug by SS-636 2b -- read both halves before
-// changing this line.
+// WIDTH RULE. SS-611 / SS-610, reinstated 4 Aug after 2b reversed it.
+// ONE CONSTANT for prose and figures, deliberately, so the two can never
+// drift apart again. That is the whole mechanism: not a rule someone has
+// to remember, a single name both branches use.
 //
-// The 3 Aug ruling ("i wnt the text to fit the page") removed every
-// independent width cap: prose inherited the article card so text and
-// images ended at the same edge, and line length rose to ~110
-// characters. SS-610 is the same ruling and IT STILL STANDS: text
-// widens to match content and never shrinks to fit an image.
+// The 3 Aug ruling is Racquel's, verbatim: "y would i narrow the images >
+// i wnt the text to fit the page." 2b broke it in the inverse direction
+// and she caught it live -- "this went backwords with spacing". A 34rem
+// MEASURE on every paragraph, heading, rule and list against an uncapped
+// BLEED on figures put the reading column at 544px and the pictures at
+// ~864px, so the TEXT was narrower than the PICTURES. That is precisely
+// the shape SS-611 forbids, arrived at from the other side.
 //
-// 2b is not that decision. Racquel, 4 Aug: "Do not read SS-610 as
-// blocking a magazine column." SS-610 was about not SQUEEZING content.
-// Choosing a reading measure and putting a real margin beside it is a
-// different choice, and the margin is what makes every other device
-// possible -- a pull quote in a single column can only say "set apart"
-// by getting bigger, which is how Stage C ended up with quotes outranking
-// their own headings.
+// The 15rem margin the narrowing bought was empty. It existed to hold
+// pull quotes, and 2a had removed every pull quote from blog-21 hours
+// before 2b shipped -- zero quote markers, zero eyebrow markers, verified
+// live. The page traded reading width for a blank gutter.
 //
-// So: 34rem of reading column, 15rem of margin beside it at lg and up
-// (Racquel's pick). Below lg there is no margin -- the column is full
-// width and margin items fall back into the flow, quieter rather than
-// wider. Anything that must BREAK the column (figures) uses BLEED, not a
-// wider MEASURE; the two are different and only one of them is capped.
-const MEASURE = 'max-w-[34rem]';
-const BLEED = 'w-full';
-const MARGIN_COL = 'lg:float-right lg:w-[15rem] lg:ml-8 lg:clear-right';
+// ACCEPTED DELIBERATELY: the measure is now ~864px and line length runs
+// past the 71 characters SS-584 tuned for. Racquel has ruled on this
+// twice. If it reads long the lever is FONT SIZE or LINE HEIGHT, never
+// width. Do not reintroduce a max-w here, and do not reintroduce a second
+// constant for figures.
+const MEASURE = 'w-full';
+const BLEED = MEASURE;
 
 // A block that is ONLY an image gets no prose wrapper at all, so the
 // figure spans the full card width. Inside a text paragraph an image still
@@ -342,10 +342,10 @@ export function renderSimpleMarkdown(
       return (
         <aside
           key={i}
-          className={`${MARGIN_COL} border-l-2 border-brass/60 pl-4 py-1 my-6 lg:my-2 lg:border-l-0 lg:border-t-2 lg:pl-0 lg:pt-3 max-w-[34rem]`}
+          className={`border-l-2 border-brass/60 pl-5 pr-4 my-8 ${MEASURE}`}
         >
           {inner.map((l, j) => (
-            <p key={j} className="font-display text-[15px] leading-[1.5] text-dusk">
+            <p key={j} className="font-display text-sm leading-[1.6] text-dusk">
               {renderInline(l)}
             </p>
           ))}
@@ -451,7 +451,7 @@ export function renderSimpleMarkdown(
       const src = rawSrc.replace(/#\d{2,5}x\d{2,5}$/, '');
       const pinnable = opts?.pin && isAllowedImageSrc(rawSrc);
       out.push(
-        <div key={i} className={`${afterHeading ? 'mt-1' : 'mt-4'} mb-4 lg:clear-right ${BLEED}${pinnable ? ' relative group' : ''}`}>
+        <div key={i} className={`${afterHeading ? 'mt-1' : 'mt-4'} mb-4 ${BLEED}${pinnable ? ' relative group' : ''}`}>
           {renderInline(block.trim())}
           {pinnable && (
             <PinterestSaveButton
