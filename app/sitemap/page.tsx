@@ -55,13 +55,13 @@ export default async function HumanSitemapPage() {
       <MarketingHeader />
       <main className="flex-1 max-w-[1100px] w-full mx-auto px-4 py-10">
         <h1 className="font-display text-3xl font-semibold text-denim mb-2">Sitemap</h1>
-        <p className="text-sm text-dusk mb-8 max-w-3xl">
+        <p className="text-sm text-dusk mb-8">
           Every public page on sortandplace.com, in one place.
         </p>
 
         <section className="mb-10">
           <h2 className="text-xs font-medium uppercase tracking-wider text-brass mb-3">Pages</h2>
-          <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 max-w-3xl">
+          <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
             {PAGES.map((p) => (
               <li key={p.href}>
                 <Link href={p.href} className="text-denim font-medium underline underline-offset-2 hover:text-denim/80">
@@ -76,7 +76,7 @@ export default async function HumanSitemapPage() {
         {posts.length > 0 && (
           <section>
             <h2 className="text-xs font-medium uppercase tracking-wider text-brass mb-3">Articles</h2>
-            <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 max-w-3xl">
+            <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
               {posts.map((p) => (
                 <li key={p.slug}>
                   <Link

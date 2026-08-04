@@ -111,10 +111,9 @@ export default async function BlogPostPage({
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(post.faq_jsonld) }} />
       )}
       <MarketingHeader />
-      {/* 3 Aug batch item 3: card widened from max-w-2xl -- the prose
-          inside carries its own 34rem measure (see PROSE_W in
-          lib/simple-markdown.tsx) while images and the Related Reading
-          card grid break out to the full card width. */}
+      {/* Width rule (Racquel, 3 Aug late): every text container inherits
+          the card width -- no independent measure anywhere. See PROSE_W
+          in lib/simple-markdown.tsx for the rule and its history. */}
       <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-10">
         <Link href="/blog" className="text-sm text-dusk hover:text-denim underline underline-offset-2 mb-6 inline-block">
           ← Blog
@@ -133,9 +132,10 @@ export default async function BlogPostPage({
             </div>
           )}
           <div className="p-6 sm:p-8">
-            {/* Date + title share the prose measure so the whole text
-                column keeps one left edge. */}
-            <div className="max-w-[34rem] mx-auto w-full">
+            {/* Width rule (Racquel, 3 Aug late): text fits the page --
+                date + title share the full card width, same edge as the
+                prose and figures below. The 34rem measure is superseded. */}
+            <div className="w-full">
               <p className="text-xs text-dusk mb-2">
                 {new Date(post.published_at!).toLocaleDateString('en-US', {
                   month: 'long',

@@ -116,9 +116,15 @@ function renderInline(text: string): ReactNode[] {
       return <span key={i}>{label}</span>;
     }
     if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+      // Recurse like the **bold** branch above. This branch used to emit
+      // part.slice(1, -1) as plain text, which published raw [text](url)
+      // syntax inside every italic caption -- 86 instances across 31
+      // posts when counted (3 Aug). The captions were always written
+      // correctly; the renderer was the defect, so the fix is here and
+      // not 86 hand-edits.
       return (
         <em key={i} className="text-dusk">
-          {part.slice(1, -1)}
+          {renderInline(part.slice(1, -1))}
         </em>
       );
     }
@@ -131,16 +137,15 @@ function isBullet(l: string) {
   return t.startsWith('* ') || t.startsWith('- ');
 }
 
-// Editorial measure (3 Aug batch, item 3): the article card widened to
-// max-w-4xl, so PROSE now carries its own measure and centers inside the
-// card while images break out to the full card width -- the standard
-// editorial pattern: text stays readable, graphics get room. 34rem
-// at the body's 14px size lands in the asked-for 70-80
-// characters per line (34rem measured at 76 cpl on the rig; 36rem came
-// out at 81, just over the band); a rem value rather than `ch` so headings (larger
-// font, larger ch) keep exactly the same left edge as the paragraphs.
-// w-full keeps mobile unchanged: below 36rem the constraint never binds.
-const PROSE_W = 'max-w-[34rem] mx-auto w-full';
+// WIDTH RULE (Racquel, 3 Aug late: "i wnt the text to fit the page"):
+// no text container on the marketing site carries an independent width
+// cap. Prose inherits the SAME container the inline figures use -- the
+// full article card -- so text and images end at the same edge. The
+// earlier 34rem editorial measure (and the 76cpl reasoning that chose
+// it) is SUPERSEDED by this ruling; line length rises to roughly 110
+// characters, and if that reads badly the lever is font size or line
+// height, not the width. Do not reintroduce a max-w here.
+const PROSE_W = 'w-full';
 
 // A block that is ONLY an image gets no prose wrapper at all, so the
 // figure spans the full card width. Inside a text paragraph an image still
