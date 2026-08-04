@@ -47,6 +47,14 @@ function isAllowedImageSrc(src: string): boolean {
   return src.startsWith('/') || src.startsWith(STORAGE_PUBLIC_PREFIX);
 }
 
+// SS-636 2c. Shared by the takeaway-tile branch and by the FAQ grouping
+// loop, which must be able to recognise one WITHOUT rendering it -- see
+// the break in that loop for why a single definition matters here.
+function isTakeawayBlock(block: string): boolean {
+  const lines = block.split('\n');
+  return lines.length > 1 && /^>\s*Eyebrow:/i.test(lines[0].trimStart());
+}
+
 function renderInline(text: string): ReactNode[] {
   // The image alternative must precede the link alternative: ![alt](src)
   // contains [alt](src), so without it the link pattern consumes that span
@@ -330,7 +338,7 @@ export function renderSimpleMarkdown(
     // that makes three mist-family blocks in one article -- list tile,
     // CTA panel, takeaway. The eyebrow is what separates them, and it
     // only works because no other tile has one.
-    if (lines.length > 1 && /^>\s*Eyebrow:/i.test(lines[0].trimStart())) {
+    if (isTakeawayBlock(block)) {
       const inner = lines.map((l) => l.trimStart().replace(/^>\s?/, ''));
       const eyebrow = inner[0].replace(/^Eyebrow:\s*/i, '');
       const body = inner.slice(1).filter((l) => l.trim() !== '');
@@ -448,7 +456,20 @@ export function renderSimpleMarkdown(
       out.push(renderBlock(block, i));
       const faqItems: { q: string; id: string; answers: string[] }[] = [];
       let j = i + 1;
-      while (j < blocks.length && !blocks[j].startsWith('## ') && !blocks[j].startsWith('# ')) {
+      // A takeaway tile ENDS the FAQ, it is never an answer. Without this
+      // the collector below swallows it -- anything that is not a "### "
+      // question gets appended to the previous question's answers -- and
+      // the tile renders as plain prose inside the last FAQ item. Caught
+      // in production on blog-21, where Racquel's closing "Start here"
+      // tile sits after the FAQ and before the consultation CTA: its copy
+      // was on the page, its tile was not, so a text-only check would
+      // have passed it.
+      while (
+        j < blocks.length &&
+        !blocks[j].startsWith('## ') &&
+        !blocks[j].startsWith('# ') &&
+        !isTakeawayBlock(blocks[j])
+      ) {
         if (blocks[j].startsWith('### ')) {
           const q = blocks[j].slice(4);
           faqItems.push({ q, id: headingId(q), answers: [] });
