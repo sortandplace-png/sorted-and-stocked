@@ -1,3 +1,16 @@
+// SUPERSEDED (R21, 4 Aug) -- DO NOT AUDIT, DO NOT EDIT, DO NOT IMPORT.
+//
+// This component is imported NOWHERE and has never been imported by any
+// commit on any branch. It is not what renders at /contact (that is
+// components/marketing/ContactPageForm.tsx) and it is not what renders
+// the six-checkbox form on the homepage (that is
+// components/ConsultationForm.tsx).
+//
+// It cost a full cycle on SS-633: an audit read THIS file, found a
+// rounded-full submit and grey uppercase eyebrow labels, and reported
+// them as live defects. They are real in this file and absent from both
+// files that actually render. Kept rather than deleted per R21, with
+// this header so the next reader stops at the first line.
 // components/marketing/ContactForm.tsx
 // Contact form for /contact. No backend yet, as specified: submitting opens
 // the visitor's mail client with the contents pre-filled.

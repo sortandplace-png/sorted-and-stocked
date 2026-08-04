@@ -26,6 +26,13 @@ const SERVICE_OPTIONS = [
 
 export default function ConsultationForm() {
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  // Step 6 (4 Aug): phone goes optional when EARLY ACCESS is the only
+  // selection. This must match the API's rule exactly -- a `required`
+  // attribute here would block the submit in the browser before the
+  // server ever applied its own, and the person would just see a field
+  // they cannot satisfy.
+  const [selected, setSelected] = useState<string[]>([]);
+  const earlyAccessOnly = selected.length > 0 && selected.every((s) => s === EARLY_ACCESS_OPTION);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -60,8 +67,8 @@ export default function ConsultationForm() {
       <input
         type="tel"
         name="phone"
-        placeholder="Phone Number"
-        required
+        placeholder={earlyAccessOnly ? 'Phone Number (optional)' : 'Phone Number'}
+        required={!earlyAccessOnly}
         className="px-4 py-3 border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 bg-card text-sm text-denim"
       />
       <input
@@ -94,6 +101,12 @@ export default function ConsultationForm() {
                 type="checkbox"
                 name="serviceInterest"
                 value={option}
+                checked={selected.includes(option)}
+                onChange={(e) =>
+                  setSelected((prev) =>
+                    e.target.checked ? [...prev, option] : prev.filter((o) => o !== option)
+                  )
+                }
                 className="w-4 h-4 rounded border-cardBorder text-brass focus:ring-brass/40"
               />
               {option}
