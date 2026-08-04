@@ -10,6 +10,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { isOperatorConsole } from '@/lib/module-flags';
 import RegisterViewerClient, { type WorkItemRow } from '@/components/RegisterViewerClient';
+import { renderSimpleMarkdown } from '@/lib/simple-markdown';
 
 export const metadata = {
   title: 'Register — Sorted & Stocked',
@@ -49,6 +50,20 @@ export default async function RegisterPage({ params }: { params: Promise<{ id: s
       'id, title, detail, status, evidence, owner, sent_to_code_at, code_reported_at, verified_at, verified_how, screenshot_ref, superseded_by, created_at, updated_at'
     );
 
+  // Drafts section (Racquel's ruling, 3 Aug late): the unpublished posts
+  // had no readable surface anywhere -- she was asked to choose numbering
+  // and publish dates for writing she could not read. The register is
+  // already the manager-gated list-with-detail surface, so drafts live
+  // under it rather than on a new page. Read-only on purpose: no editing,
+  // no publish controls -- publishing stays a deliberate act elsewhere.
+  // Reads through the caller's session; migration 180's drafts-only
+  // SELECT policy (owner/manager members) is what actually grants this.
+  const { data: drafts } = await supabase
+    .from('blog_posts')
+    .select('slug, title, body_markdown')
+    .is('published_at', null)
+    .order('slug');
+
   // SS-457 P0 lesson: a permission failure here once rendered as "0 rows",
   // which reads like an empty register -- a lie. A read error must LOOK
   // like an error.
@@ -64,5 +79,36 @@ export default async function RegisterPage({ params }: { params: Promise<{ id: s
     );
   }
 
-  return <RegisterViewerClient rows={(items ?? []) as WorkItemRow[]} />;
+  return (
+    <>
+      <RegisterViewerClient rows={(items ?? []) as WorkItemRow[]} />
+
+      {(drafts ?? []).length > 0 && (
+        <div className="max-w-5xl mx-auto px-4 md:px-6 pb-10">
+          <h2 className="font-display text-2xl text-denim mb-1">Drafts</h2>
+          <p className="text-[13px] text-denim/70 mb-4">
+            {drafts!.length} unpublished posts, read-only. Publishing stays a deliberate act elsewhere.
+          </p>
+          <div className="space-y-2">
+            {drafts!.map((d) => {
+              const words = (d.body_markdown ?? '').trim().split(/\s+/).filter(Boolean).length;
+              return (
+                <details key={d.slug} className="bg-card rounded-xl2 border border-cardBorder shadow-card overflow-hidden">
+                  <summary className="cursor-pointer px-4 py-3 list-none [&::-webkit-details-marker]:hidden">
+                    <span className="text-[14px] font-medium text-denim">{d.title}</span>
+                    <span className="block text-[11px] text-denim/60 tabular-nums mt-0.5">
+                      {d.slug} · {words.toLocaleString()} words
+                    </span>
+                  </summary>
+                  <div className="border-t border-cardBorder/60 bg-mist/40 px-5 py-4">
+                    {renderSimpleMarkdown(d.body_markdown ?? '')}
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </>
+  );
 }

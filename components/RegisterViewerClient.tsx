@@ -281,10 +281,15 @@ export default function RegisterViewerClient({ rows }: { rows: WorkItemRow[] }) 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[13px]">
             <thead>
+              {/* Column names per Racquel (3 Aug late), grounded in SS-602:
+                  evidence and status are INDEPENDENT axes -- a green dot
+                  beside a red pill is a proven finding whose work is not
+                  done, not a contradiction. "Finding" = was it proven;
+                  "Work" = is it finished. Data unchanged, labels only. */}
               <tr className="bg-denim text-white text-[10px] font-semibold tracking-[0.14em] uppercase">
                 <th className="py-[11px] pl-5 pr-3">ID</th>
-                <th className="py-[11px] px-3">Status</th>
-                <th className="py-[11px] px-3">Ev.</th>
+                <th className="py-[11px] px-3">Work</th>
+                <th className="py-[11px] px-3">Finding</th>
                 <th className="py-[11px] px-3">Owner</th>
                 <th className="py-[11px] px-3 pr-5 w-full">Title</th>
               </tr>

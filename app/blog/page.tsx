@@ -46,11 +46,11 @@ export default async function BlogIndexPage() {
             Sort + Place; the app already has waitlist callouts inside the
             articles. Wordmark is "Sort + Place" with the plus -- correct
             for text; the ampersand form is the logo lockup only (SS-582).
-            Measure: max-w-3xl (Racquel, Option A, 3 Aug) so the subtitle
-            ends with the card grid's band. Independent of the 34rem
-            article reading measure in lib/simple-markdown -- do not
-            reconcile the two, that system stays untouched. */}
-        <p className="text-sm text-dusk mb-8 max-w-3xl">
+            Width rule (Racquel, 3 Aug late): the header inherits the same
+            container as the card grid -- no independent cap. Option A's
+            max-w-3xl is superseded; it landed ~300px short of the grid
+            edge, which is why this is inheritance, not another number. */}
+        <p className="text-sm text-dusk mb-8">
           Notes from running real households. Kitchens, pantries, staff, Yom Tov, and the systems that hold when
           nobody is watching. From the Sort + Place team.
         </p>
