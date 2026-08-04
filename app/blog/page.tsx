@@ -10,7 +10,6 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
-import SubscribeForm from '@/components/blog/SubscribeForm';
 import { SITE_URL, CANONICAL_ORIGIN } from '@/lib/site-url';
 
 export const metadata = {
@@ -56,10 +55,11 @@ export default async function BlogIndexPage() {
           nobody is watching. From the Sort + Place team.
         </p>
 
-        {/* SS-630: opt-in, never a gate -- the blog stays open. */}
-        <div className="mb-8 max-w-xl">
-          <SubscribeForm source="blog" sourceDetail="blog-index" />
-        </div>
+        {/* SS-639: the sign-up panel is GONE from here (Racquel's ruling).
+            It sat above every post card, so the first thing a reader met
+            was a request for their email before they had been given
+            anything. It now lives at the foot of each article, after the
+            reader has actually had something -- see app/blog/[slug]. */}
 
         {(!posts || posts.length === 0) && <p className="text-sm text-dusk">No posts yet.</p>}
 

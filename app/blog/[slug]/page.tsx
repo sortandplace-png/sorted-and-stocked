@@ -13,6 +13,7 @@ import { renderSimpleMarkdown } from '@/lib/simple-markdown';
 import { extractRelatedReading } from '@/lib/related-reading';
 import RelatedReadingCards, { type RelatedCard } from '@/components/blog/RelatedReadingCards';
 import PinterestSaveButton from '@/components/blog/PinterestSaveButton';
+import SubscribeForm from '@/components/blog/SubscribeForm';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
 import { SITE_URL, CANONICAL_ORIGIN } from '@/lib/site-url';
@@ -111,10 +112,15 @@ export default async function BlogPostPage({
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(post.faq_jsonld) }} />
       )}
       <MarketingHeader />
-      {/* Width rule (Racquel, 3 Aug late): every text container inherits
-          the card width -- no independent measure anywhere. See PROSE_W
-          in lib/simple-markdown.tsx for the rule and its history. */}
-      <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-10">
+      {/* SS-636 2b: sized TO the magazine layout, not rounded to a Tailwind
+          step. 34rem reading column + 2rem gutter + 15rem margin = 51rem of
+          inner width; add the card's p-8 (4rem) and the main's px-4 (2rem)
+          and the container is 57rem. max-w-5xl was tried first and left
+          142px of slack between the column and the margin, which read as
+          the margin being detached from the text rather than beside it.
+          The READING MEASURE is what is capped here; the container is
+          WIDER than the max-w-4xl it replaced, not narrower. */}
+      <main className="flex-1 w-full max-w-[57rem] mx-auto px-4 py-10">
         <Link href="/blog" className="text-sm text-dusk hover:text-denim underline underline-offset-2 mb-6 inline-block">
           ← Blog
         </Link>
@@ -132,9 +138,10 @@ export default async function BlogPostPage({
             </div>
           )}
           <div className="p-6 sm:p-8">
-            {/* Width rule (Racquel, 3 Aug late): text fits the page --
-                date + title share the full card width, same edge as the
-                prose and figures below. The 34rem measure is superseded. */}
+            {/* Title and date stay FULL CARD WIDTH, not on the reading
+                measure. They are the masthead of the page, not part of the
+                reading column, and a 32px h1 wrapping early inside 34rem
+                would read as a cramped column heading rather than a title. */}
             <div className="w-full">
               <p className="text-xs text-dusk mb-2">
                 {new Date(post.published_at!).toLocaleDateString('en-US', {
@@ -166,6 +173,17 @@ export default async function BlogPostPage({
                 </a>
               </div>
             )}
+
+            {/* SS-639, and the ORDER is the ruling: article ends, then
+                Related Reading, then the consultation button, then this.
+                One ask per article -- Book Your Consultation -- with the
+                email line quiet underneath it. Last on the page and the
+                smallest thing on it, deliberately: a reader who has read
+                to here has already been given something, which is the
+                whole reason it is not on the index any more.
+                sourceDetail carries the slug so a sign-up can be
+                attributed to the article that earned it. */}
+            <SubscribeForm variant="inline" source="blog-article" sourceDetail={post.slug} />
           </div>
         </article>
       </main>
