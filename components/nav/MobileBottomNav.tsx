@@ -48,7 +48,17 @@ const STAFF_LINKS: {
   { segment: 'console', labelKey: 'console', managerOnly: true, operatorOnly: true },
   // Racquel's expected sheet order on Lax: My Day, Operator Console,
   // Register, Staff Handbook. Owner-only -- staff must not see it exists.
-  { segment: 'register', labelKey: 'register', ownerOnly: true, operatorOnly: true },
+  // SS-616 (Racquel, 4 Aug: "make the register open for sortandplace
+  // manager on lax"): manager+ rather than owner-only, and scoped by
+  // operatorOnly to the operator-console property -- NOT to the manager
+  // role globally. That distinction is load-bearing: managers hold seats
+  // on Main, Country, Low and Henderson, and demo@sortedandstocked.com
+  // (the Apple App Review login) is a manager on QA Demo. Lax is the only
+  // property carrying operator_console, verified against feature_flags,
+  // so this opens the register to Lax managers and nobody else. Not done
+  // by promoting the account to owner: SS-609 settled that
+  // sortandplace@gmail.com is manager everywhere and owner of nothing.
+  { segment: 'register', labelKey: 'register', managerOnly: true, operatorOnly: true },
   // Hours and Training Videos removed here too -- these two lists mirror
   // each other, and a dropdown that differs between desktop and phone is
   // worse than either version alone. Both ROUTES are untouched (R21); see

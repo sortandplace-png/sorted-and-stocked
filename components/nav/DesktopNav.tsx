@@ -105,7 +105,17 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // SS-457: the live register viewer. Owner-only since the route's
       // 2 Aug gate tightening -- a managerOnly entry here would be a
       // dead click into a redirect.
-      { segment: 'register', labelKey: 'register', ownerOnly: true, operatorOnly: true },
+      // SS-616 (Racquel, 4 Aug: "make the register open for sortandplace
+      // manager on lax"): manager+ rather than owner-only, and scoped by
+      // operatorOnly to the operator-console property -- NOT to the manager
+      // role globally. That distinction is load-bearing: managers hold seats
+      // on Main, Country, Low and Henderson, and demo@sortedandstocked.com
+      // (the Apple App Review login) is a manager on QA Demo. Lax is the only
+      // property carrying operator_console, verified against feature_flags,
+      // so this opens the register to Lax managers and nobody else. Not done
+      // by promoting the account to owner: SS-609 settled that
+      // sortandplace@gmail.com is manager everywhere and owner of nothing.
+      { segment: 'register', labelKey: 'register', managerOnly: true, operatorOnly: true },
       // Hours removed from the dropdown: it belongs inside My Day, not as
       // its own destination. The /staff/hours ROUTE is untouched and still
       // enforces its own owner/manager gate (R21) -- it is simply no longer
