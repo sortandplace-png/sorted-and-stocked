@@ -22,7 +22,7 @@ export default function RequestAccessForm() {
   if (status === 'sent') {
     return (
       <p className="font-bold text-denim text-sm py-3">
-        Thank you — we've received your request and will be in touch soon.
+        Thank you. We've received your request and will be in touch soon.
       </p>
     );
   }
@@ -57,7 +57,7 @@ export default function RequestAccessForm() {
         {status === 'sending' ? 'Sending…' : 'Request Early Access'}
       </button>
       {status === 'error' && (
-        <p className="text-rust text-xs">Something went wrong sending your request — please try again.</p>
+        <p className="text-rust text-xs">Something went wrong sending your request. Please try again.</p>
       )}
     </form>
   );
