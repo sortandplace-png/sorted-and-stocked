@@ -233,20 +233,33 @@ export function renderSimpleMarkdown(
     seen.set(base, n + 1);
     return n === 0 ? base : `${base}-${n}`;
   }
+  // SS-636 A (typography rhythm). The articles read flat because every
+  // block carried the same weight. isLead marks the FIRST paragraph of an
+  // article so it can open at a larger size, the way an editorial standfirst
+  // does. Tracked by the caller rather than by index, because the first
+  // block is often a heading or a figure, not the opening paragraph.
+  let leadUsed = false;
   function renderBlock(block: string, i: number | string): ReactNode {
     if (block.trim() === '---') {
       return <hr key={i} className={`border-cardBorder my-6 ${PROSE_W}`} />;
     }
     if (block.startsWith('### ')) {
       return (
-        <h3 key={i} id={headingId(block.slice(4))} className={`scroll-mt-24 font-display text-lg font-semibold text-denim mt-5 mb-2 ${PROSE_W}`}>
+        // Subheadings get weight and air but NO brass rule -- the rule
+        // marks major sections, and one on every h3 would make the page
+        // read as stripes rather than as sections.
+        <h3 key={i} id={headingId(block.slice(4))} className={`scroll-mt-24 font-display text-xl font-semibold text-denim mt-8 mb-2 ${PROSE_W}`}>
           {renderInline(block.slice(4))}
         </h3>
       );
     }
     if (block.startsWith('## ')) {
       return (
-        <h2 key={i} id={headingId(block.slice(3))} className={`scroll-mt-24 font-display text-xl font-semibold text-denim mt-6 mb-2 ${PROSE_W}`}>
+        // SS-636 A: real weight, and a brass hairline ABOVE each section
+        // heading. The rule is the section break -- it does the work the
+        // old barely-heavier heading could not, without touching the
+        // measure (SS-610: text widens to match content, never shrinks).
+        <h2 key={i} id={headingId(block.slice(3))} className={`scroll-mt-24 font-display text-2xl font-bold text-denim border-t border-brass/50 pt-6 mt-12 mb-3 ${PROSE_W}`}>
           {renderInline(block.slice(3))}
         </h2>
       );
@@ -292,8 +305,20 @@ export function renderSimpleMarkdown(
       // adjacency for article-body figures.
       return <div key={i} className="mt-4 mb-4">{renderInline(block.trim())}</div>;
     }
+    // SS-636 A: the opening paragraph sets the article's voice, so it
+    // opens larger and looser than body copy. Every later paragraph keeps
+    // the body size -- a whole article at lead size is not a lead.
+    const isLead = !leadUsed;
+    leadUsed = true;
     return (
-      <p key={i} className={`text-sm text-denim leading-relaxed mb-4 ${PROSE_W}`}>
+      <p
+        key={i}
+        className={
+          isLead
+            ? `text-[17px] text-denim leading-[1.7] mb-6 ${PROSE_W}`
+            : `text-sm text-denim leading-relaxed mb-4 ${PROSE_W}`
+        }
+      >
         {renderInline(block)}
       </p>
     );
