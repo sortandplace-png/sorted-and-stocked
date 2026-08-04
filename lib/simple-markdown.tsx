@@ -239,7 +239,19 @@ export function renderSimpleMarkdown(
   // does. Tracked by the caller rather than by index, because the first
   // block is often a heading or a figure, not the opening paragraph.
   let leadUsed = false;
-  function renderBlock(block: string, i: number | string): ReactNode {
+  // SS-636 2c pull quotes are AUTHORED (`>> `), not derived. A derived
+  // version was built first and measured against all 11 live articles:
+  // lift the opening sentence of every third section into the display
+  // face. It is superseded, and Racquel's own note is the reason -- "five
+  // pull quotes in an 8,500 character article is the ceiling, not a
+  // target... pull the wrong one and it reads worse than plain prose."
+  // Which sentence carries the argument is a judgement about meaning, and
+  // position in the document is not a proxy for it. The measured run
+  // showed that directly: of six sentences the rule chose, two were
+  // multi-sentence runs and none was the line she picked as the article's
+  // whole argument ("one person is the database"), which sits mid
+  // paragraph where no positional rule would ever reach it.
+  function renderBlock(block: string, i: number | string, afterHeading = false): ReactNode {
     if (block.trim() === '---') {
       return <hr key={i} className={`border-cardBorder my-6 ${PROSE_W}`} />;
     }
@@ -248,18 +260,27 @@ export function renderSimpleMarkdown(
         // Subheadings get weight and air but NO brass rule -- the rule
         // marks major sections, and one on every h3 would make the page
         // read as stripes rather than as sections.
-        <h3 key={i} id={headingId(block.slice(4))} className={`scroll-mt-24 font-display text-xl font-semibold text-denim mt-8 mb-2 ${PROSE_W}`}>
+        <h3 key={i} id={headingId(block.slice(4))} className={`scroll-mt-24 font-display text-xl font-semibold text-denim mt-6 mb-1.5 ${PROSE_W}`}>
           {renderInline(block.slice(4))}
         </h3>
       );
     }
     if (block.startsWith('## ')) {
       return (
+        // SS-636 2a: h2 32px against h3 20px. The acceptance test is
+        // Racquel's: cover the brass rule, and you must still be able to
+        // tell the section heading from an item inside it BY SIZE ALONE.
+        // 24 vs 20 failed that; 32 vs 20 passes it.
+        //
+        // And the rhythm must GROUP: the gap above a section (mt-16 plus
+        // pt-7 = 64+28px) is now much larger than the gap above an item
+        // inside it (mt-6 = 24px). An even ladder reads as a list of
+        // equals; this reads as sections containing items.
         // SS-636 A: real weight, and a brass hairline ABOVE each section
         // heading. The rule is the section break -- it does the work the
         // old barely-heavier heading could not, without touching the
         // measure (SS-610: text widens to match content, never shrinks).
-        <h2 key={i} id={headingId(block.slice(3))} className={`scroll-mt-24 font-display text-2xl font-bold text-denim border-t border-brass/50 pt-6 mt-12 mb-3 ${PROSE_W}`}>
+        <h2 key={i} id={headingId(block.slice(3))} className={`scroll-mt-24 font-display text-[32px] leading-tight font-bold text-denim border-t border-brass/50 pt-7 mt-16 mb-4 ${PROSE_W}`}>
           {renderInline(block.slice(3))}
         </h2>
       );
@@ -272,6 +293,59 @@ export function renderSimpleMarkdown(
       );
     }
     const lines = block.split('\n');
+    // SS-636 2c, PULL QUOTE. `>> ` -- checked before the single-`>` panel
+    // below, because ">>" also starts with ">" and the panel would eat it.
+    // Racquel's spec, verbatim: "renders large in Cormorant, full measure,
+    // brass rule above". Full measure means PROSE_W like everything else;
+    // a pull quote indented into its own column would be the narrowed
+    // measure SS-610 removed, arriving by the back door.
+    // NOT a card. The two mist tiles in an article are containers for
+    // things (a list, a takeaway); a pull quote is the prose itself,
+    // louder, so it sits on the page with only the rule above it.
+    if (lines.every((l) => l.trimStart().startsWith('>>'))) {
+      const inner = lines.map((l) => l.trimStart().replace(/^>>\s?/, '')).filter((l) => l.trim() !== '');
+      // The rule is a BREAK IN PROSE, so it is only drawn when there is
+      // prose to break. Directly under a heading there is none, and the
+      // rule then reads as a second section divider that strands the
+      // heading above it -- visible in the blog-21 "Search that works on
+      // a phone" subsection, where the pull quote replaced the whole of
+      // that subsection's body. Same type, same spacing, no rule.
+      return (
+        <div key={i} className={`${afterHeading ? 'pt-1 mt-2 mb-7' : 'border-t border-brass/50 pt-5 mt-8 mb-7'} ${PROSE_W}`}>
+          {inner.map((l, j) => (
+            <p key={j} className="font-display text-[26px] leading-[1.35] text-denim">
+              {renderInline(l)}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    // SS-636 2c, TAKEAWAY TILE. A `>` block whose first line is
+    // "Eyebrow: ..." -- which is exactly how Racquel drafted them, so the
+    // convention is the shape the copy already arrives in rather than a
+    // new syntax an author has to remember.
+    //
+    // Mist, on her ruling ("renders as a mist tile closing the section,
+    // eyebrow in brass, one sentence in navy"). Worth naming the cost:
+    // that makes three mist-family blocks in one article -- list tile,
+    // CTA panel, takeaway. The eyebrow is what separates them, and it
+    // only works because no other tile has one.
+    if (lines.length > 1 && /^>\s*Eyebrow:/i.test(lines[0].trimStart())) {
+      const inner = lines.map((l) => l.trimStart().replace(/^>\s?/, ''));
+      const eyebrow = inner[0].replace(/^Eyebrow:\s*/i, '');
+      const body = inner.slice(1).filter((l) => l.trim() !== '');
+      return (
+        <div key={i} className={`relative bg-mist border border-cardBorder rounded-xl2 shadow-card px-5 py-4 my-6 ${PROSE_W}`}>
+          <Pin size="sm" />
+          <p className="text-[11px] uppercase tracking-[0.14em] text-brass font-medium mb-1">{eyebrow}</p>
+          {body.map((l, j) => (
+            <p key={j} className="text-sm text-denim leading-relaxed">
+              {renderInline(l)}
+            </p>
+          ))}
+        </div>
+      );
+    }
     // `> ` blockquote: the package's CTA panels. Rendered as a Concept B
     // callout card, inner lines as stacked paragraphs.
     if (lines.every((l) => l.trimStart().startsWith('>'))) {
@@ -290,7 +364,14 @@ export function renderSimpleMarkdown(
     }
     if (lines.length > 0 && lines.every(isBullet)) {
       return (
-        <ul key={i} className={`list-disc pl-5 mb-4 space-y-1 ${PROSE_W}`}>
+        // SS-636 B: every list becomes the SAME mist tile the app already
+        // uses, so the blog stops looking like a different product.
+        // It is also the reading-comfort fix: text inside a tile is
+        // narrower BY CONSTRUCTION (the padding), which gives a
+        // comfortable measure as a side effect of a structural change --
+        // WITHOUT narrowing any container. SS-610 stands untouched.
+        <ul key={i} className={`relative bg-mist border border-cardBorder rounded-xl2 shadow-card list-disc pl-9 pr-6 py-5 my-5 space-y-1.5 ${PROSE_W}`}>
+          <Pin size="sm" />
           {lines.map((l, j) => (
             <li key={j} className="text-sm text-denim leading-relaxed">
               {renderInline(l.trimStart().slice(2))}
@@ -448,7 +529,7 @@ export function renderSimpleMarkdown(
       }
       continue;
     }
-    out.push(renderBlock(block, i));
+    out.push(renderBlock(block, i, i > 0 && /^#{1,3} /.test(blocks[i - 1])));
   }
   return out;
 }
