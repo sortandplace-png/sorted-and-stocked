@@ -32,10 +32,24 @@ export default async function RegisterPage({ params }: { params: Promise<{ id: s
     .eq('user_id', user.id)
     .maybeSingle();
 
-  // Tightened to OWNER exactly (2 Aug directive: MIN_ROLE owner) -- the
-  // register is the operator's own working record; a manager tier that
-  // can read every finding about every house was wider than ruled.
-  if (!membership || membership.role !== 'owner') {
+  // SS-616 (Racquel, 4 Aug): manager+ on the OPERATOR-CONSOLE property.
+  // This was owner-exactly per the 2 Aug directive, which hid the page
+  // from sortandplace@gmail.com -- a manager on Lax, and the account she
+  // actually works from. Widened by ROLE but not by PROPERTY: the
+  // isOperatorConsole check immediately below is what keeps this off
+  // client houses, and it is the reason this is safe. Managers hold
+  // seats on Main, Country, Low and Henderson, and
+  // demo@sortedandstocked.com (Apple App Review) is a manager on QA
+  // Demo -- none of those properties carry operator_console, verified
+  // against feature_flags, so none of them reach this page.
+  //
+  // BOTH LAYERS, deliberately: the nav filter alone would have shown a
+  // link that 403s. The third layer needed no change -- RLS policy
+  // work_items_select_operator (migration 156) already grants owner OR
+  // manager on an operator-console property, so the rows are readable.
+  // Had it been owner-only this change would have rendered an empty
+  // register, which is worse than a redirect.
+  if (!membership || (membership.role !== 'owner' && membership.role !== 'manager')) {
     redirect(`/properties/${id}/inventory`);
   }
   const flags = (membership.properties as unknown as { feature_flags: Record<string, unknown> | null } | null)

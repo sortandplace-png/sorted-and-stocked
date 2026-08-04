@@ -1,6 +1,7 @@
 // app/properties/[id]/sitemap/page.tsx
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { isOperatorConsole } from '@/lib/module-flags';
 import Pin from '@/components/PinAccent';
 import {
   LayoutDashboard,
@@ -155,8 +156,8 @@ function buildSections(propertyId: string): Section[] {
         // nav entry exists (Staff sheet, owner + operator only) and was
         // never removed, but this page is the complete route index and a
         // page absent from it is one nav restructure away from being
-        // unreachable. Owner-only via OWNER_ONLY_HREFS below, matching the
-        // route's own gate -- a signpost for the one role that can open it.
+        // unreachable. Gated via OPERATOR_ONLY_HREFS below, matching the
+        // route's own gate exactly (manager+ on the operator property).
         { href: p('/register'), label: 'Register', subtitle: 'Work items & blog drafts, owner only', icon: ClipboardList },
       ],
     },
@@ -194,11 +195,10 @@ const MANAGER_ONLY_HREFS = [
   '/settings',
 ];
 
-// Owner-only destinations, stricter than MANAGER_ONLY_HREFS. Their routes
-// redirect managers, so listing them wider would be a dead click.
-// /tools/backup is already commented as owner-only where it is listed;
-// this list is what the filter below actually enforces.
-const OWNER_ONLY_HREFS = ['/register'];
+// Operator-console destinations: manager+ AND the property must carry
+// operator_console. Their routes enforce the same pair, so listing them
+// wider would be a dead click. Lax is currently the only such property.
+const OPERATOR_ONLY_HREFS = ['/register'];
 
 export default async function SitemapPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: propertyId } = await params;
@@ -209,13 +209,19 @@ export default async function SitemapPage({ params }: { params: Promise<{ id: st
   const { data: membership } = user
     ? await supabase
         .from('property_members')
-        .select('role')
+        .select('role, properties(feature_flags)')
         .eq('property_id', propertyId)
         .eq('user_id', user.id)
         .maybeSingle()
     : { data: null };
   const canManage = membership?.role === 'owner' || membership?.role === 'manager';
-  const isOwner = membership?.role === 'owner';
+  // SS-616: the register moved from owner-only to manager+ ON THE
+  // OPERATOR-CONSOLE PROPERTY. This index has to match the route exactly,
+  // or the row is hidden from the very account the change was made for
+  // (a manager on Lax) while still being listed to nobody who can use it.
+  const operatorFlags = (membership?.properties as unknown as { feature_flags: Record<string, unknown> | null } | null)
+    ?.feature_flags;
+  const canSeeRegister = canManage && isOperatorConsole(operatorFlags);
 
   const sections = buildSections(propertyId)
     .map((section) => ({
@@ -223,10 +229,11 @@ export default async function SitemapPage({ params }: { params: Promise<{ id: st
       entries: section.entries.filter(
         (e) =>
           (canManage || !MANAGER_ONLY_HREFS.some((suffix) => e.href.endsWith(suffix))) &&
-          // SS-616: owner tier, stricter than manager -- the register route
-          // redirects anyone who is not the owner, so offering it to a
-          // manager would be the dead-click bug SS-025 fixed for Suppliers.
-          (isOwner || !OWNER_ONLY_HREFS.some((suffix) => e.href.endsWith(suffix)))
+          // SS-616: operator-console tier. The register route redirects
+          // anyone who is not manager+ on the operator property, so
+          // listing it wider would be the dead-click bug SS-025 fixed
+          // for Suppliers.
+          (canSeeRegister || !OPERATOR_ONLY_HREFS.some((suffix) => e.href.endsWith(suffix)))
       ),
     }))
     .filter((section) => section.entries.length > 0);
