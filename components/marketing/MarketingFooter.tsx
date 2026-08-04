@@ -81,12 +81,24 @@ export default function MarketingFooter({
                   confirmed from the screen), and this line must match
                   VERBATIM for the reviewer. Do not "fix" and back to &.
                   The dedupe ruling keeps this line homepage-only. */}
-              {/* SS-652: the app keeps its AMPERSAND everywhere in text.
-                  "Sorted and Stocked" was the only instance in the repo
-                  and the database is clean, so this string was the whole
-                  defect. Not the same rule as the practice wordmark,
-                  which is "Sort + Place" with the plus (SS-582). */}
-              <span>Sorted &amp; Stocked is the household app by Sort + Place</span>
+              {/* SS-652 AND THE ANCHOR ABOVE COLLIDE. HELD, not resolved.
+                  SS-652 is right as a general rule -- the app keeps its
+                  ampersand everywhere in text -- and this was the only
+                  ampersand-less instance in the repo. But this specific
+                  string is the ONE place where that rule is deliberately
+                  broken, for a reason that has nothing to do with brand
+                  style: it has to match the OAuth consent screen verbatim
+                  or the Google reviewer sees a mismatch.
+                  I changed it to "&" and shipped it before reading the
+                  anchor comment six lines up. Reverted. The wordmark
+                  reading wrong on one homepage line is cosmetic; failing
+                  app verification is not, and the two are not comparable
+                  risks.
+                  If Racquel wants the ampersand here, the ORDER matters:
+                  change the app name on the Google OAuth consent screen
+                  first, let it re-verify, THEN change this string. Doing
+                  it in this order is what makes it safe. */}
+              <span>Sorted and Stocked is the household app by Sort + Place</span>
             </>
           ) : (
             <span className="whitespace-nowrap">© Sort + Place</span>
