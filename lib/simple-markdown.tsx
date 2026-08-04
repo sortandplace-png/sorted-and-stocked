@@ -248,18 +248,27 @@ export function renderSimpleMarkdown(
         // Subheadings get weight and air but NO brass rule -- the rule
         // marks major sections, and one on every h3 would make the page
         // read as stripes rather than as sections.
-        <h3 key={i} id={headingId(block.slice(4))} className={`scroll-mt-24 font-display text-xl font-semibold text-denim mt-8 mb-2 ${PROSE_W}`}>
+        <h3 key={i} id={headingId(block.slice(4))} className={`scroll-mt-24 font-display text-xl font-semibold text-denim mt-6 mb-1.5 ${PROSE_W}`}>
           {renderInline(block.slice(4))}
         </h3>
       );
     }
     if (block.startsWith('## ')) {
       return (
+        // SS-636 2a: h2 32px against h3 20px. The acceptance test is
+        // Racquel's: cover the brass rule, and you must still be able to
+        // tell the section heading from an item inside it BY SIZE ALONE.
+        // 24 vs 20 failed that; 32 vs 20 passes it.
+        //
+        // And the rhythm must GROUP: the gap above a section (mt-16 plus
+        // pt-7 = 64+28px) is now much larger than the gap above an item
+        // inside it (mt-6 = 24px). An even ladder reads as a list of
+        // equals; this reads as sections containing items.
         // SS-636 A: real weight, and a brass hairline ABOVE each section
         // heading. The rule is the section break -- it does the work the
         // old barely-heavier heading could not, without touching the
         // measure (SS-610: text widens to match content, never shrinks).
-        <h2 key={i} id={headingId(block.slice(3))} className={`scroll-mt-24 font-display text-2xl font-bold text-denim border-t border-brass/50 pt-6 mt-12 mb-3 ${PROSE_W}`}>
+        <h2 key={i} id={headingId(block.slice(3))} className={`scroll-mt-24 font-display text-[32px] leading-tight font-bold text-denim border-t border-brass/50 pt-7 mt-16 mb-4 ${PROSE_W}`}>
           {renderInline(block.slice(3))}
         </h2>
       );
@@ -290,7 +299,14 @@ export function renderSimpleMarkdown(
     }
     if (lines.length > 0 && lines.every(isBullet)) {
       return (
-        <ul key={i} className={`list-disc pl-5 mb-4 space-y-1 ${PROSE_W}`}>
+        // SS-636 B: every list becomes the SAME mist tile the app already
+        // uses, so the blog stops looking like a different product.
+        // It is also the reading-comfort fix: text inside a tile is
+        // narrower BY CONSTRUCTION (the padding), which gives a
+        // comfortable measure as a side effect of a structural change --
+        // WITHOUT narrowing any container. SS-610 stands untouched.
+        <ul key={i} className={`relative bg-mist border border-cardBorder rounded-xl2 shadow-card list-disc pl-9 pr-6 py-5 my-5 space-y-1.5 ${PROSE_W}`}>
+          <Pin size="sm" />
           {lines.map((l, j) => (
             <li key={j} className="text-sm text-denim leading-relaxed">
               {renderInline(l.trimStart().slice(2))}
