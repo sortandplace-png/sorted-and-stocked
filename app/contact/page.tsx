@@ -5,6 +5,7 @@ import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
 import LocalBusinessJsonLd from '@/components/marketing/LocalBusinessJsonLd';
 import ContactPageForm from '@/components/marketing/ContactPageForm';
+import Pin from '@/components/PinAccent';
 import { CANONICAL_ORIGIN } from '@/lib/site-url';
 
 export const metadata: Metadata = {
@@ -41,7 +42,16 @@ export default function ContactPage() {
           Tell us a bit about your household, and we&apos;ll be in touch to set up a conversation.
         </p>
 
-        <ContactPageForm />
+        {/* SS-633: the form had no card and therefore no pin dot, which
+            the design record requires on every card without exception.
+            Page stays linen, card is #FFFEFC on top of it, so the
+            hierarchy reads page -> card -> fields. The fields keep their
+            own cardBorder outline, so they stay legible against a card
+            of the same value. */}
+        <div className="relative bg-card border border-cardBorder rounded-xl3 shadow-card p-6">
+          <Pin />
+          <ContactPageForm />
+        </div>
 
         {/* SS-454/SS-434: email only -- the "Prefer to call?" line and its
             number are gone on the site-wide zero-numbers ruling. */}
