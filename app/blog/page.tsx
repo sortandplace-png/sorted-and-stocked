@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
+import SubscribeForm from '@/components/blog/SubscribeForm';
 import { SITE_URL, CANONICAL_ORIGIN } from '@/lib/site-url';
 
 export const metadata = {
@@ -54,6 +55,11 @@ export default async function BlogIndexPage() {
           Notes from running real households. Kitchens, pantries, staff, Yom Tov, and the systems that hold when
           nobody is watching. From the Sort + Place team.
         </p>
+
+        {/* SS-630: opt-in, never a gate -- the blog stays open. */}
+        <div className="mb-8 max-w-xl">
+          <SubscribeForm source="blog" sourceDetail="blog-index" />
+        </div>
 
         {(!posts || posts.length === 0) && <p className="text-sm text-dusk">No posts yet.</p>}
 

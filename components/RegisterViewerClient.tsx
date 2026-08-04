@@ -86,7 +86,22 @@ export default function RegisterViewerClient({ rows }: { rows: WorkItemRow[] }) 
   const honesty = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     const verifiedLive = rows.filter((r) => r.evidence === 'verified_live').length;
-    const lostPrompts = rows.filter((r) => r.sent_to_code_at && !r.code_reported_at).length;
+    // SS-629: this line used to compute ONE number and label it "lost
+    // prompts", which read as "fourteen things adrift this minute" while
+    // v_lost_prompts returned zero rows at the same moment. Both counts
+    // were right; they answered different questions. The view applies a
+    // status filter (what is adrift NOW); this banner omitted it (what
+    // Code has never acknowledged, EVER). Now both are computed with the
+    // view's exact predicate for the live figure, and labelled so the
+    // page and the view can never give two answers to one number again.
+    const adriftNow = rows.filter(
+      (r) =>
+        r.sent_to_code_at &&
+        !r.code_reported_at &&
+        !['resolved', 'superseded', 'parked'].includes(r.status)
+    ).length;
+    const neverAcknowledged = rows.filter((r) => r.sent_to_code_at && !r.code_reported_at).length;
+    const everSent = rows.filter((r) => r.sent_to_code_at).length;
     const touchedToday = rows.filter((r) => (r.updated_at ?? r.created_at).slice(0, 10) === today).length;
     const openByOwner = new Map<string, number>();
     for (const r of rows) {
@@ -97,7 +112,9 @@ export default function RegisterViewerClient({ rows }: { rows: WorkItemRow[] }) 
     return {
       verifiedLive,
       verifiedPct: rows.length ? Math.round((verifiedLive / rows.length) * 100) : 0,
-      lostPrompts,
+      adriftNow,
+      neverAcknowledged,
+      everSent,
       touchedToday,
       openByOwner: [...openByOwner.entries()].sort((a, b) => b[1] - a[1]),
     };
@@ -164,8 +181,15 @@ export default function RegisterViewerClient({ rows }: { rows: WorkItemRow[] }) 
           {honesty.verifiedPct}%)
         </span>
         <span>
-          <span className="font-semibold tabular-nums">{honesty.lostPrompts}</span> lost prompts
-          <span className="text-denim/60"> (sent to Code, never reported)</span>
+          <span className="font-semibold tabular-nums">{honesty.adriftNow}</span> adrift now
+          <span className="text-denim/60"> (sent to Code, no report, still open)</span>
+        </span>
+        <span className="text-denim/70">
+          <span className="font-semibold tabular-nums">{honesty.neverAcknowledged}</span> never acknowledged
+          <span className="text-denim/60">
+            {' '}
+            of {honesty.everSent} ever sent, all since closed
+          </span>
         </span>
         <span>
           <span className="font-semibold tabular-nums">{honesty.touchedToday}</span> touched today
