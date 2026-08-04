@@ -1,7 +1,7 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
-import { APP_HOSTNAME, MARKETING_HOSTNAMES } from '@/lib/site-url';
+import { APP_HOSTNAME } from '@/lib/site-url';
 import { Cormorant_Garamond, Nunito_Sans, Playfair_Display, Inter } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
@@ -97,18 +97,17 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // SS-587: on the production marketing hostnames the provider gets an
-  // empty bundle. Every public page was shipping the app's entire string
-  // table in its payload -- ~60 app strings per page, including internal
-  // product copy (bracha guidance, kashrut warnings, cross-house
-  // messages) readable in the public source. No marketing page or
-  // component calls useTranslations (verified before this change), so
-  // nothing renders differently; the payload just stops carrying the
-  // table. The app hostname, localhost and previews keep the full bundle
-  // -- localhost serves the app in dev, so stripping anything-not-app
-  // would have broken dev i18n.
-  const hostname = ((await headers()).get('host') ?? '').split(':')[0].toLowerCase();
-  const messages = MARKETING_HOSTNAMES.includes(hostname) ? {} : await getMessages();
+  // SS-587 REVERTED (SS-612, 3 Aug late): the host-conditional empty
+  // bundle broke the APP host in production -- the sign-in page and app
+  // shell rendered raw keys (auth.signIn.heading, nav.dashboard) in both
+  // languages, while the same check passed locally with a Host header.
+  // The root layout must NOT vary its RSC output by Host: the layout is
+  // shared across every route and host on one deployment, and a
+  // host-varying layout can be served across hosts by caches that key on
+  // pathname alone. If the marketing-payload optimization returns, it
+  // must be structural (a route-group layout for marketing pages), never
+  // a Host branch here. Until then: one bundle, every host, always words.
+  const messages = await getMessages();
 
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${playfair.variable} ${inter.variable}`}>
