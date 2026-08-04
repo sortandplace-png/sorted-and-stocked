@@ -18,7 +18,7 @@
 // on a phone fails for most readers.
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function SubscribeForm({
@@ -34,6 +34,27 @@ export default function SubscribeForm({
   blurb?: string;
 }) {
   const [email, setEmail] = useState('');
+  // SS-630 spam protection. The consultation form took two bot
+  // submissions on its first live day with nothing guarding it, and
+  // email_subscribers has the same open-insert shape -- so this form
+  // does not go out without these. A list full of bot addresses is
+  // worse than an empty one: it wrecks sending reputation, and then
+  // confirmation emails to real people stop arriving.
+  //
+  // Two checks that cost a real person nothing:
+  //  1. HONEYPOT -- a field no human sees. Bots fill every input they
+  //     find; a non-empty value here is a bot, and we answer with the
+  //     same success message rather than telling it what tripped.
+  //  2. TIME ON FORM -- a human cannot read the blurb, type an address
+  //     and submit in under MIN_SECONDS. Scripted posts are instant.
+  // Rate limiting per address and per IP is NOT here: it cannot be
+  // enforced in a browser, and the honest place for it is the database
+  // or an edge rule. Flagged on the row rather than faked here.
+  const [botField, setBotField] = useState('');
+  const mountedAt = useRef<number>(0);
+  useEffect(() => {
+    mountedAt.current = Date.now();
+  }, []);
   const [state, setState] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
@@ -41,6 +62,17 @@ export default function SubscribeForm({
     e.preventDefault();
     const value = email.trim().toLowerCase();
     if (!value) return;
+
+    const secondsOnForm = (Date.now() - mountedAt.current) / 1000;
+    const MIN_SECONDS = 3;
+    if (botField !== '' || secondsOnForm < MIN_SECONDS) {
+      // Deliberately indistinguishable from success: telling a bot which
+      // check caught it is telling whoever wrote it how to pass.
+      setState('done');
+      setMessage("Thanks. Check your email to confirm — nothing else is sent until you do.");
+      return;
+    }
+
     setState('sending');
 
     const supabase = createClient();
@@ -79,9 +111,24 @@ export default function SubscribeForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="bg-mist border border-brass/30 rounded-xl2 px-5 py-4">
+    <form onSubmit={onSubmit} className="relative bg-mist border border-brass/30 rounded-xl2 px-5 py-4">
       <p className="font-display text-[17px] text-denim">{heading}</p>
       <p className="text-[13px] text-dusk mt-0.5 mb-3">{blurb}</p>
+      {/* Honeypot. Hidden from people and from screen readers, left in
+          the tab order's dead zone; only a bot fills it. */}
+      <div aria-hidden="true" className="absolute left-[-9999px] w-px h-px overflow-hidden">
+        <label htmlFor="subscribe-company">Company</label>
+        <input
+          id="subscribe-company"
+          name="company"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={botField}
+          onChange={(e) => setBotField(e.target.value)}
+        />
+      </div>
+
       <div className="flex flex-col sm:flex-row gap-2">
         <label htmlFor="subscribe-email" className="sr-only">
           Email address
