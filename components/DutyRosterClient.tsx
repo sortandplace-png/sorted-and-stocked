@@ -905,18 +905,30 @@ export default function DutyRosterClient({
 
   // SS-436: assignees are house-scoped the same way -- a tile offers the
   // people and slots of the task's own property, never the union.
-  const assigneesForProperty = useCallback(
-    (pid: string) => [
-      ...members
-        .filter((m) => m.property_id === pid)
-        .map((m) => ({ id: `${MEMBER_PREFIX}${m.id}`, label: m.full_name ?? t('unnamedMember') })),
-      ...slots
+  // SS-672 sibling ticket, 5 Aug: SLOTS FIRST, and returned as two named
+  // groups rather than one flat list, so the control reads slot-first
+  // instead of burying four positions under a list of people.
+  //
+  // A slot is now the default target. It works with zero staff accounts,
+  // and whoever is later linked into the slot inherits every task on it
+  // through the assign_read policy that already resolves slot_id to a
+  // user -- a path that is live and has never been exercised. Person
+  // assignment stays reachable in its own group: the existing member_id
+  // rows are still valid and still editable, and nothing migrates.
+  const assignTargetsForProperty = useCallback(
+    (pid: string) => ({
+      // `slots` arrives ordered by sort_order from the query and filter
+      // preserves that order, so the four positions read 1, 2, 3, 4.
+      slots: slots
         .filter((s) => s.property_id === pid && s.active)
         .map((s) => ({
           id: `${SLOT_PREFIX}${s.id}`,
           label: locale === 'es' ? s.label_es || s.label_en : s.label_en,
         })),
-    ],
+      members: members
+        .filter((m) => m.property_id === pid)
+        .map((m) => ({ id: `${MEMBER_PREFIX}${m.id}`, label: m.full_name ?? t('unnamedMember') })),
+    }),
     [members, slots, locale, t]
   );
 
@@ -1087,9 +1099,92 @@ export default function DutyRosterClient({
     setAssignments((prev) => [...prev.filter((a) => a.task_id !== taskId), data as Assignment]);
   }
 
+  // BULK ASSIGN AT THE ROOM HEADER. This is the point of the ticket.
+  //
+  // 930 active master_tasks, 852 of them with no active assignment. At one
+  // select per tile that is 852 interactions, which is not a workflow, and
+  // no amount of list-view polish changes the arithmetic. Selecting a slot
+  // on a room header puts every task under that header on it.
+  //
+  // TWO REQUESTS, NOT N. One UPDATE closes out whatever those tasks
+  // currently carry, one INSERT opens the new rows as a single array. Both
+  // are constant in the number of tasks: assigning a 60 task room costs
+  // the same two round trips as assigning a 2 task room. The acceptance
+  // criterion is "one room header assign produces one write, not N", and N
+  // here is the row count inside those two statements, never the request
+  // count.
+  //
+  // Deliberately NOT an upsert: task_assignments has no unique key on
+  // task_id (a task can carry closed historical rows), so the close-then-
+  // open shape is what keeps history intact. task_assignments_one_target
+  // only constrains ACTIVE rows, so the closed ones stay legal.
+  const [bulkBusy, setBulkBusy] = useState<string | null>(null);
+
+  async function assignSection(sectionLabel: string, items: Task[], target: string) {
+    if (items.length === 0) return;
+
+    // Every section is single-house by construction (houseLabel is part of
+    // the grouping key), but the write is scoped to one property anyway:
+    // a slot belongs to exactly one property and the FK would reject a
+    // cross-house row on the last task in the list, after the others had
+    // already been written.
+    const pid = items[0].property_id;
+    const scoped = items.filter((x) => x.property_id === pid);
+    const taskIds = scoped.map((x) => x.id);
+
+    setBulkBusy(sectionLabel);
+    const today = new Date().toISOString().slice(0, 10);
+
+    const { error: closeError } = await supabase
+      .from('task_assignments')
+      .update({ active: false, effective_to: today })
+      .in('task_id', taskIds)
+      .eq('active', true);
+
+    if (closeError) {
+      setBulkBusy(null);
+      setLoadError(t('saveFailed'));
+      return;
+    }
+
+    // Empty selection is "clear this room": the old rows are closed above
+    // and nothing new opens.
+    if (!target) {
+      setAssignments((prev) => prev.filter((a) => !taskIds.includes(a.task_id)));
+      setBulkBusy(null);
+      return;
+    }
+
+    const isSlot = target.startsWith(SLOT_PREFIX);
+    const targetId = isSlot ? target.slice(SLOT_PREFIX.length) : target.slice(MEMBER_PREFIX.length);
+    const rows = taskIds.map((task_id) => ({
+      task_id,
+      member_id: isSlot ? null : targetId,
+      slot_id: isSlot ? targetId : null,
+    }));
+
+    const { data, error } = await supabase
+      .from('task_assignments')
+      .insert(rows)
+      .select('id, task_id, member_id, slot_id');
+
+    setBulkBusy(null);
+
+    if (error || !data) {
+      setLoadError(t('saveFailed'));
+      load(); // never leave the screen claiming a save that failed
+      return;
+    }
+
+    setAssignments((prev) => [
+      ...prev.filter((a) => !taskIds.includes(a.task_id)),
+      ...(data as Assignment[]),
+    ]);
+  }
+
   // (The flat cross-property assignee list was replaced by
-  // assigneesForProperty above -- SS-436 scopes every tile's options to the
-  // task's own house. R17 and the SS-429 B slot rules carry over unchanged.)
+  // assignTargetsForProperty above -- SS-436 scopes every tile's options to
+  // the task's own house. R17 and the SS-429 B slot rules carry over.)
 
   // SS-436: switching house resets the floor tab and room filter -- both
   // are per-house concepts, and a Main floor name filtering Low's tasks
@@ -1360,28 +1455,79 @@ export default function DutyRosterClient({
                         dot top-right (D-03). The whole strip is the toggle,
                         matching the Shopping List's tap-the-header pattern
                         rather than introducing a chevron (D-21). */}
-                    <button
-                      onClick={() => toggleSection(section.label)}
-                      aria-expanded={!sectionCollapsed}
-                      className="relative w-full flex items-center justify-between gap-3 bg-denim rounded-xl2 py-[11px] pl-5 pr-8 mb-[14px] text-left"
-                    >
-                      {/* Reopen defect 5: the house is its own eyebrow, the
-                          room its own line -- never one concatenated bar. */}
-                      <span className="min-w-0">
-                        {section.houseLabel && (
-                          <span className="block text-[9px] font-semibold tracking-[0.2em] uppercase text-white/60 truncate">
-                            {section.houseLabel}
+                    {/* The strip is no longer a single <button>: it now
+                        carries the bulk assign control, and a <select>
+                        inside a <button> is invalid HTML that browsers
+                        resolve by breaking one of the two. So the toggle is
+                        an inner button that owns the label and the count,
+                        and the select is its sibling. Tapping the strip
+                        still collapses the section, which is the Shopping
+                        List pattern D-21 asks for. */}
+                    <div className="relative w-full flex items-stretch gap-2 bg-denim rounded-xl2 pl-5 pr-8 mb-[14px]">
+                      <button
+                        onClick={() => toggleSection(section.label)}
+                        aria-expanded={!sectionCollapsed}
+                        className="flex-1 min-w-0 flex items-center justify-between gap-3 py-[11px] text-left"
+                      >
+                        {/* Reopen defect 5: the house is its own eyebrow, the
+                            room its own line -- never one concatenated bar. */}
+                        <span className="min-w-0">
+                          {section.houseLabel && (
+                            <span className="block text-[9px] font-semibold tracking-[0.2em] uppercase text-white/60 truncate">
+                              {section.houseLabel}
+                            </span>
+                          )}
+                          <span className="block text-[10px] font-semibold tracking-[0.17em] uppercase text-white truncate">
+                            {section.roomLabel}
                           </span>
-                        )}
-                        <span className="block text-[10px] font-semibold tracking-[0.17em] uppercase text-white truncate">
-                          {section.roomLabel}
                         </span>
-                      </span>
-                      <span className="text-[10px] font-semibold tracking-[0.17em] uppercase text-white/70 shrink-0">
-                        {section.items.length}
-                      </span>
+                        <span className="text-[10px] font-semibold tracking-[0.17em] uppercase text-white/70 shrink-0">
+                          {section.items.length}
+                        </span>
+                      </button>
+
+                      {/* Assigns every task under this header in one go.
+                          Value is always '' so it reads as an action rather
+                          than as the room's current state: the tasks below
+                          can be on four different targets and no single
+                          value would be honest about that. */}
+                      {(() => {
+                        const targets = assignTargetsForProperty(section.items[0].property_id);
+                        const busy = bulkBusy === section.label;
+                        return (
+                          <select
+                            value=""
+                            disabled={busy}
+                            onChange={(e) => assignSection(section.label, section.items, e.target.value)}
+                            aria-label={t('assignWholeRoom', { room: section.roomLabel })}
+                            className="self-center shrink-0 appearance-none bg-white/10 border border-white/25 rounded-full px-3 py-1 text-[10px] font-semibold tracking-[0.12em] uppercase text-white disabled:opacity-50"
+                          >
+                            <option value="" disabled>
+                              {busy ? t('assigningRoom') : t('assignRoom')}
+                            </option>
+                            {targets.slots.length > 0 && (
+                              <optgroup label={t('positionsGroup')}>
+                                {targets.slots.map((a) => (
+                                  <option key={a.id} value={a.id} className="text-denim">
+                                    {a.label}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+                            {targets.members.length > 0 && (
+                              <optgroup label={t('peopleGroup')}>
+                                {targets.members.map((a) => (
+                                  <option key={a.id} value={a.id} className="text-denim">
+                                    {a.label}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+                          </select>
+                        );
+                      })()}
                       <PinDot />
-                    </button>
+                    </div>
 
                     {!sectionCollapsed && (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[14px]">
@@ -1650,11 +1796,35 @@ export default function DutyRosterClient({
                         <option value="">
                           {unassigned ? t('unassigned') : t('removeAssignment')}
                         </option>
-                        {assigneesForProperty(x.property_id).map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.label}
-                          </option>
-                        ))}
+                        {/* Positions before people, in their own groups.
+                            Slot is the default target now; person
+                            assignment stays one scroll away rather than
+                            being removed. */}
+                        {(() => {
+                          const targets = assignTargetsForProperty(x.property_id);
+                          return (
+                            <>
+                              {targets.slots.length > 0 && (
+                                <optgroup label={t('positionsGroup')}>
+                                  {targets.slots.map((a) => (
+                                    <option key={a.id} value={a.id}>
+                                      {a.label}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              )}
+                              {targets.members.length > 0 && (
+                                <optgroup label={t('peopleGroup')}>
+                                  {targets.members.map((a) => (
+                                    <option key={a.id} value={a.id}>
+                                      {a.label}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              )}
+                            </>
+                          );
+                        })()}
                       </select>
                     </div>
                         </div>
