@@ -64,7 +64,50 @@ function fmtDate(iso: string | null): string | null {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-export default function RegisterViewerClient({ rows }: { rows: WorkItemRow[] }) {
+// SS-681. The register is kept on Eastern time because the person who
+// polices it works on Eastern time, and "today" is a question about her
+// day, not about UTC's.
+//
+// THE BUG THIS REPLACES: touchedToday compared row dates against
+// new Date().toISOString().slice(0,10), which is the UTC date. From 8pm
+// Eastern (00:00 UTC) the UTC date rolls to tomorrow, so every row touched
+// during the working day stopped matching and the number read 0 all
+// evening. It was not an off-by-one, it was the count silently emptying at
+// the same time every night.
+//
+// en-CA is not cosmetic: it is the locale that formats as YYYY-MM-DD, so
+// these strings sort and compare correctly.
+const EASTERN = 'America/New_York';
+const easternDayFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: EASTERN,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+/** The calendar date in New York for a given instant, as YYYY-MM-DD. */
+function easternDay(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return easternDayFormatter.format(d);
+}
+
+const readAtFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: EASTERN,
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
+export default function RegisterViewerClient({
+  rows,
+  readAt,
+}: {
+  rows: WorkItemRow[];
+  /** Server read time (SS-681). Stale if this render came from a cache. */
+  readAt: string;
+}) {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [evidenceFilter, setEvidenceFilter] = useState<string | null>(null);
   const [ownerFilter, setOwnerFilter] = useState<string | null>(null);
@@ -84,7 +127,10 @@ export default function RegisterViewerClient({ rows }: { rows: WorkItemRow[] }) 
 
   // The honesty row: the numbers Racquel actually polices the register by.
   const honesty = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    // Measured against the READ time, not the browser clock, so every
+    // number in this row answers "as of when the table was read" and the
+    // timestamp shown beside them is the answer to "when was that".
+    const today = easternDay(readAt);
     const verifiedLive = rows.filter((r) => r.evidence === 'verified_live').length;
     // SS-629: this line used to compute ONE number and label it "lost
     // prompts", which read as "fourteen things adrift this minute" while
@@ -102,7 +148,13 @@ export default function RegisterViewerClient({ rows }: { rows: WorkItemRow[] }) 
     ).length;
     const neverAcknowledged = rows.filter((r) => r.sent_to_code_at && !r.code_reported_at).length;
     const everSent = rows.filter((r) => r.sent_to_code_at).length;
-    const touchedToday = rows.filter((r) => (r.updated_at ?? r.created_at).slice(0, 10) === today).length;
+    // Each row's timestamp is converted to its EASTERN calendar date too.
+    // Comparing a UTC-sliced row date against an Eastern boundary would
+    // just move the off-by-one rather than remove it: both sides of the
+    // comparison have to be in the same zone.
+    const touchedToday = rows.filter(
+      (r) => easternDay(r.updated_at ?? r.created_at) === today
+    ).length;
     const openByOwner = new Map<string, number>();
     for (const r of rows) {
       if (r.status !== 'open') continue;
@@ -149,8 +201,19 @@ export default function RegisterViewerClient({ rows }: { rows: WorkItemRow[] }) 
   return (
     <div className="max-w-5xl mx-auto px-4 md:px-6 py-6">
       <h1 className="font-display text-3xl text-denim mb-1">Register</h1>
+      {/* SS-681. The claim and the proof now sit together. This subtitle
+          promised "read on every load" while the page was being served
+          from a cache showing 629 rows against a table holding 637, and
+          listing SS-670 and SS-671 as open after both were resolved. The
+          sentence could not be checked, so it was believed.
+          The timestamp is the server's read time, rendered into the HTML.
+          If this document is ever cached again, this clock is cached with
+          it and visibly falls behind. */}
       <p className="text-[13px] text-denim/70 mb-5">
-        Live from work_items — {counts.total} rows, read on every load. The table is the truth.
+        Live from work_items, {counts.total} rows. The table is the truth.{' '}
+        <span className="text-denim/50">
+          Read {readAtFormatter.format(new Date(readAt))} ET.
+        </span>
       </p>
 
       {/* Six tappable stat tiles */}

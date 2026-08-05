@@ -17,6 +17,29 @@ import { formatPropertyLabel } from '@/lib/property-display';
 import { buildSwitcherProperties } from '@/lib/property-display';
 import { isModuleEnabled, moduleForSegment, isOperatorConsole } from '@/lib/module-flags';
 
+// SS-681. Every authenticated page under /properties/[id] renders fresh.
+//
+// Set HERE rather than on ~30 individual page files, because the failure
+// mode is a page that forgets to opt in: the Register carried a comment
+// asserting "no caching: auth cookies already force dynamic rendering"
+// and still served a render from hours earlier. Segment config on a
+// layout applies to every nested route, so a page added tomorrow inherits
+// it without anyone remembering.
+//
+// force-dynamic is belt and braces: reading cookies through
+// lib/supabase/server already opts these routes into dynamic rendering,
+// so this changes nothing today. It exists to make that guarantee
+// EXPLICIT and to stop a future refactor (a page that stops reading
+// cookies, an added generateStaticParams) from silently reintroducing a
+// static or revalidated render. revalidate = 0 forbids ISR outright.
+//
+// The measured staleness was NOT route config, it was the service worker
+// caching navigations and Supabase REST reads (next.config.js). Both are
+// fixed there. This is the second half of the same rule.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'default-no-store';
+
 export default async function PropertyLayout({
   params,
   children,

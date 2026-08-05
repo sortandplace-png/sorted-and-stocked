@@ -127,7 +127,7 @@ export default function MarketingFooter({
       <div className="border-t border-cardBorder">
         <p className="max-w-[1100px] mx-auto px-4 py-5 text-[12px] leading-relaxed text-dusk">
           Sort + Place builds organizing systems for homes. Our software tracks what a household tells
-          it — it does not rule on kashrus, and it is not a halachic authority. Every household&apos;s
+          it. It does not rule on kashrus, and it is not a halachic authority. Every household&apos;s
           practice is set by that family and their Rav.
         </p>
       </div>

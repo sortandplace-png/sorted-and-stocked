@@ -32,6 +32,25 @@ const withPWA = require('next-pwa')({
     // the background revalidation caught up. Network-first still supports
     // offline navigation in a dead-zone pantry, it just never prefers a
     // stale cross-account response while online.
+    // SS-681, and this must stay ABOVE the generic navigation rule below.
+    // The Register and the Task Center are SERVER rendered, so the stale
+    // answer arrives in the page HTML itself, not only in the client's
+    // data reads. NetworkFirst with a 3 second timeout will serve a cached
+    // document, and the register's own subtitle promises it is read on
+    // every load. A blog post is edited daily and is a public SEO surface,
+    // so a stale document there is served to crawlers too.
+    //
+    // These pages are read at a desk on a real connection, not in a
+    // dead-zone pantry, so they lose nothing by refusing the offline
+    // fallback.
+    {
+      urlPattern: ({ request, url }) =>
+        request.mode === 'navigate' &&
+        (/\/register(\/|$)/.test(url.pathname) ||
+          /\/console(\/|$)/.test(url.pathname) ||
+          /^\/blog(\/|$)/.test(url.pathname)),
+      handler: 'NetworkOnly',
+    },
     {
       urlPattern: ({ request }) => request.mode === 'navigate',
       handler: 'NetworkFirst',
@@ -39,6 +58,35 @@ const withPWA = require('next-pwa')({
         cacheName: 'pages',
         networkTimeoutSeconds: 3,
       },
+    },
+    // SS-681. NEVER CACHE THESE TABLES. This rule must stay ABOVE the
+    // generic Supabase rule below, because Workbox takes the FIRST
+    // matching route.
+    //
+    // The generic rule underneath is NetworkFirst with a 3 second timeout
+    // and a one hour expiration. On a phone, three seconds is easy to
+    // exceed, and when it is exceeded Workbox serves whatever it cached,
+    // for up to an hour, with no indication that it did. That is the
+    // measured defect: the Task Center read 928 active tasks while the
+    // table held 963, and 928 was exactly the count from several hours
+    // earlier. The Register showed 629 rows against 637 and listed SS-670
+    // and SS-671 as open after both were resolved.
+    //
+    // These are the tables where a stale answer is worse than no answer,
+    // because they are read to decide what to do next:
+    //   work_items        the register, whose subtitle promises the table
+    //                     is the truth and is read on every load
+    //   master_tasks      the Task Center
+    //   task_assignments  who owns what
+    //   staff_slots       the assignment targets
+    //   blog_posts        edited daily
+    // Everything else keeps the offline fallback below, so viewing
+    // inventory in a dead-zone pantry still works. Correctness beats
+    // latency HERE without giving up offline EVERYWHERE.
+    {
+      urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/(work_items|master_tasks|task_assignments|staff_slots|blog_posts)(\?|$)/i,
+      handler: 'NetworkOnly',
+      method: 'GET',
     },
     // Supabase REST reads: network-first with a short timeout, falling back
     // to the last cached response when offline (e.g. viewing inventory in

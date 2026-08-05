@@ -118,7 +118,7 @@
     "shop": "Comprar",
     "more": "Más",
     "procurement": "Compras Todas las Casas",
-    "console": "Consola del Operador",
+    "console": "Centro de Tareas",
     "register": "Registro",
     "help": "Ayuda",
     "scanAriaLabel": "Escanear artículo al inventario",
@@ -974,7 +974,12 @@
     "photoUploadFailed": "Tarea guardada, pero la foto no se pudo subir: {error}",
     "formCancel": "Cancelar",
     "formSave": "Guardar",
-    "saving": "Guardando…"
+    "saving": "Guardando…",
+    "positionsGroup": "Puestos",
+    "peopleGroup": "Personas",
+    "assignRoom": "Asignar sala",
+    "assigningRoom": "Asignando...",
+    "assignWholeRoom": "Asignar todas las tareas de {room} a un puesto"
   },
   "taskVerification": {
     "title": "Verificación de Tareas",

@@ -13,6 +13,14 @@ import CrossHouseNav from '@/components/nav/CrossHouseNav';
 import { getNextObservance } from '@/lib/get-next-observance';
 import { buildSwitcherProperties } from '@/lib/property-display';
 
+// SS-681: authenticated, per-account, and must never be served from a
+// static or revalidated render. Same rule as app/properties/[id]/layout.tsx;
+// see the comment there for why this is set explicitly rather than relied
+// upon as a side effect of reading cookies.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+
 export default async function ProcurementLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
 

@@ -118,7 +118,7 @@
     "shop": "Shop",
     "more": "More",
     "procurement": "Shop All Houses",
-    "console": "Operator Console",
+    "console": "Task Center",
     "register": "Register",
     "help": "Help",
     "scanAriaLabel": "Scan item to inventory",
@@ -974,7 +974,12 @@
     "photoUploadFailed": "Task saved, but the photo failed to upload: {error}",
     "formCancel": "Cancel",
     "formSave": "Save",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "positionsGroup": "Positions",
+    "peopleGroup": "People",
+    "assignRoom": "Assign room",
+    "assigningRoom": "Assigning...",
+    "assignWholeRoom": "Assign every task in {room} to one position"
   },
   "taskVerification": {
     "title": "Task Verification",

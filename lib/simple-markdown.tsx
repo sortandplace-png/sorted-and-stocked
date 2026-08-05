@@ -174,14 +174,47 @@ function isBullet(l: string) {
 // by getting bigger, which is how Stage C ended up with quotes outranking
 // their own headings.
 //
-// So: 34rem of reading column, 15rem of margin beside it at lg and up
-// (Racquel's pick). Below lg there is no margin -- the column is full
-// width and margin items fall back into the flow, quieter rather than
-// wider. Anything that must BREAK the column (figures) uses BLEED, not a
-// wider MEASURE; the two are different and only one of them is capped.
-const MEASURE = 'max-w-[34rem]';
+// SS-611 RESTORED, 5 Aug. 2b's half of the rule above is REVERSED. Read
+// this half last; it is the one in force.
+//
+// 2b's bargain was: give up reading width, buy a margin, and the margin
+// pays for the pull quotes. The margin was never paid for. 2a removed
+// every pull quote from blog-21 hours before 2b shipped, and checking all
+// 11 published posts before making this change found ZERO '>>' markers and
+// ZERO 'Eyebrow:' markers in any of them. So the margin is empty on every
+// live post and cannot fill itself. The site gave up 15rem of reading
+// column to hold nothing.
+//
+// What a reader actually saw: prose stopping at 34rem while the figures
+// beside it ran to the full card, so the text was narrower than the
+// pictures. That is the inverse of Racquel's ruling of 3 Aug, "y would i
+// narrow the images > i wnt the text to fit the page", and she has now
+// ruled the same way twice.
+//
+// The fix is structural rather than a second number: prose takes the SAME
+// class the figures already take, so the two share one left edge and one
+// right edge and cannot drift apart again. A new cap here, even a wider
+// one, would just be the next value to disagree with the images.
+//
+// ACCEPTED DELIBERATELY: the measure is now the card width and line length
+// rises past the 71 characters SS-584 tuned for. Racquel has ruled on that
+// twice. If it reads long the lever is font size or line height, NEVER
+// width.
+//
+// This also settles the foot of the article, which is where she said
+// "awful": Related Reading, the boilerplate, the rules, the consultation
+// button and the sign-up were sitting at four different widths inside
+// about 500px. One measure aligns all of them, and the rules now match
+// the content they separate rather than the card.
+const MEASURE = 'w-full';
 const BLEED = 'w-full';
-const MARGIN_COL = 'lg:float-right lg:w-[15rem] lg:ml-8 lg:clear-right';
+// The gutter is gone, so margin items are in-column blocks now. Kept as a
+// named constant rather than deleted: the '>>' branch still references it,
+// and item 2 (quotes back in column, set apart by indent, rule and colour,
+// NEVER by size) is a separate pass that has not run yet. This value is
+// deliberately layout-neutral so nothing reserves space beside the prose
+// in the meantime.
+const MARGIN_COL = '';
 
 // A block that is ONLY an image gets no prose wrapper at all, so the
 // figure spans the full card width. Inside a text paragraph an image still
