@@ -37,7 +37,7 @@ import { isOperatorConsole } from '@/lib/module-flags';
 import { getOperatorProperties } from '@/lib/operator-properties';
 
 export const metadata = {
-  title: 'Task Center — Sorted & Stocked',
+  title: 'Operator Console — Sorted & Stocked',
 };
 
 function SectionStrip({ label }: { label: string }) {
@@ -187,7 +187,7 @@ export default async function OperatorConsolePage({
             bilingual labels V1 shipped with are gone on that ruling. */}
         <div className="flex items-end justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="font-display text-[34px] font-normal text-denim">Task Center</h1>
+            <h1 className="font-display text-[34px] font-normal text-denim">Operator Console</h1>
             <p className="text-[13px] text-dusk">Work, people and configuration. One page.</p>
             <div className="mt-3">
               <SectionIndex />
