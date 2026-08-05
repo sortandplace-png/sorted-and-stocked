@@ -10,6 +10,14 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import ManagerDashboardClient from '@/components/ManagerDashboardClient';
 
+// SS-681: authenticated, per-account, and must never be served from a
+// static or revalidated render. Same rule as app/properties/[id]/layout.tsx;
+// see the comment there for why this is set explicitly rather than relied
+// upon as a side effect of reading cookies.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+
 export default async function ManagerPage() {
   const supabase = await createClient();
 

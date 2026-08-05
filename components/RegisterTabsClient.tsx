@@ -21,10 +21,13 @@ export default function RegisterTabsClient({
   rows,
   drafts,
   propertyId,
+  readAt,
 }: {
   rows: WorkItemRow[];
   drafts: DraftRow[];
   propertyId: string;
+  /** SS-681: server read time, threaded through as data. See the register page. */
+  readAt: string;
 }) {
   const [tab, setTab] = useState<Tab>('register');
 
@@ -66,7 +69,7 @@ export default function RegisterTabsClient({
       </div>
 
       {tab === 'register' ? (
-        <RegisterViewerClient rows={rows} />
+        <RegisterViewerClient rows={rows} readAt={readAt} />
       ) : (
         <BlogDraftsClient drafts={drafts} propertyId={propertyId} />
       )}

@@ -44,16 +44,21 @@ const RESULT_ORDER: ResultKind[] = ['destination', 'recipe', 'inventory', 'locat
 const DESTINATIONS: { id: string; label: string; hint: string; keywords: string[]; path: string }[] = [
   {
     id: 'task-center',
-    label: 'Task Center',
-    hint: 'Operator Console',
+    label: 'Work',
+    hint: 'Task Center',
     // "duty roster" and "tasks" are here because both were folded into this
     // section by SS-156 and SS-436; someone who learned the old name must
     // still land somewhere real (R21 applies to findability, not just routes).
-    keywords: ['task center', 'taskcenter', 'tasks', 'task', 'duty roster', 'roster', 'work'],
+    // "operator console" and "console" join them for the same reason: that
+    // was this page's name until today, and the route is still /console.
+    keywords: [
+      'task center', 'taskcenter', 'tasks', 'task', 'duty roster', 'roster', 'work',
+      'operator console', 'console', 'operator',
+    ],
     path: '/console#task-center',
   },
-  { id: 'people', label: 'People', hint: 'Operator Console', keywords: ['people', 'staff', 'team', 'members', 'invite'], path: '/console#people' },
-  { id: 'configuration', label: 'Configuration', hint: 'Operator Console', keywords: ['configuration', 'config', 'settings', 'modules', 'flags'], path: '/console#configuration' },
+  { id: 'people', label: 'People', hint: 'Task Center', keywords: ['people', 'staff', 'team', 'members', 'invite'], path: '/console#people' },
+  { id: 'configuration', label: 'Configuration', hint: 'Task Center', keywords: ['configuration', 'config', 'settings', 'modules', 'flags'], path: '/console#configuration' },
 ];
 
 export default function HeaderSearchClient({

@@ -63,6 +63,14 @@ export default async function RegisterPage({ params }: { params: Promise<{ id: s
       'id, title, detail, status, evidence, owner, sent_to_code_at, code_reported_at, verified_at, verified_how, screenshot_ref, superseded_by, created_at, updated_at'
     );
 
+  // SS-681. Stamped on the SERVER, immediately after the read, and passed
+  // down as data. This is the whole point: if this render is ever served
+  // from a cache again, this timestamp is cached WITH it and visibly goes
+  // stale. A clock rendered in the browser would read "now" on a
+  // four-hour-old document and hide exactly the defect it exists to
+  // expose. Do not move this to the client.
+  const readAt = new Date().toISOString();
+
   // Drafts tab (Racquel's ruling, 3 Aug late; reshaped to tiles 4 Aug): the
   // unpublished posts had no readable surface anywhere -- she was asked to
   // choose numbering and publish dates for writing she could not read. The
@@ -100,6 +108,7 @@ export default async function RegisterPage({ params }: { params: Promise<{ id: s
       rows={(items ?? []) as WorkItemRow[]}
       drafts={(drafts ?? []) as DraftRow[]}
       propertyId={id}
+      readAt={readAt}
     />
   );
 }

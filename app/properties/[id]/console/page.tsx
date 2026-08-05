@@ -37,7 +37,7 @@ import { isOperatorConsole } from '@/lib/module-flags';
 import { getOperatorProperties } from '@/lib/operator-properties';
 
 export const metadata = {
-  title: 'Operator Console — Sorted & Stocked',
+  title: 'Task Center — Sorted & Stocked',
 };
 
 function SectionStrip({ label }: { label: string }) {
@@ -54,7 +54,7 @@ function SectionStrip({ label }: { label: string }) {
 // without it the anchor lands with the heading hidden behind the chrome,
 // which reads as the jump not having worked.
 const SECTIONS = [
-  { id: 'task-center', label: 'Task Center' },
+  { id: 'task-center', label: 'Work' },
   { id: 'people', label: 'People' },
   { id: 'configuration', label: 'Configuration' },
 ] as const;
@@ -187,8 +187,8 @@ export default async function OperatorConsolePage({
             bilingual labels V1 shipped with are gone on that ruling. */}
         <div className="flex items-end justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="font-display text-[34px] font-normal text-denim">Operator Console</h1>
-            <p className="text-[13px] text-dusk">Task Center, people and configuration. One page.</p>
+            <h1 className="font-display text-[34px] font-normal text-denim">Task Center</h1>
+            <p className="text-[13px] text-dusk">Work, people and configuration. One page.</p>
             <div className="mt-3">
               <SectionIndex />
             </div>
@@ -228,7 +228,7 @@ export default async function OperatorConsolePage({
           id="task-center"
           className="scroll-mt-[124px] rounded-xl3 border border-cardBorder shadow-card overflow-hidden bg-card"
         >
-          <SectionStrip label="Task Center" />
+          <SectionStrip label="Work" />
           <div className="p-5">
             <DutyRosterClient propertyId={id} properties={properties} />
           </div>
