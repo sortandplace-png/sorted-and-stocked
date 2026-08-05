@@ -16,7 +16,31 @@ import PinterestSaveButton from '@/components/blog/PinterestSaveButton';
 import SubscribeForm from '@/components/blog/SubscribeForm';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
+import { getLocale } from 'next-intl/server';
 import { SITE_URL, CANONICAL_ORIGIN } from '@/lib/site-url';
+
+// SS-706, the article foot. Written EN and ES together rather than English
+// now and Spanish later. NO DASHES: this is a marketing surface and the
+// SS-666 check treats app/blog as absolute scope, so a dash here fails the
+// build rather than reaching a reader.
+const FOOT_COPY = {
+  en: {
+    ctaHeading: 'Want this running in your own house?',
+    ctaLine:
+      'We build the systems, label the shelves and train the people who keep it all going.',
+    ctaFallbackLabel: 'Book Your Consultation',
+    followHeading: 'Follow along',
+    followLine: 'New posts by email, when we publish them. No more than that.',
+  },
+  es: {
+    ctaHeading: '¿Quieres esto en tu propia casa?',
+    ctaLine:
+      'Creamos los sistemas, etiquetamos los estantes y capacitamos a quienes los mantienen.',
+    ctaFallbackLabel: 'Reserva tu consulta',
+    followHeading: 'Sigue el blog',
+    followLine: 'Publicaciones nuevas por correo, cuando las publicamos. Nada más.',
+  },
+} as const;
 
 export const dynamic = 'force-dynamic';
 
@@ -64,6 +88,13 @@ export default async function BlogPostPage({
   const { slug } = await params;
   const post = await fetchPost(slug);
   if (!post) notFound();
+
+  // SS-706. Read on the SERVER so the article foot renders in the reader's
+  // language in the initial HTML, rather than flashing English and
+  // swapping. SubscribeForm reads the same cookie on the client for its own
+  // two messages, so both halves of the card agree.
+  const locale = await getLocale();
+  const foot = FOOT_COPY[locale === 'es' ? 'es' : 'en'];
 
   // body_markdown opens with "# <title>" -- the title renders separately
   // above, so the duplicate heading line is stripped (same treatment
@@ -163,27 +194,57 @@ export default async function BlogPostPage({
                 rule, and an italic line. */}
             {after && renderSimpleMarkdown(after)}
 
-            {post.cta_label && post.cta_url && (
-              <div className="mt-8 pt-6 border-t border-cardBorder text-center">
+            {/* SS-706. ONE CARD, TWO COLUMNS, replacing what used to be a
+                divider, a centred button and a separate email field
+                stacked down the page. Four elements at four alignments
+                inside about 500px was the "awful" tail; this is one object
+                with one edge pair.
+
+                The ORDER SS-639 ruled is intact: article, Related Reading,
+                then the ask. The consultation is still the primary ask and
+                still visually louder, it just no longer competes with the
+                sign-up for vertical space. The sign-up is secondary by
+                POSITION and TINT now rather than by being small and last.
+
+                Stacks below 680px, where the column divider becomes a top
+                border, because two 40% columns on a phone are two columns
+                of nothing.
+
+                THE FORM IS THE EXISTING COMPONENT, not a new one. It posts
+                to /api/subscribe and carries the honeypot, the timing
+                check, the IP rate limit, the dedupe, the locale and the
+                signed token flow. A raw form posting to /subscribe would
+                lose every one of those and hit a route that does not
+                exist. bare drops its own top rule, which the column
+                divider already provides.
+
+                sourceDetail carries the slug so a sign-up is attributed to
+                the article that earned it. */}
+            <div className="mt-10 rounded-xl2 border border-cardBorder overflow-hidden flex flex-col min-[680px]:flex-row">
+              <div className="min-[680px]:basis-3/5 bg-card p-6 sm:p-7">
+                <h2 className="font-display text-[22px] leading-tight text-denim">
+                  {foot.ctaHeading}
+                </h2>
+                <p className="text-[14px] text-dusk leading-relaxed mt-2 mb-5">{foot.ctaLine}</p>
                 <a
-                  href={post.cta_url}
+                  href={post.cta_url || '/contact'}
                   className="inline-block bg-denim text-white text-sm font-semibold uppercase tracking-[0.12em] px-6 py-3 rounded-full hover:opacity-90 transition-opacity"
                 >
-                  {post.cta_label}
+                  {post.cta_label || foot.ctaFallbackLabel}
                 </a>
               </div>
-            )}
 
-            {/* SS-639, and the ORDER is the ruling: article ends, then
-                Related Reading, then the consultation button, then this.
-                One ask per article -- Book Your Consultation -- with the
-                email line quiet underneath it. Last on the page and the
-                smallest thing on it, deliberately: a reader who has read
-                to here has already been given something, which is the
-                whole reason it is not on the index any more.
-                sourceDetail carries the slug so a sign-up can be
-                attributed to the article that earned it. */}
-            <SubscribeForm variant="inline" source="blog-article" sourceDetail={post.slug} />
+              <div className="min-[680px]:basis-2/5 bg-linen border-t border-cardBorder min-[680px]:border-t-0 min-[680px]:border-l p-6 sm:p-7">
+                <p className="font-display text-[17px] text-denim mb-2">{foot.followHeading}</p>
+                <SubscribeForm
+                  variant="inline"
+                  bare
+                  source="blog-article"
+                  sourceDetail={post.slug}
+                  line={foot.followLine}
+                />
+              </div>
+            </div>
           </div>
         </article>
       </main>

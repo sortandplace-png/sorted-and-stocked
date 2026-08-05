@@ -44,6 +44,7 @@ export default function SubscribeForm({
   blurb = 'Notes on running a real household, when we publish them. No more than that.',
   variant = 'panel',
   line = 'New posts by email, when we publish them.',
+  bare = false,
 }: {
   source?: string;
   /** Which post or surface the sign-up came from, for attribution. */
@@ -60,6 +61,18 @@ export default function SubscribeForm({
   variant?: 'panel' | 'inline';
   /** The single line of type, inline variant only. */
   line?: string;
+  /**
+   * Inline variant only. Drops the top rule and top margin.
+   *
+   * The inline form normally separates itself from the article above with
+   * a hairline, because it sits directly in the page flow. Inside the
+   * article-foot card (SS-706) it sits in its own tinted column that is
+   * already bounded by the column divider, so the rule would be a second
+   * line saying the same thing. Added as a prop rather than forking the
+   * component: the honeypot, the timing check, the locale and the whole
+   * /api/subscribe flow must not exist twice.
+   */
+  bare?: boolean;
 }) {
   // The reader's language, from the sns_locale cookie via next-intl. Sent
   // to the route so the confirmation email arrives in it, and used for
@@ -169,7 +182,7 @@ export default function SubscribeForm({
 
   if (state === 'done') {
     return variant === 'inline' ? (
-      <p className="text-[13px] text-dusk mt-6 pt-5 border-t border-cardBorder">{message}</p>
+      <p className={`text-[13px] text-dusk ${bare ? '' : 'mt-6 pt-5 border-t border-cardBorder'}`}>{message}</p>
     ) : (
       <div className="bg-mist border border-brass/30 rounded-xl2 px-5 py-4">
         <p className="text-sm text-denim">{message}</p>
@@ -179,7 +192,7 @@ export default function SubscribeForm({
 
   if (variant === 'inline') {
     return (
-      <form onSubmit={onSubmit} className="relative mt-6 pt-5 border-t border-cardBorder">
+      <form onSubmit={onSubmit} className={`relative ${bare ? '' : 'mt-6 pt-5 border-t border-cardBorder'}`}>
         {honeypot}
         <p className="text-[13px] text-dusk mb-2.5">{line}</p>
         <div className="flex flex-col sm:flex-row gap-2 max-w-md">
