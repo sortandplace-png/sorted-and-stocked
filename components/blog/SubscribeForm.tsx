@@ -3,23 +3,39 @@
 // gate on reading (Racquel's ruling: "i want the blog to be open and
 // people should sign up to get updates").
 //
-// Writes straight to public.email_subscribers with the anon key, which is
-// exactly what that table's RLS was built for: anon may INSERT and
-// nothing else, so the public can join the list and cannot read or
-// enumerate it. No API route in front of it -- an endpoint would add a
-// second place for the rules to drift from the table that already
-// enforces them (unique, lowercased, shape-checked).
+// SS-672: this form POSTs to /api/subscribe. It used to insert straight
+// into public.email_subscribers with the anon key, and the argument for
+// that (the table's RLS is the real guard, an endpoint is a second place
+// for the rules to drift) was answering a smaller question than the one
+// that mattered. A browser holding an anon key cannot mint a signed
+// confirmation token, cannot send in the reader's language, and cannot
+// tell a first-time signup from somebody whose confirmation email got
+// filtered. Nobody who signed up received anything, for exactly that
+// reason. The table's constraints are untouched and are still the last
+// word; the route validates the same shape early so a reader gets a
+// sentence instead of a constraint violation.
 //
-// confirmed_at is deliberately NOT set here. It stays NULL until the
-// confirmation link is clicked, and nothing but the confirmation email
-// may be sent before that. The send itself is NOT built yet: it waits on
-// Racquel's ruling on which printable leads and on SS-575, because the
-// four existing PDFs do not open on her phone and a printable that fails
-// on a phone fails for most readers.
+// confirmed_at is still NULL at insert. It stays NULL until the link in
+// the confirmation email is clicked, and nothing but that email may be
+// sent before it.
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { useLocale } from 'next-intl';
+
+// SS-666: no em dashes in marketing copy, and this form is marketing copy.
+// The full stop that replaced the dash here is the ruling, not a
+// preference. Both strings ship EN and ES together (SS-672) rather than
+// English now and Spanish later.
+const DONE_MESSAGE = {
+  en: 'Thanks. Check your email to confirm. Nothing else is sent until you do.',
+  es: 'Gracias. Revisa tu correo para confirmar. No se envía nada más hasta que lo hagas.',
+} as const;
+
+const ERROR_MESSAGE = {
+  en: 'That did not go through. Try again in a moment.',
+  es: 'No se pudo enviar. Inténtalo de nuevo en un momento.',
+} as const;
 
 export default function SubscribeForm({
   source = 'blog',
@@ -45,6 +61,12 @@ export default function SubscribeForm({
   /** The single line of type, inline variant only. */
   line?: string;
 }) {
+  // The reader's language, from the sns_locale cookie via next-intl. Sent
+  // to the route so the confirmation email arrives in it, and used for
+  // this form's own two messages.
+  const locale = useLocale();
+  const copyLocale: 'en' | 'es' = locale === 'es' ? 'es' : 'en';
+
   const [email, setEmail] = useState('');
   // SS-630 spam protection. The consultation form took two bot
   // submissions on its first live day with nothing guarding it, and
@@ -59,9 +81,11 @@ export default function SubscribeForm({
   //     same success message rather than telling it what tripped.
   //  2. TIME ON FORM -- a human cannot read the blurb, type an address
   //     and submit in under MIN_SECONDS. Scripted posts are instant.
-  // Rate limiting per address and per IP is NOT here: it cannot be
-  // enforced in a browser, and the honest place for it is the database
-  // or an edge rule. Flagged on the row rather than faked here.
+  // Both are ALSO checked server-side in /api/subscribe now, because a
+  // check that only exists in the browser is one a script skips by
+  // posting to the route directly. These stay as the fast path.
+  // Rate limiting per IP is no longer missing either: it moved to the
+  // route, where it can actually be enforced (SS-672).
   const [botField, setBotField] = useState('');
   const mountedAt = useRef<number>(0);
   useEffect(() => {
@@ -75,43 +99,54 @@ export default function SubscribeForm({
     const value = email.trim().toLowerCase();
     if (!value) return;
 
-    const secondsOnForm = (Date.now() - mountedAt.current) / 1000;
+    const elapsedMs = Date.now() - mountedAt.current;
     const MIN_SECONDS = 3;
-    if (botField !== '' || secondsOnForm < MIN_SECONDS) {
+    if (botField !== '' || elapsedMs < MIN_SECONDS * 1000) {
       // Deliberately indistinguishable from success: telling a bot which
       // check caught it is telling whoever wrote it how to pass.
       setState('done');
-      setMessage("Thanks. Check your email to confirm — nothing else is sent until you do.");
+      setMessage(DONE_MESSAGE[copyLocale]);
       return;
     }
 
     setState('sending');
 
-    const supabase = createClient();
-    const { error } = await supabase.from('email_subscribers').insert({
-      email: value,
-      source,
-      source_detail: sourceDetail ?? null,
-      locale: 'en',
-    });
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: value,
+          source,
+          sourceDetail: sourceDetail ?? null,
+          // The reader's own language, not a hardcoded 'en'. locale has
+          // always been NOT NULL on the table and every row was being
+          // written as English regardless of which site they were on.
+          locale,
+          // Echoed so the route can run the same two bot checks.
+          company: botField,
+          elapsedMs,
+        }),
+      });
 
-    if (error) {
-      // 23505 is the unique violation. Someone signing up twice is not an
-      // error to them -- and saying "already on the list" to an arbitrary
-      // address would leak membership of a list the public cannot read,
-      // so both cases get the same reassuring answer.
-      if (error.code === '23505') {
-        setState('done');
-        setMessage("You're on the list. Check your email to confirm.");
+      if (!res.ok) {
+        setState('error');
+        setMessage(ERROR_MESSAGE[copyLocale]);
         return;
       }
+    } catch {
+      // Offline, or the request never left. Same recovery either way.
       setState('error');
-      setMessage('That did not go through. Try again in a moment.');
+      setMessage(ERROR_MESSAGE[copyLocale]);
       return;
     }
 
+    // One message for every success case. The route answers the same way
+    // for a new signup, a resend and an address already on the list, so
+    // this cannot leak whether a given address is a member of a list the
+    // public is not allowed to read.
     setState('done');
-    setMessage("Thanks. Check your email to confirm — nothing else is sent until you do.");
+    setMessage(DONE_MESSAGE[copyLocale]);
   }
 
   // The honeypot travels with BOTH variants. It is the spam guard, not
