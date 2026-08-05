@@ -979,7 +979,16 @@
     "peopleGroup": "People",
     "assignRoom": "Assign room",
     "assigningRoom": "Assigning...",
-    "assignWholeRoom": "Assign every task in {room} to one position"
+    "assignWholeRoom": "Assign every task in {room} to one position",
+    "filterDuration": "Filter by time",
+    "allDurations": "Any length",
+    "duration5": "5 minutes or less",
+    "duration15": "6 to 15 minutes",
+    "duration30": "16 to 30 minutes",
+    "duration30plus": "More than 30 minutes",
+    "filterWorkSection": "Filter by section",
+    "allWorkSections": "All sections",
+    "emptyNoDayForHouse": "No tasks have a day set for this house yet."
   },
   "taskVerification": {
     "title": "Task Verification",

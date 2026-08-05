@@ -13,7 +13,7 @@
 //    hiding them is why the old roster showed "no rows" on an empty filter.
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
@@ -72,6 +72,8 @@ const DAY_PICKER_OPTIONS: { iso: number; key: string }[] = [
 // which now matches on either link.
 type Member = { id: string; user_id: string; full_name: string | null; property_id: string };
 type Slot = { id: string; label_en: string; label_es: string; user_id: string | null; active: boolean; property_id: string };
+/** SS-677 item 7, migration 193. Same shape as frequencies, deliberately. */
+type WorkSection = { id: string; code: string; label_en: string; label_es: string; sort_order: number };
 type Assignment = { id: string; task_id: string; member_id: string | null; slot_id: string | null };
 
 // The one <select> carries both kinds of assignee, so the option value
@@ -104,6 +106,9 @@ type Task = {
   // live that 0 of 208 active tasks on Main have this set today, so that
   // is the effective state of every task right now, not a hypothetical.
   day_of_week: number | null;
+  /** ISO 1..7, migration 191. NULL means every day. Replaces day_of_week. */
+  days_of_week: number[] | null;
+  work_section_id: string | null;
   time_of_day: 'AM' | 'PM' | null;
   estimated_minutes: number | null;
 };
@@ -169,8 +174,24 @@ export default function DutyRosterClient({
   const propertyIds = useMemo(() => propertyOptions.map((p) => p.id), [propertyOptions]);
   const crossHouse = propertyOptions.length > 1;
   const labelByProperty = useMemo(() => new Map(propertyOptions.map((p) => [p.id, p.label])), [propertyOptions]);
-  // 'all' or a property id. Only rendered (and only meaningful) cross-house.
-  const [house, setHouse] = useState<string>('all');
+  // SS-677 item 3: THE TOP-LEFT SELECTOR WINS, so this defaults to the
+  // property the selector is on, not to 'all'.
+  //
+  // The defect: the selector read "Lax" while these pills read "All
+  // Houses", the room dropdown obeyed the pills, and she was shown 100
+  // rooms from every house on a screen whose own header said Lax. Two
+  // controls, two answers, and the quieter one was winning.
+  //
+  // The selector is app-wide context every other page honours; these pills
+  // are local to this screen. Local loses.
+  const [house, setHouse] = useState<string>(propertyId);
+
+  // "All Houses" is offered ONLY when the selector itself has no single
+  // house in context. On the console it always does, so the cross-house
+  // pill is not rendered there: it is the control that used to disagree
+  // with the selector. Every individual house pill stays, so switching
+  // houses on this screen is still one tap.
+  const selectorIsCrossHouse = !propertyId;
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
@@ -244,6 +265,10 @@ export default function DutyRosterClient({
     return today === 6 ? 'all' : today;
   });
   const [room, setRoom] = useState('all');
+  // SS-677 item 5 and item 7.
+  const [duration, setDuration] = useState<'all' | '5' | '15' | '30' | '30plus'>('all');
+  const [workSection, setWorkSection] = useState<string>('all');
+  const [workSections, setWorkSections] = useState<WorkSection[]>([]);
   const [job, setJob] = useState('all');
   const [freq, setFreq] = useState('all');
   const [assignment, setAssignment] = useState('all');
@@ -537,7 +562,7 @@ export default function DutyRosterClient({
     const settled = await Promise.allSettled([
       supabase
         .from('master_tasks')
-        .select('id, task_number, property_id, room_id, frequency_id, task_en, task_es, job_type, assigned_role, sop_id, source_area_en, source_area_es, photo_url, active, sort_order, day_of_week, time_of_day, estimated_minutes')
+        .select('id, task_number, property_id, room_id, frequency_id, task_en, task_es, job_type, assigned_role, sop_id, source_area_en, source_area_es, photo_url, active, sort_order, day_of_week, days_of_week, work_section_id, time_of_day, estimated_minutes')
         .in('property_id', propertyIds)
         .order('sort_order'),
       supabase.from('frequencies').select('id, code, label_en, label_es, recurrence_kind, sort_order').order('sort_order'),
@@ -559,6 +584,13 @@ export default function DutyRosterClient({
       // SS-429 B: slots are assignable alongside people. Inactive slots are
       // not offered for NEW assignments but stay resolvable for display.
       supabase.from('staff_slots').select('id, label_en, label_es, user_id, active, property_id').in('property_id', propertyIds).order('sort_order'),
+      // SS-677 item 7, migration 193. A lookup table rather than a CHECK,
+      // so the filter renders label_es without hardcoding Spanish here.
+      // APPENDED AT THE END on purpose: rows[] is read positionally
+      // (rows[3] members, rows[4] sops, rows[5] assignments, rows[6]
+      // slots), so inserting anywhere earlier silently renumbers four
+      // other setters.
+      supabase.from('work_sections').select('id, code, label_en, label_es, sort_order').order('sort_order'),
     ]);
 
     // One failing source must not blank the page, and an error must never be
@@ -656,6 +688,7 @@ export default function DutyRosterClient({
     }
     setAssignments(rows[5] as Assignment[]);
     setSlots(rows[6] as Slot[]);
+    setWorkSections(rows[7] as WorkSection[]);
     setLoadError(failed.length > 0 ? t('loadPartial') : null);
     setLoading(false);
   }, [propertyId, propertyIds, supabase, t]);
@@ -761,7 +794,39 @@ export default function DutyRosterClient({
   // day_of_week set yet -- confirmed live before writing this. This filter
   // narrows correctly the moment a task's day gets assigned; it does not
   // retroactively invent a day for tasks that have none.
-  const matchDay = (x: Task) => dayFilter === 'all' || x.day_of_week === null || x.day_of_week === dayFilter;
+  // SS-677 item 6. Reads days_of_week (the ISO 1..7 array from migration
+  // 191), not the scalar. Array containment, so a task set to Monday AND
+  // Thursday matches both.
+  //
+  // NO "OR days_of_week IS NULL" FALLBACK, and that is the point of the
+  // change. The old predicate had exactly that, so picking Tuesday
+  // returned all 1000 tasks and the filter meant nothing while appearing
+  // to work. 996 of 1000 tasks have no day; a filter that silently
+  // includes them is not a filter. Tasks with no day now simply do not
+  // match a specific day, and the empty state says so in words.
+  const matchDay = (x: Task) =>
+    dayFilter === 'all' || (x.days_of_week ?? []).includes(dayFilter);
+
+  // SS-677 item 5. Duration buckets over estimated_minutes, which covers
+  // 810 of 998. NULL is EXCLUDED from a specific bucket and stays visible
+  // under All: "I have 15 minutes" cannot honestly include a task nobody
+  // has timed. The 188 untimed tasks are a content gap, not a filter
+  // behaviour, and hiding that behind a permissive predicate is the same
+  // mistake as the day fallback above.
+  const matchDuration = (x: Task) => {
+    if (duration === 'all') return true;
+    const m = x.estimated_minutes;
+    if (m === null || m === undefined) return false;
+    if (duration === '5') return m <= 5;
+    if (duration === '15') return m > 5 && m <= 15;
+    if (duration === '30') return m > 15 && m <= 30;
+    return m > 30;
+  };
+
+  // SS-677 item 7. A different axis from job_type: which part of the
+  // house's life the task belongs to, not which trade it is.
+  const matchWorkSection = (x: Task) =>
+    workSection === 'all' || x.work_section_id === workSection;
   const matchJob = (x: Task) => job === 'all' || (x.job_type ?? '') === job;
   const matchSearch = (x: Task) => {
     const q = search.trim().toLowerCase();
@@ -800,26 +865,67 @@ export default function DutyRosterClient({
   const freqOptions = useMemo(() => {
     const present = new Set(
       scopedTasks
-        .filter((x) => matchDay(x) && matchFloor(x) && matchRoom(x) && matchJob(x) && matchAssignment(x) && matchSearch(x))
+        .filter((x) => matchDay(x) && matchFloor(x) && matchRoom(x) && matchJob(x) && matchAssignment(x) && matchDuration(x) && matchWorkSection(x) && matchSearch(x))
         .map((x) => x.frequency_id)
     );
     return frequencies.filter((f) => present.has(f.id));
-  }, [scopedTasks, frequencies, dayFilter, floor, room, job, assignment, search]);
+  }, [scopedTasks, frequencies, dayFilter, floor, room, job, assignment, duration, workSection, search]);
 
+  // SS-677 item 2. DISPLAY ONLY. No room is renamed, here or anywhere.
+  //
+  // 21 of 100 room names are duplicated: Low and Lax both have a Kitchen, a
+  // Master Bedroom and a Whole House, so three quarters of the way down an
+  // undifferentiated list there were five "Whole House" entries and no way
+  // to tell them apart. Options now read "House • Room" and are grouped by
+  // house.
+  //
+  // The list is already SCOPED, and that is a consequence of the pills now
+  // following the selector rather than a second mechanism: this derives
+  // from scopedTasks, which is filtered by `house`. On one house you get
+  // that house's rooms and nothing else.
+  //
+  // KNOWN AND OUT OF SCOPE: the same physical room is named differently
+  // between houses (Office / Study / Supply; Basement Bath vs Basement Bath
+  // 1,2,3; Living Room vs Living Area; Hall Bath vs Bathroom). Not
+  // reconciled here, deliberately. Showing the house is what makes them
+  // pickable; making them identical is a content decision.
   const roomOptions = useMemo(() => {
-    const pool = scopedTasks.filter((x) => matchDay(x) && matchFloor(x) && matchJob(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x));
+    const pool = scopedTasks.filter((x) => matchDay(x) && matchFloor(x) && matchJob(x) && passesFrequency(x) && matchAssignment(x) && matchDuration(x) && matchWorkSection(x) && matchSearch(x));
     const ids = new Set(pool.map((x) => x.room_id));
-    return { hasNull: ids.has(null), list: rooms.filter((r) => ids.has(r.id)) };
-  }, [scopedTasks, rooms, dayFilter, floor, job, freq, assignment, search, passesFrequency]);
+    const list = rooms.filter((r) => ids.has(r.id));
+
+    // Grouped by house, houses alphabetical, rooms alphabetical inside each
+    // (locale-aware: accented room names must collate for the reader).
+    const byHouse = new Map<string, { houseLabel: string; rooms: Room[] }>();
+    for (const r of list) {
+      const houseLabel = labelByProperty.get(r.property_id) ?? '';
+      const entry = byHouse.get(r.property_id);
+      if (entry) entry.rooms.push(r);
+      else byHouse.set(r.property_id, { houseLabel, rooms: [r] });
+    }
+    const groups = [...byHouse.values()]
+      .map((g) => ({
+        ...g,
+        rooms: [...g.rooms].sort((a, b) =>
+          (es ? a.name_es || a.name_en : a.name_en).localeCompare(
+            es ? b.name_es || b.name_en : b.name_en,
+            locale
+          )
+        ),
+      }))
+      .sort((a, b) => a.houseLabel.localeCompare(b.houseLabel, locale));
+
+    return { hasNull: ids.has(null), list, groups };
+  }, [scopedTasks, rooms, dayFilter, floor, job, freq, assignment, duration, workSection, search, passesFrequency, labelByProperty, es, locale]);
 
   const jobOptions = useMemo(() => {
-    const pool = scopedTasks.filter((x) => matchDay(x) && matchFloor(x) && matchRoom(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x));
+    const pool = scopedTasks.filter((x) => matchDay(x) && matchFloor(x) && matchRoom(x) && passesFrequency(x) && matchAssignment(x) && matchDuration(x) && matchWorkSection(x) && matchSearch(x));
     return [...new Set(pool.map((x) => x.job_type).filter(Boolean))].sort() as string[];
-  }, [scopedTasks, dayFilter, floor, room, freq, assignment, search, passesFrequency]);
+  }, [scopedTasks, dayFilter, floor, room, freq, assignment, duration, workSection, search, passesFrequency]);
 
   const filtered = useMemo(
-    () => scopedTasks.filter((x) => matchDay(x) && matchFloor(x) && matchRoom(x) && matchJob(x) && passesFrequency(x) && matchAssignment(x) && matchSearch(x)),
-    [scopedTasks, dayFilter, floor, room, job, freq, assignment, search, passesFrequency]
+    () => scopedTasks.filter((x) => matchDay(x) && matchFloor(x) && matchRoom(x) && matchJob(x) && passesFrequency(x) && matchAssignment(x) && matchDuration(x) && matchWorkSection(x) && matchSearch(x)),
+    [scopedTasks, dayFilter, floor, room, job, freq, assignment, duration, workSection, search, passesFrequency]
   );
 
   // Room sections. Label is the room name when room_id is set, otherwise the
@@ -989,8 +1095,21 @@ export default function DutyRosterClient({
   // a top-level view tab, same role Inventory's own floor tabs play there,
   // not one of the filter pills a person "clears." Persists across a clear
   // the same way switching floors on Inventory does.
+  //
+  // SS-677: duration and workSection join the set. A filter that Clear
+  // does not clear is worse than no Clear button, because the screen
+  // stays filtered while claiming to have been reset. dayFilter stays
+  // OUT, matching its existing treatment: it has its own empty state now
+  // (item 6) whose whole job is to explain that no tasks carry a day, and
+  // clearing it would hide that the moment it appeared.
   const filtersActive =
-    search.trim() !== '' || room !== 'all' || job !== 'all' || freq !== 'all' || assignment !== 'all';
+    search.trim() !== '' ||
+    room !== 'all' ||
+    job !== 'all' ||
+    freq !== 'all' ||
+    assignment !== 'all' ||
+    duration !== 'all' ||
+    workSection !== 'all';
 
   function clearFilters() {
     setSearch('');
@@ -998,6 +1117,8 @@ export default function DutyRosterClient({
     setJob('all');
     setFreq('all');
     setAssignment('all');
+    setDuration('all');
+    setWorkSection('all');
   }
 
   // Same shape as StaffTasksClient.assignMember -- one mechanism, not two.
@@ -1284,14 +1405,18 @@ export default function DutyRosterClient({
           three times. Same pill-strip treatment as the floor tabs below. */}
       {crossHouse && (
         <div className="flex items-center gap-1 bg-mist rounded-full p-1 flex-wrap mb-3 w-fit">
-          <button
-            onClick={() => setHouse('all')}
-            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-              house === 'all' ? 'bg-denim text-white' : 'text-dusk'
-            }`}
-          >
-            {t('allHouses')}
-          </button>
+          {/* SS-677 item 3: rendered only when the selector is itself
+              cross-house. See selectorIsCrossHouse above. */}
+          {selectorIsCrossHouse && (
+            <button
+              onClick={() => setHouse('all')}
+              className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+                house === 'all' ? 'bg-denim text-white' : 'text-dusk'
+              }`}
+            >
+              {t('allHouses')}
+            </button>
+          )}
           {propertyOptions.map((p) => (
             <button
               key={p.id}
@@ -1363,12 +1488,65 @@ export default function DutyRosterClient({
         <select className={pill} value={room} onChange={(e) => setRoom(e.target.value)} aria-label={t('filterRooms')}>
           <option value="all">{t('allRooms')}</option>
           {roomOptions.hasNull && <option value={NO_ROOM}>{t('noRoom')}</option>}
-          {roomOptions.list.map((r) => (
-            <option key={r.id} value={r.id}>
-              {es ? r.name_es : r.name_en}
-            </option>
-          ))}
+          {/* SS-677 item 2. Grouped by house, and each option still carries
+              its own house prefix: an optgroup label alone is not enough,
+              because the CLOSED select shows only the chosen option, and
+              "Whole House" on its own is exactly the ambiguity being
+              fixed. Skipped when a single house is in view, where the
+              prefix would repeat on every line and say nothing. */}
+          {roomOptions.groups.map((g) => {
+            const options = g.rooms.map((r) => {
+              const name = (es ? r.name_es || r.name_en : r.name_en) || '';
+              return (
+                <option key={r.id} value={r.id}>
+                  {roomOptions.groups.length > 1 && g.houseLabel
+                    ? `${g.houseLabel} • ${name}`
+                    : name}
+                </option>
+              );
+            });
+            return roomOptions.groups.length > 1 && g.houseLabel ? (
+              <optgroup key={g.houseLabel} label={g.houseLabel}>
+                {options}
+              </optgroup>
+            ) : (
+              <Fragment key={g.houseLabel || 'single'}>{options}</Fragment>
+            );
+          })}
         </select>
+        {/* SS-677 item 5. "I have 15 minutes." Buckets match the live
+            spread: 199 tasks at 5 or under, 447 at 6 to 15, 29 at 16 to
+            30, 38 above 30. */}
+        <select
+          className={pill}
+          value={duration}
+          onChange={(e) => setDuration(e.target.value as typeof duration)}
+          aria-label={t('filterDuration')}
+        >
+          <option value="all">{t('allDurations')}</option>
+          <option value="5">{t('duration5')}</option>
+          <option value="15">{t('duration15')}</option>
+          <option value="30">{t('duration30')}</option>
+          <option value="30plus">{t('duration30plus')}</option>
+        </select>
+        {/* SS-677 item 7. Which part of the house's life, not which trade.
+            Rendered from the work_sections table so the Spanish label
+            comes from the row, never from a hardcoded map here. */}
+        {workSections.length > 0 && (
+          <select
+            className={pill}
+            value={workSection}
+            onChange={(e) => setWorkSection(e.target.value)}
+            aria-label={t('filterWorkSection')}
+          >
+            <option value="all">{t('allWorkSections')}</option>
+            {workSections.map((w) => (
+              <option key={w.id} value={w.id}>
+                {es ? w.label_es : w.label_en}
+              </option>
+            ))}
+          </select>
+        )}
         <select className={pill} value={job} onChange={(e) => setJob(e.target.value)} aria-label={t('filterJobs')}>
           <option value="all">{t('allJobs')}</option>
           {jobOptions.map((j) => (
@@ -1432,9 +1610,19 @@ export default function DutyRosterClient({
           ) : filtered.length === 0 ? (
             <div className="text-center py-14">
               {/* Two distinct empty states, never one. Country has 0 tasks and
-                  will hit the second on day one -- it must read as intentional. */}
+                  will hit the second on day one -- it must read as intentional.
+                  SS-677 item 6 adds a THIRD, and it is the honest one: when a
+                  day is selected and nothing matches, say why. 996 of 1000
+                  tasks have no day set. The two rejected alternatives were
+                  hiding the filter, which conceals that fact, and adding an
+                  "OR no day set" fallback, which returns everything so the
+                  filter silently means nothing. */}
               <p className="font-display text-[18px] text-denim">
-                {filtersActive ? t('emptyFiltered') : t('emptyNoDuties')}
+                {dayFilter !== 'all'
+                  ? t('emptyNoDayForHouse')
+                  : filtersActive
+                    ? t('emptyFiltered')
+                    : t('emptyNoDuties')}
               </p>
               {filtersActive && (
                 <button
