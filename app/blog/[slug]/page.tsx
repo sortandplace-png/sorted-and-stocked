@@ -31,6 +31,7 @@ const FOOT_COPY = {
     ctaFallbackLabel: 'Book Your Consultation',
     followHeading: 'Follow along',
     followLine: 'New posts by email, when we publish them. No more than that.',
+    bio: 'Sort + Place is a professional organizing and household management practice serving families in Lakewood, New Jersey and the surrounding tristate area.',
   },
   es: {
     ctaHeading: '¿Quieres esto en tu propia casa?',
@@ -39,6 +40,11 @@ const FOOT_COPY = {
     ctaFallbackLabel: 'Reserva tu consulta',
     followHeading: 'Sigue el blog',
     followLine: 'Publicaciones nuevas por correo, cuando las publicamos. Nada más.',
+    // Written here for the first time. There was never a Spanish bio,
+    // which is the whole argument for moving it: one markdown field cannot
+    // hold two languages, so as long as the line lived in body_markdown a
+    // Spanish reader was always going to get the English one.
+    bio: 'Sort + Place es una práctica profesional de organización y gestión del hogar que atiende a familias en Lakewood, Nueva Jersey y el área tristate.',
   },
 } as const;
 
@@ -193,6 +199,24 @@ export default async function BlogPostPage({
                 carries no headings in any live post, only a bold line, a
                 rule, and an italic line. */}
             {after && renderSimpleMarkdown(after)}
+
+            {/* SS-709 second half. THE BIO NOW LIVES HERE, not in
+                body_markdown.
+                It was never author copy: the identical rule-plus-italic
+                line was pasted into 31 rows, and migration 195 strips it
+                from all 31 in the same commit that adds this. Both halves
+                ship together on purpose. The strip without this render
+                would silently delete the line from 31 posts, 4 of them
+                published; this render without the strip would print it
+                twice.
+                The real reason to move it: a single markdown field cannot
+                be bilingual, so a Spanish reader was always going to get
+                the English sentence. It now follows getLocale like the
+                card below it.
+                Rule and italic reproduce what renderSimpleMarkdown emitted
+                for "---" and "*...*", so the page looks unchanged. */}
+            <hr className="border-cardBorder my-6 w-full" />
+            <p className="text-sm italic text-dusk leading-relaxed w-full">{foot.bio}</p>
 
             {/* SS-706. ONE CARD, TWO COLUMNS, replacing what used to be a
                 divider, a centred button and a separate email field
