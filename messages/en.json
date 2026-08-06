@@ -852,6 +852,17 @@
     "empty": "No suppliers recorded for this property yet.",
     "noResults": "Nothing matches that search."
   },
+  "vendors": {
+    "heading": "Vendors",
+    "subtitle": "Where the house actually buys from.",
+    "count": "{count, plural, one {# vendor} other {# vendors}}",
+    "empty": "No vendors recorded for this property yet.",
+    "searchPlaceholder": "Search a vendor, kind, or note…",
+    "allKinds": "All",
+    "noResults": "Nothing matches that search.",
+    "visit": "Visit",
+    "delivers": "Delivers"
+  },
   "inventory": {
     "groupByLabel": "Group items by",
     "groupByAZ": "A–Z",
@@ -988,7 +999,37 @@
     "duration30plus": "More than 30 minutes",
     "filterWorkSection": "Filter by section",
     "allWorkSections": "All sections",
-    "emptyNoDayForHouse": "No tasks have a day set for this house yet."
+    "emptyNoDayForHouse": "No tasks have a day set for this house yet.",
+    "viewTiles": "Tiles",
+    "viewTable": "Table",
+    "bulkSelected": "{count} selected",
+    "bulkClearSelection": "Clear selection",
+    "bulkDaysLabel": "Days",
+    "bulkClearDays": "Clear days",
+    "bulkStaffLabel": "Staff",
+    "bulkStaffNoChange": "Leave unchanged",
+    "bulkStaffUnassign": "Unassign",
+    "bulkCrossHouse": "Select tasks in one house to assign staff.",
+    "bulkApply": "Apply",
+    "bulkApplying": "Applying…",
+    "bulkWillChange": "Days on {days}, staff on {staff}.",
+    "bulkDayExcluded": "{count} skipped: longer than weekly",
+    "bulkApplied": "Saved. Days on {days}, staff on {staff}.",
+    "selectRoom": "Select all in {room}",
+    "colTask": "Task",
+    "colFrequency": "Frequency",
+    "colDays": "Days",
+    "colAssignee": "Assigned to",
+    "daysNotApplicable": "Not day based",
+    "daysEveryDay": "Every day",
+    "moreActions": "More actions",
+    "dayShortMon": "Mon",
+    "dayShortTue": "Tue",
+    "dayShortWed": "Wed",
+    "dayShortThu": "Thu",
+    "dayShortFri": "Fri",
+    "dayShortSat": "Sat",
+    "dayShortSun": "Sun"
   },
   "taskVerification": {
     "title": "Task Verification",
@@ -1288,6 +1329,10 @@
       "year-at-a-glance": {
         "title": "Year at a Glance",
         "description": "Every holiday on the calendar, at a glance."
+      },
+      "low-stock": {
+        "title": "Low Stock, All Houses",
+        "description": "One shared buying list for everything running low across your houses."
       }
     }
   },
@@ -1295,5 +1340,17 @@
     "app": "Sorted & Stocked is an organizing tool. It does not make halachic decisions.\nFor any question of halacha, ask your Rav.",
     "tags": "These labels show what this household has decided, not what halacha requires. If something looks wrong, ask before you act.",
     "times": "Times are calculated from your zip code. Confirm against your shul's published times."
+  },
+  "crossPropertyLowStock": {
+    "title": "Low Stock, All Houses",
+    "subtitle": "One shopping trip instead of five separate lists that all say the same thing.",
+    "sharedView": "Shared (2+ houses)",
+    "everywhereView": "Everywhere",
+    "loadError": "Could not load low stock. Try again.",
+    "emptyShared": "Nothing is low in more than one house right now.",
+    "emptyEverywhere": "Nothing is low anywhere right now.",
+    "housesNeeding": "{count, plural, one {# house} other {# houses}}",
+    "reorder": "Reorder",
+    "noReorderLink": "No reorder link"
   }
 }

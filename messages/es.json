@@ -852,6 +852,17 @@
     "empty": "Aún no hay proveedores registrados para esta propiedad.",
     "noResults": "Nada coincide con esa búsqueda."
   },
+  "vendors": {
+    "heading": "Proveedores",
+    "subtitle": "Dónde compra realmente la casa.",
+    "count": "{count, plural, one {# proveedor} other {# proveedores}}",
+    "empty": "Aún no hay proveedores registrados para esta propiedad.",
+    "searchPlaceholder": "Buscar un proveedor, tipo o nota…",
+    "allKinds": "Todos",
+    "noResults": "Nada coincide con esa búsqueda.",
+    "visit": "Visitar",
+    "delivers": "Entrega a domicilio"
+  },
   "inventory": {
     "groupByLabel": "Agrupar artículos por",
     "groupByAZ": "A–Z",
@@ -988,7 +999,37 @@
     "duration30plus": "Más de 30 minutos",
     "filterWorkSection": "Filtrar por sección",
     "allWorkSections": "Todas las secciones",
-    "emptyNoDayForHouse": "Ninguna tarea tiene un día asignado en esta casa todavía."
+    "emptyNoDayForHouse": "Ninguna tarea tiene un día asignado en esta casa todavía.",
+    "viewTiles": "Tarjetas",
+    "viewTable": "Tabla",
+    "bulkSelected": "{count} seleccionadas",
+    "bulkClearSelection": "Borrar selección",
+    "bulkDaysLabel": "Días",
+    "bulkClearDays": "Borrar días",
+    "bulkStaffLabel": "Personal",
+    "bulkStaffNoChange": "Dejar sin cambios",
+    "bulkStaffUnassign": "Sin asignar",
+    "bulkCrossHouse": "Seleccione tareas de una sola casa para asignar personal.",
+    "bulkApply": "Aplicar",
+    "bulkApplying": "Aplicando…",
+    "bulkWillChange": "Días en {days}, personal en {staff}.",
+    "bulkDayExcluded": "{count} omitidas: menos de una vez por semana",
+    "bulkApplied": "Guardado. Días en {days}, personal en {staff}.",
+    "selectRoom": "Seleccionar todo en {room}",
+    "colTask": "Tarea",
+    "colFrequency": "Frecuencia",
+    "colDays": "Días",
+    "colAssignee": "Asignada a",
+    "daysNotApplicable": "No aplica por día",
+    "daysEveryDay": "Todos los días",
+    "moreActions": "Más acciones",
+    "dayShortMon": "Lun",
+    "dayShortTue": "Mar",
+    "dayShortWed": "Mié",
+    "dayShortThu": "Jue",
+    "dayShortFri": "Vie",
+    "dayShortSat": "Sáb",
+    "dayShortSun": "Dom"
   },
   "taskVerification": {
     "title": "Verificación de Tareas",
@@ -1288,6 +1329,10 @@
       "year-at-a-glance": {
         "title": "El Año de un Vistazo",
         "description": "Cada día festivo en el calendario, de un vistazo."
+      },
+      "low-stock": {
+        "title": "Poco Inventario, Todas las Casas",
+        "description": "Una lista de compras compartida para todo lo que se está agotando en tus casas."
       }
     }
   },
@@ -1295,5 +1340,17 @@
     "app": "Sorted & Stocked es una herramienta de organización. No toma decisiones halájicas.\nPara cualquier pregunta de halajá, consulte a su Rav.",
     "tags": "Estas etiquetas muestran lo que este hogar ha decidido, no lo que exige la halajá. Si algo parece incorrecto, pregunte antes de actuar.",
     "times": "Los horarios se calculan según su código postal. Confírmelos con los horarios publicados de su shul."
+  },
+  "crossPropertyLowStock": {
+    "title": "Poco Inventario, Todas las Casas",
+    "subtitle": "Un solo viaje de compras en lugar de cinco listas separadas que dicen lo mismo.",
+    "sharedView": "Compartido (2+ casas)",
+    "everywhereView": "En todas partes",
+    "loadError": "No se pudo cargar el inventario bajo. Intenta de nuevo.",
+    "emptyShared": "Nada está bajo en más de una casa en este momento.",
+    "emptyEverywhere": "Nada está bajo en ninguna casa en este momento.",
+    "housesNeeding": "{count, plural, one {# casa} other {# casas}}",
+    "reorder": "Reordenar",
+    "noReorderLink": "Sin enlace de reorden"
   }
 }

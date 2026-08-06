@@ -206,6 +206,15 @@ const TOOLS = [
     description: "A preview of what's low and what's coming up this week.",
   },
   {
+    // SS-013. Sits with Suppliers and Digest in Reference -- all three
+    // answer questions about buying, and this is the one that spans every
+    // house a manager can see rather than just this one.
+    slug: 'low-stock',
+    icon: '🛒',
+    title: 'Low Stock, All Houses',
+    description: 'One shared buying list for everything running low across your houses.',
+  },
+  {
     slug: 'blog',
     icon: '📖',
     title: 'Blog & Articles',
@@ -255,6 +264,9 @@ const MIN_ROLE: Record<string, 'staff' | 'manager' | 'owner'> = {
   // list is separate from that page-level gate -- without an entry here the
   // tile still showed for staff, who would then click through to a redirect.
   suppliers: 'manager',
+  // SS-013. Cross-property data, same tier as Suppliers -- a housekeeper
+  // has no use for a buying list spanning houses she doesn't work in.
+  'low-stock': 'manager',
   // Third-party health data (guest allergies and sensitivities) and family
   // photos/milestones. Neither is a work tool -- confirmed by the owner.
   'taste-memory': 'manager',
@@ -324,7 +336,7 @@ const GROUPS: {
         // it exists in TOOLS. Placed next to 'contacts' per that entry's
         // own comment: both answer "who do we get this from," one for
         // people, one for stores.
-        slugs: ['knowledge-base', 'pantry-zones', 'contacts', 'suppliers', 'borrowed-items', 'digest'],
+        slugs: ['knowledge-base', 'pantry-zones', 'contacts', 'suppliers', 'low-stock', 'borrowed-items', 'digest'],
       },
       { key: 'capture-tools', label: 'Capture Tools', slugs: ['capture-inbox', 'capture-photo', 'identify-item', 'photo-worklist'] },
       {

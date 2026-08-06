@@ -241,9 +241,9 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
   if (loading) return <SkeletonList />;
 
   return (
-    <div className="max-w-md lg:max-w-4xl mx-auto p-4">
-      <h1 className="text-2xl font-display text-denim mb-1">Contacts &amp; Vendors</h1>
-      <p className="text-sm text-dusk mb-4">Everyone the household calls on — repairs, deliveries, help.</p>
+    <section className="mb-8">
+      <h2 className="font-display text-lg text-denim mb-1">Contacts</h2>
+      <p className="text-sm text-dusk mb-3">Everyone the household calls on — repairs, deliveries, help.</p>
 
       <input
         value={search}
@@ -434,6 +434,6 @@ export default function HouseholdContactsClient({ propertyId }: { propertyId: st
           </li>
         ))}
       </ul>
-    </div>
+    </section>
   );
 }
