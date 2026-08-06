@@ -13,7 +13,7 @@ import { renderSimpleMarkdown } from '@/lib/simple-markdown';
 import { extractRelatedReading } from '@/lib/related-reading';
 import RelatedReadingCards, { type RelatedCard } from '@/components/blog/RelatedReadingCards';
 import PinterestSaveButton from '@/components/blog/PinterestSaveButton';
-import SubscribeForm from '@/components/blog/SubscribeForm';
+import ArticleRail from '@/components/blog/ArticleRail';
 import MarketingHeader from '@/components/marketing/MarketingHeader';
 import MarketingFooter from '@/components/marketing/MarketingFooter';
 import { getLocale } from 'next-intl/server';
@@ -54,7 +54,7 @@ async function fetchPost(slug: string) {
   const supabase = await createClient();
   const { data } = await supabase
     .from('blog_posts')
-    .select('slug, title, excerpt, body_markdown, header_image_url, cta_label, cta_url, published_at, faq_jsonld')
+    .select('slug, title, excerpt, body_markdown, header_image_url, header_image_caption_en, header_image_caption_es, header_image_alt_en, header_image_alt_es, cta_label, cta_url, published_at, updated_at, faq_jsonld')
     .eq('slug', slug)
     .not('published_at', 'is', null)
     .maybeSingle();
@@ -157,22 +157,49 @@ export default async function BlogPostPage({
           the margin being detached from the text rather than beside it.
           The READING MEASURE is what is capped here; the container is
           WIDER than the max-w-4xl it replaced, not narrower. */}
-      <main className="flex-1 w-full max-w-[57rem] mx-auto px-4 py-10">
+      {/* SS-665 answered: the container widens to carry the rail beside the
+          article. The article's own measure is unchanged. */}
+      <main className="flex-1 w-full max-w-[75rem] mx-auto px-4 py-10">
         <Link href="/blog" className="text-sm text-dusk hover:text-denim underline underline-offset-2 mb-6 inline-block">
           ← Blog
         </Link>
 
-        <article className="bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
+        {/* THE RAIL SITS BENEATH THE ARTICLE BELOW 900px, NEVER ABOVE IT.
+            Done with flex-col ordering rather than a second copy of the
+            markup, because two copies drift. Above would put the email ask
+            before the reader has seen a word, which is the exact thing
+            SS-639 removed from the index. */}
+        <div className="flex flex-col min-[900px]:flex-row gap-8 items-start">
+          <article className="w-full min-w-0 bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
           {post.header_image_url && (
             <div className="relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={post.header_image_url} alt="" className="w-full max-h-72 object-cover" />
+              <img
+                src={post.header_image_url}
+                /* ALT DESCRIBES WHAT IS SHOWN, and is not the caption. All
+                   11 published posts shipped alt="" until now, which is a
+                   real accessibility defect rather than a nicety. Falls
+                   back to the title only when no alt has been written, so
+                   the image is never wholly unlabelled. */
+                alt={(locale === 'es' ? post.header_image_alt_es : post.header_image_alt_en) || post.title}
+                className="w-full max-h-72 object-cover"
+              />
               <PinterestSaveButton
                 slug={post.slug}
                 imageUrl={post.header_image_url}
                 description={post.excerpt ?? post.title}
               />
             </div>
+          )}
+          {/* CAPTION is author voice and says what the picture does not, so
+              it is a separate column from alt and renders for everyone.
+              Hidden entirely when empty: all 43 rows ship empty, and an
+              empty italic bar under every header image would be worse than
+              no caption at all. */}
+          {(locale === 'es' ? post.header_image_caption_es : post.header_image_caption_en) && (
+            <p className="px-6 sm:px-8 pt-3 text-[12px] italic text-dusk text-center">
+              {locale === 'es' ? post.header_image_caption_es : post.header_image_caption_en}
+            </p>
           )}
           <div className="p-6 sm:p-8">
             {/* Title and date stay FULL CARD WIDTH, not on the reading
@@ -218,59 +245,34 @@ export default async function BlogPostPage({
             <hr className="border-cardBorder my-6 w-full" />
             <p className="text-sm italic text-dusk leading-relaxed w-full">{foot.bio}</p>
 
-            {/* SS-706. ONE CARD, TWO COLUMNS, replacing what used to be a
-                divider, a centred button and a separate email field
-                stacked down the page. Four elements at four alignments
-                inside about 500px was the "awful" tail; this is one object
-                with one edge pair.
+            {/* THE FOOT KEEPS THE CONSULTATION ONLY (1.5). Subscribe has
+                moved to the rail, which closes SS-615 and SS-639 together:
+                the consultation was being offered twice on one page, and
+                the email ask sat where a reader met it before finishing
+                the article. One ask here, the quieter one alongside.
 
-                The ORDER SS-639 ruled is intact: article, Related Reading,
-                then the ask. The consultation is still the primary ask and
-                still visually louder, it just no longer competes with the
-                sign-up for vertical space. The sign-up is secondary by
-                POSITION and TINT now rather than by being small and last.
-
-                Stacks below 680px, where the column divider becomes a top
-                border, because two 40% columns on a phone are two columns
-                of nothing.
-
-                THE FORM IS THE EXISTING COMPONENT, not a new one. It posts
-                to /api/subscribe and carries the honeypot, the timing
-                check, the IP rate limit, the dedupe, the locale and the
-                signed token flow. A raw form posting to /subscribe would
-                lose every one of those and hit a route that does not
-                exist. bare drops its own top rule, which the column
-                divider already provides.
-
-                sourceDetail carries the slug so a sign-up is attributed to
-                the article that earned it. */}
-            <div className="mt-10 rounded-xl2 border border-cardBorder overflow-hidden flex flex-col min-[680px]:flex-row">
-              <div className="min-[680px]:basis-3/5 bg-card p-6 sm:p-7">
-                <h2 className="font-display text-[22px] leading-tight text-denim">
-                  {foot.ctaHeading}
-                </h2>
-                <p className="text-[14px] text-dusk leading-relaxed mt-2 mb-5">{foot.ctaLine}</p>
-                <a
-                  href={post.cta_url || '/contact'}
-                  className="inline-block bg-denim text-white text-sm font-semibold uppercase tracking-[0.12em] px-6 py-3 rounded-full hover:opacity-90 transition-opacity"
-                >
-                  {post.cta_label || foot.ctaFallbackLabel}
-                </a>
-              </div>
-
-              <div className="min-[680px]:basis-2/5 bg-linen border-t border-cardBorder min-[680px]:border-t-0 min-[680px]:border-l p-6 sm:p-7">
-                <p className="font-display text-[17px] text-denim mb-2">{foot.followHeading}</p>
-                <SubscribeForm
-                  variant="inline"
-                  bare
-                  source="blog-article"
-                  sourceDetail={post.slug}
-                  line={foot.followLine}
-                />
-              </div>
+                The two-column card went with it. With subscribe gone the
+                right column had nothing in it, and a 40 percent empty
+                panel is the same defect as the 15rem empty gutter SS-665
+                raised. A margin only earns its space if something lives in
+                it, and here nothing did. */}
+            <div className="mt-10 rounded-xl2 border border-cardBorder overflow-hidden bg-card p-6 sm:p-7">
+              <h2 className="font-display text-[22px] leading-tight text-denim">
+                {foot.ctaHeading}
+              </h2>
+              <p className="text-[14px] text-dusk leading-relaxed mt-2 mb-5">{foot.ctaLine}</p>
+              <a
+                href={post.cta_url || '/contact'}
+                className="inline-block bg-denim text-white text-sm font-semibold uppercase tracking-[0.12em] px-6 py-3 rounded-full hover:opacity-90 transition-opacity"
+              >
+                {post.cta_label || foot.ctaFallbackLabel}
+              </a>
             </div>
           </div>
-        </article>
+          </article>
+
+          <ArticleRail locale={locale === 'es' ? 'es' : 'en'} currentSlug={post.slug} />
+        </div>
       </main>
       <MarketingFooter />
     </div>

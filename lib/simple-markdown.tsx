@@ -127,7 +127,7 @@ function renderInline(text: string): ReactNode[] {
       const [, label, href] = link;
       if (href.startsWith('/')) {
         return (
-          <a key={i} href={href} className="text-denim underline underline-offset-2 hover:text-brass">
+          <a key={i} href={href} className="text-denim visited:text-denim underline underline-offset-2 hover:text-brass">
             {label}
           </a>
         );
