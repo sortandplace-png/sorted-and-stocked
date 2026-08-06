@@ -18,6 +18,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import BlogReferenceDrawer from '@/components/BlogReferenceDrawer';
 import { storageThumbnail } from '@/lib/storage-image';
 import Pin from '@/components/ui/Pin';
 
@@ -67,10 +68,16 @@ export default function BlogDraftsClient({ drafts, propertyId }: { drafts: Draft
 
   return (
     <div className="max-w-5xl mx-auto px-4 md:px-6 py-6">
-      <p className="text-[13px] text-denim/70 mb-4">
-        {drafts.length} unpublished posts. Title, body and slug are read-only here; the intended date is editable.
-        Publishing stays a deliberate act elsewhere.
-      </p>
+      {/* Reference opens a DRAWER, not a route and not a nav entry: same
+          ruling as SS-667, which put Drafts on a tab rather than giving it
+          a page of its own. */}
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <p className="text-[13px] text-denim/70">
+          {drafts.length} unpublished posts. Title, body and slug are read-only here; the intended date is editable.
+          Publishing stays a deliberate act elsewhere.
+        </p>
+        <BlogReferenceDrawer />
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {drafts.map((d) => {
           const words = wordCount(d.body_markdown);

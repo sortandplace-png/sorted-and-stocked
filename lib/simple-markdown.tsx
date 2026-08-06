@@ -232,9 +232,19 @@ const IMAGE_ONLY_RE = /^!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)$/;
 
 export type ImagePlacement = 'stacked' | 'beside-left' | 'beside-right' | 'bleed';
 
+// THE CANONICAL TOKENS ARE beside-left AND beside-right. The renderer has
+// had both sides since it was written; there was never a sideless "beside".
+//
+// half-left and half-right are accepted as ALIASES because content_prompts
+// already holds 30 rows written that way. Rewriting 30 rows to match a
+// component is the wrong direction of travel: the alias costs two lines
+// here and nothing downstream, and it means the existing plan works
+// unedited. Emit the canonical form in anything new.
 function placementFrom(title: string | undefined): ImagePlacement {
   const t = (title ?? '').trim().toLowerCase();
-  if (t === 'beside-left' || t === 'beside-right' || t === 'bleed') return t;
+  if (t === 'beside-left' || t === 'half-left') return 'beside-left';
+  if (t === 'beside-right' || t === 'half-right') return 'beside-right';
+  if (t === 'bleed') return 'bleed';
   return 'stacked';
 }
 
