@@ -6,6 +6,32 @@ to learn.
 
 ---
 
+## Decisions made 6 Aug. Do not re-ask. (SS-758, SS-759)
+
+- **Blog inline images go in the repo** at `/public/images/`, converted to
+  **webp and optimised**. Not a bucket. Every inline image already served is a
+  repo path; git gives the audit trail SS-675 says headers lack; Next.js
+  optimises them, which helps SS-530. **Do not commit raw jpeg.**
+- **Pins go to storage**, under a `pins/` prefix. Pinterest fetches from a
+  public URL and a pin is not site content.
+- **Headers stay in the `marketing` bucket.** Separate job, out of scope.
+- **`walk-in-closet-testimonial-graphic.jpg` exists** in Drive as
+  `Walk-in_closet_testimonial_graphic_202608041349.jpeg`. Only
+  `universal-housekeeping-sop-template.jpg` is genuinely absent.
+- **blog-40's low-stock section was rewritten 6 Aug** and verified clean — zero
+  banned phrases, internal link intact, no dashes. **Ignore any earlier note
+  saying it still promises thresholds.** Nine posts still carry the claim,
+  three of them live; blog-40 is the pattern to copy.
+
+**Sweep `/public/images/` before downloading anything.** Every file already
+there is one nobody has to move.
+
+Order of work: match by computed transform → convert → commit blog images →
+write `generated_asset_url` → **pins last**, into `pin_queue`, approved rows
+only. Then item 7, then the seven migration files.
+
+---
+
 ## 0. Do this first, every time
 
 ```bash
@@ -38,8 +64,11 @@ reports this session were wrong, and catching them changed the work:
   auto-deploys `main`.
 - "The renderer only has `beside` with no side" — it had **both sides** all
   along.
-- "`content_prompts.asset_file` doesn't resolve" — **there is no `asset_file`
-  column**. The filenames were never in the table.
+- "`content_prompts.asset_file` doesn't resolve" — **there was no `asset_file`
+  column**. The filenames were not in the table.
+  **Superseded 6 Aug: the column now exists and is populated on all 66 rows.**
+  Whoever added it did so mid-session. Do not go looking for an external
+  manifest — the filenames are in the table. See §5a.
 - SS-641's graphic was reported outstanding; it was **byte-identical** to what
   had already shipped.
 
@@ -121,19 +150,58 @@ by eye. Flag anything that does not match uniquely.
 **Racquel downloads the folder to `C:\Users\rockl\Downloads\`.** Then it is
 mechanical.
 
-**Two corrections before uploading:**
-1. `olive-oil-bottle-stop-buying.jpg` is **already in the repo** at
-   `/public/images/stop-buying-olive-oil-pantry-inventory-duplicate.webp`.
-   Check the manifest for others already served before downloading.
-2. Blog inline images are served from **`/public/images/`**, not a bucket. The
-   11 live posts use that path. Decide where the 32 live *before* uploading, or
-   blog images end up split across two homes.
+**Both open questions are now answered — see the decisions block at the top.**
+Destination is settled (repo for blog, `pins/` for pins) and the already-served
+sweep is a standing instruction, not a one-off check.
+
+---
+
+## 5a. What `content_prompts` actually contains (verified live, 6 Aug)
+
+Query it yourself before trusting any of this, but as of writing:
+
+| Fact | Value |
+|---|---|
+| Rows | **66** — 35 `blog_post`, 31 `pin` |
+| `asset_file` populated | **66 of 66** |
+| `generated_asset_url` populated | **4**, all `/images/…` paths |
+| Approved blog rows still unmapped | **30** |
+| Approved pins | **30** (+1 rejected = 31) |
+| Files in `/public/images/` | **5 images**, each as `.png` + `.webp` |
+
+Three traps in that data:
+
+1. **`asset_file` is not unique.** 24 filenames appear on two rows — normally
+   the `blog_post` row and the `pin` row for the *same* post, which is fine and
+   expected. **Two pairs cross posts**, and they cross with each other:
+   `olive-oil-bottle-stop-buying.jpg` is on `pin:blog-21#4` and
+   `blog_post:blog-22#1`, while `family-home-inventory-setup-prot.jpg` is on
+   `blog_post:blog-21#3` and `pin:blog-22#13`. That looks like a swap during
+   data entry. **Do not resolve it by guessing** — it needs Racquel's eye on
+   which graphic belongs to which post.
+2. **A rejected row is already live.** `blog-21#1` has `status='rejected'` and
+   `generated_asset_url='/images/home-inventory-apps-3-types-comparison.webp'`.
+   Its `asset_file` is `three-kinds-of-home-inventory.jpg` — which is queue
+   item 5, the regeneration Racquel wants. A rejected prompt is serving an
+   image on a live page right now.
+3. **`asset_file` has mixed provenance.** Most are the ~32-char truncated
+   generator exports, but `blog-11#1` carries
+   `SOP-072_Pantry_Organizing_Session.webp` — a real Drive filename, different
+   convention, already `.webp`. **The computed transform will not match every
+   row.** Expect to fall back to the real filename for some.
+
+Also: the olive-oil webp **is** served at
+`/public/images/stop-buying-olive-oil-pantry-inventory-duplicate.webp`, but
+**no row points at it**. The row naming it in `asset_file` (`blog-22#1`) points
+at the iceberg graphic instead. Served, unmapped, and mislabelled — all three.
 
 ---
 
 ## 6. Queue, in Racquel's order
 
-1. **Filename mapping** — 4 of 35 resolved, 31 flagged `NO FILE`. Blocked on §5.
+1. **Filename mapping** — **4 of 66 rows carry a URL; 30 approved blog rows and
+   30 approved pins still need one.** Destination is settled; only the files
+   themselves are blocked on §5. Sweep `/public/images/` first.
 2. **Item 7: Add Property reads `property_templates`.** Two rows, observant and
    non-observant. Do **not** hardcode flags, do **not** clone Low (no recipes,
    no meal plan) or Lax (carries `operator_console`, which never travels).
@@ -147,14 +215,20 @@ mechanical.
 4. Category chips smaller / less rounded.
 5. Regenerate `three-kinds-of-home-inventory` — Racquel's call, it is her asset.
 
-**Hard date: blog-40 publishes Tuesday 11 Aug and still has the low-stock
-threshold section. Images do not fix that. It is the only dated item.**
+**Hard date: blog-40 publishes Tuesday 11 Aug. Its low-stock section was
+rewritten and verified clean on 6 Aug — that item is closed.** What remains is
+the other **nine posts** carrying the same threshold claim, three of them live.
+blog-40's rewrite is the pattern: same length, same three beats, opposite
+premise — counting is the whole input, the list builds itself, the first month
+teaches the rhythm.
 
 ---
 
 ## 7. Still with Racquel, not with code
 
-- **Rotate the Pinterest app secret.** It was pasted in a conversation.
+- **Rotate the Pinterest app secret.** It was pasted in a conversation. **This
+  is the gate.** Once images land, it is the only thing standing between the
+  work and 30 pins going live. Two minutes.
 - Two-factor on the Facebook account.
 - Pinterest OAuth run (browser login) + refresh token into Supabase secrets.
 - Verify the console items behind the owner/manager gate (1, 4, 5, 6, 7, 10 of
@@ -177,3 +251,9 @@ threshold section. Images do not fix that. It is the only dated item.**
   hardcoded label is how four fictional printables reached a live page.
 - **Never delete.** Supersede (R21). Applies to the register, proposals,
   design rules and unsubscribes.
+- **Asset destinations are settled** (SS-758, SS-759): blog inline images to
+  the repo as webp, pins to storage under `pins/`, headers stay in `marketing`.
+  Reopen only if the reasoning changes, not because it looks re-decidable.
+- **No low-stock thresholds.** The product notices what is low; the user counts
+  and configures nothing. Any draft that offers a threshold, a target level or
+  a reorder point is wrong on the feature, not just the wording.
