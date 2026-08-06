@@ -34,6 +34,20 @@ export default function Footer({ propertyId }: { propertyId?: string }) {
   // do not paraphrase, shorten or "improve" it. Rendered on every app
   // screen because the footer is the one component every screen carries.
   // The long-form version is FAQ-112 in help_articles.
+  //
+  // HARD LINE BREAK, not a wrap. "For any question of halacha, ask your
+  // Rav." must sit on its own line at EVERY viewport width, so it cannot
+  // be read as a trailing clause of the sentence before it. A wrap moves
+  // with the viewport and on a wide screen the whole thing runs as one
+  // line; the break has to be in the content.
+  //
+  // The newline lives inside the SINGLE approved string rather than the
+  // string being split into two keys. Two keys is how one half gets edited
+  // and the other does not, and this is Rav-approved wording. Verified on
+  // change: rejoining the two sentences with a space reproduces the
+  // approved text character for character, so only the separator differs.
+  // Rendered with whitespace-pre-line, which honours the newline and still
+  // collapses ordinary spaces.
   const tHalacha = useTranslations('halachicDisclaimer');
   const conceptB = (pathname?.endsWith('/dashboard') || pathname === '/properties') ?? false;
 
@@ -67,7 +81,7 @@ export default function Footer({ propertyId }: { propertyId?: string }) {
           <span className="text-brass mx-[13px] text-[13px] font-bold select-none">&bull;</span>
           <span className="text-[12px] text-denim tracking-[0.02em]">Powered by Sort + Place</span>
         </div>
-        <p className="mt-3 mx-auto max-w-xl px-4 text-[11px] leading-relaxed text-dusk">{tHalacha('app')}</p>
+        <p className="mt-3 mx-auto max-w-xl px-4 text-[11px] leading-relaxed text-dusk whitespace-pre-line">{tHalacha('app')}</p>
       </footer>
     );
   }
@@ -103,7 +117,7 @@ export default function Footer({ propertyId }: { propertyId?: string }) {
         </a>
       </div>
       <div className="text-[11px] text-dusk">Powered by Sort + Place</div>
-      <p className="mx-auto max-w-xl px-4 pt-1 text-[11px] leading-relaxed text-dusk">{tHalacha('app')}</p>
+      <p className="mx-auto max-w-xl px-4 pt-1 text-[11px] leading-relaxed text-dusk whitespace-pre-line">{tHalacha('app')}</p>
     </footer>
   );
 }

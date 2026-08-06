@@ -1292,7 +1292,7 @@
     }
   },
   "halachicDisclaimer": {
-    "app": "Sorted & Stocked is an organizing tool. It does not make halachic decisions. For any question of halacha, ask your Rav.",
+    "app": "Sorted & Stocked is an organizing tool. It does not make halachic decisions.\nFor any question of halacha, ask your Rav.",
     "tags": "These labels show what this household has decided, not what halacha requires. If something looks wrong, ask before you act.",
     "times": "Times are calculated from your zip code. Confirm against your shul's published times."
   }
