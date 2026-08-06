@@ -154,6 +154,47 @@ export default function SubscribeForm({
       return;
     }
 
+    // Pinterest signup conversion. Fired ONLY after /api/subscribe returned
+    // 200, which is what closes the loop from a pin to a post to an email
+    // address. Deliberately after the network call and not on submit: a
+    // submit that 429s or fails is not a signup, and counting it would
+    // inflate the one number the pins are judged on.
+    //
+    // Optional-chained because the tag only loads on marketing paths. On an
+    // app page pintrk is undefined and this is a no-op rather than a crash.
+    //
+    // NOTE: this also fires for a resend and for an address already on the
+    // list, because the route deliberately answers identically in all three
+    // cases so it cannot leak list membership. Distinguishing them here
+    // would require the route to tell the browser which case it was, which
+    // is exactly the leak that design avoids.
+    // em is the SHA256 of the address, hashed HERE in the browser. The
+    // plain address never leaves for Pinterest. `value` is already trimmed
+    // and lowercased, which matters: hashing "A@B.com" and "a@b.com" gives
+    // two different digests and would split one person into two.
+    //
+    // Note what is NOT passed on 'load' in PinterestTag: Pinterest's own
+    // snippet ships an em placeholder in angle brackets, and shipping it
+    // literally sends that placeholder text as an email address on every
+    // anonymous page view. The third argument is omitted there entirely
+    // and only appears here, where a real address exists. The literal
+    // placeholder string is deliberately not written anywhere in this
+    // repo, so grepping for it should always return nothing.
+    if (typeof window !== 'undefined') {
+      try {
+        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+        const em = Array.from(new Uint8Array(digest))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join('');
+        window.pintrk?.('track', 'signup', { em });
+      } catch {
+        // crypto.subtle is unavailable on insecure origins. Still record
+        // the conversion, just without the identifier: a missing em costs
+        // match quality, a plain address would be a leak.
+        window.pintrk?.('track', 'signup');
+      }
+    }
+
     // One message for every success case. The route answers the same way
     // for a new signup, a resend and an address already on the list, so
     // this cannot leak whether a given address is a member of a list the

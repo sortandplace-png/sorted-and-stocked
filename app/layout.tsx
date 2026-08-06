@@ -7,6 +7,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import OfflineSyncProvider from '@/components/OfflineSyncProvider';
 import AppUpdateChecker from '@/components/AppUpdateChecker';
+import PinterestTag from '@/components/marketing/PinterestTag';
 import { ToastProvider } from '@/components/Toast';
 import './globals.css';
 
@@ -116,6 +117,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <OfflineSyncProvider>
             <ToastProvider>
               <AppUpdateChecker />
+              {/* Pinterest tag. Mounted here because there is no marketing
+                  layout to mount it in, and it GATES ITSELF ON PATHNAME so
+                  it never loads on an authenticated app page. Deliberately
+                  not a Host check: SS-612 records that this layout must not
+                  vary by Host, since a host-varying layout can be served
+                  across hosts by caches keyed on pathname alone. */}
+              <PinterestTag />
               {children}
             </ToastProvider>
           </OfflineSyncProvider>
