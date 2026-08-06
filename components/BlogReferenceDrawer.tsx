@@ -84,42 +84,71 @@ export default function BlogReferenceDrawer() {
   useEffect(() => {
     if (!open || loading || blogRules.length || designRules.length || prompts.length) return;
     let cancelled = false;
+    // SS-787. The drawer used to hang on "Loading." forever with no error,
+    // even though the code below already had a real error state. The gap
+    // was never a missing error UI -- it was that nothing guaranteed this
+    // async block ever REACHED that UI. There was no try/catch around the
+    // fetch: a thrown exception (a dropped connection, anything the
+    // Postgrest client doesn't itself convert into a returned {error})
+    // rejected this IIFE unhandled, so setLoading(false) never ran and the
+    // existing error path never got a chance to fire. And a request that
+    // truly never settles (hangs at the network layer rather than
+    // rejecting) would never trip Promise.all at all, error or not.
+    //
+    // Two independent fixes, because they cover two different failures:
+    // the try/catch/finally catches a THROW; the timeout race catches a
+    // request that neither resolves nor rejects.
     (async () => {
       setLoading(true);
       setError(null);
       const supabase = createClient();
-      const [r, d, p] = await Promise.all([
-        supabase
-          .from('blog_rules')
-          .select('section, rule_key, rule_text, sort_order')
-          .eq('active', true)
-          .order('section')
-          .order('sort_order'),
-        // Superseded rows are ORDERED IN, not filtered out: R21 says never
-        // delete a row, supersede it, and hiding a superseded rule would
-        // lose the record of what it replaced.
-        supabase
-          .from('design_rules')
-          .select('id, rule, detail, category, superseded_by')
-          .order('category')
-          .order('rule'),
-        supabase
-          .from('content_prompts')
-          .select('id, target_slug, sequence, prompt_text, placement, aspect, status')
-          .eq('scope', 'blog_post')
-          .eq('active', true)
-          .order('target_slug')
-          .order('sequence'),
-      ]);
-      if (cancelled) return;
-      // A read failure must LOOK like a failure. An empty drawer that
-      // silently means "permission denied" reads as "there are no rules".
-      const failed = [r.error, d.error, p.error].filter(Boolean);
-      if (failed.length) setError(failed.map((e) => e!.message).join('; '));
-      setBlogRules((r.data as BlogRule[]) ?? []);
-      setDesignRules((d.data as DesignRule[]) ?? []);
-      setPrompts((p.data as ContentPrompt[]) ?? []);
-      setLoading(false);
+      const timeout = new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), 15000));
+      try {
+        const result = await Promise.race([
+          Promise.all([
+            supabase
+              .from('blog_rules')
+              .select('section, rule_key, rule_text, sort_order')
+              .eq('active', true)
+              .order('section')
+              .order('sort_order'),
+            // Superseded rows are ORDERED IN, not filtered out: R21 says
+            // never delete a row, supersede it, and hiding a superseded
+            // rule would lose the record of what it replaced.
+            supabase
+              .from('design_rules')
+              .select('id, rule, detail, category, superseded_by')
+              .order('category')
+              .order('rule'),
+            supabase
+              .from('content_prompts')
+              .select('id, target_slug, sequence, prompt_text, placement, aspect, status')
+              .eq('scope', 'blog_post')
+              .eq('active', true)
+              .order('target_slug')
+              .order('sequence'),
+          ]),
+          timeout,
+        ]);
+        if (cancelled) return;
+        if (result === 'timeout') {
+          setError('Timed out waiting for the reference tables. Check your connection and try again.');
+          return;
+        }
+        const [r, d, p] = result;
+        // A read failure must LOOK like a failure. An empty drawer that
+        // silently means "permission denied" reads as "there are no rules".
+        const failed = [r.error, d.error, p.error].filter(Boolean);
+        if (failed.length) setError(failed.map((e) => e!.message).join('; '));
+        setBlogRules((r.data as BlogRule[]) ?? []);
+        setDesignRules((d.data as DesignRule[]) ?? []);
+        setPrompts((p.data as ContentPrompt[]) ?? []);
+      } catch (e) {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : 'Could not read the reference tables.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => {
       cancelled = true;
