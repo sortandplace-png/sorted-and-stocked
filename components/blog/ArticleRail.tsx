@@ -16,23 +16,27 @@ import Link from 'next/link';
 import SubscribeForm from '@/components/blog/SubscribeForm';
 import { createClient } from '@/lib/supabase/server';
 
-// Free printables. These are the PUBLIC stubs in public/downloads, which
-// stay free by ruling; the gated designed set (SS-686) is reached only
-// through a signed download link in the welcome email and must never be
-// listed here.
+// FREE PRINTABLES NOW COME FROM THE printables TABLE (migration 198), and
+// this is a correction of my own defect.
 //
-// A SHORT CURATED LIST, NOT ALL 24, and not a database read: there is no
-// printables table, and inventing one was not in scope. Two across at
-// ~240px is the constraint, so four is the honest maximum before the rail
-// becomes a directory. FLAGGED: when a printables table exists this should
-// read from it, because a hardcoded list is exactly the kind of thing that
-// rots quietly.
-const RAIL_PRINTABLES: { file: string; en: string; es: string }[] = [
-  { file: 'pantry-organization-checklist.pdf', en: 'Pantry Checklist', es: 'Lista de despensa' },
-  { file: 'household-systems-planner.pdf', en: 'Systems Planner', es: 'Planificador de sistemas' },
-  { file: 'home-inventory-starter-guide.pdf', en: 'Inventory Starter', es: 'Guía de inventario' },
-  { file: 'weekly-cleaning-schedule.pdf', en: 'Weekly Schedule', es: 'Horario semanal' },
-];
+// This list used to be four hardcoded labels: Pantry Checklist, Systems
+// Planner, Inventory Starter, Weekly Schedule. I wrote those names. They
+// were not the names of anything. The files they pointed at DO resolve
+// (all four return 200), but they are 1-page ~4KB ReportLab stubs, so the
+// rail was offering a reader four real-sounding documents and delivering
+// four near-empty pages.
+//
+// The fix is structural, not a better list: a row in printables cannot
+// exist without a pdf_path, and the query below additionally requires
+// active, NOT gated, and a cover image. A hardcoded label required none of
+// those, which is exactly how four fictional printables reached a live
+// page. Every seeded row is active=false, so this panel renders NOTHING
+// until a human turns one on. Fail closed.
+//
+// The three clean printables (reset-day, training-staff,
+// weekly-pantry-reset) are all GATED behind the email under SS-686, so
+// none of them belongs in a "free printables" panel. That is why the panel
+// is currently empty rather than showing them.
 
 const COPY = {
   en: {
@@ -89,6 +93,19 @@ export default async function ArticleRail({
     .select('slug, label_en, label_es')
     .order('sort_order');
 
+  // active AND not gated is enforced by RLS too; repeated here so the
+  // intent is readable at the call site. cover_image_url must exist
+  // because a PDF does not self render a preview and a tile without one
+  // is a blank square.
+  const { data: printablesRaw } = await supabase
+    .from('printables')
+    .select('slug, label_en, label_es, pdf_path, cover_image_url')
+    .eq('active', true)
+    .eq('gated', false)
+    .not('cover_image_url', 'is', null)
+    .order('sort_order');
+  const printables = printablesRaw ?? [];
+
   return (
     <aside
       className="w-full min-[900px]:w-[240px] min-[900px]:shrink-0 min-[900px]:sticky min-[900px]:top-24 min-[900px]:self-start space-y-7"
@@ -113,28 +130,40 @@ export default async function ArticleRail({
       </div>
 
       {/* PRINTABLES, TWO ACROSS, LETTER PORTRAIT. Three across 240px is
-          60px each and unrecognisable as a document. aspect ratio 8.5/11
-          so the thumbnails read as paper rather than as tiles. */}
-      <div>
-        <RailHeading>{c.printables}</RailHeading>
-        <ul className="grid grid-cols-2 gap-2.5">
-          {RAIL_PRINTABLES.map((p) => (
-            <li key={p.file}>
-              <a
-                href={`/downloads/${p.file}`}
-                className="block group"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span className="block aspect-[8.5/11] rounded-lg border border-cardBorder bg-card group-hover:border-brass transition-colors" />
-                <span className="block mt-1.5 text-[11px] leading-snug text-denim group-hover:text-brass transition-colors">
-                  {locale === 'es' ? p.es : p.en}
-                </span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
+          60px each and unrecognisable as a document. aspect 8.5/11 so a
+          thumbnail reads as paper rather than as a tile.
+
+          THE WHOLE PANEL IS HIDDEN WHEN THERE IS NOTHING REAL TO OFFER,
+          which is the state today. A section promising downloads that are
+          not there is worse than no section. */}
+      {printables.length > 0 && (
+        <div>
+          <RailHeading>{c.printables}</RailHeading>
+          <ul className="grid grid-cols-2 gap-2.5">
+            {printables.map((p) => (
+              <li key={p.slug}>
+                <a
+                  href={`/downloads/${p.pdf_path.replace(/^printables\//, '')}`}
+                  className="block group"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={p.cover_image_url!}
+                    alt=""
+                    loading="lazy"
+                    className="block w-full aspect-[8.5/11] object-cover rounded-lg border border-cardBorder group-hover:border-brass transition-colors"
+                  />
+                  <span className="block mt-1.5 text-[11px] leading-snug text-denim group-hover:text-brass transition-colors">
+                    {locale === 'es' ? p.label_es : p.label_en}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* SUBSCRIBE. THE EXISTING COMPONENT. Never a second form: it carries
           the honeypot, the timing check, the IP rate limit, the dedupe, the
