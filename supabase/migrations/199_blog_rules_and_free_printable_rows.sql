@@ -1,0 +1,14 @@
+-- 199_blog_rules_and_free_printable_rows.sql
+-- blog_rules: rules live in the DATABASE, never in the codebase. The day
+-- someone hardcodes a rule is the day the generator starts producing last
+-- quarter's blog. Changing a rule is changing a ROW.
+--
+-- The four NEW free sheets are seeded here too. They are DIFFERENT ASSETS
+-- from the five SS-686 rows and are never gated.
+--
+-- ALL FOUR SEED active=false, INCLUDING THE TWO MARKED READY, and that is
+-- deliberate rather than a contradiction of the instruction: active=true
+-- would put a tile on a live page pointing at a pdf_path that does not
+-- exist yet, since no PDF has been produced and no cover uploaded. That is
+-- the exact defect being corrected. They flip when the asset and cover are
+-- real; the rail enforces the cover independently.
