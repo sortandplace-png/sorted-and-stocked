@@ -197,6 +197,61 @@ at the iceberg graphic instead. Served, unmapped, and mislabelled — all three.
 
 ---
 
+## 5b. The files are on disk, but INSIDE ZIPS (verified 6 Aug)
+
+**There is no extracted asset folder.** `C:\Users\rockl\Downloads\` root holds
+2,883 loose images and only **9 of the 42** names resolve there. Do not scan
+the root and conclude the files are missing — that is a 20-minute dead end.
+
+Matching all 42 `asset_file` values against loose files **and every zip**:
+**34 of 42 resolve.** The sources that matter:
+
+| Archive | Holds |
+|---|---|
+| `sort-place-pins.zip` | **All 31 pins, already named exactly as `asset_file`.** 37 entries under `pins/`. **No transform needed** — the names match the table verbatim. |
+| `sop-missing-photos-31-FINAL.zip` | The `SOP-*.webp` set, SOP-069 through SOP-120, plus `00_MANIFEST.csv`. |
+| `download (20).zip` | The generator export, 5 Aug — the most complete of the `download (nn)` series. Names are `Title_Case_Truncated…_YYYYMMDDHHMM.jpeg`. |
+
+**Prefer `sort-place-pins.zip`.** The `download (nn)` zips overlap heavily —
+several names appear in four or five of them at different timestamps, so
+picking from those means choosing a version. The pins zip does not have that
+problem.
+
+**The transform, confirmed:** real name → drop extension → drop trailing
+`_YYYYMMDDHHMM` → drop the trailing `…` (a literal U+2026 the generator inserts
+when it truncates at 32 chars) → lowercase → `_` becomes `-`.
+
+**Eight did not resolve by name. Five are really only three:**
+
+- `SOP-074_Storage_Closet_Organizing.webp` → the zip has
+  `SOP-074_Storage_Closet_Organizing_Session.webp`
+- `SOP-114_Drawer_Interior_Reset.webp` → the zip has
+  `SOP-114_Drawer_or_Shelf_Interior_Reset.webp`
+
+  Both are safe: **the SOP number is a unique key.** Match on it, not the words.
+- **Genuinely absent: `SOP-052_Freezer_Organization_Audit.webp`,
+  `SOP-053_Pantry_Audit_Method.webp`, `SOP-126_Shabbos_Table_Setting.webp`.**
+  The archive covers 069–120 only, so 052, 053 and 126 fall outside it.
+- **`blog-40-morning-counter.jpg`, `blog-40-snack-zone.jpg`,
+  `blog-40-weekly-plan-board.jpg`** are on no disk and in no zip. Storage has
+  exactly one blog-40 object, `marketing/blog/blog-40-inline-snack-drawer.jpg`.
+  **These three are for the post that publishes Tuesday.** Raise them early.
+
+**`universal-housekeeping-sop-template.jpg` is NOT absent.** It is in four
+places, including loose in Downloads as
+`Universal_Housekeeping_SOP_Template_202608050829.jpeg`. Any note calling it the
+one missing file is out of date.
+
+**One ambiguity to flag, not guess.** `sort-place-pins.zip` contains both
+`infographic-sheet-watercolor-flo.jpg` and `infographic-sheet-with-watercolo.jpg`.
+`content_prompts` references only the first, on *both* `blog_post:blog-16#2` and
+`pin:blog-16#22`. One of those two rows probably wants the `-with-` variant.
+The zip also carries `reset-day-how-your-home-2/-3/-4.jpg`,
+`training-staff-4-steps-2.jpg` and `pantry-bin-labeling-map-restock.jpg`, none
+of which any row references — 37 entries against 31 pin rows.
+
+---
+
 ## 6. Queue, in Racquel's order
 
 1. **Filename mapping** — **4 of 66 rows carry a URL; 30 approved blog rows and
