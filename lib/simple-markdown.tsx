@@ -221,7 +221,34 @@ const MARGIN_COL = '';
 // flows at prose width, which is what a wrapped inline figure should do.
 // Alt and src are captured so the pin overlay can describe the figure and
 // point Pinterest at its pixels.
-const IMAGE_ONLY_RE = /^!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)$/;
+// The title slot now carries PLACEMENT. Captured rather than discarded.
+//
+// Using the title slot instead of inventing syntax is the point: anything
+// else that renders this markdown (a feed reader, a plain markdown
+// preview, GitHub) shows an ordinary image with a tooltip, rather than
+// literal "beside-left" text or a broken tag. Degrading gracefully was the
+// requirement, not a nicety.
+const IMAGE_ONLY_RE = /^!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)$/;
+
+export type ImagePlacement = 'stacked' | 'beside-left' | 'beside-right' | 'bleed';
+
+function placementFrom(title: string | undefined): ImagePlacement {
+  const t = (title ?? '').trim().toLowerCase();
+  if (t === 'beside-left' || t === 'beside-right' || t === 'bleed') return t;
+  return 'stacked';
+}
+
+// 44% image against the paragraph beside it, the two together filling the
+// SHARED measure. Nothing here is wider than the prose: SS-611, SS-665 and
+// SS-676 all ruled that prose and figures share one constant, and the
+// 34rem-prose-against-864px-figures arrangement was the inverse of the
+// instruction.
+//
+// The breakpoint is 900px, below which everything stacks at full measure.
+// A 44% column on a phone is not a figure beside text, it is two things
+// too narrow to be either.
+const BESIDE_IMAGE = 'w-full min-[900px]:w-[44%] min-[900px]:shrink-0';
+const BESIDE_TEXT = 'w-full min-[900px]:flex-1 min-[900px]:min-w-0';
 
 // GitHub-style heading slugs. The "On This Page" tables of contents already
 // written into four LIVE posts (blog-11, 16, 21, 22) use anchors of exactly
@@ -480,11 +507,13 @@ export function renderSimpleMarkdown(
       // A figure between paragraphs keeps the paragraph rhythm on both
       // sides.
       const afterHeading = i > 0 && /^#{1,3} /.test(blocks[i - 1]);
-      const [, alt, rawSrc] = imageOnly;
+      const [, alt, rawSrc, title] = imageOnly;
       const src = rawSrc.replace(/#\d{2,5}x\d{2,5}$/, '');
       const pinnable = opts?.pin && isAllowedImageSrc(rawSrc);
-      out.push(
-        <div key={i} className={`${afterHeading ? 'mt-1' : 'mt-4'} mb-4 lg:clear-right ${BLEED}${pinnable ? ' relative group' : ''}`}>
+      const placement = placementFrom(title);
+
+      const figure = (
+        <div className={pinnable ? 'relative group' : undefined}>
           {renderInline(block.trim())}
           {pinnable && (
             <PinterestSaveButton
@@ -494,6 +523,58 @@ export function renderSimpleMarkdown(
               variant="hover"
             />
           )}
+        </div>
+      );
+
+      // BESIDE: the image pairs with the NEXT block, which is consumed
+      // here so it is not also rendered as a standalone paragraph below.
+      // Only pairs with a real paragraph: an image marked beside-left and
+      // followed by a heading, a list or another image falls back to
+      // stacked rather than dragging an unrelated element into the pair.
+      const next = blocks[i + 1];
+      const nextIsParagraph =
+        next !== undefined &&
+        !/^#{1,3} /.test(next) &&
+        !IMAGE_ONLY_RE.test(next.trim()) &&
+        !next.trimStart().startsWith('>') &&
+        !isBullet(next.split('\n')[0] ?? '');
+
+      if ((placement === 'beside-left' || placement === 'beside-right') && nextIsParagraph) {
+        const textCol = (
+          <div className={BESIDE_TEXT}>
+            <p className="text-sm text-denim leading-relaxed">{renderInline(next)}</p>
+          </div>
+        );
+        const imgCol = <div className={BESIDE_IMAGE}>{figure}</div>;
+        out.push(
+          <div
+            key={i}
+            className={`${afterHeading ? 'mt-1' : 'mt-5'} mb-5 w-full flex flex-col min-[900px]:flex-row gap-5 min-[900px]:items-start`}
+          >
+            {placement === 'beside-left' ? imgCol : textCol}
+            {placement === 'beside-left' ? textCol : imgCol}
+          </div>
+        );
+        // The paragraph is spoken for.
+        i += 1;
+        leadUsed = true;
+        continue;
+      }
+
+      // STACKED and BLEED. Both render at the full shared measure.
+      //
+      // BLEED IS THE SAME WIDTH AS STACKED, deliberately, and that is not
+      // an oversight: MEASURE is already the full card width, and 1.1
+      // forbids anything bleeding wider than the text. It stays a distinct
+      // keyword because it is a real authoring signal (this is the opening
+      // image) and because if a distinct treatment is ever ruled, the
+      // markdown already carries the intent and no post needs re-editing.
+      out.push(
+        <div
+          key={i}
+          className={`${afterHeading ? 'mt-1' : 'mt-4'} mb-4 lg:clear-right ${BLEED}`}
+        >
+          {figure}
         </div>
       );
       continue;
