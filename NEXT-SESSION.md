@@ -19,9 +19,23 @@ to learn.
   `Walk-in_closet_testimonial_graphic_202608041349.jpeg`. Only
   `universal-housekeeping-sop-template.jpg` is genuinely absent.
 - **blog-40's low-stock section was rewritten 6 Aug** and verified clean — zero
-  banned phrases, internal link intact, no dashes. **Ignore any earlier note
-  saying it still promises thresholds.** Nine posts still carry the claim,
-  three of them live; blog-40 is the pattern to copy.
+  banned phrases, internal link intact, no dashes. **The section only.** The
+  post's FAQ still said "setting up thresholds" and "written thresholds", in
+  `body_markdown` *and* in `faq_jsonld`; the 6 Aug check read the section, not
+  the post. See §6.
+- **What "low" actually means, verified in code and live 6 Aug.**
+  `public.is_inventory_item_low()` (migration 158, mirrored in
+  `lib/low-stock.ts`): `min_qty` set **and** `current_qty <= min_qty` **and**
+  `auto_restock_eligible` **and** counted by a person at least once. So low is
+  measured against a per-item minimum that **ships with the item** — live, all
+  3,563 items carry one (1 to 6, five distinct values, none null or zero), and
+  **no person has ever changed one in the app**: all 2,569 `min_qty` history
+  rows have a System / Direct Database Access actor. Never-counted is
+  deliberately not low; it is its own state. `blog_rules.no_par_levels_ever`
+  says the same thing: noticing what is low is in scope, setting the level is
+  not. **Copy may say what low is measured against. It may not hand the reader
+  a number to set.** There is no consumption-history learning anywhere in the
+  build — do not write that the system learns your rhythm.
 
 **Sweep `/public/images/` before downloading anything.** Every file already
 there is one nobody has to move.
@@ -270,12 +284,27 @@ of which any row references — 37 entries against 31 pin rows.
 4. Category chips smaller / less rounded.
 5. Regenerate `three-kinds-of-home-inventory` — Racquel's call, it is her asset.
 
-**Hard date: blog-40 publishes Tuesday 11 Aug. Its low-stock section was
-rewritten and verified clean on 6 Aug — that item is closed.** What remains is
-the other **nine posts** carrying the same threshold claim, three of them live.
-blog-40's rewrite is the pattern: same length, same three beats, opposite
+**Hard date: blog-40 publishes Tuesday 11 Aug. Its low-stock section is done;
+the post is NOT.** The section was rewritten again 6 Aug so it says what low is
+measured against (the amount each item already carries) and so the third beat
+describes the list gaining coverage rather than the reader learning. **Its FAQ
+still promises thresholds, in two places, in both `body_markdown` and
+`faq_jsonld`.** Fix both columns or the structured data ships the claim on its
+own. Proposed replacements are in the 6 Aug session; they need Racquel's yes.
+
+blog-40's section is the pattern: same length, same three beats, opposite
 premise — counting is the whole input, the list builds itself, the first month
-teaches the rhythm.
+fills in the picture.
+
+**Scope of the remaining claim, scanned live 6 Aug**, not the nine reported
+earlier. Literal "threshold" appears in **7 posts** including blog-40, and only
+**one is live**: `blog-22-why-every-home-needs-digital-inventory`, and there
+only inside `faq_jsonld`. The drafts are blog-14, blog-24 (five hits, the
+worst), blog-15, blog-30, blog-23. No post uses "par level", "reorder point",
+"base stock" or "target level" anywhere. **That scan is literal-phrase only** —
+a post can promise a threshold without the word, so the seven need reading, not
+grepping, and the count may go up. **Scan `faq_jsonld` as well as
+`body_markdown` every time.**
 
 ---
 
