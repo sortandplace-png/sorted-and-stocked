@@ -1047,30 +1047,42 @@ export default function DutyRosterClient({
     });
   }
 
-  // Derived from `filtered`, so the tiles answer "of what I'm looking at
-  // right now" and move as the filters move. That is the whole reason they
-  // stayed in this component rather than being hoisted into a page shell.
+  // HOUSE TOTALS, NOT FILTERED TOTALS. This REVERSES the earlier decision
+  // recorded here, which derived the tiles from `filtered` so they answered
+  // "of what I am looking at right now".
   //
-  // SS-517 note on "Total": the register compared this tile (928) against a
-  // global count of 930 and called it wrong. It is not -- the two extra
-  // rows are QA Demo's, and this page deliberately scopes to propertyIds.
-  // Filtered-derived stats are correct behaviour, kept.
+  // Why it was wrong: with Low selected and the day filter on Wednesday the
+  // tiles read Total Tasks 0, while Low holds 260. A tile showing 0 next to
+  // a list showing nothing tells you nothing twice. The tiles are the
+  // REFERENCE POINT you read the filtered list against, so they have to
+  // stay still while the list moves. That is the whole job of a stat card,
+  // and it is why 0 was not a display bug so much as the tiles having been
+  // given the list's job.
+  //
+  // Derived from `scopedTasks`: the house scope and the show-retired view
+  // mode apply, every filter pill does not. Those two are not filters, they
+  // are which set of tasks this screen is about; day, room, job, frequency,
+  // assignment, duration, work section and search are.
+  //
+  // SS-517 note on "Total" still stands: this counts the properties this
+  // page is mounted for, so QA Demo's rows are deliberately absent and a
+  // global count will read slightly higher.
   const stats = useMemo(
     () => ({
-      total: filtered.length,
-      unassigned: filtered.filter(isUnassigned).length,
+      total: scopedTasks.length,
+      unassigned: scopedTasks.filter(isUnassigned).length,
       // SS-517: count the sop_id FK on the task, not the sopCounts join
       // map -- the join (master_task_sops) links only 160 tasks while 642
       // carry sop_id, and Racquel's chat-side resolution ruled sop_id IS
       // the definition of "has a procedure".
-      withSop: filtered.filter((x) => x.sop_id !== null).length,
-      roomsMissing: filtered.filter(
+      withSop: scopedTasks.filter((x) => x.sop_id !== null).length,
+      roomsMissing: scopedTasks.filter(
         (x) => x.room_id === null && !NON_ROOM_JOB_TYPES.includes(x.job_type ?? '')
       ).length,
     }),
     // assignmentByTask (memoized), not isUnassigned (recreated per render):
     // the closure the unassigned count actually varies with.
-    [filtered, assignmentByTask]
+    [scopedTasks, assignmentByTask]
   );
 
   // SS-273. Fixed order (not alphabetical, not sort_order) so the tab row
