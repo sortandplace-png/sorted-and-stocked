@@ -81,6 +81,20 @@ export default function BlogReferenceDrawer() {
   // Fetched on OPEN, not on mount: the drawer is a reference someone
   // reaches for occasionally, and three table reads on every Drafts render
   // would be three reads nobody asked for.
+  //
+  // SS-787, second cause. `loading` was in this effect's own dependency
+  // array. setLoading(true) below is synchronous and fires before the
+  // first await, so it retriggers THIS effect on the next render -- and
+  // React runs the previous invocation's cleanup first, which sets
+  // `cancelled = true` on the closure the still-in-flight fetch is about
+  // to check. Every branch below (success, the 15s timeout, and the
+  // catch) starts with `if (cancelled) return`, so the fetch's own
+  // state-setting effect had already cancelled itself: the request
+  // completed (or the timeout fired) but the result was silently
+  // discarded, loading was never set back to false, and no error ever
+  // rendered. `loading` stays in the guard below as a defensive re-entry
+  // check; it must not be a dependency, or the effect re-cancels itself
+  // every time it runs.
   useEffect(() => {
     if (!open || loading || blogRules.length || designRules.length || prompts.length) return;
     let cancelled = false;
@@ -153,7 +167,7 @@ export default function BlogReferenceDrawer() {
     return () => {
       cancelled = true;
     };
-  }, [open, loading, blogRules.length, designRules.length, prompts.length]);
+  }, [open, blogRules.length, designRules.length, prompts.length]);
 
   // Escape closes, which is the one keyboard affordance a drawer must have.
   useEffect(() => {

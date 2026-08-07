@@ -81,11 +81,17 @@ export default async function RegisterPage({ params }: { params: Promise<{ id: s
   // publishing stays a deliberate act elsewhere. Reads through the
   // caller's session; migration 180's drafts-only SELECT policy
   // (owner/manager members) is what actually grants this.
+  //
+  // Ordered by intended_publish_date, not draft_order: Racquel uses this
+  // grid as a publishing calendar -- what ships next, not what was
+  // reordered last. draft_order remains editable inline but no longer
+  // drives sort; a draft with no pinned date has nothing to place on a
+  // calendar, so it sorts to the end rather than the top.
   const { data: drafts } = await supabase
     .from('blog_posts')
     .select('slug, title, body_markdown, header_image_url, intended_publish_date, draft_order')
     .is('published_at', null)
-    .order('draft_order', { ascending: true, nullsFirst: false })
+    .order('intended_publish_date', { ascending: true, nullsFirst: false })
     .order('slug');
 
   // SS-457 P0 lesson: a permission failure here once rendered as "0 rows",
