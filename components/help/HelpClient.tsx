@@ -181,17 +181,19 @@ export default function HelpClient({ articles, initialCategory }: Props) {
                 grep for "Chevron", which is why the app-wide sweep missed it.
                 Pin placement matches SOP Library's section strips: pr-8 keeps
                 the count clear of the dot at top 11 / right 12. */}
-            <button
-              type="button"
-              onClick={() => toggleCategory(category)}
-              aria-expanded={!isCollapsed}
-              className="relative w-full flex items-center justify-between rounded-xl2 bg-denim text-white
-                         px-4 py-3 pr-8 text-xs font-medium uppercase tracking-wide"
-            >
-              <Pin size="sm" />
-              <span>{t(`categories.${category}`, { default: category })}</span>
-              <span className="opacity-75 font-normal normal-case">{items.length}</span>
-            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => toggleCategory(category)}
+                aria-expanded={!isCollapsed}
+                className="w-full flex items-center justify-between rounded-xl2 bg-denim text-white
+                           px-4 py-3 pr-8 text-xs font-medium uppercase tracking-wide"
+              >
+                <span>{t(`categories.${category}`, { default: category })}</span>
+                <span className="opacity-75 font-normal normal-case">{items.length}</span>
+              </button>
+              <Pin size="sm" collapsed={isCollapsed} onToggle={() => toggleCategory(category)} />
+            </div>
 
             {!isCollapsed && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
@@ -215,7 +217,7 @@ export default function HelpClient({ articles, initialCategory }: Props) {
                       className="relative rounded-xl2 bg-card p-4 cursor-pointer
                                  shadow-card hover:shadow-cardHover transition-shadow"
                     >
-                      <Pin size="sm" />
+                      <Pin size="sm" collapsed={!isOpen} onToggle={() => setOpenId(isOpen ? null : article.id)} />
                       <p className="font-display font-semibold text-lg text-denim pr-4 mb-1">
                         {question}
                       </p>

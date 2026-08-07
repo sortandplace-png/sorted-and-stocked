@@ -20,7 +20,6 @@ import { createClient } from '@/lib/supabase/client';
 import { compressImageToBlob } from '@/lib/compress-image';
 import { useToast } from '@/components/Toast';
 import { Camera as CameraIcon, Image as ImageIcon } from 'lucide-react';
-import Pin from '@/components/PinAccent';
 import CameraCapture from '@/components/CameraCapture';
 
 type NameSuggestion = { id: string; name: string };
@@ -176,7 +175,6 @@ export default function QuickPhotoCaptureClient({ propertyId }: { propertyId: st
             onClick={() => setShowCamera(true)}
             className="relative flex flex-col items-center justify-center gap-2 rounded-xl2 bg-mist border border-brass/30 py-12 px-4 text-center hover:shadow-card transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
           >
-            <Pin size="sm" />
             <CameraIcon size={32} className="text-denim" aria-hidden="true" />
             <span className="text-sm font-medium text-denim">{t('takePhotoButton')}</span>
           </button>
@@ -185,7 +183,6 @@ export default function QuickPhotoCaptureClient({ propertyId }: { propertyId: st
             onClick={() => galleryInputRef.current?.click()}
             className="relative flex flex-col items-center justify-center gap-2 rounded-xl2 bg-mist border border-brass/30 py-12 px-4 text-center hover:shadow-card transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-denim"
           >
-            <Pin size="sm" />
             <ImageIcon size={32} className="text-denim" aria-hidden="true" />
             <span className="text-sm font-medium text-denim">{t('choosePhotoButton')}</span>
           </button>
@@ -193,7 +190,6 @@ export default function QuickPhotoCaptureClient({ propertyId }: { propertyId: st
       ) : (
         <div>
           <div className="relative flex items-center gap-3 bg-card rounded-xl2 shadow-card px-4 py-3 mb-4">
-            <Pin size="sm" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={capturedPreviewUrl!} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0 bg-mist" />
             <span className="flex-1 text-sm text-dusk">{t('attachToItemPrompt')}</span>

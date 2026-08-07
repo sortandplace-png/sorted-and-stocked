@@ -16,7 +16,6 @@
 
 import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
-import Pin from '@/components/ui/Pin';
 
 export type WorkItemRow = {
   id: string;
@@ -229,7 +228,6 @@ export default function RegisterViewerClient({
                 active ? 'border-denim ring-1 ring-denim/40' : 'border-cardBorder'
               }`}
             >
-              <Pin size="sm" />
               <p className="text-[9px] font-semibold tracking-[0.14em] uppercase text-brass">{tile.label}</p>
               <p className="font-display text-[30px] leading-tight text-denim tabular-nums">{tile.count}</p>
             </button>

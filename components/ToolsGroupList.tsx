@@ -176,7 +176,8 @@ export default function ToolsGroupList({ propertyId, groups }: { propertyId: str
     const Icon = TOOL_ICON_OVERRIDES[tool.slug] ?? FALLBACK_TOOL_ICON;
     const cardInner = (
       <>
-        <Pin size="sm" />
+        {/* SS-823: removed, not wired -- this tile navigates (Link/modal
+            open), it doesn't collapse, so it shouldn't carry a dot. */}
         <span className="w-11 h-11 flex items-center justify-center">
           <Icon size={28} className="text-denim" aria-hidden="true" />
         </span>
@@ -239,20 +240,29 @@ export default function ToolsGroupList({ propertyId, groups }: { propertyId: str
                     {group.tools.map((tool) => toolCard(tool))}
                   </ul>
                 )}
-                {visibleSubgroups.map((sg) => (
+                {visibleSubgroups.map((sg) => {
+                  // SS-823: was decorative -- same collapsedKeys Set the
+                  // group header already uses, just a composite key so a
+                  // subgroup doesn't collide with its parent group's entry.
+                  const sgKey = `${group.key}:${sg.key}`;
+                  const sgCollapsed = collapsedKeys.has(sgKey);
+                  return (
                   <div key={sg.key}>
                     <div className="relative flex items-center gap-1.5 mb-2 pl-1 pr-6">
-                      <Pin size="sm" />
+                      <Pin size="sm" collapsed={sgCollapsed} onToggle={() => toggleGroup(sgKey)} />
                       {sg.lockIcon && <Lock size={12} strokeWidth={1.5} className="text-dusk" aria-hidden="true" />}
                       <span className="text-xs font-medium uppercase tracking-wider text-brass">{sg.label}</span>
                       <span className="text-xs text-dusk">({sg.tools.length})</span>
                       <span className="flex-1 border-t border-cardBorder" />
                     </div>
+                    {!sgCollapsed && (
                     <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {sg.tools.map((tool) => toolCard(tool))}
                     </ul>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

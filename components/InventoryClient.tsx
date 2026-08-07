@@ -1429,7 +1429,6 @@ export default function InventoryClient({
         className="relative flex items-center gap-3 bg-card rounded-xl2 shadow-card px-4 py-3.5 cursor-pointer hover:shadow-cardHover transition-shadow"
         onClick={() => openDetailView(item)}
       >
-        <Pin size="sm" />
         <button
           onClick={(e) => toggleFavorite(item.id, e)}
           className="text-xl shrink-0 self-start w-11 h-11 -m-2.5 flex items-center justify-center"
@@ -1677,7 +1676,6 @@ export default function InventoryClient({
           stat/filter toggles, not content cards. */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         <div className="relative rounded-xl2 p-4 bg-mist border border-brass/30 shadow-card text-center">
-          <Pin size="sm" />
           <Package size={18} className="text-brass mx-auto mb-1" strokeWidth={1.5} aria-hidden="true" />
           <div className="text-2xl font-display text-denim">{totalItemsCount}</div>
           <div className="text-xs text-dusk">Total Items</div>
@@ -1690,7 +1688,6 @@ export default function InventoryClient({
             belowParOnly ? 'border-rust' : 'border-brass/30'
           }`}
         >
-          <Pin size="sm" />
           <AlertTriangle size={18} className={`mx-auto mb-1 ${lowStockCount > 0 ? 'text-rust' : 'text-brass'}`} strokeWidth={1.5} aria-hidden="true" />
           <div className={`text-2xl font-display ${lowStockCount > 0 ? 'text-rust' : 'text-denim'}`}>
             {lowStockCount}
@@ -1707,7 +1704,6 @@ export default function InventoryClient({
             neverCountedOnly ? 'border-brass' : 'border-brass/30'
           }`}
         >
-          <Pin size="sm" />
           <HelpCircle size={18} className="mx-auto mb-1 text-brass" strokeWidth={1.5} aria-hidden="true" />
           <div className="text-2xl font-display text-denim">{neverCountedCount}</div>
           <div className="text-xs text-dusk">{ti('neverCounted')}</div>
@@ -1720,7 +1716,6 @@ export default function InventoryClient({
             expiringSoon30Only ? 'border-brass' : 'border-brass/30'
           }`}
         >
-          <Pin size="sm" />
           <Clock size={18} className="mx-auto mb-1 text-brass" strokeWidth={1.5} aria-hidden="true" />
           {/* D-01: was text-brass at text-2xl when non-zero -- a 24px brass
               numeral, over the ceiling AND not one of the three permitted
@@ -2006,7 +2001,6 @@ export default function InventoryClient({
                 onClick={() => setLocationFilter(FAVORITES)}
                 className="relative text-left bg-mist rounded-xl2 shadow-card p-4 hover:bg-mist transition-colors"
               >
-                <Pin size="sm" />
                 <p className="font-display text-lg text-denim truncate">⭐ Favorites</p>
                 <p className="text-xs text-dusk mt-1">
                   {favoriteIds.size} item{favoriteIds.size === 1 ? '' : 's'}
@@ -2041,7 +2035,6 @@ export default function InventoryClient({
                       onClick={() => setLocationFilter(loc ? loc.id : UNASSIGNED)}
                       className="relative text-left bg-card border border-cardBorder rounded-xl2 shadow-card hover:shadow-cardHover overflow-hidden transition-shadow"
                     >
-                      <Pin size="sm" />
                       {loc?.photo_url && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={loc.photo_url} alt="" className="w-full h-20 object-cover" />

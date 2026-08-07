@@ -21,7 +21,6 @@ import { createClient } from '@/lib/supabase/client';
 import { storageThumbnail } from '@/lib/storage-image';
 import { SkeletonList } from '@/components/Skeleton';
 import { CheckCircle2, XCircle } from 'lucide-react';
-import Pin from '@/components/PinAccent';
 
 type Row = {
   id: string;
@@ -160,7 +159,6 @@ export default function TaskVerificationClient({ propertyId }: { propertyId: str
                 key={row.id}
                 className="relative rounded-xl2 bg-mist border border-brass/30 shadow-card p-3.5 flex gap-3"
               >
-                <Pin size="sm" />
                 {row.photo_url ? (
                   <button onClick={() => setLightboxUrl(row.photo_url)} className="shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}

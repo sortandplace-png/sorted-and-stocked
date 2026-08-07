@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ExternalLink, Flashlight, PackagePlus, Search } from 'lucide-react';
 import QRScanner from '@/components/QRScanner';
-import Pin from '@/components/PinAccent';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientUpdate } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
@@ -224,7 +223,6 @@ export default function ScanClient({
 
       {(state.status === 'scanning' || state.status === 'checking') && (
         <div className="relative bg-card border border-cardBorder rounded-xl2 shadow-card overflow-hidden">
-          <Pin size="lg" />
           <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
             Price &amp; Label Scanner
           </div>
@@ -284,7 +282,6 @@ export default function ScanClient({
 
       {state.status === 'not-found' && (
         <div className="relative bg-card border border-cardBorder rounded-xl2 shadow-card p-5 mt-6 text-center">
-          <Pin size="sm" />
           <p className="text-sm text-denim mb-1">No location or item matches this code.</p>
           <p className="text-xs text-dusk font-mono mb-4">{state.code}</p>
 

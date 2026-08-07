@@ -19,13 +19,25 @@ import { useLocale } from 'next-intl';
 import { usFederalHolidays } from '@/lib/us-holidays';
 import Pin from '@/components/PinAccent';
 import { CardHeader } from '@/components/ShiftHandoverClient';
+import { useCardCollapse } from '@/lib/useCardCollapse';
 
+// SS-823: was decorative, same fix and same reasoning as
+// HalachicCalendarClient's identical Card helper ("Same Concept B card
+// shell as HalachicCalendarClient" per this file's own header comment).
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  const { collapsed, toggle } = useCardCollapse(`seasonal-home-prep-${title}`);
   return (
     <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
-      <Pin size="sm" />
+      <Pin size="sm" collapsed={collapsed} onToggle={toggle} />
       <CardHeader>{title}</CardHeader>
-      <div className="p-4">{children}</div>
+      <div
+        className="grid transition-[grid-template-rows] duration-200 ease-out"
+        style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
+      >
+        <div className="overflow-hidden">
+          <div className="p-4">{children}</div>
+        </div>
+      </div>
     </div>
   );
 }

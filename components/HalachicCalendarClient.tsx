@@ -15,18 +15,33 @@ import { getEasternDateStr } from '@/lib/eastern-weekday';
 import { groupYomTovOccasions, type YomTovOccasion } from '@/lib/yom-tov';
 import Pin from '@/components/PinAccent';
 import { CardHeader } from '@/components/ShiftHandoverClient';
+import { useCardCollapse } from '@/lib/useCardCollapse';
 
 // Concept B card shell -- rounded-xl3/border-cardBorder/shadow-card/PinAccent
 // sm/denim header strip, matching the pattern already live on StaffClient's
 // bento cards and SquarePaymentCard. Local to this file since every card
 // here needs the identical wrapper and there's no third consumer yet to
 // justify a shared component.
+//
+// SS-823: was decorative -- every card on this page had a pin that looked
+// like the working collapse control elsewhere in the app and did nothing.
+// One useCardCollapse call per rendered Card instance, keyed by its own
+// title, so each of this page's cards (Bedikas Tolaim, Rosh Chodesh, ...)
+// remembers its own collapsed state independently.
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  const { collapsed, toggle } = useCardCollapse(`halachic-calendar-${title}`);
   return (
     <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
-      <Pin size="sm" />
+      <Pin size="sm" collapsed={collapsed} onToggle={toggle} />
       <CardHeader>{title}</CardHeader>
-      <div className="p-4">{children}</div>
+      <div
+        className="grid transition-[grid-template-rows] duration-200 ease-out"
+        style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
+      >
+        <div className="overflow-hidden">
+          <div className="p-4">{children}</div>
+        </div>
+      </div>
     </div>
   );
 }

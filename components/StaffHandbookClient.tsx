@@ -294,7 +294,7 @@ export default function StaffHandbookClient({
                   }`}
                 >
                   {/* The pin is the control (D-21). Nothing else marks it. */}
-                  <Pin size="sm" />
+                  <Pin size="sm" collapsed={!open} onToggle={() => toggle(a.id)} />
 
                   <button
                     onClick={() => toggle(a.id)}

@@ -14,7 +14,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
-import Pin from '@/components/PinAccent';
 
 type PickableItem = { id: string; name: string; name_es: string | null };
 
@@ -116,7 +115,6 @@ export default function AddSupplyModal({
         className="relative w-full max-w-md bg-card rounded-xl3 shadow-card p-5 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <Pin size="sm" />
         <h2 className="font-display text-[22px] text-denim mb-4">{t('addSupplyTitle')}</h2>
 
         {error && <p className="mb-3 text-xs text-rust bg-rust/10 rounded-xl2 px-3 py-2">{error}</p>}

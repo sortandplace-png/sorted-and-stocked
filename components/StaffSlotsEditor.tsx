@@ -158,7 +158,6 @@ export default function StaffSlotsEditor({
               key={s.id}
               className={`relative flex flex-col gap-1.5 bg-mist rounded-xl2 border border-brass/30 shadow-card py-3 px-3.5 ${s.active ? '' : 'opacity-60'}`}
             >
-              <Pin size="sm" />
               <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-brass pr-5">
                 {t('slotNumber', { number: s.slot_number })}
               </span>

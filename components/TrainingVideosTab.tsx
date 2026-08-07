@@ -19,7 +19,6 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { Play } from 'lucide-react';
-import Pin from '@/components/ui/Pin';
 import type { TrainingVideo } from '@/lib/training-videos';
 import { createClient } from '@/lib/supabase/client';
 import { markVideoCompleted } from '@/lib/training-video-views';
@@ -119,7 +118,6 @@ export default function TrainingVideosTab({ videos, userId }: { videos: Training
                   key={v.id}
                   className="relative bg-card rounded-xl2 border border-cardBorder shadow-card p-4 pr-8"
                 >
-                  <Pin size="sm" />
                   <div className="flex items-baseline gap-2 flex-wrap">
                     <h3 className="font-display text-[17px] text-denim leading-snug">{title}</h3>
                     {length && (

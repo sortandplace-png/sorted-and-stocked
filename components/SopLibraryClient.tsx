@@ -19,7 +19,7 @@ import { useToast } from '@/components/Toast';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import Link from 'next/link';
 import Pin from '@/components/PinAccent';
-import { Search, X } from 'lucide-react';
+import { Search, X, MoreVertical } from 'lucide-react';
 import SopPosterUpload from '@/components/SopPosterUpload';
 import SopPosterBulkUpload from '@/components/SopPosterBulkUpload';
 import TaskSuppliesList from '@/components/TaskSuppliesList';
@@ -82,6 +82,14 @@ export default function SopLibraryClient({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ sop_en: string; sop_es: string }>({ sop_en: '', sop_es: '' });
   const [saving, setSaving] = useState(false);
+  // SS-823: this file's two pin dots (zone header, per-SOP card) were
+  // decorative -- the zone header's tap did nothing, and the per-SOP pin
+  // sat beside a real open/close toggle without being wired to it.
+  // Zone collapse is new state (nothing pre-existing to connect to); the
+  // per-SOP card reuses its own existing openId toggle below.
+  const [collapsedZones, setCollapsedZones] = useState<Set<string>>(new Set());
+  // SS-829: the overflow menu replacing the bare "Edit method" link.
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   // Fetched lazily, per SOP, when a card is opened -- there are 83 SOPs and
   // only the open one's supplies are ever on screen, so loading all of them
   // up front would be 83 rows of work to display at most one. Keyed by sop
@@ -203,6 +211,17 @@ export default function SopLibraryClient({
   function startEdit(s: Sop) {
     setEditingId(s.id);
     setDraft({ sop_en: s.sop_en ?? '', sop_es: s.sop_es ?? '' });
+    setOpenId(s.id);
+    setMenuOpenId(null);
+  }
+
+  function toggleZone(zone: string) {
+    setCollapsedZones((prev) => {
+      const next = new Set(prev);
+      if (next.has(zone)) next.delete(zone);
+      else next.add(zone);
+      return next;
+    });
   }
 
   // SopPosterUpload writes directly to sop_library itself (upload, remove,
@@ -302,19 +321,27 @@ export default function SopLibraryClient({
         </p>
       ) : (
         <div className="space-y-6">
-          {byZone.map(([zone, items]) => (
+          {byZone.map(([zone, items]) => {
+            const zoneCollapsed = collapsedZones.has(zone);
+            return (
             <div key={zone}>
-              <div className="relative flex items-center gap-2 mb-2 pr-6">
-                <Pin size="sm" />
+              <button
+                type="button"
+                onClick={() => toggleZone(zone)}
+                aria-expanded={!zoneCollapsed}
+                className="relative w-full flex items-center gap-2 mb-2 pr-6 text-left"
+              >
+                <Pin size="sm" collapsed={zoneCollapsed} onToggle={() => toggleZone(zone)} />
                 <span className="text-xs font-medium uppercase tracking-wider text-dusk">{zone}</span>
                 <span className="text-xs text-dusk">({items.length})</span>
                 <span className="flex-1 border-t border-cardBorder" />
-              </div>
+              </button>
 
               {/* Handbook-polish ruling (2 Aug midnight): tiles keep their
                   FIXED size in every section -- a lone card sits at normal
                   tile width, never stretched across the full row. (Reverses
                   the earlier lone-card-takes-the-row choice.) */}
+              {!zoneCollapsed && (
               <ul className="space-y-2.5 md:space-y-0 md:grid md:grid-cols-2 xl:grid-cols-4 md:gap-2.5">
                 {items.map((s) => {
                   const open = openId === s.id;
@@ -324,47 +351,120 @@ export default function SopLibraryClient({
                       key={s.id}
                       // Anchor for the ?sop=<id> deep link above.
                       id={`sop-${s.id}`}
-                      className="relative bg-mist rounded-xl2 border border-cardBorder shadow-card hover:shadow-cardHover transition-shadow p-3.5 pr-8"
+                      // SS-829. Expanded, this tile used to keep its
+                      // collapsed 1-of-4 grid width -- roughly a fifth of
+                      // the screen, poster shrunk, method text wrapping
+                      // every four or five words, the rest of the row
+                      // empty. Spanning the full row on open is what
+                      // actually fixes it; the content inside then lays
+                      // out poster-left/method-right at sm+ (see below).
+                      className={`relative bg-mist rounded-xl2 border border-cardBorder shadow-card hover:shadow-cardHover transition-shadow p-3.5 pr-8 ${
+                        open ? 'md:col-span-2 xl:col-span-4' : ''
+                      }`}
                     >
-                      <Pin size="sm" />
-                      <button
-                        onClick={() => setOpenId(open ? null : s.id)}
-                        aria-expanded={open}
-                        className="w-full text-left flex items-start gap-3"
-                      >
-                        {/* Poster on the left, at reading scale rather than a
-                            thumbnail crop -- contain, so nothing on the poster
-                            is cut off. Nothing renders when there is no poster:
-                            a grey placeholder box on the 8 SOPs without one
-                            would be a hole where the eye expects content. */}
-                        {s.posterThumbUrl && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={s.posterThumbUrl}
-                            alt=""
-                            aria-hidden="true"
-                            loading="lazy"
-                            className="shrink-0 max-h-20 w-20 object-contain rounded-lg bg-card border border-cardBorder"
-                          />
-                        )}
-                        <span className="flex-1 min-w-0">
-                          {/* Eyebrow: zone, then the SOP code as a secondary
-                              label rather than the brass pill it used to be.
-                              The code is an identifier, not a headline. */}
-                          <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-dusk truncate">
-                            {zone}
-                            {s.sop_code ? ` · ${s.sop_code}` : ''}
-                          </span>
-                          <span className="block font-display text-[18px] text-denim leading-snug mt-0.5">
-                            {pick(s.task_en, s.task_es)}
-                          </span>
-                          {s.estimated_minutes && (
-                            <span className="inline-block mt-1.5 text-[10px] text-dusk bg-card border border-cardBorder px-2 py-0.5 rounded-full">
-                              ~{s.estimated_minutes} min
-                            </span>
+                      <Pin size="sm" collapsed={!open} onToggle={() => setOpenId(open ? null : s.id)} />
+                      <div className="flex items-start gap-1">
+                        <button
+                          onClick={() => setOpenId(open ? null : s.id)}
+                          aria-expanded={open}
+                          className="flex-1 min-w-0 text-left flex items-start gap-3"
+                        >
+                          {/* Poster on the left, at reading scale rather than a
+                              thumbnail crop -- contain, so nothing on the poster
+                              is cut off. Nothing renders when there is no poster:
+                              a grey placeholder box on the 8 SOPs without one
+                              would be a hole where the eye expects content. */}
+                          {s.posterThumbUrl && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={s.posterThumbUrl}
+                              alt=""
+                              aria-hidden="true"
+                              loading="lazy"
+                              className="shrink-0 max-h-20 w-20 object-contain rounded-lg bg-card border border-cardBorder"
+                            />
                           )}
-                        </span>
-                      </button>
+                          <span className="flex-1 min-w-0">
+                            {/* Eyebrow: zone, then the SOP code as a secondary
+                                label rather than the brass pill it used to be.
+                                The code is an identifier, not a headline. */}
+                            <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-dusk truncate">
+                              {zone}
+                              {s.sop_code ? ` · ${s.sop_code}` : ''}
+                            </span>
+                            <span className="block font-display text-[18px] text-denim leading-snug mt-0.5">
+                              {pick(s.task_en, s.task_es)}
+                            </span>
+                            {s.estimated_minutes && (
+                              <span className="inline-block mt-1.5 text-[10px] text-dusk bg-card border border-cardBorder px-2 py-0.5 rounded-full">
+                                ~{s.estimated_minutes} min
+                              </span>
+                            )}
+                          </span>
+                        </button>
+
+                        {/* SS-829. "Edit method" used to sit below DONE WHEN
+                            at the same weight as the instructions -- a
+                            housekeeper reading mid-task saw an edit control
+                            in the flow of the steps. A sibling of the expand
+                            button, not nested inside it (Pin's own toggle-
+                            button pattern rules out nesting a real button
+                            inside another). 44x44 tap target via -m-2.5 on a
+                            visually smaller icon, deliberately NOT sized off
+                            the 10px pin beside it -- "give the dots their own
+                            padded hit area" was explicit. Only Edit method
+                            and Replace poster are real right now: both route
+                            to the one combined edit view this file already
+                            has (SopPosterUpload + the method textareas
+                            together), so they are not yet two separate
+                            actions, just two doors to the same room. Add or
+                            edit supplies (SS-828), Copy to another house and
+                            View history have no implementation anywhere in
+                            this codebase yet -- omitted rather than added as
+                            dead menu rows. Deactivate is also omitted despite
+                            sop_library.active existing: nothing in this
+                            component's fetch/filter currently reads that
+                            column, so a working toggle here would silently
+                            do nothing visible, which is worse than absent. */}
+                        {editable && (
+                          <div className="relative shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMenuOpenId(menuOpenId === s.id ? null : s.id);
+                              }}
+                              aria-haspopup="menu"
+                              aria-expanded={menuOpenId === s.id}
+                              aria-label={t('moreActions')}
+                              className="w-11 h-11 -m-2.5 flex items-center justify-center rounded-full text-dusk hover:text-denim hover:bg-card"
+                            >
+                              <MoreVertical size={16} aria-hidden="true" />
+                            </button>
+                            {menuOpenId === s.id && (
+                              <div
+                                role="menu"
+                                className="absolute right-0 top-full z-40 mt-1 min-w-[160px] rounded-xl bg-card border border-cardBorder shadow-card py-1 flex flex-col text-left"
+                              >
+                                <button
+                                  role="menuitem"
+                                  onClick={() => startEdit(s)}
+                                  className="px-3 py-2 text-[12px] text-denim hover:bg-mist text-left"
+                                >
+                                  {t('edit')}
+                                </button>
+                                <button
+                                  role="menuitem"
+                                  onClick={() => startEdit(s)}
+                                  className="px-3 py-2 text-[12px] text-denim hover:bg-mist text-left"
+                                >
+                                  {t('posterReplace')}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
                       {open && (
                         <div className="mt-2.5 pt-2.5 border-t border-cardBorder space-y-2">
@@ -423,7 +523,18 @@ export default function SopLibraryClient({
                               </div>
                             </>
                           ) : (
-                            <>
+                            // SS-829. Expanded, this used to stack poster
+                            // above method text in the same narrow column
+                            // as the collapsed tile -- "Insert custom
+                            // acid-free tissue forms" wrapped across five
+                            // lines while most of the row sat empty. Poster
+                            // gets a fixed left column at sm+ (where the
+                            // li's own col-span above has already opened up
+                            // real width); method/DONE WHEN/supplies take
+                            // the rest. Below sm it stays a single stacked
+                            // column -- there's no spare width to split there.
+                            <div className="sm:flex sm:gap-4">
+                              <div className="sm:w-56 sm:shrink-0 mb-2 sm:mb-0">
                               {/* SS-124 / SS-162: the poster. 47 of 55 SOPs
                                   have one hosted in Supabase Storage; the
                                   other 8 get a plain line, never a broken
@@ -462,7 +573,9 @@ export default function SopLibraryClient({
                               ) : (
                                 <p className="text-xs text-dusk italic">{t('noPoster')}</p>
                               )}
+                              </div>
 
+                              <div className="flex-1 min-w-0 space-y-2">
                               <p className="text-sm text-denim whitespace-pre-wrap">
                                 {pick(s.sop_en, s.sop_es) || t('noMethod')}
                               </p>
@@ -495,15 +608,12 @@ export default function SopLibraryClient({
                                   where it's unambiguous which task is being
                                   changed. */}
                               <TaskSuppliesList supplies={suppliesBySop.get(s.id) ?? []} />
-                              {editable && (
-                                <button
-                                  onClick={() => startEdit(s)}
-                                  className="text-xs font-medium text-brass underline underline-offset-2"
-                                >
-                                  {t('edit')}
-                                </button>
-                              )}
-                            </>
+                              {/* SS-829: the old bottom-of-card "Edit method"
+                                  link lived here. Removed -- Edit method and
+                                  Replace poster now live in the header's
+                                  overflow menu, not below the instructions. */}
+                              </div>
+                            </div>
                           )}
                         </div>
                       )}
@@ -511,8 +621,10 @@ export default function SopLibraryClient({
                   );
                 })}
               </ul>
+              )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

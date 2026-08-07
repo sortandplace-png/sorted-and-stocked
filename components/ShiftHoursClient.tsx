@@ -16,6 +16,7 @@ import { createClient } from '@/lib/supabase/client';
 import { SkeletonList } from '@/components/Skeleton';
 import Pin from '@/components/PinAccent';
 import { CalendarDays } from 'lucide-react';
+import { useCardCollapse } from '@/lib/useCardCollapse';
 
 type ShiftRow = {
   id: string;
@@ -43,6 +44,41 @@ function hoursBetween(from: string, to: string): number {
 function formatHours(h: number): string {
   const mins = Math.round(h * 60);
   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+}
+
+// SS-823: was decorative -- one week per card, all always expanded, pin did
+// nothing. Extracted to its own component (rather than a Set of collapsed
+// keys on the parent) so each week gets a real useCardCollapse call, one
+// hook instance per rendered week, same localStorage-per-key pattern as
+// every other fixed card tonight.
+function WeekCard({
+  weekKey,
+  label,
+  weekTotal,
+  children,
+}: {
+  weekKey: string;
+  label: string;
+  weekTotal: number;
+  children: React.ReactNode;
+}) {
+  const { collapsed, toggle } = useCardCollapse(`shift-hours-week-${weekKey}`);
+  return (
+    <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
+      <Pin size="sm" collapsed={collapsed} onToggle={toggle} />
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-cardBorder">
+        <CalendarDays size={14} className="text-brass shrink-0" strokeWidth={1.75} aria-hidden="true" />
+        <span className="font-display text-denim">{label}</span>
+        <span className="ml-auto text-xs text-dusk">{formatHours(weekTotal)}</span>
+      </div>
+      <div
+        className="grid transition-[grid-template-rows] duration-200 ease-out"
+        style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
+      >
+        <div className="overflow-hidden">{children}</div>
+      </div>
+    </div>
+  );
 }
 
 export default function ShiftHoursClient({
@@ -152,16 +188,7 @@ export default function ShiftHoursClient({
         const rows = [...perUser.entries()].sort((a, b) => b[1].hours - a[1].hours);
         const weekTotal = rows.reduce((sum, [, v]) => sum + v.hours, 0);
         return (
-          <div
-            key={week}
-            className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden"
-          >
-            <Pin size="sm" />
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-cardBorder">
-              <CalendarDays size={14} className="text-brass shrink-0" strokeWidth={1.75} aria-hidden="true" />
-              <span className="font-display text-denim">{weekLabel(week)}</span>
-              <span className="ml-auto text-xs text-dusk">{formatHours(weekTotal)}</span>
-            </div>
+          <WeekCard key={week} weekKey={week} label={weekLabel(week)} weekTotal={weekTotal}>
             <ul className="divide-y divide-cardBorder">
               {rows.map(([userId, v]) => (
                 <li key={userId} className="flex items-center gap-3 px-4 py-2.5">
@@ -182,7 +209,7 @@ export default function ShiftHoursClient({
                 </li>
               ))}
             </ul>
-          </div>
+          </WeekCard>
         );
       })}
     </div>

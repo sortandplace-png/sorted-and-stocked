@@ -41,7 +41,7 @@ export default function GroupedProductCard<T extends GroupableItem>({
 
   return (
     <div className="relative bg-card rounded-xl2 border border-cardBorder shadow-card hover:shadow-cardHover transition-shadow">
-      <Pin size="sm" />
+      <Pin size="sm" collapsed={!open} onToggle={() => setOpen((v) => !v)} />
 
       <button
         onClick={() => setOpen((v) => !v)}

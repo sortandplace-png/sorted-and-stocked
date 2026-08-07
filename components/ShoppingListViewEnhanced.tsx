@@ -240,6 +240,9 @@ export default function ShoppingListViewEnhanced({
   // Read-only advisory, not written anywhere -- default off so the list
   // stays tight unless someone opts into the wider view.
   const [showNiceToHave, setShowNiceToHave] = useState(false);
+  // Card-level expand/collapse for the section's contents, separate from
+  // showNiceToHave (which controls whether the section renders at all).
+  const [niceToHaveExpanded, setNiceToHaveExpanded] = useState(false);
   const [niceToHaveItems, setNiceToHaveItems] = useState<
     { id: string; name: string; name_es: string | null; category: string | null; current_qty: number; min_qty: number; unit: string; photo_url: string | null }[]
   >([]);
@@ -708,7 +711,6 @@ export default function ShoppingListViewEnhanced({
           density === 'compact' ? 'p-2' : 'p-3'
         } ${isChecked ? 'opacity-60' : ''}`}
       >
-        <Pin size="sm" />
         <div className="flex gap-3">
           {/* Checkbox first, per the card redesign order */}
           <button
@@ -1076,35 +1078,39 @@ export default function ShoppingListViewEnhanced({
           the fully-done section at the very bottom. */}
       {showNiceToHave && (
         <div className="relative print:hidden bg-card rounded-2xl border border-cardBorder shadow-card p-4">
-          <Pin size="sm" />
+          <Pin size="sm" collapsed={!niceToHaveExpanded} onToggle={() => setNiceToHaveExpanded((v) => !v)} />
           <div className="flex items-center gap-2 mb-2">
             <span className="font-display text-lg text-dusk">Convenient to grab</span>
             <span className="text-xs text-dusk">({niceToHaveItems.length})</span>
           </div>
-          <p className="text-xs text-dusk mb-3">
-            Not low yet, but close -- worth grabbing if you're already buying nearby stuff.
-          </p>
-          {niceToHaveItems.length === 0 ? (
-            <p className="text-sm text-dusk">Nothing sitting in that range right now.</p>
-          ) : (
-            <ul className="space-y-1.5">
-              {niceToHaveItems.map((item) => (
-                <li key={item.id} className="flex items-center gap-3">
-                  {item.photo_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.photo_url} alt="" className="h-10 w-10 rounded object-cover flex-shrink-0 bg-mist" />
-                  ) : (
-                    <div className="h-10 w-10 rounded bg-mist flex-shrink-0" />
-                  )}
-                  <span className="flex-1 min-w-0 truncate text-sm text-dusk">
-                    {locale === 'es' && item.name_es ? item.name_es : item.name}
-                  </span>
-                  <span className="shrink-0 text-xs text-dusk">
-                    {item.current_qty} / {item.min_qty} {item.unit}
-                  </span>
-                </li>
-              ))}
-            </ul>
+          {niceToHaveExpanded && (
+            <>
+              <p className="text-xs text-dusk mb-3">
+                Not low yet, but close -- worth grabbing if you're already buying nearby stuff.
+              </p>
+              {niceToHaveItems.length === 0 ? (
+                <p className="text-sm text-dusk">Nothing sitting in that range right now.</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {niceToHaveItems.map((item) => (
+                    <li key={item.id} className="flex items-center gap-3">
+                      {item.photo_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={item.photo_url} alt="" className="h-10 w-10 rounded object-cover flex-shrink-0 bg-mist" />
+                      ) : (
+                        <div className="h-10 w-10 rounded bg-mist flex-shrink-0" />
+                      )}
+                      <span className="flex-1 min-w-0 truncate text-sm text-dusk">
+                        {locale === 'es' && item.name_es ? item.name_es : item.name}
+                      </span>
+                      <span className="shrink-0 text-xs text-dusk">
+                        {item.current_qty} / {item.min_qty} {item.unit}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
         </div>
       )}

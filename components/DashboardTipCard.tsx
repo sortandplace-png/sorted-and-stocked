@@ -7,7 +7,6 @@
 'use client';
 
 import { useLocale } from 'next-intl';
-import Pin from '@/components/PinAccent';
 import type { DashboardTip } from '@/lib/dashboard-tips';
 
 export default function DashboardTipCard({ tip }: { tip: DashboardTip }) {
@@ -19,7 +18,6 @@ export default function DashboardTipCard({ tip }: { tip: DashboardTip }) {
 
   return (
     <div className="relative bg-card rounded-xl2 border border-cardBorder shadow-card p-4 pr-8">
-      <Pin size="sm" />
       <p className="text-[9px] font-semibold tracking-[0.14em] uppercase text-brass mb-1">
         {es ? 'Consejo del Día' : 'Tip of the Day'}
       </p>

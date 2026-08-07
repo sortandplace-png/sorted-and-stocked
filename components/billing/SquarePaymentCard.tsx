@@ -16,6 +16,7 @@
 'use client';
 
 import Pin from '@/components/PinAccent';
+import { useCardCollapse } from '@/lib/useCardCollapse';
 
 export default function SquarePaymentCard({
   squarePaymentLink,
@@ -41,14 +42,21 @@ export default function SquarePaymentCard({
   onSendPaymentLink: () => void;
 }) {
   const hasLink = squarePaymentLink.trim().length > 0;
+  // SS-823: was decorative.
+  const { collapsed, toggle } = useCardCollapse('square-payment');
 
   return (
     <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
-      <Pin size="sm" />
+      <Pin size="sm" collapsed={collapsed} onToggle={toggle} />
       <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
         Client Billing &amp; Invoicing
       </div>
 
+      <div
+        className="grid transition-[grid-template-rows] duration-200 ease-out"
+        style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
+      >
+        <div className="overflow-hidden">
       <div className="p-4 space-y-3">
         {hasLink ? (
           <a
@@ -127,6 +135,8 @@ export default function SquarePaymentCard({
             </button>
           </div>
         )}
+      </div>
+        </div>
       </div>
     </div>
   );

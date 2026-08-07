@@ -13,7 +13,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import Pin from '@/components/ui/Pin';
 import JumpToDatePanel from '@/components/JumpToDatePanel';
 import { isSecondDay } from '@/lib/yom-tov';
 import type { ObservanceKind } from '@/lib/yom-tov';
@@ -472,7 +471,6 @@ export default function YomTovYearViewClient({
                   <span className="text-[10px] font-semibold tracking-[0.17em] uppercase text-white/70 shrink-0">
                     {items.length}
                   </span>
-                  <Pin size="sm" />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[14px]">
@@ -493,9 +491,7 @@ export default function YomTovYearViewClient({
                           <span className="absolute top-2 right-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-dusk border border-cardBorder rounded-full px-1.5 py-0.5 bg-card/80">
                             {t('dayTwo')}
                           </span>
-                        ) : (
-                          <Pin size="sm" />
-                        )}
+                        ) : null}
                         <span className="block font-display text-[19px] text-denim leading-snug">
                           {name(o)}
                         </span>

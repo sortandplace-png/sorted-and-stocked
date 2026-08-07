@@ -355,7 +355,11 @@ export default function StaplesTab({ propertyId, shoppingListId }: { propertyId:
 
   return (
     <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
-      <Pin size="sm" />
+      {/* SS-823: removed, not wired -- this is the tab's root shell
+          (search, filters, the whole staples grid); collapsing it would
+          hide the search box along with everything else, so it isn't a
+          card in the collapse sense. The category-tile pin below this one
+          (already wired via toggleGroup) is the real per-card control. */}
       {/* SS-258: reverted to "Household Staples". The 2026-07-21 rename to
           "Household Supplies & Non-Foods" was approved on the assumption the
           data would follow it; it never did. All 148 staples rows are food and

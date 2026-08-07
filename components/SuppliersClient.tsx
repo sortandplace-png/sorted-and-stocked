@@ -96,19 +96,21 @@ export default function SuppliersClient({
                   const expanded = searching || open.has(s.name);
                   return (
                     <div key={s.name}>
-                      <button
-                        onClick={() => toggle(s.name)}
-                        aria-expanded={expanded}
-                        className="relative w-full flex items-center justify-between gap-3 bg-denim rounded-xl2 py-[11px] pl-5 pr-8 text-left"
-                      >
-                        <span className="text-[10px] font-semibold tracking-[0.17em] uppercase text-white truncate">
-                          {s.name}
-                        </span>
-                        <span className="text-[10px] font-semibold tracking-[0.17em] uppercase text-white/70 shrink-0">
-                          {t('itemCount', { count: s.items.length })}
-                        </span>
-                        <Pin size="sm" />
-                      </button>
+                      <div className="relative">
+                        <button
+                          onClick={() => toggle(s.name)}
+                          aria-expanded={expanded}
+                          className="w-full flex items-center justify-between gap-3 bg-denim rounded-xl2 py-[11px] pl-5 pr-8 text-left"
+                        >
+                          <span className="text-[10px] font-semibold tracking-[0.17em] uppercase text-white truncate">
+                            {s.name}
+                          </span>
+                          <span className="text-[10px] font-semibold tracking-[0.17em] uppercase text-white/70 shrink-0">
+                            {t('itemCount', { count: s.items.length })}
+                          </span>
+                        </button>
+                        <Pin size="sm" collapsed={!expanded} onToggle={() => toggle(s.name)} />
+                      </div>
 
                       {expanded && (
                         <ul className="mt-[14px] grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[14px]">
@@ -117,7 +119,6 @@ export default function SuppliersClient({
                               key={i.id}
                               className="relative bg-card rounded-xl2 border border-cardBorder shadow-card p-3.5 pr-8 flex items-start gap-2"
                             >
-                              <Pin size="sm" />
                               <span className="flex-1 min-w-0">
                                 <span className="block text-[14px] text-denim leading-snug">
                                   {itemName(i)}

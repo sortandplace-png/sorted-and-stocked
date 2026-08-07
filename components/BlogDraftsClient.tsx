@@ -20,7 +20,6 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import BlogReferenceDrawer from '@/components/BlogReferenceDrawer';
 import { storageThumbnail } from '@/lib/storage-image';
-import Pin from '@/components/ui/Pin';
 
 export type DraftRow = {
   slug: string;
@@ -87,7 +86,6 @@ export default function BlogDraftsClient({ drafts, propertyId }: { drafts: Draft
               key={d.slug}
               className="relative bg-card rounded-xl2 border border-cardBorder shadow-card overflow-hidden flex flex-col"
             >
-              <Pin size="sm" />
               {d.header_image_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img

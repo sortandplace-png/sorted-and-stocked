@@ -16,7 +16,6 @@ import ShoppingListViewEnhanced from '@/components/ShoppingListViewEnhanced';
 import StaplesTab from '@/components/StaplesTab';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
-import Pin from '@/components/PinAccent';
 import { usePullToRefresh } from '@/lib/use-pull-to-refresh';
 import { usePropertyRole, canManage } from '@/components/PropertyRoleContext';
 import { Settings2 } from 'lucide-react';
@@ -371,7 +370,6 @@ export default function ShoppingListClient({ propertyId }: { propertyId: string 
 
       {!dismissedPairingNudge && missingPairs.length > 0 && (
         <div className="relative mx-4 max-w-6xl md:mx-auto mb-3 bg-card rounded-xl2 border border-cardBorder shadow-card p-4 flex items-start gap-2.5">
-          <Pin size="sm" />
           <div className="shrink-0 mt-0.5 w-6 h-6 rounded-full bg-brass/15 flex items-center justify-center">
             <Lightbulb className="h-3.5 w-3.5 text-brass" strokeWidth={1.75} aria-hidden="true" />
           </div>
