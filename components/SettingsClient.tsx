@@ -11,6 +11,7 @@ import { SITE_URL } from '@/lib/site-url';
 import SquarePaymentCard from '@/components/billing/SquarePaymentCard';
 import Pin from '@/components/PinAccent';
 import { isJewishObservant } from '@/lib/observance-gating';
+import { useCardCollapse } from '@/lib/useCardCollapse';
 
 type SignupCode = {
   id: string;
@@ -48,6 +49,16 @@ export default function SettingsClient({
 }) {
   const supabase = createClient();
   const showToast = useToast();
+
+  // SS-823: these Pin dots were decorative -- every other card's pin is a
+  // collapse toggle, so a static one here read as broken rather than as a
+  // different kind of card. Reusing SS-048's useCardCollapse (localStorage
+  // per cardId), not a second implementation, per Racquel's instruction.
+  const notifications = useCardCollapse('settings-notifications');
+  const householdFeatures = useCardCollapse('settings-household-features');
+  const eveningAnchor = useCardCollapse('settings-evening-anchor');
+  const inviteCodes = useCardCollapse('settings-invite-codes');
+  const broadcast = useCardCollapse('settings-broadcast');
 
   const [phoneNumber, setPhoneNumber] = useState(initialPhoneNumber);
   const [smsOptIn, setSmsOptIn] = useState(initialSmsOptIn);
@@ -315,50 +326,57 @@ export default function SettingsClient({
 
       <section>
         <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
-          <Pin size="sm" />
+          <Pin size="sm" collapsed={notifications.collapsed} onToggle={notifications.toggle} />
           <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
             Notifications
           </div>
-          <div className="p-4 space-y-3">
-            <div>
-              <label className="text-xs font-medium text-dusk mb-1 block">Phone number</label>
-              <input
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="(555) 123-4567"
-                className="w-full border border-brass/30 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-4 py-3 bg-mist text-sm text-denim"
-              />
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-denim">Text me updates</p>
-                <p className="text-xs text-dusk">Task assignments, shift handover notes, and broadcasts.</p>
+          <div
+            className="grid transition-[grid-template-rows] duration-200 ease-out"
+            style={{ gridTemplateRows: notifications.collapsed ? '0fr' : '1fr' }}
+          >
+            <div className="overflow-hidden">
+              <div className="p-4 space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-dusk mb-1 block">Phone number</label>
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="(555) 123-4567"
+                    className="w-full border border-brass/30 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-4 py-3 bg-mist text-sm text-denim"
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-denim">Text me updates</p>
+                    <p className="text-xs text-dusk">Task assignments, shift handover notes, and broadcasts.</p>
+                  </div>
+                  <button
+                    onClick={() => setSmsOptIn((v) => !v)}
+                    disabled={!phoneNumber.trim()}
+                    role="switch"
+                    aria-checked={smsOptIn}
+                    aria-label="Toggle SMS notifications"
+                    className={`relative shrink-0 w-11 h-6 rounded-full transition-colors disabled:opacity-40 ${
+                      smsOptIn ? 'bg-denim' : 'bg-mist border border-cardBorder'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
+                        smsOptIn ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+                <button
+                  onClick={saveNotificationSettings}
+                  disabled={savingPhone}
+                  className="w-full md:w-auto px-6 py-3 rounded-xl2 bg-denim text-white text-sm font-medium disabled:opacity-40"
+                >
+                  {savingPhone ? 'Saving…' : 'Save'}
+                </button>
               </div>
-              <button
-                onClick={() => setSmsOptIn((v) => !v)}
-                disabled={!phoneNumber.trim()}
-                role="switch"
-                aria-checked={smsOptIn}
-                aria-label="Toggle SMS notifications"
-                className={`relative shrink-0 w-11 h-6 rounded-full transition-colors disabled:opacity-40 ${
-                  smsOptIn ? 'bg-denim' : 'bg-mist border border-cardBorder'
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
-                    smsOptIn ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
             </div>
-            <button
-              onClick={saveNotificationSettings}
-              disabled={savingPhone}
-              className="w-full md:w-auto px-6 py-3 rounded-xl2 bg-denim text-white text-sm font-medium disabled:opacity-40"
-            >
-              {savingPhone ? 'Saving…' : 'Save'}
-            </button>
           </div>
         </div>
       </section>
@@ -366,31 +384,38 @@ export default function SettingsClient({
       {canManage(role) && !loadingFlags && (
         <section>
           <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
-            <Pin size="sm" />
+            <Pin size="sm" collapsed={householdFeatures.collapsed} onToggle={householdFeatures.toggle} />
             <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
               Household Features
             </div>
-            <div className="flex items-center justify-between gap-3 px-5 py-4">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-denim">Guest &amp; Family Taste Memory</p>
-                <p className="text-xs text-dusk">Track who likes and dislikes which dishes, for meal planning.</p>
+            <div
+              className="grid transition-[grid-template-rows] duration-200 ease-out"
+              style={{ gridTemplateRows: householdFeatures.collapsed ? '0fr' : '1fr' }}
+            >
+              <div className="overflow-hidden">
+                <div className="flex items-center justify-between gap-3 px-5 py-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-denim">Guest &amp; Family Taste Memory</p>
+                    <p className="text-xs text-dusk">Track who likes and dislikes which dishes, for meal planning.</p>
+                  </div>
+                  <button
+                    onClick={toggleTasteMemory}
+                    disabled={savingTasteMemory}
+                    role="switch"
+                    aria-checked={tasteMemoryEnabled}
+                    aria-label="Toggle Guest and Family Taste Memory"
+                    className={`relative shrink-0 w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${
+                      tasteMemoryEnabled ? 'bg-denim' : 'bg-mist border border-cardBorder'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
+                        tasteMemoryEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={toggleTasteMemory}
-                disabled={savingTasteMemory}
-                role="switch"
-                aria-checked={tasteMemoryEnabled}
-                aria-label="Toggle Guest and Family Taste Memory"
-                className={`relative shrink-0 w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${
-                  tasteMemoryEnabled ? 'bg-denim' : 'bg-mist border border-cardBorder'
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
-                    tasteMemoryEnabled ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
             </div>
           </div>
         </section>
@@ -399,42 +424,49 @@ export default function SettingsClient({
       {canManage(role) && !loadingFlags && !jewishProperty && (
         <section>
           <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
-            <Pin size="sm" />
+            <Pin size="sm" collapsed={eveningAnchor.collapsed} onToggle={eveningAnchor.toggle} />
             <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
               Evening Anchor
             </div>
-            <div className="p-5 space-y-3">
-              <p className="text-xs text-dusk">
-                The dashboard's Evening Anchor card and the Prep Timeline count backward from dinner time; the
-                house-close time marks the end of the household's working day.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label className="block">
-                  <span className="text-xs font-medium text-denim">Dinner time</span>
-                  <input
-                    type="time"
-                    value={eveningDinner}
-                    onChange={(e) => setEveningDinner(e.target.value)}
-                    className="mt-1 w-full border border-brass/30 bg-mist rounded-xl2 px-3 py-2 text-sm text-denim focus:outline-none focus:ring-2 focus:ring-brass/40"
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-xs font-medium text-denim">House close time</span>
-                  <input
-                    type="time"
-                    value={eveningClose}
-                    onChange={(e) => setEveningClose(e.target.value)}
-                    className="mt-1 w-full border border-brass/30 bg-mist rounded-xl2 px-3 py-2 text-sm text-denim focus:outline-none focus:ring-2 focus:ring-brass/40"
-                  />
-                </label>
+            <div
+              className="grid transition-[grid-template-rows] duration-200 ease-out"
+              style={{ gridTemplateRows: eveningAnchor.collapsed ? '0fr' : '1fr' }}
+            >
+              <div className="overflow-hidden">
+                <div className="p-5 space-y-3">
+                  <p className="text-xs text-dusk">
+                    The dashboard's Evening Anchor card and the Prep Timeline count backward from dinner time; the
+                    house-close time marks the end of the household's working day.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label className="block">
+                      <span className="text-xs font-medium text-denim">Dinner time</span>
+                      <input
+                        type="time"
+                        value={eveningDinner}
+                        onChange={(e) => setEveningDinner(e.target.value)}
+                        className="mt-1 w-full border border-brass/30 bg-mist rounded-xl2 px-3 py-2 text-sm text-denim focus:outline-none focus:ring-2 focus:ring-brass/40"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-xs font-medium text-denim">House close time</span>
+                      <input
+                        type="time"
+                        value={eveningClose}
+                        onChange={(e) => setEveningClose(e.target.value)}
+                        className="mt-1 w-full border border-brass/30 bg-mist rounded-xl2 px-3 py-2 text-sm text-denim focus:outline-none focus:ring-2 focus:ring-brass/40"
+                      />
+                    </label>
+                  </div>
+                  <button
+                    onClick={saveEveningAnchor}
+                    disabled={savingEveningAnchor}
+                    className="w-full md:w-auto px-6 py-3 rounded-xl2 bg-denim text-white text-sm font-medium disabled:opacity-40"
+                  >
+                    {savingEveningAnchor ? 'Saving…' : 'Save'}
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={saveEveningAnchor}
-                disabled={savingEveningAnchor}
-                className="w-full md:w-auto px-6 py-3 rounded-xl2 bg-denim text-white text-sm font-medium disabled:opacity-40"
-              >
-                {savingEveningAnchor ? 'Saving…' : 'Save'}
-              </button>
             </div>
           </div>
         </section>
@@ -460,44 +492,51 @@ export default function SettingsClient({
       {canManage(role) && (
         <section>
           <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
-            <Pin size="sm" />
+            <Pin size="sm" collapsed={inviteCodes.collapsed} onToggle={inviteCodes.toggle} />
             <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
               Invite Codes
             </div>
-            <div className="p-4 space-y-3">
-              <p className="text-xs text-dusk">
-                Generate a one-time code for a new client to create their own account.
-              </p>
-              <button
-                onClick={generateCode}
-                disabled={generating}
-                className="w-full md:w-auto px-6 py-3 rounded-xl2 bg-denim text-white text-sm font-medium disabled:opacity-40"
-              >
-                {generating ? 'Generating…' : 'Generate invite code'}
-              </button>
+            <div
+              className="grid transition-[grid-template-rows] duration-200 ease-out"
+              style={{ gridTemplateRows: inviteCodes.collapsed ? '0fr' : '1fr' }}
+            >
+              <div className="overflow-hidden">
+                <div className="p-4 space-y-3">
+                  <p className="text-xs text-dusk">
+                    Generate a one-time code for a new client to create their own account.
+                  </p>
+                  <button
+                    onClick={generateCode}
+                    disabled={generating}
+                    className="w-full md:w-auto px-6 py-3 rounded-xl2 bg-denim text-white text-sm font-medium disabled:opacity-40"
+                  >
+                    {generating ? 'Generating…' : 'Generate invite code'}
+                  </button>
 
-              {newCode && (
-                <div className="rounded-xl bg-brass/10 border border-cardBorder p-3 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-sm text-denim font-medium">{newCode}</span>
-                    <button
-                      onClick={() => copyToClipboard(newCode, 'Code')}
-                      className="text-xs font-medium text-brass px-2 py-1 rounded-full bg-card shrink-0"
-                    >
-                      Copy code
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-dusk truncate">{`${SITE_URL}/signup?code=${newCode}`}</span>
-                    <button
-                      onClick={() => copyToClipboard(`${SITE_URL}/signup?code=${newCode}`, 'Signup link')}
-                      className="text-xs font-medium text-brass px-2 py-1 rounded-full bg-card shrink-0"
-                    >
-                      Copy link
-                    </button>
-                  </div>
+                  {newCode && (
+                    <div className="rounded-xl bg-brass/10 border border-cardBorder p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono text-sm text-denim font-medium">{newCode}</span>
+                        <button
+                          onClick={() => copyToClipboard(newCode, 'Code')}
+                          className="text-xs font-medium text-brass px-2 py-1 rounded-full bg-card shrink-0"
+                        >
+                          Copy code
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-dusk truncate">{`${SITE_URL}/signup?code=${newCode}`}</span>
+                        <button
+                          onClick={() => copyToClipboard(`${SITE_URL}/signup?code=${newCode}`, 'Signup link')}
+                          className="text-xs font-medium text-brass px-2 py-1 rounded-full bg-card shrink-0"
+                        >
+                          Copy link
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
@@ -540,26 +579,33 @@ export default function SettingsClient({
       {canManage(role) && (
         <section>
           <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">
-            <Pin size="sm" />
+            <Pin size="sm" collapsed={broadcast.collapsed} onToggle={broadcast.toggle} />
             <div className="bg-denim text-white text-[10px] font-semibold tracking-[0.17em] uppercase py-[11px] px-5">
               Send Broadcast
             </div>
-            <div className="p-4 space-y-3">
-              <p className="text-xs text-dusk">Texts every opted-in staff member on this property.</p>
-              <textarea
-                value={broadcastMessage}
-                onChange={(e) => setBroadcastMessage(e.target.value)}
-                placeholder="e.g. Reminder: early close today at 3pm."
-                rows={3}
-                className="w-full border border-brass/30 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-4 py-3 bg-mist text-sm text-denim"
-              />
-              <button
-                onClick={sendBroadcast}
-                disabled={!broadcastMessage.trim() || sendingBroadcast}
-                className="w-full md:w-auto px-6 py-3 rounded-xl2 bg-denim text-white text-sm font-medium disabled:opacity-40"
-              >
-                {sendingBroadcast ? 'Sending…' : 'Send broadcast'}
-              </button>
+            <div
+              className="grid transition-[grid-template-rows] duration-200 ease-out"
+              style={{ gridTemplateRows: broadcast.collapsed ? '0fr' : '1fr' }}
+            >
+              <div className="overflow-hidden">
+                <div className="p-4 space-y-3">
+                  <p className="text-xs text-dusk">Texts every opted-in staff member on this property.</p>
+                  <textarea
+                    value={broadcastMessage}
+                    onChange={(e) => setBroadcastMessage(e.target.value)}
+                    placeholder="e.g. Reminder: early close today at 3pm."
+                    rows={3}
+                    className="w-full border border-brass/30 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-4 py-3 bg-mist text-sm text-denim"
+                  />
+                  <button
+                    onClick={sendBroadcast}
+                    disabled={!broadcastMessage.trim() || sendingBroadcast}
+                    className="w-full md:w-auto px-6 py-3 rounded-xl2 bg-denim text-white text-sm font-medium disabled:opacity-40"
+                  >
+                    {sendingBroadcast ? 'Sending…' : 'Send broadcast'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </section>

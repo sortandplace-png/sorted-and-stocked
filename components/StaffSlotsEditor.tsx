@@ -28,6 +28,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { Plus } from 'lucide-react';
 import Pin from '@/components/PinAccent';
+import { useCardCollapse } from '@/lib/useCardCollapse';
 
 export type StaffSlotRow = {
   id: string;
@@ -54,6 +55,9 @@ export default function StaffSlotsEditor({
   const t = useTranslations('staffSlots');
   const supabase = createClient();
   const showToast = useToast();
+  // SS-823: reusing SS-048's collapse (localStorage per cardId), not a
+  // second implementation -- this card's Pin was decorative.
+  const { collapsed, toggle } = useCardCollapse('staff-slots-editor');
   const [slots, setSlots] = useState<StaffSlotRow[]>(initialSlots);
   const [drafts, setDrafts] = useState<Record<string, { label_en: string; label_es: string }>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -129,13 +133,18 @@ export default function StaffSlotsEditor({
 
   return (
     <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card p-5">
-      <Pin size="sm" />
+      <Pin size="sm" collapsed={collapsed} onToggle={toggle} />
       <h2 className="font-display text-lg text-denim mb-1">{t('title')}</h2>
       <p className="text-xs text-dusk mb-1">{t('description')}</p>
       {/* Reopen defect 2: say on-card what a slot connects to. One line for
           the whole grid rather than repeated per tile. */}
       <p className="text-[11px] text-dusk mb-4">{t('connectsNote')}</p>
 
+      <div
+        className="grid transition-[grid-template-rows] duration-200 ease-out"
+        style={{ gridTemplateRows: collapsed ? '0fr' : '1fr' }}
+      >
+        <div className="overflow-hidden">
       {/* Compact fixed-size tiles -- the grid holds tile size even with one
           slot (handbook tile rule, app-wide). */}
       <ul className="grid gap-3 grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
@@ -232,6 +241,8 @@ export default function StaffSlotsEditor({
       </button>
 
       <p className="text-[11px] text-dusk mt-3">{t('renameNote')}</p>
+        </div>
+      </div>
     </div>
   );
 }
