@@ -424,6 +424,11 @@ export default async function ToolsPage({ params }: { params: Promise<{ id: stri
     // operation buys from is one business-wide directory, not a copy each
     // client's house keeps. Its own route enforces the same gate.
     .filter((t) => t.slug !== 'suppliers' || flags.operator_console === true)
+    // SS-856: Staff Task Center is cross-house and console-only (SS-410) --
+    // this tile had no operator filter at all, so a client-house manager
+    // saw it and clicked through to a route that just redirects them to
+    // their dashboard. Same dead-click bug class SS-025 fixed for Suppliers.
+    .filter((t) => t.slug !== 'tasks' || flags.operator_console === true)
     // SS-552 (Racquel, 2 Aug: "why should any residence besides lax have
     // admin clean up?"): the eight data-cleanup tools are operator
     // machinery, gated on operator_console like Suppliers -- NOT on

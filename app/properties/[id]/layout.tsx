@@ -15,7 +15,7 @@ import GlobalBackBar from '@/components/ui/GlobalBackBar';
 import { getNextObservance } from '@/lib/get-next-observance';
 import { formatPropertyLabel } from '@/lib/property-display';
 import { buildSwitcherProperties } from '@/lib/property-display';
-import { isModuleEnabled, moduleForSegment, isOperatorConsole } from '@/lib/module-flags';
+import { isModuleEnabled, moduleForSegment, isOperatorConsole, isOperatorOnlySegment } from '@/lib/module-flags';
 
 // SS-681. Every authenticated page under /properties/[id] renders fresh.
 //
@@ -84,6 +84,16 @@ export default async function PropertyLayout({
   const afterPropertyId = pathname.split(`/properties/${id}/`)[1]?.split('?')[0] ?? '';
   const requiredModule = moduleForSegment(afterPropertyId);
   if (requiredModule && !isModuleEnabled(featureFlags, requiredModule)) {
+    redirect(`/properties/${id}/dashboard`);
+  }
+
+  // SS-856. THE central operator-only gate -- see lib/module-flags.ts for
+  // why this exists and what it covers. Runs before every nested page, so
+  // a route added tomorrow that forgets its own isOperatorConsole check
+  // still can't render on a client house. The per-page checks on these
+  // same routes stay in place (belt-and-braces, not redundant enough to
+  // remove) -- this is what makes the guarantee unconditional.
+  if (isOperatorOnlySegment(afterPropertyId) && !isOperatorConsole(featureFlags)) {
     redirect(`/properties/${id}/dashboard`);
   }
 

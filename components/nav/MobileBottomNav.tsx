@@ -25,8 +25,11 @@ import { isModuleEnabled, isOperatorConsole } from '@/lib/module-flags';
 
 // Mirrors DesktopNav's staff group. managerOnly matches each page's own
 // server-side gate, so staff are never offered a link that redirects them
-// out. Every entry here is module_staff -- the whole sheet is a single
-// Staff destination, so it's gated as one unit below rather than per-item.
+// out. Every entry here is module_staff by default -- the whole sheet is
+// gated as one unit below -- except the two SS-856 entries at the end,
+// which are module_tools on DesktopNav and need the same independent
+// check here (a property could have Tools off and Staff on, or vice
+// versa).
 const STAFF_LINKS: {
   segment: string;
   labelKey: string;
@@ -39,6 +42,7 @@ const STAFF_LINKS: {
   href?: string;
   operatorOnly?: boolean;
   hideOnOperator?: boolean;
+  requiresModuleTools?: boolean;
 }[] = [
   { segment: 'my-day', labelKey: 'myDay' },
   // SS-436 retirement, mirroring DesktopNav: on the operator property the
@@ -68,6 +72,12 @@ const STAFF_LINKS: {
   // Procedures tab is where it lives now, so a second nav item pointing into
   // the same page was two doors to one room. Route untouched (R21).
   { segment: 'staff/handbook', labelKey: 'staffHandbook', dividerBefore: true },
+  // SS-856: House Manual and Photo Review, mirroring DesktopNav's promotion
+  // out of the dissolved More dropdown -- mobile had NO path to either
+  // before (Tools/Labels stay off the bar, per this file's own header
+  // comment), so this is a real access fix here, not just parity.
+  { segment: 'tools/knowledge-base', labelKey: 'houseManual', requiresModuleTools: true },
+  { segment: 'tools/photo-worklist', labelKey: 'photoReview', managerOnly: true, requiresModuleTools: true },
 ];
 
 export default function MobileBottomNav({
@@ -104,7 +114,8 @@ export default function MobileBottomNav({
       (!l.ownerOnly || role === 'owner') &&
       (!l.managerOnly || role === 'owner' || role === 'manager') &&
       (!l.operatorOnly || operator) &&
-      (!l.hideOnOperator || !operator)
+      (!l.hideOnOperator || !operator) &&
+      (!l.requiresModuleTools || isModuleEnabled(flags, 'module_tools'))
   );
 
   // No Home tab -- the header's house mark is the sole route home now.

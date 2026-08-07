@@ -16,7 +16,7 @@ import type { PropertyRole } from '@/components/PropertyRoleContext';
 import ScanModal from '@/components/nav/ScanModal';
 import { isModuleEnabled, isOperatorConsole, type ModuleKey } from '@/lib/module-flags';
 
-type GroupKey = 'plan' | 'shop' | 'staff' | 'more';
+type GroupKey = 'plan' | 'shop' | 'staff';
 
 type NavItem = {
   segment: string;
@@ -71,6 +71,11 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // SS-399. Manager-tier like the page's own gate -- staff are
       // redirected out, so this doesn't offer a link they'd bounce off.
       { segment: 'all-houses', labelKey: 'allHouses', managerOnly: true, module: 'module_inventory', operatorOnly: true },
+      // SS-856: moved out of the dissolving More group -- Procurement is
+      // a buying surface, same as Shopping List and Inventory. Gate
+      // unchanged (operator-console only, matching the page's own
+      // server-side check).
+      { segment: 'procurement', labelKey: 'procurement', managerOnly: true, operatorOnly: true, href: '/procurement' },
     ],
   },
   {
@@ -155,38 +160,32 @@ const GROUPS: { key: GroupKey; labelKey: string; items: NavItem[] }[] = [
       // now that the Handbook carries both. The Task Center's "View full
       // procedure" deep link still lands on ?tab=procedures.
       { segment: 'staff/handbook', labelKey: 'staffHandbook', dividerBefore: true, module: 'module_staff' },
-    ],
-  },
-  {
-    key: 'more',
-    labelKey: 'more',
-    items: [
-      // print-labels now lives inside Inventory. Staff Task Center and
-      // Shift Handover moved to their own Staff group above -- excluded
-      // here so this doesn't ALSO light up "More" while on those pages.
-      { segment: 'tools', labelKey: 'tools', module: 'module_tools', excludeFromActive: ['tools/tasks'] },
-      // Room Photo Review's direct entry point removed from here (folded
-      // into Inventory as a bulk action instead -- SS-375/SS-271, same
-      // "collapse to one entry point" fix already applied to Handover per
-      // SS-114). Procurement is its own top-level page; managerOnly
-      // matches the gate it already enforces server-side (staff get
-      // redirected out), so this doesn't offer a link staff would just
-      // bounce off of.
-      // SS-410: operator surface -- the link renders only while viewing the
-      // operator-console property, matching the server-side gate the page
-      // itself now enforces (a client residence never offers it).
-      { segment: 'procurement', labelKey: 'procurement', managerOnly: true, operatorOnly: true, href: '/procurement' },
-      // Not managerOnly -- every role needs this for their own SMS opt-in;
-      // the Invite Codes/Broadcast sections inside are what's actually
-      // gated, per-role, by the page itself.
-      { segment: 'settings', labelKey: 'settings' },
-      // Property-agnostic (see app/help/page.tsx) -- href override same as
-      // Procurement above, so this doesn't resolve to the default
-      // /properties/{id}/help pattern every other item here uses.
-      { segment: 'help', labelKey: 'help', href: '/help' },
+      // SS-856: House Manual was three clicks deep (More > Tools > House
+      // Manual) for something staff need daily -- promoted to a direct
+      // entry, same group as the Handbook it sits beside conceptually
+      // (both are "what a housekeeper reads"). Not managerOnly: everyone
+      // on the house needs it, same as the page itself has always allowed.
+      { segment: 'tools/knowledge-base', labelKey: 'houseManual', module: 'module_tools' },
+      // SS-856: Photo Review promoted the same way -- a manager work
+      // queue, so it sits with Team/Register rather than the reference
+      // pair above. MIN_ROLE on this tile in tools/page.tsx already reads
+      // 'manager'; this entry matches it rather than introducing a second
+      // rule that could drift.
+      { segment: 'tools/photo-worklist', labelKey: 'photoReview', managerOnly: true, module: 'module_tools' },
     ],
   },
 ];
+
+// SS-856: More is dissolved -- it was Tools, Procurement, Settings and
+// Help, four items with nothing in common but "didn't fit elsewhere yet"
+// (SS-375's own framing). Procurement moved into Shop above. Settings and
+// Help now live behind the avatar (HeaderAvatarUpload.tsx's sheet already
+// carries Settings per SS-429; Help joins it there). Tools keeps a door --
+// dozens of real per-house tools (Reset for Next, Pantry Zone Map, Contacts
+// & Vendors, and the rest) have no other promoted home yet and would
+// otherwise be unreachable, not just untidy -- but it is no longer nested
+// two levels deep inside a dropdown that existed only to hold it.
+const TOOLS_LINK = { segment: 'tools', labelKey: 'tools', module: 'module_tools' as const, excludeFromActive: ['tools/tasks', 'tools/knowledge-base', 'tools/photo-worklist'] };
 
 function segmentIsActive(pathname: string, item: NavItem): boolean {
   if (!pathname.includes(`/${item.segment}`)) return false;
@@ -309,6 +308,24 @@ export default function DesktopNav({
           </div>
         );
       })}
+
+      {/* SS-856: Tools, no longer nested inside the dissolved More dropdown --
+          a lone top-level link, same treatment as Dashboard, since it no
+          longer has three siblings to share a group with. */}
+      {isModuleEnabled(flags, TOOLS_LINK.module) && (
+        <Link
+          href={`/properties/${propertyId}/${TOOLS_LINK.segment}`}
+          aria-current={segmentIsActive(pathname, TOOLS_LINK) ? 'page' : undefined}
+          className={
+            'rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ' +
+            (segmentIsActive(pathname, TOOLS_LINK)
+              ? 'bg-mist shadow-sm shadow-black/10 text-denim border-brass'
+              : 'text-white/70 hover:bg-white/10 border-transparent')
+          }
+        >
+          {t(TOOLS_LINK.labelKey)}
+        </Link>
+      )}
 
       {isModuleEnabled(flags, 'module_inventory') && (
         <button

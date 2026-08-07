@@ -1444,11 +1444,15 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
             its one non-duplicate piece, the "+ Add Item" link, moved into
             the Low Stock Alerts tile itself (DashboardWidgets.tsx). */}
         {/* Mobile bottom nav only shows Home/Recipes/Scan/Shopping/Inventory
-            — Tools/Staff/Settings are reachable from here instead of being
+            — Tools/Staff/Procurement are reachable from here instead of being
             crammed into the bottom bar. Labels now lives inside Inventory and
             Handover inside Staff's Handover tab, so neither needs its own
-            entry point here anymore. Desktop already has these in the
-            nav's "More" dropdown, so this block is mobile-only. */}
+            entry point here anymore.
+            SS-856: Settings and Help REMOVED from this block -- they were
+            "Desktop already has these in the nav's More dropdown," and More
+            is dissolved. Both now live behind the avatar
+            (HeaderAvatarUpload.tsx's sheet), reachable identically on mobile
+            and desktop instead of duplicated in a mobile-only footer. */}
         <div className="md:hidden mt-6 pt-4 border-t border-cardBorder flex flex-wrap gap-x-4 gap-y-2 text-sm">
           {isModuleEnabled(moduleFlags, 'module_tools') && (
             <Link href={`/properties/${propertyId}/tools`} className="text-dusk hover:text-denim underline underline-offset-2">
@@ -1472,17 +1476,6 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
               {t('mobileFooter.procurement')}
             </Link>
           )}
-          <Link href={`/properties/${propertyId}/settings`} className="text-dusk hover:text-denim underline underline-offset-2">
-            {t('mobileFooter.settings')}
-          </Link>
-          {/* Property-agnostic (see app/help/page.tsx), ungated like
-              Settings -- every role, not just owner/manager. */}
-          {/* Property-scoped so Help inherits the app header. /help renders
-              outside app/properties/[id]/ and therefore has no chrome and no
-              way back -- this link was the main way people got stranded. */}
-          <Link href={`/properties/${propertyId}/help`} className="text-dusk hover:text-denim underline underline-offset-2">
-            {t('mobileFooter.help')}
-          </Link>
         </div>
 
         {isShabbos && (

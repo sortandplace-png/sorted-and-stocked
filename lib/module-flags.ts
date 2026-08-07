@@ -82,3 +82,47 @@ export function moduleForSegment(segment: string): ModuleKey | null {
   const match = ROUTE_MODULES.find((r) => segment === r.prefix || segment.startsWith(`${r.prefix}/`));
   return match?.module ?? null;
 }
+
+// SS-856, supersedes SS-410. SS-410 gated these one page at a time and
+// closed after ONE of five surfaces actually shipped -- four were lost for
+// eight days because nothing forced a route added later to remember the
+// check. This is the rule stated once, centrally: a surface is an OPERATOR
+// surface (renders only on the one property carrying
+// feature_flags.operator_console -- Lax today) or a RESIDENCE surface
+// (renders on every property, client houses included). Enforced in
+// app/properties/[id]/layout.tsx, which runs before every nested page --
+// a route added tomorrow inherits the gate without anyone remembering to
+// add it. The per-page isOperatorConsole checks already on these routes
+// (console, register, tools/tasks, tools/suppliers, tools/translation-
+// worklist, tools/needs-linking, tools/duplicate-ingredients, all-houses,
+// staff/clip-review) are left in place as belt-and-braces, same pattern as
+// SS-681's force-dynamic -- this list is what makes the guarantee
+// EXPLICIT and closes the gap for whatever forgets its own check next.
+//
+// Prefix match, same convention as ROUTE_MODULES above: 'tools/tasks'
+// matches before the (absent) bare 'tools' prefix, since Tools itself is a
+// residence surface -- individual per-house tools (House Manual, Pantry
+// Zone Map, Reset for Next, and the rest) stay reachable on client houses;
+// only the operator-only tiles inside that grid are the leak.
+export const OPERATOR_ONLY_SEGMENTS = [
+  'console',
+  'register',
+  'staff/clip-review',
+  'tools/tasks',
+  // NOT tools/duty-roster -- that's DutyRosterEditor.tsx, the per-property
+  // staff_duty_templates admin table (each house's own duties, no cross-
+  // house content, no gate today, correctly ungated). staff/duty-roster
+  // below is the unrelated bookmark-compat mount of the cross-house Task
+  // Center (DutyRosterClient.tsx via /tools/tasks) -- same component,
+  // same gate, different route someone might still have saved.
+  'staff/duty-roster',
+  'tools/suppliers',
+  'tools/translation-worklist',
+  'tools/needs-linking',
+  'tools/duplicate-ingredients',
+  'all-houses',
+] as const;
+
+export function isOperatorOnlySegment(segment: string): boolean {
+  return OPERATOR_ONLY_SEGMENTS.some((s) => segment === s || segment.startsWith(`${s}/`));
+}

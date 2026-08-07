@@ -8,7 +8,7 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Settings as SettingsIcon } from 'lucide-react';
+import { Settings as SettingsIcon, HelpCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { compressImageToBlob } from '@/lib/compress-image';
 import { resilientUpdate } from '@/lib/resilient-write';
@@ -26,11 +26,12 @@ export default function HeaderAvatarUpload({
   fullName?: string | null;
   email?: string | null;
   avatarUrl?: string | null;
-  /** SS-429: when present, the sheet behind the avatar carries a Settings
-   *  link -- the account surface, not the More dropdown (More is dissolving
-   *  under SS-375, and SS-410 takes Settings off client-residence navs;
-   *  this entry survives both). Absent on cross-property pages, which have
-   *  no property settings to point at. */
+  /** SS-429/SS-856: when present, the sheet behind the avatar carries
+   *  Settings and Help links -- the account surface, not the dissolved More
+   *  dropdown. Settings redirects into the console on the operator
+   *  property (app/properties/[id]/settings/page.tsx) and stays a real
+   *  destination on every client house. Absent on cross-property pages,
+   *  which have no property settings to point at. */
   propertyId?: string;
 }) {
   const tNav = useTranslations('nav');
@@ -133,12 +134,24 @@ export default function HeaderAvatarUpload({
               <Link
                 href={`/properties/${propertyId}/settings`}
                 onClick={closeModal}
-                className="flex items-center gap-2 w-full rounded-xl2 border border-cardBorder bg-mist px-4 py-3 mb-3 text-sm font-medium text-denim"
+                className="flex items-center gap-2 w-full rounded-xl2 border border-cardBorder bg-mist px-4 py-3 mb-2 text-sm font-medium text-denim"
               >
                 <SettingsIcon size={16} className="text-brass" strokeWidth={1.75} aria-hidden="true" />
                 {tNav('settings')}
               </Link>
             )}
+            {/* SS-856: Help joins Settings here -- both were the last two
+                items in the dissolved More dropdown. Property-agnostic
+                (see app/help/page.tsx), so this renders even without a
+                propertyId, unlike Settings above. */}
+            <Link
+              href="/help"
+              onClick={closeModal}
+              className="flex items-center gap-2 w-full rounded-xl2 border border-cardBorder bg-mist px-4 py-3 mb-3 text-sm font-medium text-denim"
+            >
+              <HelpCircle size={16} className="text-brass" strokeWidth={1.75} aria-hidden="true" />
+              {tNav('help')}
+            </Link>
 
             <div className="flex gap-2">
               <button onClick={closeModal} className="flex-1 py-2.5 rounded-full bg-linen border border-denim/20 text-denim">

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import SettingsClient from '@/components/SettingsClient';
 import StaffSlotsEditor from '@/components/StaffSlotsEditor';
+import { isOperatorConsole } from '@/lib/module-flags';
 
 export default async function SettingsPage({
   params,
@@ -19,11 +20,23 @@ export default async function SettingsPage({
 
   const { data: membership } = await supabase
     .from('property_members')
-    .select('role')
+    .select('role, properties(feature_flags)')
     .eq('property_id', id)
     .eq('user_id', user.id)
     .maybeSingle();
   if (!membership) redirect('/properties');
+
+  // SS-856: on the operator-console property, Settings is a SECTION of the
+  // console page (Configuration), not its own destination -- and staff
+  // slots there now live in the console's People house-tile picker
+  // (SS-824), so this standalone page is a duplicate door on Lax
+  // specifically. Client houses (no console) keep this page as their real,
+  // only destination for phone/SMS and staff slots -- unaffected.
+  const flags = (membership.properties as unknown as { feature_flags: Record<string, unknown> | null } | null)
+    ?.feature_flags;
+  if (isOperatorConsole(flags)) {
+    redirect(`/properties/${id}/console#configuration`);
+  }
 
   const { data: profile } = await supabase
     .from('profiles')
