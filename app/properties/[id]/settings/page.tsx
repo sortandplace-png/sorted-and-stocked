@@ -68,7 +68,10 @@ export default async function SettingsPage({
     const { data: memberRows } = await supabase
       .from('property_members')
       .select('user_id, role, profiles(full_name, email, phone_number)')
-      .eq('property_id', id);
+      .eq('property_id', id)
+      // SS-627: an offboarded/removed person's row survives (deactivated,
+      // not deleted) -- exclude them from the slot-linking picker.
+      .eq('active', true);
     members = (memberRows ?? [])
       .map((m) => {
         const prof = m.profiles as unknown as { full_name: string | null; email: string | null; phone_number: string | null } | null;

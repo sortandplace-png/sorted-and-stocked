@@ -142,7 +142,11 @@ export default async function OperatorConsolePage({
   const { data: memberRows } = await supabase
     .from('property_members')
     .select('property_id, user_id, role, profiles(full_name, email, phone_number)')
-    .in('property_id', properties.map((p) => p.id));
+    .in('property_id', properties.map((p) => p.id))
+    // SS-627: RLS grants a manager read access to every row on a property
+    // they belong to, active or not -- an offboarded person would still
+    // show up here (and in the SS-243 slot picker) without this filter.
+    .eq('active', true);
 
   type MemberEntry = { name: string; email: string | null; role: string };
   const membersByProperty = [...properties]

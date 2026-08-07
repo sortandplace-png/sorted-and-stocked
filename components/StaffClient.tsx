@@ -195,6 +195,10 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
       .from('property_members')
       .select('id, user_id, role, assigned_zones, profiles(full_name)')
       .eq('property_id', propertyId)
+      // SS-627: removed members are deactivated, not deleted (migration
+      // 236) -- exclude them from the visible roster the same way an
+      // actual delete used to.
+      .eq('active', true)
       .neq('user_id', '6d36e852-63e1-4680-a326-05c6a3f0635c')
       .order('joined_at');
 
@@ -485,6 +489,14 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
     }
   }
 
+  // SS-627. R21: never delete. Deactivating (not deleting) also matters
+  // functionally, not just by rule -- task_assignments.member_id was
+  // ON DELETE CASCADE, so removing this row used to silently take this
+  // person's real assignment history down with it. RLS (is_property_member/
+  // has_property_role, migration 236) already stops an inactive member
+  // from reading or writing anything on this property from the moment this
+  // update lands, same as a delete would have -- access is revoked, the
+  // record isn't destroyed.
   async function removeMember(memberId: string, name: string | null) {
     const member = members.find((m) => m.id === memberId);
     if (!member) return;
@@ -492,7 +504,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
 
     setMembers((prev) => prev.filter((m) => m.id !== memberId));
 
-    const { error: deleteError } = await supabase.from('property_members').delete().eq('id', memberId);
+    const { error: deleteError } = await supabase.from('property_members').update({ active: false }).eq('id', memberId);
 
     if (deleteError) {
       // Also where the last-owner guard can fire — restore the row and
