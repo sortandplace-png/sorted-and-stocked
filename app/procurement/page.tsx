@@ -76,7 +76,11 @@ export default async function ProcurementPage() {
       p.household_id && p.households?.name
         ? { name: p.households.name, propertyCount: householdCounts.get(p.household_id) ?? 1 }
         : null;
-    return { id: p.id, label: formatPropertyLabel(p.name, household) };
+    // SS-853: bare name carried alongside the composed label -- v_low_stock_summary
+    // groups by properties.name directly (it has no property_id column at
+    // all), so this is what the Low Stock cards match against to build a
+    // real href instead of a dead tile.
+    return { id: p.id, name: p.name, label: formatPropertyLabel(p.name, household) };
   });
 
   if (properties.length === 0) redirect('/properties');

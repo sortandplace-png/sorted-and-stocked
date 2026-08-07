@@ -281,6 +281,7 @@ export default function InventoryClient({
   initialItemId = null,
   initialCategoryFilter = null,
   photolessCount = 0,
+  initialLowStockFilter = false,
 }: {
   propertyId: string;
   initialLocationFilter?: string | null;
@@ -289,6 +290,9 @@ export default function InventoryClient({
   initialCategoryFilter?: string | null;
   /** SS-869 part 3: live count feeding the Photo Worklist entry point. */
   photolessCount?: number;
+  /** SS-853: pre-applies the Low Stock pill, same deep-link pattern as
+   *  initialCategoryFilter above. */
+  initialLowStockFilter?: boolean;
 }) {
   const locale = useLocale();
   const tc = useTranslations('common');
@@ -810,6 +814,17 @@ export default function InventoryClient({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialCategoryFilter]);
+
+  // SS-853: same deep-link pattern as category above, for the Shop All
+  // Houses "Low Stock by Property" cards, which used to be dead tiles.
+  const appliedLowStockFromQueryRef = useRef(false);
+  useEffect(() => {
+    if (initialLowStockFilter && !appliedLowStockFromQueryRef.current) {
+      appliedLowStockFromQueryRef.current = true;
+      setBelowParOnly(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialLowStockFilter]);
 
   function openDetailView(item: InventoryItem) {
     setViewingItem(item);
