@@ -36,6 +36,7 @@ export default function MyDayClient({
   adHocTasks = [],
   todayStr,
   readAt,
+  photolessCount = 0,
 }: {
   propertyId: string;
   staffNote: string | null;
@@ -46,6 +47,9 @@ export default function MyDayClient({
   todayStr: string;
   /** SS-857: server-stamped the same request as dutyAreas/adHocTasks above. */
   readAt: string;
+  /** SS-869 part 3: live count feeding the Photo Worklist entry point. Always
+   *  0 for staff -- the page itself is manager-gated. */
+  photolessCount?: number;
 }) {
   const t = useTranslations('myDay');
   const tTraining = useTranslations('training');
@@ -59,7 +63,22 @@ export default function MyDayClient({
       <p className="text-sm text-dusk mb-1">
         {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
       </p>
-      <ReadTimestamp readAt={readAt} className="text-[11px] text-dusk mb-4" />
+      <ReadTimestamp readAt={readAt} className="text-[11px] text-dusk mb-1" />
+
+      {/* SS-869 part 3: "this shouldn't be a drop down" -- work someone
+          does with a phone in their hand should not be buried two taps
+          inside the Staff menu. Hidden at zero, and never shown to staff
+          (the worklist page itself is manager-gated; photolessCount is
+          always 0 for them, so this reads as "not offered" either way). */}
+      {photolessCount > 0 && (
+        <Link
+          href={`/properties/${propertyId}/tools/photo-worklist`}
+          className="flex items-center gap-2.5 bg-mist border border-brass/30 rounded-xl2 px-4 py-2.5 mb-4 text-sm font-medium text-denim hover:border-brass/60 transition-colors"
+        >
+          <Camera size={16} className="text-brass shrink-0" aria-hidden="true" />
+          Photos needed: {photolessCount}
+        </Link>
+      )}
 
       {/* SS-285. Top of the page and on its own line, because starting and
           ending a shift is the first and last thing done here and should

@@ -280,12 +280,15 @@ export default function InventoryClient({
   initialOpenNew = false,
   initialItemId = null,
   initialCategoryFilter = null,
+  photolessCount = 0,
 }: {
   propertyId: string;
   initialLocationFilter?: string | null;
   initialOpenNew?: boolean;
   initialItemId?: string | null;
   initialCategoryFilter?: string | null;
+  /** SS-869 part 3: live count feeding the Photo Worklist entry point. */
+  photolessCount?: number;
 }) {
   const locale = useLocale();
   const tc = useTranslations('common');
@@ -1626,6 +1629,23 @@ export default function InventoryClient({
         </div>
       )}
       {readAt && <ReadTimestamp readAt={readAt} className="text-[11px] text-dusk mb-1" />}
+
+      {/* SS-869 part 3: "this shouldn't be a drop down" -- was two taps
+          inside the Staff menu for work someone does with a phone in
+          their hand. Manager-gated, same as the worklist page's own
+          access tier (staff are redirected out there), and hidden
+          entirely at zero rather than showing a "Photos needed: 0" line
+          nobody needs to read. */}
+      {canManage(role) && photolessCount > 0 && (
+        <Link
+          href={`/properties/${propertyId}/tools/photo-worklist`}
+          className="flex items-center gap-2.5 bg-mist border border-brass/30 rounded-xl2 px-4 py-2.5 mb-4 text-sm font-medium text-denim hover:border-brass/60 transition-colors"
+        >
+          <Camera size={16} className="text-brass shrink-0" aria-hidden="true" />
+          Photos needed: {photolessCount}
+        </Link>
+      )}
+
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-display text-denim">Inventory</h1>
         <div className="flex gap-2">

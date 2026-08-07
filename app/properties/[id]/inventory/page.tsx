@@ -1,5 +1,7 @@
 // app/properties/[id]/inventory/page.tsx
+import { createClient } from '@/lib/supabase/server';
 import InventoryClient from '@/components/InventoryClient';
+import { getPhotolessCount } from '@/lib/photo-worklist-count';
 
 export default async function InventoryPage({
   params,
@@ -10,6 +12,11 @@ export default async function InventoryPage({
 }) {
   const { id } = await params;
   const { location, new: openNew, item, category } = await searchParams;
+  // SS-869 part 3: "this shouldn't be a drop down" -- was two taps inside
+  // the Staff menu. Counted server-side so the entry point can render (or
+  // stay hidden at zero) without a second client round trip on load.
+  const supabase = await createClient();
+  const photolessCount = await getPhotolessCount(supabase, id);
   return (
     <InventoryClient
       propertyId={id}
@@ -17,6 +24,7 @@ export default async function InventoryPage({
       initialOpenNew={openNew === '1'}
       initialItemId={item ?? null}
       initialCategoryFilter={category ?? null}
+      photolessCount={photolessCount}
     />
   );
 }

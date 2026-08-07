@@ -396,10 +396,14 @@
     "subtitle": "These items need a real photo of what's actually on the shelf — a web search couldn't confirm the right one.",
     "allDone": "Nothing left on this list.",
     "takePhotoButton": "Take photo",
+    "choosePhotoButton": "Choose photo",
     "uploading": "Saving…",
     "savedToast": "Photo saved for {item}.",
     "failedToast": "Failed to save photo.",
-    "sessionCount": "{count, plural, one {# photo added this session} other {# photos added this session}}"
+    "sessionCount": "{count, plural, one {# photo added this session} other {# photos added this session}}",
+    "suggestionFrom": "This photo exists at {property}.",
+    "suggestionOthers": "{count, plural, one {# other house also has this photo} other {# other houses also have this photo}}",
+    "useThisPhoto": "Use this photo"
   },
   "staffOnboarding": {
     "next": "Next",

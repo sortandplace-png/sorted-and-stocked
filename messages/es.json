@@ -396,10 +396,14 @@
     "subtitle": "Estos artículos necesitan una foto real de lo que hay en el estante — una búsqueda web no pudo confirmar cuál es el correcto.",
     "allDone": "No queda nada en esta lista.",
     "takePhotoButton": "Tomar foto",
+    "choosePhotoButton": "Elegir foto",
     "uploading": "Guardando…",
     "savedToast": "Foto guardada para {item}.",
     "failedToast": "No se pudo guardar la foto.",
-    "sessionCount": "{count, plural, one {# foto agregada en esta sesión} other {# fotos agregadas en esta sesión}}"
+    "sessionCount": "{count, plural, one {# foto agregada en esta sesión} other {# fotos agregadas en esta sesión}}",
+    "suggestionFrom": "Esta foto existe en {property}.",
+    "suggestionOthers": "{count, plural, one {# otra casa también tiene esta foto} other {# otras casas también tienen esta foto}}",
+    "useThisPhoto": "Usar esta foto"
   },
   "staffOnboarding": {
     "next": "Siguiente",

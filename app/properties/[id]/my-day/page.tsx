@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getLocale } from 'next-intl/server';
 import MyDayClient from '@/components/MyDayClient';
 import { getTodayTriggerType, getRoshChodeshStatus } from '@/lib/calendar-trigger-type';
+import { getPhotolessCount } from '@/lib/photo-worklist-count';
 
 // general/omer are deliberately excluded, not just "usually have no note" --
 // per spec, this banner never shows on those two days even if a future
@@ -266,6 +267,12 @@ export default async function MyDayPage({
     adHocTasks = adHoc ?? [];
   }
 
+  // SS-869 part 3: My Day's own entry point to the Photo Worklist -- only
+  // fetched for owner/manager, matching the worklist page's own access
+  // tier (staff are redirected out there, so showing this to them would
+  // be a dead click, not an addition).
+  const photolessCount = isStaff ? 0 : await getPhotolessCount(supabase, id);
+
   // Parent layout already confirmed membership on this property — no
   // additional role gate here. This is staff's landing page, but nothing
   // about it is staff-exclusive (an owner/manager visiting directly just
@@ -281,6 +288,7 @@ export default async function MyDayPage({
       adHocTasks={adHocTasks}
       todayStr={todayStr}
       readAt={new Date().toISOString()}
+      photolessCount={photolessCount}
     />
   );
 }
