@@ -495,7 +495,9 @@
       "heading": "Today's Duties",
       "noRoster": "No task roster assigned yet — ask your manager to set one up.",
       "nothingNow": "Nothing scheduled for this time of day.",
-      "failedToUpdate": "Failed to update. Try again."
+      "failedToUpdate": "Failed to update. Try again.",
+      "showHowTo": "How to do this",
+      "hideHowTo": "Hide"
     }
   },
   "dashboard": {
@@ -926,6 +928,7 @@
     "statTotal": "Total Tasks",
     "statUnassigned": "Unassigned",
     "statWithSop": "With Procedures",
+    "statWithoutSopHint": "{count, plural, one {# task reaches no procedure at all} other {# tasks reach no procedure at all}}",
     "statRoomsMissing": "Rooms Missing",
     "statRoomsMissingHint": "Area-level work (Maintenance, Childcare, Outdoors) is excluded on purpose — it isn't tied to a room.",
     "searchPlaceholder": "Search tasks, rooms, jobs",

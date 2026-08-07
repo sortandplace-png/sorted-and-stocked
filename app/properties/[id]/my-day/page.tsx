@@ -5,6 +5,7 @@ import { getLocale } from 'next-intl/server';
 import MyDayClient from '@/components/MyDayClient';
 import { getTodayTriggerType, getRoshChodeshStatus } from '@/lib/calendar-trigger-type';
 import { getPhotolessCount } from '@/lib/photo-worklist-count';
+import { signSopPosters } from '@/lib/sop-posters';
 
 // general/omer are deliberately excluded, not just "usually have no note" --
 // per spec, this banner never shows on those two days even if a future
@@ -74,7 +75,25 @@ function eastern(now: Date) {
   return { todayStr, isoWeekday, timeBlock }
 }
 
-type DutyTask = { id: string; taskEn: string; taskEs: string; completed: boolean }
+// SS-850 ruling: the task's own photo is first; the procedure (text, then
+// poster) shows second, in the body; the video that teaches it renders
+// alongside. Nobody leaves a task to find out how to do it -- so all four
+// travel on the DutyTask itself rather than requiring a second fetch from
+// the client.
+type DutyTask = {
+  id: string
+  taskEn: string
+  taskEs: string
+  completed: boolean
+  photoUrl: string | null
+  procedureEn: string | null
+  procedureEs: string | null
+  posterUrl: string | null
+  videoTitleEn: string | null
+  videoTitleEs: string | null
+  videoUrl: string | null
+  videoPosterUrl: string | null
+}
 type DutyArea = { areaEn: string; areaEs: string; tasks: DutyTask[] }
 
 // SS-242: master_tasks is the source of truth for staff work, reached through
@@ -131,7 +150,7 @@ async function getDutyAreas(
 
   const { data: tasks, error: tasksErr } = await supabase
     .from('master_tasks')
-    .select('id, task_en, task_es, source_area_en, source_area_es, sort_order')
+    .select('id, task_en, task_es, source_area_en, source_area_es, sort_order, photo_url')
     .eq('property_id', propertyId)
     .eq('active', true)
     .in('id', assignedIds)
@@ -164,6 +183,72 @@ async function getDutyAreas(
   if (!tasks || tasks.length === 0) return []
 
   const ids = tasks.map((t) => t.id)
+
+  // SS-850 SUPERSEDES SS-517: master_tasks.sop_id is deprecated. Read the
+  // real join, primary row only -- 953 legacy values that never made it
+  // into master_task_sops now backfilled to zero, per the migration
+  // Claude ran 7 Aug.
+  const { data: sopLinks, error: sopErr } = await supabase
+    .from('master_task_sops')
+    .select('master_task_id, sop_library(id, sop_en, sop_es, expected_appearance_url)')
+    .in('master_task_id', ids)
+    .eq('is_primary', true)
+  if (sopErr) console.error('my-day: master_task_sops fetch failed', sopErr)
+
+  type SopEmbed = { id: string; sop_en: string | null; sop_es: string | null; expected_appearance_url: string | null } | null
+  const procedureByTask = new Map<string, { sopId: string; en: string | null; es: string | null; poster: string | null }>()
+  for (const r of (sopLinks ?? []) as unknown as { master_task_id: string; sop_library: SopEmbed | SopEmbed[] }[]) {
+    const embed = Array.isArray(r.sop_library) ? r.sop_library[0] ?? null : r.sop_library
+    if (!embed) continue
+    procedureByTask.set(r.master_task_id, { sopId: embed.id, en: embed.sop_en, es: embed.sop_es, poster: embed.expected_appearance_url })
+  }
+
+  const sopIds = [...new Set([...procedureByTask.values()].map((p) => p.sopId))]
+  // The 8 curriculum-level videos (7 app tutorials + 1 marketing promo)
+  // carry no sop_id and are correctly excluded by this filter -- per her
+  // explicit ruling, they must never attach to a procedure.
+  const { data: videoRows } = sopIds.length
+    ? await supabase
+        .from('training_videos')
+        .select('sop_id, title_en, title_es, bucket, storage_path, poster_path')
+        .in('sop_id', sopIds)
+        .eq('active', true)
+    : { data: [] as { sop_id: string | null; title_en: string; title_es: string | null; bucket: string; storage_path: string; poster_path: string | null }[] }
+
+  // One signing pass for everything the checklist can show: task photos,
+  // SOP posters (same private sop-posters bucket, lib/sop-posters.ts) and
+  // videos (their own bucket(s), same per-bucket pattern
+  // lib/training-videos.ts already uses).
+  const posterUrls = [...procedureByTask.values()].map((p) => p.poster).filter((u): u is string => !!u)
+  const photoUrls = tasks.map((t) => t.photo_url).filter((u): u is string => !!u)
+  const signedPosters = await signSopPosters(supabase, [...photoUrls, ...posterUrls])
+
+  const videoByBucket = new Map<string, string[]>()
+  for (const v of videoRows ?? []) {
+    const paths = videoByBucket.get(v.bucket) ?? []
+    paths.push(v.storage_path)
+    if (v.poster_path) paths.push(v.poster_path)
+    videoByBucket.set(v.bucket, paths)
+  }
+  const signedVideoUrls = new Map<string, string>()
+  await Promise.all(
+    [...videoByBucket.entries()].map(async ([bucket, paths]) => {
+      const { data } = await supabase.storage.from(bucket).createSignedUrls(paths, 3600)
+      for (const s of data ?? []) {
+        if (s.path && s.signedUrl) signedVideoUrls.set(`${bucket}/${s.path}`, s.signedUrl)
+      }
+    })
+  )
+  const videoBySopId = new Map<string, { titleEn: string; titleEs: string | null; url: string | null; poster: string | null }>()
+  for (const v of videoRows ?? []) {
+    if (!v.sop_id || videoBySopId.has(v.sop_id)) continue
+    videoBySopId.set(v.sop_id, {
+      titleEn: v.title_en,
+      titleEs: v.title_es,
+      url: signedVideoUrls.get(`${v.bucket}/${v.storage_path}`) ?? null,
+      poster: v.poster_path ? signedVideoUrls.get(`${v.bucket}/${v.poster_path}`) ?? null : null,
+    })
+  }
   const { data: completions, error: complErr } = await supabase
     .from('task_completions')
     .select('task_id, completed')
@@ -189,7 +274,26 @@ async function getDutyAreas(
       areaIndex.set(areaEn, idx)
       areas.push({ areaEn, areaEs, tasks: [] })
     }
-    areas[idx].tasks.push({ id: t.id, taskEn: t.task_en, taskEs: t.task_es, completed: completedSet.has(t.id) })
+    const procedure = procedureByTask.get(t.id)
+    const video = procedure ? videoBySopId.get(procedure.sopId) : undefined
+    const rawPhoto = t.photo_url
+    const signedPhoto = rawPhoto ? signedPosters.get(rawPhoto)?.fullUrl ?? rawPhoto : null
+    const rawPoster = procedure?.poster ?? null
+    const signedPoster = rawPoster ? signedPosters.get(rawPoster)?.fullUrl ?? rawPoster : null
+    areas[idx].tasks.push({
+      id: t.id,
+      taskEn: t.task_en,
+      taskEs: t.task_es,
+      completed: completedSet.has(t.id),
+      photoUrl: signedPhoto,
+      procedureEn: procedure?.en ?? null,
+      procedureEs: procedure?.es ?? null,
+      posterUrl: signedPoster,
+      videoTitleEn: video?.titleEn ?? null,
+      videoTitleEs: video?.titleEs ?? null,
+      videoUrl: video?.url ?? null,
+      videoPosterUrl: video?.poster ?? null,
+    })
   }
   return areas
 }

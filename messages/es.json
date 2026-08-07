@@ -495,7 +495,9 @@
       "heading": "Tareas de Hoy",
       "noRoster": "Aún no se ha asignado una lista de tareas — pídale a su gerente que configure una.",
       "nothingNow": "No hay nada programado para este momento del día.",
-      "failedToUpdate": "Error al actualizar. Inténtelo de nuevo."
+      "failedToUpdate": "Error al actualizar. Inténtelo de nuevo.",
+      "showHowTo": "Cómo hacerlo",
+      "hideHowTo": "Ocultar"
     }
   },
   "dashboard": {
@@ -926,6 +928,7 @@
     "statTotal": "Tareas Totales",
     "statUnassigned": "Sin Asignar",
     "statWithSop": "Con Procedimientos",
+    "statWithoutSopHint": "{count, plural, one {# tarea no llega a ningún procedimiento} other {# tareas no llegan a ningún procedimiento}}",
     "statRoomsMissing": "Cuartos Faltantes",
     "statRoomsMissingHint": "El trabajo por área (Mantenimiento, Cuidado de niños, Exteriores) se excluye a propósito — no corresponde a un cuarto.",
     "searchPlaceholder": "Buscar tareas, cuartos, trabajos",

@@ -187,6 +187,20 @@ type SopEmbed = {
 type SopLinkRow = { master_task_id: string; sop_library: SopEmbed | SopEmbed[] };
 type LinkedSop = { sopId: string; sopEn: string | null; sopEs: string | null };
 
+// SS-850: the video that teaches a procedure, keyed by sop_library.id.
+// signedUrl null means signing failed -- callers render an honest
+// "unavailable" line rather than a dead <video> element, same rule
+// lib/training-videos.ts already uses for the Handbook's own tab.
+type LinkedVideo = { titleEn: string; titleEs: string | null; signedUrl: string | null; posterUrl: string | null };
+type VideoRow = {
+  sop_id: string | null;
+  title_en: string;
+  title_es: string | null;
+  bucket: string;
+  storage_path: string;
+  poster_path: string | null;
+};
+
 const UNASSIGNED = 'Unassigned';
 const NO_ROOM = '__noroom__';
 
@@ -269,6 +283,13 @@ export default function DutyRosterClient({
   // pass through unchanged.
   const [signedByUrl, setSignedByUrl] = useState<Record<string, string>>({});
   const [sopTextByTask, setSopTextByTask] = useState<Record<string, LinkedSop>>({});
+  // SS-850 ruling: "procedure in body as well as video" -- text and video
+  // both render inside the task, not a link out. Keyed by sop_library.id
+  // (not task id) since a video teaches a PROCEDURE; any task pointing at
+  // that same procedure shows the same video. The 8 curriculum-level
+  // videos (7 app tutorials + 1 marketing promo) carry no sop_id and so
+  // never populate this map -- correct, per her explicit "do not touch."
+  const [videoBySopId, setVideoBySopId] = useState<Record<string, LinkedVideo>>({});
   // Which tile has its procedure open. One at a time -- a grid with every
   // panel expanded is not a grid any more.
   const [openSopTaskId, setOpenSopTaskId] = useState<string | null>(null);
@@ -665,6 +686,16 @@ export default function DutyRosterClient({
       // exactly what Third Floor did. Also appended at the end, same
       // positional-read reason as work_sections above (now rows[8]).
       supabase.from('floors').select('id, label_en, label_es, sort_order').order('sort_order'),
+      // SS-850. Every video with a sop_id teaches that procedure -- the 8
+      // curriculum-level videos (7 app tutorials + 1 marketing promo) have
+      // none and are correctly excluded here, per her explicit "do not
+      // touch." Appended at the end, same positional-read reason as
+      // work_sections/floors above (now rows[9]).
+      supabase
+        .from('training_videos')
+        .select('sop_id, title_en, title_es, bucket, storage_path, poster_path')
+        .eq('active', true)
+        .not('sop_id', 'is', null),
     ]);
 
     // One failing source must not blank the page, and an error must never be
@@ -764,6 +795,46 @@ export default function DutyRosterClient({
     setSlots(rows[6] as Slot[]);
     setWorkSections(rows[7] as WorkSection[]);
     setFloors(rows[8] as Floor[]);
+
+    // SS-850: the video that teaches each procedure, signed the same
+    // per-bucket way lib/training-videos.ts signs the Handbook's own tab
+    // (a private bucket, one signing call per bucket rather than a
+    // separate round trip per video). Non-fatal, same as the poster
+    // signing above -- a task list that renders without video links is
+    // far better than one that doesn't render at all.
+    try {
+      const videoRows = rows[9] as unknown as VideoRow[];
+      const byBucket = new Map<string, string[]>();
+      for (const v of videoRows) {
+        const paths = byBucket.get(v.bucket) ?? [];
+        paths.push(v.storage_path);
+        if (v.poster_path) paths.push(v.poster_path);
+        byBucket.set(v.bucket, paths);
+      }
+      const signedVideoUrls = new Map<string, string>();
+      await Promise.all(
+        [...byBucket.entries()].map(async ([bucket, paths]) => {
+          const { data } = await supabase.storage.from(bucket).createSignedUrls(paths, 3600);
+          for (const s of data ?? []) {
+            if (s.path && s.signedUrl) signedVideoUrls.set(`${bucket}/${s.path}`, s.signedUrl);
+          }
+        })
+      );
+      const videos: Record<string, LinkedVideo> = {};
+      for (const v of videoRows) {
+        if (!v.sop_id || videos[v.sop_id]) continue;
+        videos[v.sop_id] = {
+          titleEn: v.title_en,
+          titleEs: v.title_es,
+          signedUrl: signedVideoUrls.get(`${v.bucket}/${v.storage_path}`) ?? null,
+          posterUrl: v.poster_path ? signedVideoUrls.get(`${v.bucket}/${v.poster_path}`) ?? null : null,
+        };
+      }
+      setVideoBySopId(videos);
+    } catch {
+      setVideoBySopId({});
+    }
+
     setLoadError(failed.length > 0 ? t('loadPartial') : null);
     setLoading(false);
   }, [propertyId, propertyIds, supabase, t]);
@@ -1177,18 +1248,26 @@ export default function DutyRosterClient({
     () => ({
       total: scopedTasks.length,
       unassigned: scopedTasks.filter(isUnassigned).length,
-      // SS-517: count the sop_id FK on the task, not the sopCounts join
-      // map -- the join (master_task_sops) links only 160 tasks while 642
-      // carry sop_id, and Racquel's chat-side resolution ruled sop_id IS
-      // the definition of "has a procedure".
-      withSop: scopedTasks.filter((x) => x.sop_id !== null).length,
+      // SS-850 SUPERSEDES SS-517. master_tasks.sop_id is deprecated --
+      // Claude backfilled master_task_sops from all 1,067 legacy values on
+      // 7 Aug (join rows 187 -> 1,171, missing legacy values 953 -> ZERO),
+      // so the join is now authoritative and the gap SS-517 was avoiding
+      // no longer exists. sopCounts is built from that same join (see the
+      // load below), so this now agrees with the poster/procedure text
+      // every tile actually renders, instead of a column nothing else reads.
+      withSop: scopedTasks.filter((x) => (sopCounts[x.id] ?? 0) > 0).length,
+      // SS-850 part 4: "do not hide them, surface the count" -- the
+      // complement of withSop above, same live source, so the two numbers
+      // can never disagree.
+      withoutSop: scopedTasks.filter((x) => (sopCounts[x.id] ?? 0) === 0).length,
       roomsMissing: scopedTasks.filter(
         (x) => x.room_id === null && !NON_ROOM_JOB_TYPES.includes(x.job_type ?? '')
       ).length,
     }),
     // assignmentByTask (memoized), not isUnassigned (recreated per render):
-    // the closure the unassigned count actually varies with.
-    [scopedTasks, assignmentByTask]
+    // the closure the unassigned count actually varies with. sopCounts
+    // added for the SS-850 fix above.
+    [scopedTasks, assignmentByTask, sopCounts]
   );
 
   // SS-273. Fixed order (not alphabetical, not sort_order) so the tab row
@@ -1761,7 +1840,14 @@ export default function DutyRosterClient({
         {[
           { k: 'statTotal', v: stats.total },
           { k: 'statUnassigned', v: stats.unassigned },
-          { k: 'statWithSop', v: stats.withSop },
+          {
+            k: 'statWithSop',
+            v: stats.withSop,
+            // SS-850 part 4: the 133-and-counting that reach no procedure
+            // at all, surfaced rather than hidden -- same source as the
+            // number above it, so it can't drift.
+            hint: stats.withoutSop > 0 ? t('statWithoutSopHint', { count: stats.withoutSop }) : undefined,
+          },
           // Carries a hint because a zero here is a real answer, not an
           // empty one: without saying why, "Rooms Missing 0" looks like the
           // count is broken. Rendered as a caption as well as a title
@@ -2628,6 +2714,24 @@ export default function DutyRosterClient({
                                   decoding="async"
                                   className="w-full max-h-48 object-contain rounded-lg bg-mist"
                                 />
+                              )}
+                              {/* SS-850 ruling: "procedure in body as well
+                                  as video" -- the video that teaches this
+                                  exact procedure, inline, not a link to the
+                                  Handbook. Poster-faced <video> so nothing
+                                  here mounts a player until tapped, same
+                                  facade pattern TrainingVideosTab uses. */}
+                              {linked?.sopId && videoBySopId[linked.sopId] && (
+                                <video
+                                  controls
+                                  preload="none"
+                                  poster={videoBySopId[linked.sopId].posterUrl ?? undefined}
+                                  className="w-full max-h-48 rounded-lg bg-denim"
+                                >
+                                  {videoBySopId[linked.sopId].signedUrl && (
+                                    <source src={videoBySopId[linked.sopId].signedUrl!} />
+                                  )}
+                                </video>
                               )}
                               {/* Opens the SOP Library scrolled to and
                                   expanded on this exact SOP -- the

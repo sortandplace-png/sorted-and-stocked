@@ -23,7 +23,23 @@ import Tile from '@/components/ui/Tile';
 import ReadTimestamp from '@/components/ui/ReadTimestamp';
 import { routes } from '@/lib/app-routes';
 
-type DutyTask = { id: string; taskEn: string; taskEs: string; completed: boolean };
+// SS-850: shape matches StaffDutyChecklist's own DutyTask exactly --
+// photo/procedure/poster/video all travel with the task from
+// my-day/page.tsx's getDutyAreas(), which does the fetching and signing.
+type DutyTask = {
+  id: string;
+  taskEn: string;
+  taskEs: string;
+  completed: boolean;
+  photoUrl: string | null;
+  procedureEn: string | null;
+  procedureEs: string | null;
+  posterUrl: string | null;
+  videoTitleEn: string | null;
+  videoTitleEs: string | null;
+  videoUrl: string | null;
+  videoPosterUrl: string | null;
+};
 type DutyArea = { areaEn: string; areaEs: string; tasks: DutyTask[] };
 type AdHocTask = { id: string; title: string; due_date: string | null; priority: string | null };
 
@@ -209,7 +225,9 @@ export default function MyDayClient({
               list below it. Staff-only: owner/manager visiting this page
               directly see everything else here unchanged, just not this
               section. */}
-          {isStaff && <StaffDutyChecklist areas={dutyAreas} hasRosterKey={hasRosterKey} todayStr={todayStr} />}
+          {isStaff && (
+            <StaffDutyChecklist propertyId={propertyId} areas={dutyAreas} hasRosterKey={hasRosterKey} todayStr={todayStr} />
+          )}
 
           {/* Real task library (master_tasks/task_assignments/
               task_completions), not the old freeform staff_tasks table --
