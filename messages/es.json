@@ -963,6 +963,7 @@
     "roomNameEn": "Nombre de la habitación (inglés)",
     "roomNameEs": "Nombre de la habitación (español)",
     "roomFloorOptional": "Piso (opcional)",
+    "roomFloorNone": "Sin piso",
     "viewVerification": "Verificar tareas completadas →",
     "addTaskTitle": "Agregar una tarea",
     "editTaskTitle": "Editar tarea",

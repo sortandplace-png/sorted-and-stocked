@@ -72,22 +72,28 @@ type Frequency = {
 // are: admit daily/weekly/erev_shabbos (interval_days <= 7), exclude
 // everything else, always derived from interval_days, never a list.
 const BULK_DAY_MAX_INTERVAL = 7;
-// SS-273 floor filter. floor has no _es sibling in the schema (confirmed
-// live -- only one column) and only three real values exist, so a small
-// static display map covers it rather than a migration, same shape as the
-// staples category translation added earlier.
-const FLOOR_ES: Record<string, string> = {
-  Basement: 'Sótano',
-  'Main Floor': 'Planta Principal',
-  Upstairs: 'Piso Superior',
-};
-// Fixed order, not alphabetical -- alphabetical happens to match here
-// (Basement, Main Floor, Upstairs) but that is a coincidence of these
-// specific names, not something to depend on if a fourth floor is ever
-// added with a name that sorts oddly.
-const FLOOR_ORDER = ['Basement', 'Main Floor', 'Upstairs'];
+// SS-840. The static display map and hardcoded order this replaced
+// (FLOOR_ES / FLOOR_ORDER = ['Basement', 'Main Floor', 'Upstairs']) said
+// of itself "not something to depend on if a fourth floor is ever added
+// with a name that sorts oddly" -- Third Floor did exactly that, sorting
+// alphabetically between Main Floor and Upstairs when it actually stacks
+// above both. floors is now a real ordered lookup table (migration 235,
+// frequencies-table pattern); label/order come from there, fetched once
+// alongside everything else this component loads.
+type Floor = { id: string; label_en: string; label_es: string; sort_order: number };
 
-type Room = { id: string; name_en: string; name_es: string; floor: string | null; property_id: string };
+type Room = {
+  id: string;
+  name_en: string;
+  name_es: string;
+  floor: string | null;
+  // SS-840. floor_id is the real, ordered reference; floor (text) is kept
+  // for the rooms readers that haven't moved over yet (R21 -- deprecate,
+  // don't drop). This file writes both together on room creation so
+  // neither one drifts from the other.
+  floor_id: string | null;
+  property_id: string;
+};
 
 // SS-273. Sunday-first display order, ISO weekday values (matching the
 // day_of_week column's own convention: 1=Mon..7=Sun) -- Saturday/6 is
@@ -324,6 +330,7 @@ export default function DutyRosterClient({
   const [duration, setDuration] = useState<'all' | '5' | '15' | '30' | '30plus'>('all');
   const [workSection, setWorkSection] = useState<string>('all');
   const [workSections, setWorkSections] = useState<WorkSection[]>([]);
+  const [floors, setFloors] = useState<Floor[]>([]);
   const [job, setJob] = useState('all');
   const [freq, setFreq] = useState('all');
   const [assignment, setAssignment] = useState('all');
@@ -570,6 +577,11 @@ export default function DutyRosterClient({
     // schema) -- placed after every room already loaded, same convention
     // saveTask above uses for master_tasks.sort_order.
     const nextSortOrder = rooms.length;
+    // SS-840. newRoomFloor is now a floors.label_en picked from a select,
+    // not free text -- writing both columns together (per migration 235's
+    // own rule) is what stops a new room drifting the same way "Third
+    // Floor" arrived as an ad-hoc string in the first place.
+    const selectedFloor = floors.find((f) => f.label_en === newRoomFloor);
 
     const { error } = await supabase.from('rooms').insert({
       // SS-436: rooms are created into the house selected in the filter --
@@ -578,7 +590,8 @@ export default function DutyRosterClient({
       property_id: crossHouse && house !== 'all' ? house : propertyId,
       name_en: newRoomEn.trim(),
       name_es: newRoomEs.trim(),
-      floor: newRoomFloor.trim() || null,
+      floor: selectedFloor?.label_en ?? null,
+      floor_id: selectedFloor?.id ?? null,
       sort_order: nextSortOrder,
       active: true,
     });
@@ -621,7 +634,7 @@ export default function DutyRosterClient({
         .in('property_id', propertyIds)
         .order('sort_order'),
       supabase.from('frequencies').select('id, code, label_en, label_es, recurrence_kind, sort_order, interval_days').order('sort_order'),
-      supabase.from('rooms').select('id, name_en, name_es, floor, property_id').in('property_id', propertyIds).order('sort_order'),
+      supabase.from('rooms').select('id, name_en, name_es, floor, floor_id, property_id').in('property_id', propertyIds).order('sort_order'),
       supabase
         .from('property_members')
         .select('id, user_id, property_id, profiles(full_name)')
@@ -646,6 +659,12 @@ export default function DutyRosterClient({
       // slots), so inserting anywhere earlier silently renumbers four
       // other setters.
       supabase.from('work_sections').select('id, code, label_en, label_es, sort_order').order('sort_order'),
+      // SS-840. Real ordering, not the alphabetical accident FLOOR_ORDER's
+      // own comment warned about ("not something to depend on if a fourth
+      // floor is ever added with a name that sorts oddly") -- which is
+      // exactly what Third Floor did. Also appended at the end, same
+      // positional-read reason as work_sections above (now rows[8]).
+      supabase.from('floors').select('id, label_en, label_es, sort_order').order('sort_order'),
     ]);
 
     // One failing source must not blank the page, and an error must never be
@@ -744,6 +763,7 @@ export default function DutyRosterClient({
     setAssignments(rows[5] as Assignment[]);
     setSlots(rows[6] as Slot[]);
     setWorkSections(rows[7] as WorkSection[]);
+    setFloors(rows[8] as Floor[]);
     setLoadError(failed.length > 0 ? t('loadPartial') : null);
     setLoading(false);
   }, [propertyId, propertyIds, supabase, t]);
@@ -1186,8 +1206,21 @@ export default function DutyRosterClient({
       ? []
       : rooms.filter((r) => r.property_id === house)
     : rooms;
-  const allFloorNames = FLOOR_ORDER.filter((f) => floorRoomPool.some((r) => r.floor === f));
-  const floorLabel = (f: string) => (es && FLOOR_ES[f] ? FLOOR_ES[f] : f);
+  // SS-840. Real sort_order from the floors table, not a hardcoded array --
+  // still filtered to floor NAMES actually present in this pool, so a
+  // property with no floor data on any room still shows no tab row.
+  // Matched by name (r.floor), not floor_id: the filter state (`floor`
+  // below) is a name string throughout this file, and floor_id's only job
+  // so far is carrying the real order/label -- switching the filter itself
+  // to an id is a bigger change than this ticket asked for.
+  const orderedFloors = [...floors].sort((a, b) => a.sort_order - b.sort_order);
+  const allFloorNames = orderedFloors
+    .map((f) => f.label_en)
+    .filter((name) => floorRoomPool.some((r) => r.floor === name));
+  const floorLabel = (f: string) => {
+    const row = orderedFloors.find((x) => x.label_en === f);
+    return es && row?.label_es ? row.label_es : f;
+  };
 
   // floor is deliberately excluded from filtersActive/clearFilters -- it is
   // a top-level view tab, same role Inventory's own floor tabs play there,
@@ -3010,12 +3043,24 @@ export default function DutyRosterClient({
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-dusk mb-1">
                   {t('roomFloorOptional')}
                 </label>
-                <input
+                {/* SS-840. A picker from the real floors table, not free
+                    text -- a typed floor name is exactly how "Third Floor"
+                    arrived as an ungoverned string with no order in the
+                    first place. */}
+                <select
                   value={newRoomFloor}
                   onChange={(e) => setNewRoomFloor(e.target.value)}
-                  placeholder="Main Floor"
-                  className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm text-denim"
-                />
+                  className="w-full border border-cardBorder rounded-xl px-3 py-2 text-sm text-denim bg-white"
+                >
+                  <option value="">{t('roomFloorNone')}</option>
+                  {[...floors]
+                    .sort((a, b) => a.sort_order - b.sort_order)
+                    .map((f) => (
+                      <option key={f.id} value={f.label_en}>
+                        {es ? f.label_es : f.label_en}
+                      </option>
+                    ))}
+                </select>
               </div>
             </div>
 

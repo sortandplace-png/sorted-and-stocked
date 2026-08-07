@@ -963,6 +963,7 @@
     "roomNameEn": "Room name (English)",
     "roomNameEs": "Room name (Spanish)",
     "roomFloorOptional": "Floor (optional)",
+    "roomFloorNone": "No floor",
     "viewVerification": "Verify completions →",
     "addTaskTitle": "Add a task",
     "editTaskTitle": "Edit task",
