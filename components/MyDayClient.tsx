@@ -20,6 +20,7 @@ import TeamOnShiftBar from '@/components/TeamOnShiftBar';
 import KitchenOpsToolModal from '@/components/KitchenOpsToolModal';
 import { Camera, ShoppingCart, Timer, Info, PlayCircle, BookOpen, Package } from 'lucide-react';
 import Tile from '@/components/ui/Tile';
+import ReadTimestamp from '@/components/ui/ReadTimestamp';
 import { routes } from '@/lib/app-routes';
 
 type DutyTask = { id: string; taskEn: string; taskEs: string; completed: boolean };
@@ -34,6 +35,7 @@ export default function MyDayClient({
   dutyAreas,
   adHocTasks = [],
   todayStr,
+  readAt,
 }: {
   propertyId: string;
   staffNote: string | null;
@@ -42,6 +44,8 @@ export default function MyDayClient({
   dutyAreas: DutyArea[];
   adHocTasks?: AdHocTask[];
   todayStr: string;
+  /** SS-857: server-stamped the same request as dutyAreas/adHocTasks above. */
+  readAt: string;
 }) {
   const t = useTranslations('myDay');
   const tTraining = useTranslations('training');
@@ -52,9 +56,10 @@ export default function MyDayClient({
     <div className="bg-mist min-h-screen p-4 lg:p-6">
     <div className="max-w-6xl mx-auto">
       <h1 className="text-2xl font-display text-denim mb-1">My Day</h1>
-      <p className="text-sm text-dusk mb-4">
+      <p className="text-sm text-dusk mb-1">
         {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
       </p>
+      <ReadTimestamp readAt={readAt} className="text-[11px] text-dusk mb-4" />
 
       {/* SS-285. Top of the page and on its own line, because starting and
           ending a shift is the first and last thing done here and should

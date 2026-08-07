@@ -80,7 +80,10 @@ export default async function MealPlanPage({
       }))
       .sort((a, b) => a.propertyName.localeCompare(b.propertyName));
 
-    return <OperatorMealPlanOverview houses={houses} />;
+    // SS-857: stamped immediately after the read above, not before it and
+    // not on the client -- a cached render carries this value WITH it and
+    // visibly falls behind, same rule as the Register's readAt (SS-681).
+    return <OperatorMealPlanOverview houses={houses} readAt={new Date().toISOString()} />;
   }
 
   // Recipes are shared across every property Racquel owns (migration 072).
@@ -90,5 +93,5 @@ export default async function MealPlanPage({
     .eq('recipe_property_links.property_id', id)
     .order('name');
 
-  return <MealPlanView propertyId={id} recipes={recipes || []} />;
+  return <MealPlanView propertyId={id} recipes={recipes || []} readAt={new Date().toISOString()} />;
 }

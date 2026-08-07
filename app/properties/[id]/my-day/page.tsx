@@ -270,6 +270,7 @@ export default async function MyDayPage({
   // additional role gate here. This is staff's landing page, but nothing
   // about it is staff-exclusive (an owner/manager visiting directly just
   // sees their own assigned tasks, which may be none).
+  // SS-857: stamped after every read above.
   return (
     <MyDayClient
       propertyId={id}
@@ -279,6 +280,7 @@ export default async function MyDayPage({
       dutyAreas={dutyAreas}
       adHocTasks={adHocTasks}
       todayStr={todayStr}
+      readAt={new Date().toISOString()}
     />
   );
 }

@@ -111,6 +111,7 @@ export default async function SettingsPage({
         role={membership.role}
         initialPhoneNumber={profile?.phone_number ?? ''}
         initialSmsOptIn={profile?.sms_opt_in ?? false}
+        readAt={new Date().toISOString()}
       />
       {canManageSlots && (
         <div className="max-w-md lg:max-w-4xl mx-auto px-4 pb-8">

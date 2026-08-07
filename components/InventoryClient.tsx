@@ -17,6 +17,7 @@ import { flattenLocationTree, locationPath, rootGroupName, getDescendantIds } fr
 import { getLocationIcon } from '@/lib/location-icons';
 import { isInventoryItemLow } from '@/lib/low-stock';
 import Pin from '@/components/PinAccent';
+import ReadTimestamp from '@/components/ui/ReadTimestamp';
 import RestockPhotoPrompt from '@/components/RestockPhotoPrompt';
 import LocationPhotoUpload from '@/components/LocationPhotoUpload';
 import DuplicateItemWarning from '@/components/DuplicateItemWarning';
@@ -297,6 +298,10 @@ export default function InventoryClient({
   const [categorySuggestions, setCategorySuggestions] = useState<string[]>([]);
   const [categoryIconNames, setCategoryIconNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  // SS-857: stamped when loadData() actually resolves -- this page fetches
+  // client-side (no server-rendered data at all), so this is the moment
+  // that matters, not a value synthesized separately.
+  const [readAt, setReadAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<ItemFormState | null>(null); // null = form closed
   const [saving, setSaving] = useState(false);
@@ -556,6 +561,7 @@ export default function InventoryClient({
       setCloneSourceNames(new Set());
     }
     setLoading(false);
+    setReadAt(new Date().toISOString());
   }, [propertyId, supabase]);
 
   async function togglePesachMode() {
@@ -1619,6 +1625,7 @@ export default function InventoryClient({
           {refreshing ? 'Refreshing…' : pullDistance > 50 ? 'Release to refresh' : 'Pull to refresh'}
         </div>
       )}
+      {readAt && <ReadTimestamp readAt={readAt} className="text-[11px] text-dusk mb-1" />}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-display text-denim">Inventory</h1>
         <div className="flex gap-2">

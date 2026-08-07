@@ -9,6 +9,7 @@
 // carve-out from R19).
 import Link from 'next/link';
 import Pin from '@/components/PinAccent';
+import ReadTimestamp from '@/components/ui/ReadTimestamp';
 import { useCardCollapse } from '@/lib/useCardCollapse';
 
 export type OperatorMealPlanDay = {
@@ -67,10 +68,18 @@ function HouseCard({ house }: { house: OperatorMealPlanHouse }) {
   );
 }
 
-export default function OperatorMealPlanOverview({ houses }: { houses: OperatorMealPlanHouse[] }) {
+export default function OperatorMealPlanOverview({
+  houses,
+  readAt,
+}: {
+  houses: OperatorMealPlanHouse[];
+  /** SS-857: server-stamped the same request as the data above. */
+  readAt: string;
+}) {
   return (
     <div className="max-w-md lg:max-w-4xl mx-auto p-4">
       <h1 className="text-2xl font-display text-denim mb-1">Meal Plan — All Houses</h1>
+      <ReadTimestamp readAt={readAt} className="text-[11px] text-dusk mb-2" />
       <p className="text-sm text-dusk mb-5">
         This week across every house you belong to. Open a house to change its plan — edits happen there, not here.
       </p>

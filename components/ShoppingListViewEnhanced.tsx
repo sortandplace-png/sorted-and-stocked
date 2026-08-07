@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import ReadTimestamp from '@/components/ui/ReadTimestamp';
 import {
   fetchEnhancedShoppingList,
   fetchItemSources,
@@ -214,6 +215,9 @@ export default function ShoppingListViewEnhanced({
   const [items, setItems] = useState<ShoppingListItem[]>([]);
   const [sources, setSources] = useState<Record<string, ShoppingItemSource[]>>({});
   const [loading, setLoading] = useState(true);
+  // SS-857: stamped when loadItems() actually resolves -- this page fetches
+  // client-side, so this is the moment that matters, not a synthesized value.
+  const [readAt, setReadAt] = useState<string | null>(null);
   const [groupBy, setGroupBy] = useState<GroupBy>('staples-first');
   const [expandedPills, setExpandedPills] = useState<Record<string, boolean>>({});
   const [aggregateDuplicates, setAggregateDuplicates] = useState(true);
@@ -266,6 +270,7 @@ export default function ShoppingListViewEnhanced({
         (byItem[row.shopping_list_item_id] ??= []).push(row);
       }
       setSources(byItem);
+      setReadAt(new Date().toISOString());
     } catch (error) {
       console.error('Error loading shopping list:', error);
       showToast('Failed to load shopping list.', { variant: 'error' });
@@ -863,6 +868,8 @@ export default function ShoppingListViewEnhanced({
   return (
     <div className="space-y-4">
       <style>{`@media print { .print\\:hidden { display: none !important; } }`}</style>
+
+      {readAt && <ReadTimestamp readAt={readAt} className="print:hidden text-[11px] text-dusk" />}
 
       {/* Share promoted out to the toolbar itself (SS-148 follow-up) --
           previously only reachable via More options, two taps deep. Kept

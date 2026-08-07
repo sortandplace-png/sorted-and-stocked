@@ -46,7 +46,10 @@ export default async function RecipesPage({
       source_property_name: ((r.properties as unknown as { name: string } | null)?.name ?? null) as string | null,
     }));
 
-    return <RecipesGridView propertyId={id} recipes={aggregated} aggregateView />;
+    // SS-857: stamped immediately after the read above, same rule as the
+    // Register's readAt (SS-681) -- a cached render carries this value
+    // with it and visibly falls behind.
+    return <RecipesGridView propertyId={id} recipes={aggregated} aggregateView readAt={new Date().toISOString()} />;
   }
 
   // Recipes are shared across every property Racquel owns (migration 072) --
@@ -59,5 +62,5 @@ export default async function RecipesPage({
     .eq('recipe_property_links.property_id', id)
     .order('name');
 
-  return <RecipesGridView propertyId={id} recipes={recipes || []} />;
+  return <RecipesGridView propertyId={id} recipes={recipes || []} readAt={new Date().toISOString()} />;
 }

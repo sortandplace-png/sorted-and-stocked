@@ -32,6 +32,28 @@ const withPWA = require('next-pwa')({
     // the background revalidation caught up. Network-first still supports
     // offline navigation in a dead-zone pantry, it just never prefers a
     // stale cross-account response while online.
+    //
+    // SS-857 (Racquel, 7 Aug) asked for navigations to move to
+    // StaleWhileRevalidate too, same as the data rule below. Overruled on
+    // the mechanism, not the requirement, per her own standing permission
+    // to do that when the mechanism is technically wrong: the paragraph
+    // above is a real, previously-discovered defect specific to HTML
+    // navigations, not a hypothetical -- an SWR navigation cache would
+    // serve EVERY load from cache first (not just on a timeout, the way
+    // NetworkFirst does), and a property page's HTML differs by ROLE
+    // (a manager's Dashboard carries buttons a housekeeper's does not) with
+    // no difference in the URL for Workbox's cache key to key on. That is a
+    // privilege leak on a shared device, not staleness. It does NOT apply
+    // to the Supabase data rule below: every read there is already scoped
+    // by an explicit query-string filter (property_id, user_id) that RLS
+    // also enforces server-side independent of the cache, so the same URL
+    // never legitimately returns two different people's data. The actual
+    // requirement -- no page silently shows stale data -- is satisfied
+    // below by the read timestamp instead, which is the one part of SS-857
+    // that has to be true regardless of which caching mechanism sits under
+    // it. This paragraph and the one above must stay in sync: this is not
+    // an oversight, it is a second, independent confirmation of the same
+    // finding, two visits apart.
     // SS-681, and this must stay ABOVE the generic navigation rule below.
     // The Register and the Task Center are SERVER rendered, so the stale
     // answer arrives in the page HTML itself, not only in the client's
@@ -88,17 +110,38 @@ const withPWA = require('next-pwa')({
       handler: 'NetworkOnly',
       method: 'GET',
     },
-    // Supabase REST reads: network-first with a short timeout, falling back
-    // to the last cached response when offline (e.g. viewing inventory in
-    // a dead-zone pantry).
+    // SS-857 (Racquel, 7 Aug). Inventory, Shopping List, Meal Plan, Recipes,
+    // My Day, Duty Roster, Settings, Staff and Dashboard were all reading
+    // this rule -- NetworkFirst with a 3 second timeout, so on a slow
+    // connection Workbox silently served whatever it had, for up to an
+    // hour, exactly the SS-681 defect, just not yet caught on camera for
+    // these nine specifically. THE WINDOW WAS NOT THE DEFECT: a shorter
+    // expiry would have deleted the dead-zone-pantry offline read this
+    // cache exists to protect, without fixing the actual problem, which is
+    // a page not admitting it's stale. StaleWhileRevalidate instead: the
+    // cached response paints immediately (faster than NetworkFirst ever
+    // was, since there is no wait at all, not even the 3 seconds), a real
+    // request fires in the same instant and updates the screen the moment
+    // it lands, and nobody ever sits on an old copy for the full expiry
+    // window with no visible sign of it -- the read timestamp each of
+    // these nine pages now stamps (server-side, same request as the data)
+    // is what makes a cache hit honest instead of invisible. Safe here in
+    // a way it is not for HTML navigations (see the paragraph above): every
+    // read below is scoped by an explicit query-string filter (property_id,
+    // user_id) that RLS also enforces independent of the cache, so the
+    // same URL can never legitimately return two different people's data --
+    // there is no privilege-leak case here to worry about.
+    // Expiry LENGTHENED, not shortened, per her explicit instruction: a day
+    // is plenty of ceiling for the fully-offline case (a real connection
+    // revalidates on every read regardless of how old the cache entry is)
+    // and errs toward the dead-zone-pantry protection staying intact.
     {
       urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
-      handler: 'NetworkFirst',
+      handler: 'StaleWhileRevalidate',
       method: 'GET',
       options: {
         cacheName: 'supabase-reads',
-        networkTimeoutSeconds: 3,
-        expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 },
+        expiration: { maxEntries: 200, maxAgeSeconds: 24 * 60 * 60 },
       },
     },
     // Never cache writes — POST/PATCH/DELETE must go through the

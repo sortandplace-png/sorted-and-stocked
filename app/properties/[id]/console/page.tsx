@@ -356,6 +356,7 @@ export default async function OperatorConsolePage({
               role={membership.role}
               initialPhoneNumber={profile?.phone_number ?? ''}
               initialSmsOptIn={profile?.sms_opt_in ?? false}
+              readAt={new Date().toISOString()}
             />
           </div>
         </section>

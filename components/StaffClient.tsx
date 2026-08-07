@@ -10,6 +10,7 @@ import { SkeletonList } from '@/components/Skeleton';
 import Avatar from '@/components/Avatar';
 import FieldLabel from '@/components/FieldLabel';
 import ShiftHandoverClient, { CardHeader } from '@/components/ShiftHandoverClient';
+import ReadTimestamp from '@/components/ui/ReadTimestamp';
 import CollapsibleCard from '@/components/CollapsibleCard';
 import StaffDutyOverview from '@/components/StaffDutyOverview';
 
@@ -141,6 +142,9 @@ function describeActivity(a: ActivityEntry): string {
 export default function StaffClient({ propertyId }: { propertyId: string }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  // SS-857: stamped when loadMembers() actually resolves -- this page
+  // fetches client-side, so this is the moment that matters.
+  const [readAt, setReadAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [fullName, setFullName] = useState('');
@@ -212,6 +216,7 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
       }))
     );
     setLoading(false);
+    setReadAt(new Date().toISOString());
   }, [propertyId, supabase]);
 
   useEffect(() => {
@@ -507,7 +512,8 @@ export default function StaffClient({ propertyId }: { propertyId: string }) {
   return (
     <div className="bg-mist min-h-screen p-4 lg:p-6">
       <div className="max-w-6xl mx-auto">
-      <h1 className="text-2xl font-display text-denim mb-4">Staff</h1>
+      <h1 className="text-2xl font-display text-denim mb-1">Staff</h1>
+      {readAt && <ReadTimestamp readAt={readAt} className="text-[11px] text-dusk mb-3" />}
 
       {error && (
         <p className="text-sm text-rust bg-rust/10 rounded-xl px-3 py-2 mb-3">{error}</p>

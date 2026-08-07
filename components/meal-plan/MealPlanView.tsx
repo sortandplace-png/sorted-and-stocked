@@ -6,6 +6,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Printer, Flame, AlertTriangle } from 'lucide-react';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import Pin from '@/components/PinAccent';
+import ReadTimestamp from '@/components/ui/ReadTimestamp';
 import { createClient } from '@/lib/supabase/client';
 import { resilientInsert, resilientDelete } from '@/lib/resilient-write';
 import { useToast } from '@/components/Toast';
@@ -187,9 +188,15 @@ const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export default function MealPlanView({
   propertyId,
   recipes,
+  readAt,
 }: {
   propertyId: string;
   recipes: Recipe[];
+  /** SS-857: server-stamped when this page's initial recipe list was read.
+   *  The week/month grid itself reloads client-side (loadWeek/loadMonth
+   *  below) each time the view changes -- see loadedAt state, stamped at
+   *  the same moment, for what the grid actually on screen right now. */
+  readAt: string;
 }) {
   const role = usePropertyRole();
   const canEdit = canManage(role);
@@ -206,6 +213,10 @@ export default function MealPlanView({
   const [fastDays, setFastDays] = useState<Record<string, FastDay>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // SS-857: stamped the moment loadEntries() actually resolves -- this is
+  // the grid on screen right now, distinct from `readAt` above (the page's
+  // initial server render, before any week/month switch triggers a reload).
+  const [loadedAt, setLoadedAt] = useState<string | null>(null);
   const [pushingToShopping, setPushingToShopping] = useState(false);
   const [justGeneratedList, setJustGeneratedList] = useState(false);
   const [repeatingWeek, setRepeatingWeek] = useState(false);
@@ -297,6 +308,7 @@ export default function MealPlanView({
     }
     setDays(byDate);
     setLoading(false);
+    setLoadedAt(new Date().toISOString());
   }
 
   useEffect(() => {
@@ -1174,6 +1186,10 @@ export default function MealPlanView({
           </p>
         )}
       </div>
+
+      {/* SS-857: loadedAt (the grid actually on screen) once it exists,
+          readAt (the page's initial server render) until then. */}
+      <ReadTimestamp readAt={loadedAt ?? readAt} className="print:hidden text-[11px] text-dusk mb-2" />
 
       {error && (
         <p className="print:hidden text-sm text-rust bg-rust/10 rounded-xl px-3 py-2 mb-3">{error}</p>

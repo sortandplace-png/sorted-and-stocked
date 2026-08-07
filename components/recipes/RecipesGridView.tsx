@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { useSessionPersistedState } from '@/lib/use-session-persisted-state';
+import ReadTimestamp from '@/components/ui/ReadTimestamp';
 import {
   Timer,
   Soup,
@@ -220,6 +221,7 @@ export default function RecipesGridView({
   propertyId,
   recipes,
   aggregateView = false,
+  readAt,
 }: {
   propertyId: string;
   recipes: Recipe[];
@@ -227,6 +229,8 @@ export default function RecipesGridView({
   // belongs to. Read-only-safe by construction -- cards open in their
   // home property, and the note under the title says so.
   aggregateView?: boolean;
+  /** SS-857: server-stamped the same request as `recipes` above. */
+  readAt: string;
 }) {
   const role = usePropertyRole();
   const t = useTranslations('recipesGrid');
@@ -638,6 +642,7 @@ export default function RecipesGridView({
           <p className="text-sm text-dusk mt-0.5">
             {recipes.length} recipe{recipes.length === 1 ? '' : 's'} in your collection
           </p>
+          <ReadTimestamp readAt={readAt} className="text-[11px] text-dusk mt-0.5" />
         </div>
         <div className="flex gap-2">
           <a

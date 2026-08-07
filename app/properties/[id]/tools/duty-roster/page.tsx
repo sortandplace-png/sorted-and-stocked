@@ -46,5 +46,6 @@ export default async function DutyRosterPage({
       .order('sort_order'),
   ]);
 
-  return <DutyRosterEditor propertyId={id} initialRows={templates ?? []} slots={slots ?? []} />;
+  // SS-857: stamped immediately after the reads above.
+  return <DutyRosterEditor propertyId={id} initialRows={templates ?? []} slots={slots ?? []} readAt={new Date().toISOString()} />;
 }

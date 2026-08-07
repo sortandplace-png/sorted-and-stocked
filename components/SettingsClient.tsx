@@ -10,6 +10,7 @@ import { canManage, type PropertyRole } from '@/components/PropertyRoleContext';
 import { SITE_URL } from '@/lib/site-url';
 import SquarePaymentCard from '@/components/billing/SquarePaymentCard';
 import Pin from '@/components/PinAccent';
+import ReadTimestamp from '@/components/ui/ReadTimestamp';
 import { isJewishObservant } from '@/lib/observance-gating';
 import { useCardCollapse } from '@/lib/useCardCollapse';
 
@@ -41,11 +42,14 @@ export default function SettingsClient({
   role,
   initialPhoneNumber,
   initialSmsOptIn,
+  readAt,
 }: {
   propertyId: string;
   role: PropertyRole;
   initialPhoneNumber: string;
   initialSmsOptIn: boolean;
+  /** SS-857: server-stamped the same request as the values above. */
+  readAt: string;
 }) {
   const supabase = createClient();
   const showToast = useToast();
@@ -323,6 +327,7 @@ export default function SettingsClient({
   return (
     <div className="max-w-md lg:max-w-4xl mx-auto p-4 space-y-6">
       <h1 className="text-2xl font-display text-denim mb-1">Settings</h1>
+      <ReadTimestamp readAt={readAt} className="text-[11px] text-dusk mb-1" />
 
       <section>
         <div className="relative bg-card rounded-xl3 border border-cardBorder shadow-card overflow-hidden">

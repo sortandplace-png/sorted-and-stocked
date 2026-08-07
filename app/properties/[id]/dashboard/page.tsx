@@ -12,6 +12,7 @@ import { getTipOfTheDay } from '@/lib/dashboard-tips'
 import CollapsibleCard from '@/components/CollapsibleCard'
 import TodayCandleLightingRow from '@/components/TodayCandleLightingRow'
 import Pin from '@/components/PinAccent'
+import ReadTimestamp from '@/components/ui/ReadTimestamp'
 import { getUpcomingEruvTavshilin } from '@/lib/yom-tov'
 import { getWidgetPrefs, getTodaysMealPlan, getLowStockAlerts } from '@/lib/dashboard-widgets-data'
 import { formatPropertyLabel } from '@/lib/property-display'
@@ -888,6 +889,10 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
   // plan_date+meal_slot pair -- 7 that week, not 38.
   const distinctMealCount = new Set(meals.map((m: any) => `${m.plan_date}|${m.meal_slot}`)).size
 
+  // SS-857: stamped last, right before render -- describes every fetch
+  // this function ran above, not just the first one.
+  const readAt = new Date().toISOString()
+
   return (
     <div
       className={`min-h-screen p-4 md:p-6 font-interDisplay transition-all ${isShabbos && observance.jewish ? 'bg-brass/10' : 'bg-linen'}`}
@@ -899,6 +904,7 @@ export default async function Dashboard({ params }: { params: Promise<{ id: stri
       }}
     >
       <div className="max-w-[1180px] mx-auto pb-16">
+        <ReadTimestamp readAt={readAt} className="text-[11px] text-dusk mb-2" />
         {/* New direction (2026-07-15) -- full repaint, replacing Bold
             Direction on every section of Home. Individual floating cards on
             an open linen ground (matching the approved Concept B mockup)

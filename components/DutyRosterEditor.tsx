@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { Plus } from 'lucide-react';
 import { jobLabel as sharedJobLabel } from '@/lib/job-types';
+import ReadTimestamp from '@/components/ui/ReadTimestamp';
 
 export type StaffSlot = {
   id: string;
@@ -49,10 +50,13 @@ export default function DutyRosterEditor({
   propertyId,
   initialRows,
   slots,
+  readAt,
 }: {
   propertyId: string;
   initialRows: Row[];
   slots: StaffSlot[];
+  /** SS-857: server-stamped the same request as initialRows/slots above. */
+  readAt: string;
 }) {
   const locale = useLocale();
   const [rows, setRows] = useState<Row[]>(initialRows);
@@ -118,7 +122,8 @@ export default function DutyRosterEditor({
   return (
     <div className="max-w-6xl mx-auto p-4">
       <h1 className="text-2xl font-display text-denim mb-1">Staff Duty Roster</h1>
-      <p className="text-sm text-dusk mb-4">Every duty template, one flat list. Owner/manager only.</p>
+      <p className="text-sm text-dusk mb-1">Every duty template, one flat list. Owner/manager only.</p>
+      <ReadTimestamp readAt={readAt} className="text-[11px] text-dusk mb-4" />
 
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <select
