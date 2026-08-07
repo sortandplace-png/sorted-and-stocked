@@ -57,14 +57,20 @@ type Frequency = {
 // null-safety accident: as_needed, pre_pesach, elul, kislev, adar and
 // post_sukkos all have no interval, and none of them wants a weekday.
 //
-// Verified live 7 Aug against 1,167 active tasks: this admits exactly
-// daily (153) + weekly (526) + erev_shabbos (5) = 684, excluding 483.
-// (Re-verified after Racquel's 7 Aug reclassification moved a batch of
-// tasks off Weekly onto Every-two-weeks/As-needed/Daily -- the 6 Aug
-// figures here, daily 111 + weekly 806 = 922 excluding 245, are stale.
-// This rule's LOGIC did not change, only the live counts it produces,
-// which will keep moving as houses change; treat the numbers here as a
-// snapshot, not a target to preserve.)
+// NO COUNT IS KEPT HERE ANY MORE. Two separate snapshots (6 Aug: daily
+// 111 + weekly 806 = 922 admitted; 7 Aug, less than an hour later: 153 +
+// 526 = 684) both went stale before this comment was next read, because
+// Racquel actively reclassifies tasks between frequencies as houses
+// change -- that IS the editor's job, not a bug in the count. A hardcoded
+// number here is a number someone will "fix" again next week. To see the
+// real figure right now:
+//   select f.label_en, count(*), count(*) filter (where mt.days_of_week
+//     is not null and array_length(mt.days_of_week,1)>0) as dayed
+//   from master_tasks mt join frequencies f on f.id=mt.frequency_id
+//   where mt.active and f.interval_days::numeric <= 7 group by f.label_en;
+// This rule's LOGIC is stable even though the counts it produces never
+// are: admit daily/weekly/erev_shabbos (interval_days <= 7), exclude
+// everything else, always derived from interval_days, never a list.
 const BULK_DAY_MAX_INTERVAL = 7;
 // SS-273 floor filter. floor has no _es sibling in the schema (confirmed
 // live -- only one column) and only three real values exist, so a small
@@ -764,8 +770,9 @@ export default function DutyRosterClient({
   //
   // The bands are the ones that matter to the person reading a wall of
   // tiles: what happens every day, what happens weekly (the band this
-  // editor exists for -- 526 tasks as of 7 Aug, a number that moves as
-  // Racquel reclassifies), what is on the Hebrew calendar, and what is rare
+  // editor exists for -- no count kept here, see the WHICH TASKS CAN
+  // CARRY A WEEKDAY comment near the top of this file for why), what is
+  // on the Hebrew calendar, and what is rare
   // enough that a weekday is meaningless for it -- that last band is
   // exactly the set the day editor refuses, so the colour and the
   // disabled checkbox say the same thing.
@@ -1395,13 +1402,16 @@ export default function DutyRosterClient({
   }
 
   // --- BULK EDITOR: ONE SELECTION, DAYS AND STAFF -------------------------
-  // SS-772. 806 weekly tasks carried no weekday and 1,089 carried no
-  // assignment when this was built (6 Aug). Racquel's 7 Aug reclassification
-  // moved several hundred tasks off Weekly onto Every-two-weeks/As-needed/
-  // Daily, so the no-weekday figure is now 264 (still-live, still moving --
-  // this editor is why it can keep moving); the no-assignment figure, 1,089,
-  // is unchanged since neither reclassification pass touched assignment.
-  // Both were the same interaction problem either way -- a per-tile control
+  // SS-772. Built 6 Aug against several hundred weekly tasks with no
+  // weekday and roughly a thousand with no assignment. NO COUNT IS KEPT
+  // HERE -- the no-weekday figure alone was corrected twice in the first
+  // 24 hours (Racquel actively reclassifies tasks between frequencies;
+  // that reclassifying IS the ongoing use of this editor, not a one-time
+  // cleanup that finishes), and a third stale number is not worth writing
+  // down. Query master_tasks/frequencies directly for the current split;
+  // see the WHICH TASKS CAN CARRY A WEEKDAY comment near the top of this
+  // file for the exact query. Both counts were the same interaction
+  // problem either way -- a per-tile control
   // is fine for correcting one row and useless for populating a house -- so
   // they share one selection rather than being two features that each
   // require their own pass over the same tiles.
