@@ -5,6 +5,10 @@
 // (shared with the homepage hero and the invite email), so it can never
 // drift. Copy + share actions; "beta" appears nowhere, per the standing
 // homepage brief. English-only (SS-436 carve-out).
+//
+// SS-824: this card's own chrome and title paragraph are GONE -- the
+// caller (console/page.tsx) now wraps this in a CollapsibleCard blue tile,
+// which owns both (title lives in the header, stays visible collapsed).
 'use client';
 
 import { useState } from 'react';
@@ -39,14 +43,11 @@ export default function ConsoleTestFlightCard() {
   }
 
   return (
-    <div className="border border-cardBorder rounded-xl2 bg-card p-4 space-y-2.5">
-      <div>
-        <p className="text-sm font-medium text-denim">iPhone app invite</p>
-        <p className="text-xs text-dusk">
-          The install link for the iPhone app. Same link the invite email carries. iPhone only, requires the
-          TestFlight app.
-        </p>
-      </div>
+    <div className="space-y-2.5">
+      <p className="text-xs text-dusk">
+        The install link for the iPhone app. Same link the invite email carries. iPhone only, requires the
+        TestFlight app.
+      </p>
       <a
         href={TESTFLIGHT_URL}
         target="_blank"

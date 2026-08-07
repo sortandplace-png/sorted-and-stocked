@@ -43,6 +43,54 @@ export default async function SettingsPage({
         .order('sort_order')
     : { data: null };
 
+  // SS-243: this property's own members (the picker's candidate list) and
+  // their contact info -- the non-console properties (Main, Country, Low,
+  // Henderson, QA Demo) manage staff slots here, not on the operator
+  // console, so the connector has to work on both surfaces, not just Lax's.
+  let members: { user_id: string; name: string; role: string }[] = [];
+  const assignedNames: Record<string, string> = {};
+  const contactByUserId: Record<string, { phone: string | null; email: string | null }> = {};
+  const weekMinutesByUser: Record<string, number> = {};
+  if (canManageSlots) {
+    const { data: memberRows } = await supabase
+      .from('property_members')
+      .select('user_id, role, profiles(full_name, email, phone_number)')
+      .eq('property_id', id);
+    members = (memberRows ?? [])
+      .map((m) => {
+        const prof = m.profiles as unknown as { full_name: string | null; email: string | null; phone_number: string | null } | null;
+        const name = (prof?.full_name?.trim() || prof?.email || '(no account details)') as string;
+        assignedNames[m.user_id as string] = name;
+        contactByUserId[m.user_id as string] = { phone: prof?.phone_number ?? null, email: prof?.email ?? null };
+        return { user_id: m.user_id as string, name, role: m.role as string };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    // Manager at a Glance: this week's worked minutes for whoever is
+    // actually linked into a slot -- same Monday-start-week, closed-shifts
+    // rule as ClockInOutButton/ShiftHoursClient.
+    const linkedUserIds = (slots ?? []).map((s) => s.user_id).filter((v): v is string => !!v);
+    if (linkedUserIds.length > 0) {
+      const weekStart = new Date();
+      weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+      weekStart.setHours(0, 0, 0, 0);
+      const { data: shiftRows } = await supabase
+        .from('shifts')
+        .select('user_id, clocked_in_at, clocked_out_at')
+        .eq('property_id', id)
+        .in('user_id', linkedUserIds)
+        .gte('clocked_in_at', weekStart.toISOString())
+        .not('clocked_out_at', 'is', null);
+      for (const s of shiftRows ?? []) {
+        const mins = Math.max(
+          0,
+          (new Date(s.clocked_out_at as string).getTime() - new Date(s.clocked_in_at as string).getTime()) / 60000
+        );
+        weekMinutesByUser[s.user_id as string] = Math.round((weekMinutesByUser[s.user_id as string] ?? 0) + mins);
+      }
+    }
+  }
+
   return (
     <>
       <SettingsClient
@@ -53,7 +101,15 @@ export default async function SettingsPage({
       />
       {canManageSlots && (
         <div className="max-w-md lg:max-w-4xl mx-auto px-4 pb-8">
-          <StaffSlotsEditor propertyId={id} initialSlots={slots ?? []} />
+          <StaffSlotsEditor
+            propertyId={id}
+            initialSlots={slots ?? []}
+            assignedNames={assignedNames}
+            members={members}
+            weekMinutesByUser={weekMinutesByUser}
+            contactByUserId={contactByUserId}
+            myDayHref={`/properties/${id}/my-day`}
+          />
         </div>
       )}
     </>

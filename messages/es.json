@@ -754,7 +754,17 @@
     "addSlot": "Agregar puesto",
     "addFailed": "No se pudo agregar el puesto — inténtelo de nuevo.",
     "noOneAssigned": "Nadie asignado todavía",
-    "renameNote": "Renombrar cambia solo la etiqueta. Las tareas, asignaciones e historial siguen vinculados al puesto."
+    "renameNote": "Renombrar cambia solo la etiqueta. Las tareas, asignaciones e historial siguen vinculados al puesto.",
+    "assignLabel": "Asignado a",
+    "linkFailed": "No se pudo actualizar — inténtelo de nuevo.",
+    "atAGlance": "De un vistazo",
+    "hoursThisWeek": "{hours} esta semana",
+    "noHoursThisWeek": "Sin horas registradas esta semana",
+    "noPhone": "Sin teléfono registrado",
+    "clockNote": "Marcar entrada y salida se hace en Mi Día.",
+    "viewMyDay": "Abrir Mi Día",
+    "chooseHouse": "Elija una casa",
+    "slotsLinked": "{linked} de {total} vinculados"
   },
   "halachicCalendar": {
     "omerTitle": "Sefirat HaOmer",

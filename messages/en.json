@@ -754,7 +754,17 @@
     "addSlot": "Add slot",
     "addFailed": "Could not add a slot — try again.",
     "noOneAssigned": "No one assigned yet",
-    "renameNote": "Renaming changes the label only. Duties, assignments and history stay attached to the slot."
+    "renameNote": "Renaming changes the label only. Duties, assignments and history stay attached to the slot.",
+    "assignLabel": "Assigned to",
+    "linkFailed": "Could not update — try again.",
+    "atAGlance": "At a glance",
+    "hoursThisWeek": "{hours} this week",
+    "noHoursThisWeek": "No hours logged this week",
+    "noPhone": "No phone on file",
+    "clockNote": "Clock in and clock out happen on My Day.",
+    "viewMyDay": "Open My Day",
+    "chooseHouse": "Choose a house",
+    "slotsLinked": "{linked} of {total} linked"
   },
   "halachicCalendar": {
     "omerTitle": "Sefiras HaOmer",

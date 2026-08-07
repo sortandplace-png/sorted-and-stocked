@@ -27,7 +27,8 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import DutyRosterClient from '@/components/DutyRosterClient';
 import SettingsClient from '@/components/SettingsClient';
-import StaffSlotsEditor from '@/components/StaffSlotsEditor';
+import StaffHouseSlotsPanel from '@/components/StaffHouseSlotsPanel';
+import CollapsibleCard from '@/components/CollapsibleCard';
 import ModuleFlagsEditor from '@/components/ModuleFlagsEditor';
 import ConsoleInviteCard from '@/components/ConsoleInviteCard';
 import ConsoleTestFlightCard from '@/components/ConsoleTestFlightCard';
@@ -114,15 +115,19 @@ export default async function OperatorConsolePage({
     .eq('id', user.id)
     .maybeSingle();
 
+  // SS-824: every operator house's slots, not just this one -- Staff Slots
+  // becomes a tile-per-house picker (like the sign-in property picker)
+  // instead of only ever showing whichever house the console happens to be
+  // viewing.
   const { data: slots } = await supabase
     .from('staff_slots')
-    .select('id, slot_number, label_en, label_es, active, user_id')
-    .eq('property_id', id)
+    .select('id, property_id, slot_number, label_en, label_es, active, user_id')
+    .in('property_id', properties.map((p) => p.id))
     .order('sort_order');
 
   // Short house names for the cross-house fold (defect 5: tiles say "Low",
   // "Main" -- the household-prefixed labels stay on surfaces that need
-  // them, not here).
+  // them, not here). Reused for the new Staff Slots house tiles, same rule.
   const { data: propNames } = await supabase
     .from('properties')
     .select('id, name')
@@ -131,10 +136,12 @@ export default async function OperatorConsolePage({
 
   // Members per residence -- cross-house content, so it lives in the fold
   // at the END (defect 3). profiles.email (migration 174) makes the
-  // email fallback a plain join; "Unnamed" is banned (defect 1).
+  // email fallback a plain join; "Unnamed" is banned (defect 1). Also the
+  // SS-243 picker's candidate list and the SS-824 contact-info source
+  // (phone_number added here rather than a second query per house).
   const { data: memberRows } = await supabase
     .from('property_members')
-    .select('property_id, user_id, role, profiles(full_name, email)')
+    .select('property_id, user_id, role, profiles(full_name, email, phone_number)')
     .in('property_id', properties.map((p) => p.id));
 
   type MemberEntry = { name: string; email: string | null; role: string };
@@ -169,15 +176,75 @@ export default async function OperatorConsolePage({
   // from their own account -- never a seeded name).
   const slotUserIds = (slots ?? []).map((s) => s.user_id).filter((v): v is string => !!v);
   const assignedNames: Record<string, string> = {};
+  const contactByUserId: Record<string, { phone: string | null; email: string | null }> = {};
   if (slotUserIds.length > 0) {
     const { data: slotProfiles } = await supabase
       .from('profiles')
-      .select('id, full_name, email')
+      .select('id, full_name, email, phone_number')
       .in('id', slotUserIds);
     for (const p of slotProfiles ?? []) {
       assignedNames[p.id] = (p.full_name?.trim() || p.email || '') as string;
+      contactByUserId[p.id] = { phone: p.phone_number ?? null, email: p.email ?? null };
     }
   }
+
+  // SS-824 Manager at a Glance: this-week worked minutes per (house,
+  // linked person) -- same Monday-start-week, closed-shifts-only rule as
+  // ClockInOutButton/ShiftHoursClient, so this can never disagree with
+  // what the person themselves sees on My Day. Only queried for the
+  // people actually linked into a slot right now; renders an honest empty
+  // state for everyone else rather than a query nobody needed.
+  const weekMinutesByProperty = new Map<string, Record<string, number>>();
+  if (slotUserIds.length > 0) {
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+    weekStart.setHours(0, 0, 0, 0);
+    const { data: shiftRows } = await supabase
+      .from('shifts')
+      .select('property_id, user_id, clocked_in_at, clocked_out_at')
+      .in('property_id', properties.map((p) => p.id))
+      .in('user_id', slotUserIds)
+      .gte('clocked_in_at', weekStart.toISOString())
+      .not('clocked_out_at', 'is', null);
+    for (const s of shiftRows ?? []) {
+      const mins = Math.max(
+        0,
+        (new Date(s.clocked_out_at as string).getTime() - new Date(s.clocked_in_at as string).getTime()) / 60000
+      );
+      const forProperty = weekMinutesByProperty.get(s.property_id as string) ?? {};
+      forProperty[s.user_id as string] = Math.round((forProperty[s.user_id as string] ?? 0) + mins);
+      weekMinutesByProperty.set(s.property_id as string, forProperty);
+    }
+  }
+
+  // SS-243's picker candidate list, per house -- reuses memberRows rather
+  // than a second query.
+  const membersForPicker = (propertyId: string) =>
+    (memberRows ?? [])
+      .filter((m) => m.property_id === propertyId)
+      .map((m) => {
+        const prof = m.profiles as unknown as { full_name: string | null; email: string | null } | null;
+        return {
+          user_id: m.user_id as string,
+          name: (prof?.full_name?.trim() || prof?.email || '(no account details)') as string,
+          role: m.role as string,
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+  // SS-824's house-tile grid data -- alphabetical, same order as the
+  // cross-house fold below it.
+  const houseSlots = [...properties]
+    .sort((a, b) => (shortName.get(a.id) ?? '').localeCompare(shortName.get(b.id) ?? ''))
+    .map((p) => ({
+      id: p.id,
+      name: shortName.get(p.id) ?? '',
+      slots: (slots ?? []).filter((s) => s.property_id === p.id),
+      members: membersForPicker(p.id),
+      assignedNames,
+      weekMinutesByUser: weekMinutesByProperty.get(p.id) ?? {},
+      contactByUserId,
+    }));
 
   return (
     <div className="bg-linen min-h-screen">
@@ -234,18 +301,39 @@ export default async function OperatorConsolePage({
           </div>
         </section>
 
-        {/* PEOPLE -- THIS house's slots, plus the invite/TestFlight/replies
-            flows. Cross-house membership content moved to the end fold. */}
+        {/* PEOPLE -- every house's slots (SS-824 tile picker), plus the
+            invite/TestFlight/replies flows. Cross-house membership content
+            moved to the end fold. */}
         <section id="people" className="scroll-mt-[124px] rounded-xl3 border border-cardBorder shadow-card overflow-hidden bg-card">
           <SectionStrip label="People" />
           <div className="p-5 space-y-5">
-            <StaffSlotsEditor propertyId={id} initialSlots={slots ?? []} assignedNames={assignedNames} />
+            <StaffHouseSlotsPanel houses={houseSlots} defaultHouseId={id} />
 
             {/* SS-436 both-yes ruling (2 Aug): invite-by-email and the
-                TestFlight invite side by side, alert replies below. */}
+                TestFlight invite side by side, alert replies below. SS-824:
+                both are now collapsible blue tiles (SS-823 surface) instead
+                of permanently-expanded cards that made the page never end. */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <ConsoleInviteCard properties={properties} defaultPropertyId={id} />
-              <ConsoleTestFlightCard />
+              <CollapsibleCard
+                cardId="console-invite-email"
+                pinSize="sm"
+                className="relative bg-mist rounded-xl2 border border-cardBorder p-4"
+                header={<p className="text-sm font-medium text-denim pr-5">Invite by email</p>}
+              >
+                <div className="pt-3">
+                  <ConsoleInviteCard properties={properties} defaultPropertyId={id} />
+                </div>
+              </CollapsibleCard>
+              <CollapsibleCard
+                cardId="console-invite-testflight"
+                pinSize="sm"
+                className="relative bg-mist rounded-xl2 border border-cardBorder p-4"
+                header={<p className="text-sm font-medium text-denim pr-5">iPhone app invite</p>}
+              >
+                <div className="pt-3">
+                  <ConsoleTestFlightCard />
+                </div>
+              </CollapsibleCard>
             </div>
             <ConsoleAlertReplies propertyIds={properties.map((p) => p.id)} />
 

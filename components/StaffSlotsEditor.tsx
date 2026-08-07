@@ -20,9 +20,19 @@
 // none may be added. If a slot is linked to a real account, the name shown
 // comes from that account (assignedNames, resolved server-side from
 // profiles full_name/email).
+//
+// SS-243, the connector: slots existed, duties could attach to them
+// (staff_duty_templates.slot_id, DutyRosterEditor.tsx), and task_assignments
+// could target them (SS-672/SS-684), but nothing ever WROTE staff_slots.
+// user_id -- 20 slots, zero linked. `members` below is that property's
+// property_members, and the picker writes/clears user_id directly. Clearing
+// is a valid state (the slot goes back to open) and only ever touches this
+// one column -- duties/assignments/history key off slot_id, never user_id,
+// so nothing else moves when a person is swapped out or removed.
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
@@ -39,6 +49,9 @@ export type StaffSlotRow = {
   user_id: string | null;
 };
 
+export type SlotMember = { user_id: string; name: string; role: string };
+export type SlotContact = { phone: string | null; email: string | null };
+
 const FIELD =
   'w-full border border-cardBorder focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/40 rounded-xl2 px-3 py-2 text-sm text-denim';
 
@@ -46,11 +59,29 @@ export default function StaffSlotsEditor({
   propertyId,
   initialSlots,
   assignedNames = {},
+  members = [],
+  propertyName,
+  weekMinutesByUser = {},
+  contactByUserId = {},
+  myDayHref,
 }: {
   propertyId: string;
   initialSlots: StaffSlotRow[];
   /** user_id -> display name (full_name, else email) for linked slots. */
   assignedNames?: Record<string, string>;
+  /** This property's property_members -- the picker's candidate list. */
+  members?: SlotMember[];
+  /** SS-824: shown on every tile so a multi-house view says whose house
+      each slot belongs to, even inside a single house's own view. */
+  propertyName?: string;
+  /** user_id -> minutes worked this week (shifts, Monday start, closed
+      shifts only -- same rule ClockInOutButton/ShiftHoursClient use). */
+  weekMinutesByUser?: Record<string, number>;
+  /** user_id -> phone/email for the Manager at a Glance block. */
+  contactByUserId?: Record<string, SlotContact>;
+  /** SS-824: where Clock In/Clock Out actually live -- this page has never
+      linked to them. Omitted (no link rendered) where not supplied. */
+  myDayHref?: string;
 }) {
   const t = useTranslations('staffSlots');
   const supabase = createClient();
@@ -62,6 +93,7 @@ export default function StaffSlotsEditor({
   const [drafts, setDrafts] = useState<Record<string, { label_en: string; label_es: string }>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [linkingId, setLinkingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
   function draftFor(s: StaffSlotRow) {
@@ -106,6 +138,21 @@ export default function StaffSlotsEditor({
       return;
     }
     setSlots((prev) => prev.map((x) => (x.id === s.id ? { ...x, active: !x.active } : x)));
+  }
+
+  // SS-243. userId === null clears the slot back to open -- staff_slots is
+  // the only row touched. Duties (staff_duty_templates.slot_id) and
+  // assignments (task_assignments.slot_id) key off the slot's own id, not
+  // its user_id, so they survive a link, a swap, or a clear untouched.
+  async function linkUser(s: StaffSlotRow, userId: string | null) {
+    setLinkingId(s.id);
+    const { error } = await supabase.from('staff_slots').update({ user_id: userId }).eq('id', s.id);
+    setLinkingId(null);
+    if (error) {
+      showToast(t('linkFailed'), { variant: 'error' });
+      return;
+    }
+    setSlots((prev) => prev.map((x) => (x.id === s.id ? { ...x, user_id: userId } : x)));
   }
 
   async function addSlot() {
@@ -158,9 +205,17 @@ export default function StaffSlotsEditor({
               key={s.id}
               className={`relative flex flex-col gap-1.5 bg-mist rounded-xl2 border border-brass/30 shadow-card py-3 px-3.5 ${s.active ? '' : 'opacity-60'}`}
             >
-              <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-brass pr-5">
-                {t('slotNumber', { number: s.slot_number })}
-              </span>
+              <div className="flex items-start justify-between gap-2 pr-5">
+                <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-brass">
+                  {t('slotNumber', { number: s.slot_number })}
+                </span>
+                {/* SS-824: every slot says its house, even inside a single
+                    house's own view -- "i dont see which residence belongs
+                    to who." */}
+                {propertyName && (
+                  <span className="text-[9px] font-medium text-dusk truncate max-w-[6.5rem]">{propertyName}</span>
+                )}
+              </div>
 
               {editing ? (
                 <>
@@ -206,10 +261,57 @@ export default function StaffSlotsEditor({
                 <>
                   <p className="text-sm font-medium text-denim leading-snug">{s.label_en}</p>
                   <p className="text-[11px] text-dusk leading-snug">{s.label_es}</p>
-                  {/* Assigned person from their own account, or Open. */}
-                  <p className={`text-xs mt-0.5 ${person ? 'text-denim' : 'text-brass'}`}>
-                    {person ?? t('open')}
-                  </p>
+                  {/* SS-243: the picker that actually writes user_id. Falls
+                      back to a plain read-out when this property's member
+                      list wasn't supplied (there is always at least the
+                      null/open option otherwise). */}
+                  {members.length > 0 || s.user_id ? (
+                    <select
+                      value={s.user_id ?? ''}
+                      onChange={(e) => linkUser(s, e.target.value || null)}
+                      disabled={linkingId === s.id}
+                      aria-label={t('assignLabel')}
+                      className={`text-xs mt-0.5 rounded-full px-2 py-1 border disabled:opacity-50 ${
+                        s.user_id ? 'text-denim border-cardBorder bg-card' : 'text-brass border-brass/30 bg-card'
+                      }`}
+                    >
+                      <option value="">{t('open')}</option>
+                      {/* The linked user might not be in this property's
+                          current member list (removed since, say) -- keep
+                          them selectable so the dropdown never silently
+                          shows the wrong name. */}
+                      {s.user_id && !members.some((m) => m.user_id === s.user_id) && (
+                        <option value={s.user_id}>{person}</option>
+                      )}
+                      {members.map((m) => (
+                        <option key={m.user_id} value={m.user_id}>
+                          {m.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-xs mt-0.5 text-brass">{t('open')}</p>
+                  )}
+
+                  {/* SS-824: Manager at a Glance. Only once a real person is
+                      linked -- an honest empty state (no hours logged / no
+                      phone on file), never a bare "0" that could be read as
+                      real data. */}
+                  {s.user_id && (
+                    <div className="mt-1 pt-1 border-t border-brass/20 space-y-0.5">
+                      <p className="text-[10px] text-dusk">
+                        {weekMinutesByUser[s.user_id] > 0
+                          ? t('hoursThisWeek', {
+                              hours: `${Math.floor(weekMinutesByUser[s.user_id] / 60)}h ${weekMinutesByUser[s.user_id] % 60}m`,
+                            })
+                          : t('noHoursThisWeek')}
+                      </p>
+                      <p className="text-[10px] text-dusk truncate">
+                        {contactByUserId[s.user_id]?.phone || t('noPhone')}
+                      </p>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-2.5 mt-1">
                     <button
                       onClick={() => setEditingId(s.id)}
@@ -240,6 +342,17 @@ export default function StaffSlotsEditor({
       </button>
 
       <p className="text-[11px] text-dusk mt-3">{t('renameNote')}</p>
+
+      {/* SS-824: "where do clock in and clock out lead" -- they live on My
+          Day, and nothing on this page pointed at them until now. */}
+      {myDayHref && (
+        <p className="text-[11px] text-dusk mt-2">
+          {t('clockNote')}{' '}
+          <Link href={myDayHref} className="text-denim underline underline-offset-2">
+            {t('viewMyDay')} →
+          </Link>
+        </p>
+      )}
         </div>
       </div>
     </div>

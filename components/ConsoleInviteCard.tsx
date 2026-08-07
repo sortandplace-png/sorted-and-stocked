@@ -7,6 +7,11 @@
 // implementation, not two that drift. The fuller flow (issued-password
 // accounts, pending-invite management, offboarding) stays on /staff.
 // English-only on purpose (SS-436 carve-out).
+//
+// SS-824: this card's own chrome (border/bg/padding) and title paragraph
+// are GONE -- the caller (console/page.tsx) now wraps this in a
+// CollapsibleCard blue tile, which owns both (title lives in the header,
+// so it stays visible when collapsed instead of vanishing with the form).
 'use client';
 
 import { useState } from 'react';
@@ -69,13 +74,10 @@ export default function ConsoleInviteCard({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="border border-cardBorder rounded-xl2 bg-card p-4 space-y-3">
-      <div>
-        <p className="text-sm font-medium text-denim">Invite by email</p>
-        <p className="text-xs text-dusk">
-          Issued-password accounts, pending invites, and offboarding stay on the Team page.
-        </p>
-      </div>
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <p className="text-xs text-dusk">
+        Issued-password accounts, pending invites, and offboarding stay on the Team page.
+      </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <input
           value={fullName}
