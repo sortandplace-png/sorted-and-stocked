@@ -26,58 +26,33 @@
 import { NextResponse } from 'next/server';
 import JSZip from 'jszip';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { formatPropertyLabel } from '@/lib/property-display';
 
-// Tables with their own property_id column, confirmed live against
-// information_schema.columns before writing this list -- not guessed from
-// memory of what "should" be property-scoped.
-const PROPERTY_SCOPED_TABLES = [
-  'borrowed_items',
-  'calendar_content',
-  'capture_staging',
-  'dashboard_widget_prefs',
-  'duplicate_warning_log',
-  'form_drafts',
-  'household_contacts',
-  'household_events',
-  'household_knowledge',
-  'household_memories',
-  'household_people',
-  'household_tool_ownership',
-  'inventory_item_favorites',
-  'inventory_item_history',
-  'inventory_items',
-  'local_food_directory',
-  'locations',
-  'master_products',
-  'master_tasks',
-  'meal_plan_day_settings',
-  'meal_plan_entries',
-  'pantry_zones',
-  'person_food_preferences',
-  'property_member_activity',
-  'property_members',
-  'recipe_favorites',
-  'recipe_property_links',
-  'recipe_versions',
-  'recipes',
-  'reorder_sources',
-  'reset_checklist_progress',
-  'rooms',
-  'search_history',
-  'shift_handover_reads',
-  'shift_handovers',
-  'shift_schedules',
-  'shifts',
-  'shopping_lists',
-  'sms_log',
-  'staff_duty_templates',
-  'staff_slots',
-  'staff_tasks',
-  'suppliers',
-  'task_completions',
-  'task_templates',
-];
+// SS-326. This used to be a hardcoded list of 44 tables. Live count the
+// night this was fixed was 45 (two tables -- proposals, sms_replies --
+// had been added since the original SS-092 build and were silently
+// missing from every backup taken since). A backup that goes stale the
+// moment someone adds a table defeats the entire point of SS-092: the
+// list is now read from information_schema at request time, so a new
+// property-scoped table is included the moment it exists, with no second
+// place to remember to update.
+//
+// Requires the service role key: information_schema.columns is not
+// exposed to the anon/authenticated PostgREST roles, and this is a
+// metadata query about the SCHEMA, not a row a property member should be
+// reading through their own session anyway.
+async function getPropertyScopedTables(): Promise<string[]> {
+  const admin = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  const { data, error } = await admin.rpc('list_property_scoped_tables');
+  if (error || !data) {
+    throw new Error(`Could not enumerate property-scoped tables: ${error?.message ?? 'no data'}`);
+  }
+  return (data as { table_name: string }[]).map((r) => r.table_name);
+}
 
 export async function GET(request: Request) {
   const propertyId = new URL(request.url).searchParams.get('propertyId');
@@ -119,8 +94,11 @@ export async function GET(request: Request) {
   const zip = new JSZip();
   const manifest: Record<string, { rows: number; error?: string }> = {};
 
+  // SS-326. Live, not hardcoded -- see getPropertyScopedTables above.
+  const propertyScopedTables = await getPropertyScopedTables();
+
   await Promise.all(
-    PROPERTY_SCOPED_TABLES.map(async (table) => {
+    propertyScopedTables.map(async (table) => {
       const { data, error } = await supabase.from(table).select('*').eq('property_id', propertyId);
       if (error) {
         // A failing table must not take the rest of the backup down with
@@ -187,6 +165,11 @@ export async function GET(request: Request) {
         property_name: propertyLabel,
         exported_at: new Date().toISOString(),
         exported_by: user.id,
+        // SS-326. Recorded so a future audit can tell at a glance whether
+        // the enumeration ran (a number here) rather than silently falling
+        // back to nothing -- the same "an error must look like an error"
+        // principle as the per-table manifest entries below.
+        property_scoped_table_count: propertyScopedTables.length,
         tables: manifest,
         // Deliberately not included, and said so here rather than left
         // unexplained: global reference data (frequencies, sop_library,

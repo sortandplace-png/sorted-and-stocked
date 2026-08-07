@@ -16,6 +16,8 @@ import {
   Trash2,
   CheckCircle2,
   Circle,
+  Square,
+  Triangle,
   Printer,
   Sparkles,
   MoreVertical,
@@ -170,13 +172,27 @@ type ShoppingListItem = {
   pesach_status: 'kosher_for_pesach' | 'not_kosher_for_pesach' | 'needs_review' | null;
 };
 
-// Same kashrut color tokens used elsewhere this session (Month view dots,
-// dashboard's KASHRUT_INFO) -- keyed here by the real inventory_items.
-// kosher_type values instead of a name-guessing heuristic.
+// SS-785. Same kashrut color tokens used elsewhere this session (Month
+// view dots, dashboard's KASHRUT_INFO) -- keyed here by the real
+// inventory_items.kosher_type values, which are lowercase ('meat' |
+// 'dairy' | 'parve'), NOT the capitalized 'Meat'/'Dairy'/'Parve' recipes.
+// kosher_type uses. This map was keyed capitalized until now, so it never
+// matched a real row and the pill silently never rendered -- verified
+// live before fixing. Colors are unchanged (rust/dairy/sage, the same
+// tailwind tokens as everywhere else); this only fixes the lookup.
 const KOSHER_PILL_STYLE: Record<string, string> = {
-  Meat: 'bg-rust/15 text-rust',
-  Dairy: 'bg-dairy/15 text-dairy',
-  Parve: 'bg-sage/15 text-sage',
+  meat: 'bg-rust/15 text-rust',
+  dairy: 'bg-dairy/15 text-dairy',
+  parve: 'bg-sage/15 text-sage',
+};
+
+// Same Square/Triangle/Circle pairing as KASHRUT_INFO (dashboard) and
+// ThisWeeksMealsList -- color alone is never the only signal for a
+// colorblind reader.
+const KOSHER_PILL_ICON: Record<string, typeof Square> = {
+  meat: Square,
+  dairy: Triangle,
+  parve: Circle,
 };
 
 type GroupBy = 'staples-first' | 'category' | 'by-recipe' | 'by-store';
@@ -676,6 +692,7 @@ export default function ShoppingListViewEnhanced({
     const isChecked = item.status === 'purchased';
     const qty = totalQuantity(item);
     const kosherStyle = item.kosher_type ? KOSHER_PILL_STYLE[item.kosher_type] : null;
+    const KosherIcon = item.kosher_type ? KOSHER_PILL_ICON[item.kosher_type] : null;
     const secondary = secondaryName(item);
 
     // Card treatment matched to Inventory's item card: rounded-xl2 (20px per
@@ -759,7 +776,8 @@ export default function ShoppingListViewEnhanced({
                 name row. */}
             {item.kosher_type && kosherStyle && (
               <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${kosherStyle}`}>
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${kosherStyle}`}>
+                  {KosherIcon && <KosherIcon className="w-2.5 h-2.5" fill="currentColor" aria-hidden="true" />}
                   {item.kosher_type}
                 </span>
               </div>
