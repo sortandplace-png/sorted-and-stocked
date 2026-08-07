@@ -31,39 +31,44 @@
 // should not be in the picker at all is SS-512, separate and still open.)
 import { isOperatorConsole } from '@/lib/module-flags';
 
-// SS-677 REVERSAL, 5 Aug. THE LABEL RULE ABOVE IS SUPERSEDED. Read this
-// last; it is the one in force. The block above is kept because the
-// conditional-versus-unconditional reasoning and the "Lax Lax" trap are
-// still the reasons this function exists at all.
+// SS-677 REVERSAL, 5 Aug. Removed the household prefix entirely -- kept
+// here, not deleted (R21), but READ SS-839 BELOW FIRST: this reversal is
+// itself now superseded. The reasoning at the time was that "Strauss" is
+// the Sort + Place client engagement, not the household, and a wrong
+// label is worse than a short one.
 //
-// The household prefix is GONE. Labels are the property name exactly as
-// stored: Country, Main, Lax, Low, Henderson.
+// SS-839, 7 Aug, SUPERSEDES THE SS-677 REVERSAL ABOVE. Racquel has now
+// stated the prefixed form a third time, this time from a live screenshot
+// of the switcher reading bare "Country"/"Main" and asked for it back
+// explicitly, by name, reversing SS-677 item 4. The LABEL RULE at the top
+// of this file (conditional: household prefix only when households.name
+// differs from properties.name, so Lax/Low/Henderson -- household name
+// identical to property name -- stay bare, and only Strauss's two houses
+// gain "Strauss Country"/"Strauss Main") is IN FORCE AGAIN, restored
+// exactly as SS-677 left it: household is still accepted here for that
+// reason, so this is the one-line-edit SS-677's own comment anticipated.
 //
-// WHY, and it is not a preference: "Strauss" is the Sort + Place CLIENT
-// ENGAGEMENT, not the household these properties belong to. Putting it in
-// front of a property name asserted a relationship that does not exist,
-// and it has cost two rounds of confusion (SS-677). A label that is wrong
-// is worse than a label that is short.
+// NO DATA CHANGE, same as SS-359 originally ruled: properties.household_id
+// and households.name are the relationship; nothing gets copied into a
+// text column. Verified live 7 Aug: household_id populated on all five
+// properties, households.name is "Strauss" on both Main and Country.
 //
-// I am flagging the contradiction rather than burying it: the comment
-// above records that the prefixed form was "asked three times", and
-// lib/operator-properties.ts says "never bare Main". Those were the
-// instruction until today and are now reversed by a later ruling that
-// gives a reason the earlier ones did not have.
+// BLAST RADIUS, deliberately global and unchanged from SS-677's own note:
+// this function feeds the Task Center pills, the PropertySwitcher, Shop
+// All Houses, page headers and the backup export filename -- fixed once
+// here rather than per surface, so the switcher and the pills cannot
+// disagree about what a house is called.
 //
-// BLAST RADIUS, deliberately global: this function feeds the Task Center
-// pills, the PropertySwitcher and Shop All Houses. Changing only the pills
-// would leave the switcher saying "Strauss Main" while the pills said
-// "Main", which is precisely the two-controls-disagree defect being fixed
-// in the same pass. One source, one label, everywhere.
-//
-// household is still accepted so no call site has to change, and so
-// restoring the prefix is a one line edit if that is ever ruled again.
+// ORDER RULE above is also unaffected: SS-459 already sorts by the
+// composed label, so restoring the prefix here is what makes "Strauss
+// Country"/"Strauss Main" sort adjacent to each other automatically --
+// no separate grouping rule needed or added.
 export function formatPropertyLabel(
   propertyName: string,
   household?: { name: string; propertyCount?: number } | null
 ): string {
-  return propertyName;
+  if (!household?.name || household.name === propertyName) return propertyName;
+  return `${household.name} ${propertyName}`;
 }
 
 // Kept for compatibility -- the SS-459 label rule no longer needs counts.
