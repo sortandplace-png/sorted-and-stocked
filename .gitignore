@@ -15,6 +15,7 @@
 /.agents/
 /prototypes/
 /scripts/output/
+/.asset-match/
 
 # Archives. sorted-and-stocked-code.zip.zip has sat untracked in the repo
 # root for weeks and was committed by accident on 28 Jul (reverted before
