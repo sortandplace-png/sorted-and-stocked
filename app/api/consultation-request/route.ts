@@ -17,6 +17,22 @@ const NOTIFY_TO = 'sortandplace@gmail.com';
 // and the timestamp write can never drift to different spellings.
 const EARLY_ACCESS_SERVICE = 'Early access to the Sorted & Stocked app';
 
+// SS-633. Both bot submissions landed 23 Jul with a random-string name
+// and notes, and ticked exactly these four -- the homepage form's
+// original checkboxes, all of them, nothing else. Verified against the
+// live rows before writing this, not assumed. No real submission in the
+// table (Joel's test, Racquel's own test) has ever picked more than one.
+// Hitting every box on the original form reads as a script checking
+// every checkbox it finds, not a person choosing services. Cheap on
+// purpose, per the row: no honeypot or captcha needed at two
+// submissions in 15 days.
+const BOT_SIGNAL_ALL_FOUR = [
+  'Full Home Organization',
+  'Kitchen/Pantry Setup',
+  'Newlywed Package',
+  'Household Operations/Staff Management',
+];
+
 const VALID_SERVICES = new Set([
   'Full Home Organization',
   'Kitchen/Pantry Setup',
@@ -79,6 +95,18 @@ export async function POST(request: Request) {
   // else rather than erroring, since this is just belt-and-suspenders
   // against a tampered client request, not a real user-facing validation.
   const serviceInterest = (body.serviceInterest ?? []).filter((s) => VALID_SERVICES.has(s));
+
+  // SS-633. Reject before the rate limit or the insert -- no reason to
+  // spend either on a submission this signature already identifies.
+  // Returns the same generic validation error as every other rejection
+  // below, not a distinct "you look like a bot" message: nothing here
+  // needs to teach a script which signature got it caught.
+  if (BOT_SIGNAL_ALL_FOUR.every((s) => serviceInterest.includes(s))) {
+    return NextResponse.json(
+      { error: 'A real name, phone number, and email address are required.' },
+      { status: 400 }
+    );
+  }
 
   // Step 6 (4 Aug): when EARLY ACCESS is the only thing selected, phone
   // goes optional. Asking a stranger for a phone number in exchange for a
