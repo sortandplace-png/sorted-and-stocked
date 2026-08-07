@@ -134,7 +134,7 @@ export default async function PropertyLayout({
 
   const nextObservance = await getNextObservance();
 
-  const defaultRetailer = (membership.properties as unknown as { default_retailer?: string | null } | null)
+  const defaultRetailer = (membership.properties as unknown as { default_retailer?: string[] | null } | null)
     ?.default_retailer;
 
   return (

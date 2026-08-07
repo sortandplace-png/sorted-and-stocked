@@ -60,10 +60,12 @@ export default function OrderLink({
   variant?: 'default' | 'conceptB';
   className?: string;
 }) {
-  // SS-448 per-property ruling (migration 166): which retailer LEADS is a
-  // property fact -- Henderson walmart, Lax amazon+walmart, default amazon.
+  // SS-448 per-property ruling (migration 166), SS-463 array normalisation
+  // (migration 234): which retailer LEADS is a property fact -- Henderson
+  // ['walmart'], Lax ['amazon','walmart'], everyone else ['amazon'].
+  // Amazon leads unless the array is walmart-only.
   const retailerDefault = useRetailerDefault();
-  const lead = retailerDefault === 'walmart' ? 'walmart' : 'amazon';
+  const lead = retailerDefault.includes('amazon') ? 'amazon' : retailerDefault.includes('walmart') ? 'walmart' : 'amazon';
 
   // Everything the item already has, as pill candidates -- sources first,
   // then the separately-maintained plain reorder_link column when there are
@@ -86,27 +88,21 @@ export default function OrderLink({
       : `https://www.amazon.com/s?k=${encodeURIComponent(itemName)}`;
   const leadUrl = ownLead?.url ?? searchUrl;
   const leadName = lead === 'walmart' ? 'Walmart' : 'Amazon';
+  // SS-471 fix. This used to also push a FABRICATED secondary pill (a bare
+  // search URL, not a real product link) whenever the property's
+  // default_retailer named a second retailer the item had no actual
+  // source for -- "amazon+walmart" on Lax meant every single item got a
+  // Walmart pill, including the 772 of 946 Lax items with zero Walmart
+  // sourcing. Racquel's 7 Aug screenshot proved it: five Basement Bath
+  // items, all Amazon-only, all showing a Walmart pill that led to a
+  // generic search, not a product. A generic search URL is not a retailer
+  // option and must not render as if it were one (that's the whole of
+  // SS-471's title). Pills now come ONLY from `existing` -- an item's own
+  // real stored sources -- never synthesized from the property's retailer
+  // list. default_retailer's only remaining job is choosing `lead` above,
+  // for the one case where the item has no matching link at all and the
+  // cart icon has to fall back to a search.
   const secondary = existing.filter((s) => s !== ownLead);
-
-  // amazon+walmart (Lax): Amazon leads, and a Walmart search rides as a
-  // standing secondary unless the item already carries a Walmart link.
-  // walmart lead (Henderson): the SS-448 Amazon default demotes to a pill.
-  if (retailerDefault === 'amazon+walmart' && !existing.some((s) => isWalmartUrl(s.url))) {
-    secondary.push({
-      id: '',
-      retailer_name: 'Walmart',
-      url: `https://www.walmart.com/search?q=${encodeURIComponent(itemName)}`,
-      is_preferred: false,
-    });
-  }
-  if (lead === 'walmart' && !existing.some((s) => isAmazonUrl(s.url))) {
-    secondary.push({
-      id: '',
-      retailer_name: 'Amazon',
-      url: `https://www.amazon.com/s?k=${encodeURIComponent(itemName)}`,
-      is_preferred: false,
-    });
-  }
 
   const amazonUrl = leadUrl;
   const label = ownLead ? `Order ${itemName} — ${leadName}` : `Search for ${itemName} on ${leadName}`;
