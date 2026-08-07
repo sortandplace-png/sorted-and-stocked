@@ -134,10 +134,29 @@ async function getDutyAreas(
     .eq('property_id', propertyId)
     .eq('active', true)
     .in('id', assignedIds)
-    // day_of_week and time_of_day are null on almost every row, so a strict
-    // equality filter would hide nearly everything. Null means "any day/any
-    // time", which is the common case.
-    .or(`day_of_week.is.null,day_of_week.eq.${isoWeekday}`)
+    // SS-772. READS days_of_week, THE ARRAY -- not the day_of_week scalar.
+    //
+    // This is the contract half of migration 191's expand/contract, and it
+    // was the whole reason My Day looked unaffected by scheduling work:
+    // every day Racquel set went into days_of_week (122 rows live), while
+    // this query filtered day_of_week (4 rows). The page was reading a
+    // column nobody writes.
+    //
+    // `cs` is PostgREST array containment, so a task carrying [1,4] matches
+    // both Monday and Thursday. The scalar could not express that at all --
+    // it is why T-00997/T-00998 exist as two rows for one duty.
+    //
+    // NULL still means "any day", exactly as the scalar did and exactly as
+    // 191's column comment states, so this is a like-for-like swap of the
+    // column and not a change to what an unscheduled task does. That also
+    // means the 245 longer-than-weekly tasks still surface EVERY day once
+    // assigned: a weekday cannot express "every 90 days", and giving them a
+    // real due model is its own build (SS-773), deliberately not bundled.
+    //
+    // day_of_week is left in place and still populated -- deprecated, never
+    // dropped (R21). StaffDutyOverview and DutyRosterClient's save path are
+    // the remaining scalar readers.
+    .or(`days_of_week.is.null,days_of_week.cs.{${isoWeekday}}`)
     .or(`time_of_day.is.null,time_of_day.eq.${timeBlock}`)
     .order('sort_order')
   if (tasksErr) console.error('my-day: master_tasks fetch failed', tasksErr)

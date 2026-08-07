@@ -35,7 +35,37 @@ type Frequency = {
   label_es: string;
   recurrence_kind: string;
   sort_order: number;
+  /** Days between occurrences. NULL on the Hebrew-calendar and as_needed
+   *  rows, which have no fixed interval. Load-bearing for BULK_DAY_MAX_
+   *  INTERVAL below -- see there. */
+  interval_days: number | null;
 };
+
+// --- WHICH TASKS CAN CARRY A WEEKDAY -------------------------------------
+// A weekday only means something for work that recurs at least weekly.
+// "Descale the kettle, quarterly" on a Tuesday is not a schedule, it is a
+// coin flip about which Tuesday.
+//
+// DERIVED FROM interval_days, NEVER FROM A CODE LIST. Rule 1 at the top of
+// this file exists because an earlier spec hardcoded ten frequency labels
+// and hid 47 of 141 tasks. A hardcoded exclusion list (monthly, quarterly,
+// seasonal, ...) has the same failure mode in reverse: the day 19th
+// frequency row is added, nobody updates the array, and it silently
+// becomes day-editable. interval_days <= 7 is the actual rule.
+//
+// NULL interval_days is INELIGIBLE, and that is the correct reading, not a
+// null-safety accident: as_needed, pre_pesach, elul, kislev, adar and
+// post_sukkos all have no interval, and none of them wants a weekday.
+//
+// Verified live 7 Aug against 1,167 active tasks: this admits exactly
+// daily (153) + weekly (526) + erev_shabbos (5) = 684, excluding 483.
+// (Re-verified after Racquel's 7 Aug reclassification moved a batch of
+// tasks off Weekly onto Every-two-weeks/As-needed/Daily -- the 6 Aug
+// figures here, daily 111 + weekly 806 = 922 excluding 245, are stale.
+// This rule's LOGIC did not change, only the live counts it produces,
+// which will keep moving as houses change; treat the numbers here as a
+// snapshot, not a target to preserve.)
+const BULK_DAY_MAX_INTERVAL = 7;
 // SS-273 floor filter. floor has no _es sibling in the schema (confirmed
 // live -- only one column) and only three real values exist, so a small
 // static display map covers it rather than a migration, same shape as the
@@ -64,6 +94,25 @@ const DAY_PICKER_OPTIONS: { iso: number; key: string }[] = [
   { iso: 4, key: 'dayThu' },
   { iso: 5, key: 'dayFri' },
 ];
+
+// DISPLAY covers all seven; the PICKER above covers six. That asymmetry is
+// deliberate and necessary, not an oversight repeated: Saturday cannot be
+// OFFERED (see the picker's comment), but it is already STORED -- the 111
+// daily tasks were set to all seven days, so 6 is live data right now.
+// Rendering a stored Saturday as a blank would make a real schedule look
+// like an empty one.
+// SHORT forms, not the full dayMon/daySun labels the picker uses. A task can
+// carry all seven, and seven chips reading "Wednesday" wrap a tile into
+// uselessness. The picker keeps the full names -- six buttons have room.
+const DAY_LABEL_KEY: Record<number, string> = {
+  1: 'dayShortMon',
+  2: 'dayShortTue',
+  3: 'dayShortWed',
+  4: 'dayShortThu',
+  5: 'dayShortFri',
+  6: 'dayShortSat',
+  7: 'dayShortSun',
+};
 // SS-131 said assignment is to a PERSON; SS-429 (Racquel's ruling, option B)
 // widened that: an assignment targets a person (member_id) OR a staff slot
 // (slot_id), never both -- the DB check task_assignments_one_target enforces
@@ -565,7 +614,7 @@ export default function DutyRosterClient({
         .select('id, task_number, property_id, room_id, frequency_id, task_en, task_es, job_type, assigned_role, sop_id, source_area_en, source_area_es, photo_url, active, sort_order, day_of_week, days_of_week, work_section_id, time_of_day, estimated_minutes')
         .in('property_id', propertyIds)
         .order('sort_order'),
-      supabase.from('frequencies').select('id, code, label_en, label_es, recurrence_kind, sort_order').order('sort_order'),
+      supabase.from('frequencies').select('id, code, label_en, label_es, recurrence_kind, sort_order, interval_days').order('sort_order'),
       supabase.from('rooms').select('id, name_en, name_es, floor, property_id').in('property_id', propertyIds).order('sort_order'),
       supabase
         .from('property_members')
@@ -707,6 +756,36 @@ export default function DutyRosterClient({
     return es ? r.name_es : r.name_en;
   };
   const freqLabel = (f: Frequency | undefined) => (f ? (es ? f.label_es : f.label_en) : '—');
+
+  // Colour-codes the frequency badge by CADENCE, derived from
+  // interval_days and recurrence_kind -- never from a list of codes, for
+  // the same reason rule 1 at the top of this file exists. A new frequency
+  // row lands in the right band on its interval alone.
+  //
+  // The bands are the ones that matter to the person reading a wall of
+  // tiles: what happens every day, what happens weekly (the band this
+  // editor exists for -- 526 tasks as of 7 Aug, a number that moves as
+  // Racquel reclassifies), what is on the Hebrew calendar, and what is rare
+  // enough that a weekday is meaningless for it -- that last band is
+  // exactly the set the day editor refuses, so the colour and the
+  // disabled checkbox say the same thing.
+  // PALETTE CONSTRAINTS, both real and both easy to trip:
+  //   - sage/rust/dairy are the FUNCTIONAL kashrut triple and mean meat,
+  //     dairy and pareve. A green "weekly" badge would collide with that
+  //     vocabulary on a screen that also renders kitchen tasks.
+  //   - R9: brass is never a FILL outside kosher badges. It is used here as
+  //     a border only, which is what the token's own comment allows.
+  // So the bands are separated by border and ground within the aesthetic
+  // palette (denim / denimBlue / mist / dusk), not by hue-coding.
+  const freqTone = (f: Frequency | undefined) => {
+    if (!f) return 'bg-card border-cardBorder text-dusk';
+    if (f.recurrence_kind === 'hebrew') return 'bg-card border-brass text-denim';
+    const iv = f.interval_days === null || f.interval_days === undefined ? null : Number(f.interval_days);
+    if (iv === null || !Number.isFinite(iv)) return 'bg-card border-cardBorder text-dusk';
+    if (iv <= 1) return 'bg-denim/10 border-denim/35 text-denim';
+    if (iv <= BULK_DAY_MAX_INTERVAL) return 'bg-mist border-denimBlue/55 text-denim';
+    return 'bg-card border-cardBorder text-dusk';
+  };
 
   // Character-identical task text that lost its room or person on import. NOT
   // errors -- each belonged to a different scope. They are shown, never merged,
@@ -1315,6 +1394,265 @@ export default function DutyRosterClient({
     ]);
   }
 
+  // --- BULK EDITOR: ONE SELECTION, DAYS AND STAFF -------------------------
+  // SS-772. 806 weekly tasks carried no weekday and 1,089 carried no
+  // assignment when this was built (6 Aug). Racquel's 7 Aug reclassification
+  // moved several hundred tasks off Weekly onto Every-two-weeks/As-needed/
+  // Daily, so the no-weekday figure is now 264 (still-live, still moving --
+  // this editor is why it can keep moving); the no-assignment figure, 1,089,
+  // is unchanged since neither reclassification pass touched assignment.
+  // Both were the same interaction problem either way -- a per-tile control
+  // is fine for correcting one row and useless for populating a house -- so
+  // they share one selection rather than being two features that each
+  // require their own pass over the same tiles.
+  //
+  // THREE REQUESTS MAXIMUM, whatever the selection size: one UPDATE for the
+  // days, then the close-then-open pair for the assignment, exactly the
+  // shape assignSection already proved. Selecting hundreds of tasks costs
+  // the same round trips as selecting two.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDays, setBulkDays] = useState<Set<number>>(new Set());
+  // Days are TRI-STATE and that is not over-engineering. With a plain "set
+  // of days" an empty set is ambiguous between "leave them alone" and
+  // "clear them", and those differ across hundreds of rows. 'skip' is the
+  // default so that an Apply aimed only at staff cannot silently wipe a
+  // schedule.
+  const [daysMode, setDaysMode] = useState<'skip' | 'set' | 'clear'>('skip');
+  // '' means LEAVE THE ASSIGNEE ALONE. Unassigning is the explicit sentinel
+  // below. This is deliberately NOT assignSection's convention, where ''
+  // means unassign -- there '' is a one-shot action on a room, here the
+  // control persists across an Apply that may be about days only.
+  const CLEAR_ASSIGNEE = '__clear__';
+  const [bulkTarget, setBulkTarget] = useState<string>('');
+  const [applyBusy, setApplyBusy] = useState(false);
+  const [applyNote, setApplyNote] = useState<string | null>(null);
+  const [view, setView] = useState<'tiles' | 'table'>('tiles');
+  // Only one overflow menu is ever open, so this is an id and not a set.
+  const [menuTaskId, setMenuTaskId] = useState<string | null>(null);
+
+  // interval_days arrives from PostgREST as a string on a numeric column,
+  // so "30" < 7 would be false but "30" <= 7 is a string compare waiting to
+  // happen. Coerced once, here.
+  const isDayEligible = useCallback(
+    (x: Task) => {
+      const f = x.frequency_id ? freqById.get(x.frequency_id) : undefined;
+      if (!f || f.interval_days === null || f.interval_days === undefined) return false;
+      const iv = Number(f.interval_days);
+      return Number.isFinite(iv) && iv <= BULK_DAY_MAX_INTERVAL;
+    },
+    [freqById]
+  );
+
+  const toggleSelected = useCallback((id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // DERIVED FROM `filtered`, NOT FROM `selected` ALONE. A task that is
+  // selected and then filtered out of view must not be written to: the
+  // count on the Apply button is the promise, and a hidden row changing
+  // would break it. Intersecting here makes the count and the write the
+  // same set by construction rather than by remembering to prune.
+  const selectedTasks = useMemo(() => filtered.filter((x) => selected.has(x.id)), [filtered, selected]);
+  const selectedDayEligible = useMemo(() => selectedTasks.filter(isDayEligible), [selectedTasks, isDayEligible]);
+  const dayExcludedCount = selectedTasks.length - selectedDayEligible.length;
+
+  // A slot or member belongs to exactly one property, so a cross-house
+  // selection has no single valid assignee. Days have no such constraint.
+  const selectionProperties = useMemo(
+    () => new Set(selectedTasks.map((x) => x.property_id)),
+    [selectedTasks]
+  );
+  const canAssignSelection = selectionProperties.size === 1;
+
+  function toggleBulkDay(iso: number) {
+    setDaysMode('set');
+    setBulkDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(iso)) next.delete(iso);
+      else next.add(iso);
+      return next;
+    });
+  }
+
+  function clearSelection() {
+    setSelected(new Set());
+    setBulkDays(new Set());
+    setDaysMode('skip');
+    setBulkTarget('');
+    setApplyNote(null);
+  }
+
+  async function applyBulk() {
+    if (selectedTasks.length === 0 || applyBusy) return;
+    // 'set' with nothing ticked would write an empty array, which
+    // master_tasks_days_of_week_check rejects outright (migration 191:
+    // NULL or cardinality > 0). Clearing is the explicit Clear control.
+    const writingDays = daysMode === 'clear' || (daysMode === 'set' && bulkDays.size > 0);
+    const writingStaff = bulkTarget !== '';
+    if (!writingDays && !writingStaff) return;
+
+    setApplyBusy(true);
+    setApplyNote(null);
+    const previousTasks = tasks;
+
+    if (writingDays && selectedDayEligible.length > 0) {
+      const ids = selectedDayEligible.map((x) => x.id);
+      // NULL, never '{}'. One state, one encoding -- the row itself is
+      // untouched, which is what "never delete" asks for here.
+      const value = daysMode === 'clear' ? null : [...bulkDays].sort((a, b) => a - b);
+      setTasks((prev) => prev.map((x) => (ids.includes(x.id) ? { ...x, days_of_week: value } : x)));
+      const { error } = await supabase.from('master_tasks').update({ days_of_week: value }).in('id', ids);
+      if (error) {
+        setTasks(previousTasks);
+        setApplyBusy(false);
+        setLoadError(t('saveFailed'));
+        return;
+      }
+    }
+
+    if (writingStaff && canAssignSelection) {
+      const ids = selectedTasks.map((x) => x.id);
+      const today = new Date().toISOString().slice(0, 10);
+      const { error: closeError } = await supabase
+        .from('task_assignments')
+        .update({ active: false, effective_to: today })
+        .in('task_id', ids)
+        .eq('active', true);
+      if (closeError) {
+        setApplyBusy(false);
+        setLoadError(t('saveFailed'));
+        load();
+        return;
+      }
+
+      if (bulkTarget === CLEAR_ASSIGNEE) {
+        setAssignments((prev) => prev.filter((a) => !ids.includes(a.task_id)));
+      } else {
+        const isSlot = bulkTarget.startsWith(SLOT_PREFIX);
+        const targetId = isSlot ? bulkTarget.slice(SLOT_PREFIX.length) : bulkTarget.slice(MEMBER_PREFIX.length);
+        const rows = ids.map((task_id) => ({
+          task_id,
+          member_id: isSlot ? null : targetId,
+          slot_id: isSlot ? targetId : null,
+        }));
+        const { data, error } = await supabase
+          .from('task_assignments')
+          .insert(rows)
+          .select('id, task_id, member_id, slot_id');
+        if (error || !data) {
+          setApplyBusy(false);
+          setLoadError(t('saveFailed'));
+          load();
+          return;
+        }
+        setAssignments((prev) => [...prev.filter((a) => !ids.includes(a.task_id)), ...(data as Assignment[])]);
+      }
+    }
+
+    setApplyBusy(false);
+    setApplyNote(
+      t('bulkApplied', {
+        days: writingDays ? selectedDayEligible.length : 0,
+        staff: writingStaff && canAssignSelection ? selectedTasks.length : 0,
+      })
+    );
+    clearSelection();
+  }
+
+  // Edit / Retire / Add Supply, collapsed behind one control. On a tile
+  // these were three competing underlined links in the same row as the SOP
+  // count and the scoping warning; at four-across they wrapped. Retire in
+  // particular is destructive-shaped and sat one pixel from Edit.
+  //
+  // Retire keeps its confirm INSIDE the menu item rather than becoming a
+  // quiet menu row: burying it made it easier to reach, not safer, and the
+  // confirm is the only thing standing between a click and a tile leaving
+  // the view someone is looking at.
+  function TaskOverflowMenu({
+    task: x,
+    open,
+    onToggle,
+  }: {
+    task: Task;
+    open: boolean;
+    onToggle: () => void;
+  }) {
+    const canAddSupply = x.active && inventoryEnabled && (inventoryItemCount ?? 0) > 0;
+    return (
+      <span className="relative inline-block">
+        <button
+          onClick={onToggle}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={t('moreActions')}
+          className="rounded-full px-1.5 py-0.5 text-[13px] leading-none text-dusk hover:text-denim hover:bg-mist"
+        >
+          &#8943;
+        </button>
+        {open && (
+          <span
+            role="menu"
+            className="absolute right-0 top-full z-40 mt-1 min-w-[150px] rounded-xl bg-card border border-cardBorder shadow-card py-1 flex flex-col text-left"
+          >
+            {x.active && (
+              <button
+                role="menuitem"
+                onClick={() => {
+                  onToggle();
+                  openEditTask(x);
+                }}
+                className="px-3 py-1.5 text-[11px] text-denim hover:bg-mist text-left"
+              >
+                {t('editTask')}
+              </button>
+            )}
+            {canAddSupply && (
+              <button
+                role="menuitem"
+                onClick={() => {
+                  onToggle();
+                  setAddSupplyTaskId(x.id);
+                }}
+                className="px-3 py-1.5 text-[11px] text-denim hover:bg-mist text-left"
+              >
+                {tSupplies('addSupply')}
+              </button>
+            )}
+            {!x.active && (
+              <button
+                role="menuitem"
+                onClick={() => {
+                  onToggle();
+                  reactivateTask(x.id);
+                }}
+                className="px-3 py-1.5 text-[11px] text-denim hover:bg-mist text-left"
+              >
+                {t('reactivate')}
+              </button>
+            )}
+            {x.active && (
+              <button
+                role="menuitem"
+                onClick={() => {
+                  onToggle();
+                  if (confirm(t('confirmRetire', { name: es ? x.task_es : x.task_en }))) retireTask(x.id);
+                }}
+                className="px-3 py-1.5 text-[11px] text-dusk hover:bg-mist hover:text-rust text-left"
+              >
+                {t('retireTask')}
+              </button>
+            )}
+          </span>
+        )}
+      </span>
+    );
+  }
+
   // (The flat cross-property assignee list was replaced by
   // assignTargetsForProperty above -- SS-436 scopes every tile's options to
   // the task's own house. R17 and the SS-429 B slot rules carry over.)
@@ -1607,14 +1945,172 @@ export default function DutyRosterClient({
 
       <div className="relative bg-card border border-cardBorder rounded-xl3 shadow-card overflow-hidden">
         <PinDot />
-        <div className="bg-denim py-[11px] px-5">
+        <div className="bg-denim py-[11px] px-5 flex items-center justify-between gap-3">
           <span className="text-[10px] font-semibold tracking-[0.17em] uppercase text-white">
             {t('stripSummary', {
               count: filtered.length,
               scope: freq === 'all' ? t('allFrequencies') : freqLabel(frequencies.find((f) => f.id === freq)),
             })}
           </span>
+          {/* Tiles stay the default. The table is for the bulk pass: hundreds
+              of weekly rows read as a wall of tiles, and the job here is
+              scanning a room's worth of names, not looking at photos. */}
+          <span className="shrink-0 flex items-center gap-1 rounded-full bg-white/10 border border-white/25 p-0.5">
+            {(['tiles', 'table'] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                aria-pressed={view === v}
+                className={`rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] uppercase transition-colors ${
+                  view === v ? 'bg-white text-denim' : 'text-white/80 hover:text-white'
+                }`}
+              >
+                {t(v === 'tiles' ? 'viewTiles' : 'viewTable')}
+              </button>
+            ))}
+          </span>
         </div>
+
+        {/* --- THE BULK BAR ------------------------------------------------
+            Sticky, because the selection is built by scrolling and a control
+            that scrolls away with it is a control you cannot reach when you
+            have finished choosing.
+
+            SHOWS THE COUNT BEFORE IT WRITES, and shows it split: the day
+            write and the staff write do not cover the same rows whenever a
+            selection includes anything longer than weekly. One number would
+            have to be wrong about one of them. */}
+        {selectedTasks.length > 0 && (
+          <div className="sticky top-0 z-30 bg-mist border-y border-denimBlue/40 px-5 py-3 space-y-2.5">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-denim">
+                {t('bulkSelected', { count: selectedTasks.length })}
+              </span>
+              <button
+                onClick={clearSelection}
+                className="text-[10px] font-semibold uppercase tracking-[0.15em] text-dusk underline-offset-2 hover:underline"
+              >
+                {t('bulkClearSelection')}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-dusk mr-1">
+                {t('bulkDaysLabel')}
+              </span>
+              {/* DAY_PICKER_OPTIONS, not a fresh seven-day list: Saturday is
+                  deliberately absent from it (see the constant). Flagged to
+                  Racquel rather than silently reintroduced here. */}
+              {DAY_PICKER_OPTIONS.map(({ iso, key }) => {
+                const on = daysMode === 'set' && bulkDays.has(iso);
+                return (
+                  <button
+                    key={iso}
+                    onClick={() => toggleBulkDay(iso)}
+                    aria-pressed={on}
+                    disabled={selectedDayEligible.length === 0}
+                    className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] transition-colors disabled:opacity-40 ${
+                      on ? 'bg-denim border-denim text-white' : 'bg-card border-cardBorder text-denim hover:border-denimBlue'
+                    }`}
+                  >
+                    {t(key)}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => {
+                  setDaysMode('clear');
+                  setBulkDays(new Set());
+                }}
+                aria-pressed={daysMode === 'clear'}
+                disabled={selectedDayEligible.length === 0}
+                className={`ml-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] disabled:opacity-40 ${
+                  daysMode === 'clear' ? 'bg-denim border-denim text-white' : 'bg-card border-cardBorder text-dusk hover:border-denimBlue'
+                }`}
+              >
+                {t('bulkClearDays')}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-dusk">
+                {t('bulkStaffLabel')}
+              </span>
+              {(() => {
+                const targets = canAssignSelection
+                  ? assignTargetsForProperty(selectedTasks[0].property_id)
+                  : { slots: [], members: [] };
+                return (
+                  <select
+                    value={bulkTarget}
+                    disabled={!canAssignSelection}
+                    onChange={(e) => setBulkTarget(e.target.value)}
+                    aria-label={t('bulkStaffLabel')}
+                    className="rounded-full bg-card border border-cardBorder px-3 py-1 text-[11px] text-denim disabled:opacity-40"
+                  >
+                    <option value="">{t('bulkStaffNoChange')}</option>
+                    <option value={CLEAR_ASSIGNEE}>{t('bulkStaffUnassign')}</option>
+                    {targets.slots.length > 0 && (
+                      <optgroup label={t('positionsGroup')}>
+                        {targets.slots.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {targets.members.length > 0 && (
+                      <optgroup label={t('peopleGroup')}>
+                        {targets.members.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
+                );
+              })()}
+              {!canAssignSelection && (
+                <span className="text-[10px] text-dusk">{t('bulkCrossHouse')}</span>
+              )}
+            </div>
+
+            {/* The promise on the button, stated in rows. dayExcludedCount is
+                shown whenever it is non-zero rather than only on hover: a
+                selection of 40 that writes days to 31 is not a detail. */}
+            <div className="flex items-center gap-3 flex-wrap pt-0.5">
+              <button
+                onClick={applyBulk}
+                disabled={
+                  applyBusy ||
+                  (!(daysMode === 'clear' || (daysMode === 'set' && bulkDays.size > 0)) && bulkTarget === '')
+                }
+                className="bg-denim text-white text-[12px] font-semibold rounded-full px-4 py-2 shadow-card disabled:opacity-40"
+              >
+                {applyBusy ? t('bulkApplying') : t('bulkApply')}
+              </button>
+              <span className="text-[11px] text-dusk">
+                {t('bulkWillChange', {
+                  days:
+                    daysMode === 'clear' || (daysMode === 'set' && bulkDays.size > 0)
+                      ? selectedDayEligible.length
+                      : 0,
+                  staff: bulkTarget !== '' && canAssignSelection ? selectedTasks.length : 0,
+                })}
+              </span>
+              {dayExcludedCount > 0 && (
+                <span className="text-[11px] text-dusk border border-cardBorder rounded-full px-2.5 py-1">
+                  {t('bulkDayExcluded', { count: dayExcludedCount })}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {applyNote && (
+          <p className="px-5 pt-3 text-[11px] text-denim">{applyNote}</p>
+        )}
 
         <div className="p-5">
           {loading ? (
@@ -1663,7 +2159,33 @@ export default function DutyRosterClient({
                         and the select is its sibling. Tapping the strip
                         still collapses the section, which is the Shopping
                         List pattern D-21 asks for. */}
-                    <div className="relative w-full flex items-stretch gap-2 bg-denim rounded-xl2 pl-5 pr-8 mb-[14px]">
+                    <div className="sticky top-0 z-20 relative w-full flex items-stretch gap-2 bg-denim rounded-xl2 pl-4 pr-8 mb-[14px]">
+                      {/* Select-all for the room. The whole point of the
+                          room grouping is that a room is the unit someone
+                          actually decides about ("the Kitchen's weeklies are
+                          Tuesday"), so selecting one is one tap, not N. */}
+                      {(() => {
+                        const ids = section.items.map((i) => i.id);
+                        const allOn = ids.every((id) => selected.has(id));
+                        return (
+                          <label className="self-center shrink-0 flex items-center cursor-pointer pr-1">
+                            <input
+                              type="checkbox"
+                              checked={allOn}
+                              onChange={() =>
+                                setSelected((prev) => {
+                                  const next = new Set(prev);
+                                  if (allOn) ids.forEach((id) => next.delete(id));
+                                  else ids.forEach((id) => next.add(id));
+                                  return next;
+                                })
+                              }
+                              aria-label={t('selectRoom', { room: section.roomLabel })}
+                              className="h-4 w-4 accent-white cursor-pointer"
+                            />
+                          </label>
+                        );
+                      })()}
                       <button
                         onClick={() => toggleSection(section.label)}
                         aria-expanded={!sectionCollapsed}
@@ -1729,7 +2251,111 @@ export default function DutyRosterClient({
                       <PinDot />
                     </div>
 
-                    {!sectionCollapsed && (
+                    {/* COMPACT TABLE. Same data, same actions, one row per
+                        task -- for the pass where you are reading forty task
+                        names in a room and deciding which are Tuesday.
+                        Scrolls inside its own container so a long task name
+                        cannot make the whole page scroll sideways. */}
+                    {!sectionCollapsed && view === 'table' && (
+                      <div className="overflow-x-auto -mx-1 px-1">
+                        <table className="w-full min-w-[560px] border-collapse">
+                          <thead>
+                            <tr className="text-left">
+                              <th className="w-8 pb-2" />
+                              <th className="pb-2 text-[9px] font-semibold uppercase tracking-[0.15em] text-dusk">
+                                {t('colTask')}
+                              </th>
+                              <th className="pb-2 text-[9px] font-semibold uppercase tracking-[0.15em] text-dusk">
+                                {t('colFrequency')}
+                              </th>
+                              <th className="pb-2 text-[9px] font-semibold uppercase tracking-[0.15em] text-dusk">
+                                {t('colDays')}
+                              </th>
+                              <th className="pb-2 text-[9px] font-semibold uppercase tracking-[0.15em] text-dusk">
+                                {t('colAssignee')}
+                              </th>
+                              <th className="w-8 pb-2" />
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {section.items.map((x) => {
+                              const f = x.frequency_id ? freqById.get(x.frequency_id) : undefined;
+                              const on = selected.has(x.id);
+                              const eligible = isDayEligible(x);
+                              const days = x.days_of_week ?? [];
+                              return (
+                                <tr
+                                  key={x.id}
+                                  className={`border-t border-cardBorder ${on ? 'bg-mist' : ''}`}
+                                >
+                                  <td className="py-2 align-middle">
+                                    <input
+                                      type="checkbox"
+                                      checked={on}
+                                      onChange={() => toggleSelected(x.id)}
+                                      aria-label={es ? x.task_es : x.task_en}
+                                      className="h-4 w-4 accent-denim cursor-pointer"
+                                    />
+                                  </td>
+                                  <td className="py-2 pr-3 align-middle">
+                                    <span className="block text-[13px] text-denim leading-snug">
+                                      {es ? x.task_es : x.task_en}
+                                    </span>
+                                    {!x.active && (
+                                      <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-dusk">
+                                        {t('retiredBadge')}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-2 pr-3 align-middle">
+                                    <span
+                                      className={`inline-block whitespace-nowrap text-[8px] uppercase tracking-[0.15em] border px-2 py-0.5 rounded-full ${freqTone(f)}`}
+                                    >
+                                      {freqLabel(f)}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 pr-3 align-middle">
+                                    {/* An ineligible row says so, rather than
+                                        showing an empty cell that reads as
+                                        "nobody has got to this one yet". */}
+                                    {!eligible ? (
+                                      <span className="text-[10px] text-dusk">{t('daysNotApplicable')}</span>
+                                    ) : days.length === 0 ? (
+                                      <span className="text-[10px] text-dusk">{t('daysEveryDay')}</span>
+                                    ) : (
+                                      <span className="flex flex-wrap gap-1">
+                                        {days.map((d) => (
+                                          <span
+                                            key={d}
+                                            className="text-[9px] font-semibold uppercase tracking-[0.1em] bg-mist border border-denimBlue/40 text-denim rounded-full px-1.5 py-0.5"
+                                          >
+                                            {DAY_LABEL_KEY[d] ? t(DAY_LABEL_KEY[d]) : d}
+                                          </span>
+                                        ))}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-2 pr-3 align-middle">
+                                    <span className="text-[11px] text-denim">
+                                      {assigneeDisplay(assignmentByTask.get(x.id)) || t('unassigned')}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 align-middle">
+                                    <TaskOverflowMenu
+                                      task={x}
+                                      open={menuTaskId === x.id}
+                                      onToggle={() => setMenuTaskId(menuTaskId === x.id ? null : x.id)}
+                                    />
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {!sectionCollapsed && view === 'tiles' && (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[14px]">
                         {section.items.map((x) => {
                 const f = x.frequency_id ? freqById.get(x.frequency_id) : undefined;
@@ -1762,6 +2388,16 @@ export default function DutyRosterClient({
                             native caret here would read as decoration on an
                             uppercase micro-label. */}
                         <span className="flex items-center gap-1 min-w-0">
+                          {/* Same selection as the table's, same Set -- a
+                              tile ticked here is still ticked after the view
+                              toggle, because neither view owns the state. */}
+                          <input
+                            type="checkbox"
+                            checked={selected.has(x.id)}
+                            onChange={() => toggleSelected(x.id)}
+                            aria-label={es ? x.task_es : x.task_en}
+                            className="shrink-0 h-4 w-4 accent-denim cursor-pointer mr-0.5"
+                          />
                           <select
                             value={x.room_id ?? ''}
                             onChange={(e) => setTaskRoom(x.id, e.target.value || null)}
@@ -1779,8 +2415,17 @@ export default function DutyRosterClient({
                             • {x.job_type ?? '—'}
                           </span>
                         </span>
-                        <span className="shrink-0 text-[8px] uppercase tracking-[0.15em] bg-card border border-cardBorder text-dusk px-2 py-0.5 rounded-full">
-                          {freqLabel(f)}
+                        <span className="shrink-0 flex items-center gap-1">
+                          <span
+                            className={`text-[8px] uppercase tracking-[0.15em] border px-2 py-0.5 rounded-full ${freqTone(f)}`}
+                          >
+                            {freqLabel(f)}
+                          </span>
+                          <TaskOverflowMenu
+                            task={x}
+                            open={menuTaskId === x.id}
+                            onToggle={() => setMenuTaskId(menuTaskId === x.id ? null : x.id)}
+                          />
                         </span>
                       </div>
 
@@ -1823,13 +2468,9 @@ export default function DutyRosterClient({
                             </span>
                             {/* The way back. R21's "deprecate, don't delete"
                                 only holds up if un-deprecating is possible
-                                from the same screen that hid it. */}
-                            <button
-                              onClick={() => reactivateTask(x.id)}
-                              className="text-[9px] font-semibold uppercase tracking-[0.15em] text-denim underline-offset-2 hover:underline"
-                            >
-                              {t('reactivate')}
-                            </button>
+                                from the same screen that hid it -- it now
+                                lives in this tile's overflow menu, one tap
+                                away, rather than as a bare link here. */}
                           </>
                         )}
                         {/* Symmetric with the retired-badge/reactivate pair
@@ -1840,24 +2481,32 @@ export default function DutyRosterClient({
                             in one tap either way), retiring is the one that
                             removes a tile from the view someone is looking
                             at right now. */}
-                        {x.active && (
-                          <>
-                            <button
-                              onClick={() => openEditTask(x)}
-                              className="text-[9px] font-semibold uppercase tracking-[0.15em] text-denim underline-offset-2 hover:underline"
-                            >
-                              {t('editTask')}
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (confirm(t('confirmRetire', { name: es ? x.task_es : x.task_en }))) retireTask(x.id);
-                              }}
-                              className="text-[9px] font-semibold uppercase tracking-[0.15em] text-dusk underline-offset-2 hover:underline hover:text-rust"
-                            >
-                              {t('retireTask')}
-                            </button>
-                          </>
-                        )}
+                        {/* Edit, Retire and Add Supply now live in the tile's
+                            overflow menu (top right, beside the frequency
+                            badge). They were four underlined links competing
+                            with the SOP count and the scoping warning in this
+                            one row, and at four-across they wrapped.
+
+                            WHAT REPLACES THEM HERE IS THE SCHEDULE, which is
+                            what this screen is now for: a tile has to show
+                            what day it carries or the bulk pass is blind in
+                            tile view. */}
+                        {isDayEligible(x) ? (
+                          (x.days_of_week ?? []).length > 0 ? (
+                            (x.days_of_week ?? []).map((d) => (
+                              <span
+                                key={d}
+                                className="text-[9px] font-semibold uppercase tracking-[0.1em] bg-mist border border-denimBlue/40 text-denim rounded-full px-1.5 py-0.5"
+                              >
+                                {DAY_LABEL_KEY[d] ? t(DAY_LABEL_KEY[d]) : d}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-dusk">
+                              {t('daysEveryDay')}
+                            </span>
+                          )
+                        ) : null}
                         {/* Offered only when a supply could actually be
                             created. A supply is a join to an inventory row,
                             so with the module off there is nothing to join
@@ -1865,14 +2514,6 @@ export default function DutyRosterClient({
                             items there is nothing to pick -- in both cases
                             the button led to a dead end that explained
                             nothing. The reason is stated below instead. */}
-                        {x.active && inventoryEnabled && (inventoryItemCount ?? 0) > 0 && (
-                          <button
-                            onClick={() => setAddSupplyTaskId(x.id)}
-                            className="text-[9px] font-semibold uppercase tracking-[0.15em] text-denim underline-offset-2 hover:underline"
-                          >
-                            {tSupplies('addSupply')}
-                          </button>
-                        )}
                         {sops > 0 && (
                           <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-brass">
                             {t('sopCount', { count: sops })}
