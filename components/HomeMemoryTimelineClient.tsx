@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { getEasternDateStr } from '@/lib/eastern-weekday';
 import { compressImageToBlob } from '@/lib/compress-image';
 import { resilientInsert, resilientDelete } from '@/lib/resilient-write';
 import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
@@ -42,7 +43,9 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
   const [type, setType] = useState<MemoryType>('event');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [eventDate, setEventDate] = useState(() => new Date().toISOString().slice(0, 10));
+  // SS-208. Was new Date().toISOString().slice(0,10) -- the UTC date, which
+  // from roughly 8pm Eastern defaulted the form to tomorrow's date.
+  const [eventDate, setEventDate] = useState(() => getEasternDateStr(new Date()));
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -66,7 +69,7 @@ export default function HomeMemoryTimelineClient({ propertyId }: { propertyId: s
   function resetForm() {
     setTitle('');
     setBody('');
-    setEventDate(new Date().toISOString().slice(0, 10));
+    setEventDate(getEasternDateStr(new Date()));
     setPhotoFile(null);
     setPhotoPreview(null);
     if (galleryInputRef.current) galleryInputRef.current.value = '';

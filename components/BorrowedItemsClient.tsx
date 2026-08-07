@@ -8,6 +8,7 @@ import { canManage, usePropertyRole } from '@/components/PropertyRoleContext';
 import { useToast } from '@/components/Toast';
 import { SkeletonList } from '@/components/Skeleton';
 import FieldLabel from '@/components/FieldLabel';
+import { getEasternDateStr } from '@/lib/eastern-weekday';
 
 type Direction = 'borrowed_from' | 'lent_to';
 
@@ -85,7 +86,9 @@ export default function BorrowedItemsClient({ propertyId }: { propertyId: string
       item_name: itemName.trim(),
       direction,
       other_party: otherParty.trim(),
-      date_out: new Date().toISOString().slice(0, 10),
+      // SS-208. Was the UTC date -- from ~8pm Eastern this recorded the
+      // wrong day an item actually went out.
+      date_out: getEasternDateStr(new Date()),
       expected_return: expectedReturn || null,
       returned: false,
       notes: notes.trim() || null,
@@ -144,7 +147,10 @@ export default function BorrowedItemsClient({ propertyId }: { propertyId: string
   // list itself, comparing expected_return against today's date the same
   // way Inventory's expiring-soon check does (plain string comparison,
   // both "yyyy-MM-dd").
-  const todayStr = new Date().toISOString().slice(0, 10);
+  // SS-208. Was the UTC date -- from ~8pm Eastern this flagged an item
+  // overdue a day early, or missed one that just became overdue at
+  // midnight Eastern.
+  const todayStr = getEasternDateStr(new Date());
   const isOverdue = (i: Item) => !!i.expected_return && i.expected_return < todayStr;
 
   return (

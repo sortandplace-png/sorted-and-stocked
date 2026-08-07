@@ -73,6 +73,10 @@ export default function MarketingFooter({
               is the single route to reach us from the footer. */}
           {homepage ? (
             <>
+              {/* SS-208 audit: harmless. Copyright year, cosmetic only --
+                  a UTC-vs-Eastern off-by-one only matters in the few hours
+                  around New Year's, and only ever by reading one year
+                  early, never wrong in a way that misrepresents anything. */}
               <span className="whitespace-nowrap">© {new Date().getFullYear()}</span>
               <span aria-hidden="true">·</span>
               {/* Google branding verification ANCHOR -- NEVER REMOVE. The

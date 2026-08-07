@@ -10,12 +10,16 @@
 // every page load.
 
 import { NextResponse } from 'next/server';
+import { getEasternDateStr } from '@/lib/eastern-weekday';
 
 const GEONAME_ID = '5100280'; // Lakewood, NJ
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const year = searchParams.get('year') ?? String(new Date().getFullYear());
+  // SS-208. Was new Date().getFullYear() -- the server runtime's own zone
+  // (UTC on Vercel), so a caller omitting ?year on New Year's Eve Eastern
+  // could get next year's calendar instead of tonight's.
+  const year = searchParams.get('year') ?? getEasternDateStr(new Date()).slice(0, 4);
   const month = searchParams.get('month'); // 1-12, omit for "now"
 
   const url = new URL('https://www.hebcal.com/hebcal');

@@ -7,9 +7,13 @@ import { createClient } from '@/lib/supabase/client';
 import { resilientInsert } from '@/lib/resilient-write';
 import { COURSES, type Course } from '@/lib/course-constants';
 import { useToast } from '@/components/Toast';
+import { getEasternDateStr } from '@/lib/eastern-weekday';
 
+// SS-208. new Date().toISOString().slice(0,10) is the UTC date -- from
+// roughly 8pm Eastern this was already "today" as tomorrow, adding the
+// recipe to the wrong day's meal plan.
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return getEasternDateStr(new Date());
 }
 
 export default function AddToMealPlanButton({

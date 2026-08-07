@@ -353,6 +353,10 @@ export default function MealPlanView({
   // Reference windows, not property-scoped -- fetched once, same pattern as
   // fastDays above. Current + next Gregorian year comfortably covers both
   // manual adds and the largest real extend/repeat range this UI offers.
+  // SS-208 audit: harmless. Feeds a 2-Gregorian-year-wide reference
+  // window, not a same-day comparison -- a UTC-vs-Eastern off-by-one
+  // could only matter within hours of a year boundary, and even then it's
+  // still inside the fetched range.
   useEffect(() => {
     const thisYear = new Date().getFullYear();
     getNineDaysWindows([thisYear, thisYear + 1]).then(setNineDaysWindows);

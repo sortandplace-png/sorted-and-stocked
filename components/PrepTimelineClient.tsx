@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { getEasternDateStr } from '@/lib/eastern-weekday';
 import { SkeletonList } from '@/components/Skeleton';
 import { formatMinutes } from '@/lib/format-time';
 import { bedikasTolaimIngredients, BEDIKAS_TOLAIM_NOTE } from '@/lib/bedikas-tolaim';
@@ -20,8 +21,10 @@ type Entry = {
   custom_name: string | null;
 };
 
+// SS-208. Was new Date().toISOString().slice(0,10) -- the UTC date, which
+// from roughly 8pm Eastern defaulted the prep timeline to tomorrow.
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return getEasternDateStr(new Date());
 }
 
 function minutesToClock(baseMinutes: number, offsetMinutes: number): string {

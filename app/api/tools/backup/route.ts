@@ -194,6 +194,9 @@ export async function GET(request: Request) {
   const arrayBuffer = new ArrayBuffer(bytes.byteLength);
   new Uint8Array(arrayBuffer).set(bytes);
   const blob = new Blob([arrayBuffer], { type: 'application/zip' });
+  // SS-208 audit: harmless. Zip filename label only -- a UTC-vs-Eastern
+  // off-by-one here means nothing but a filename date that looks off by a
+  // day near midnight; nothing reads this string back as data.
   const filename = `sorted-and-stocked-backup-${propertyLabel ?? propertyId}-${new Date().toISOString().slice(0, 10)}.zip`;
 
   return new NextResponse(blob, {

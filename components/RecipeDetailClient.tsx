@@ -9,6 +9,7 @@ import { LOCALE_COOKIE } from '@/i18n/locale-constants';
 import { Printer, Share2, History as HistoryIcon, Heart, MoreVertical, Pencil, Copy, Trash2, Timer, Scale, RotateCcw, ListChecks } from 'lucide-react';
 import NewRecipeModal from '@/components/NewRecipeModal';
 import { createClient } from '@/lib/supabase/client';
+import { getEasternDateStr } from '@/lib/eastern-weekday';
 import { kosherIcon } from '@/lib/icon-maps';
 import { getRecipeIcon } from '@/lib/recipe-icons';
 import SubstitutionEditor from '@/components/SubstitutionEditor';
@@ -373,7 +374,10 @@ export default function RecipeDetailClient({
       // is superseded, migration 220 -- not a new date engine) is within
       // 30 days. Already narrowly filtered to 'Pesach%' by name, so this
       // one needs no Rosh Chodesh/Chanukah/Purim exclusion.
-      const todayIso = new Date().toISOString().slice(0, 10);
+      // SS-208. Was new Date().toISOString().slice(0,10) -- the UTC date,
+      // which from roughly 8pm Eastern shifted this Pesach-proximity window
+      // a day early/late.
+      const todayIso = getEasternDateStr(new Date());
       const oneYearOut = new Date(`${todayIso}T00:00:00Z`);
       oneYearOut.setUTCFullYear(oneYearOut.getUTCFullYear() + 1);
       const [{ data }, { data: propertyRow }, { data: pesachDates }] = await Promise.all([

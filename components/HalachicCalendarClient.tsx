@@ -11,6 +11,7 @@ import { useTranslations } from 'next-intl';
 import { format, parseISO } from 'date-fns';
 import { SkeletonList } from '@/components/Skeleton';
 import { createClient } from '@/lib/supabase/client';
+import { getEasternDateStr } from '@/lib/eastern-weekday';
 import { groupYomTovOccasions, type YomTovOccasion } from '@/lib/yom-tov';
 import Pin from '@/components/PinAccent';
 import { CardHeader } from '@/components/ShiftHandoverClient';
@@ -82,7 +83,10 @@ export default function HalachicCalendarClient() {
     // separate Hebcal-backed answer from /api/tools/halachic-calendar
     // above, so it is not missing here, just not duplicated.
     const supabase = createClient();
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    // SS-208. Was format(new Date(), 'yyyy-MM-dd') -- date-fns with no
+    // timeZone reads the JS runtime's own zone (UTC on Vercel), so from
+    // roughly 8pm Eastern this excluded/included occasions a day off.
+    const todayStr = getEasternDateStr(new Date());
     const oneYearOut = new Date(`${todayStr}T00:00:00Z`);
     oneYearOut.setUTCFullYear(oneYearOut.getUTCFullYear() + 1);
     supabase

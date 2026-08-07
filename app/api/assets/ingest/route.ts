@@ -260,6 +260,9 @@ export async function POST(request: Request) {
         ]),
       ].join('\n');
 
+      // SS-208 audit: harmless. Internal asset-tooling filename/log stamp,
+      // not user-facing data -- a UTC-vs-Eastern off-by-one changes only
+      // what a generated filename looks like, never what it does.
       const stamp = new Date().toISOString().slice(0, 10);
       const md5 = (s: string) => createHash('md5').update(s, 'utf8').digest('hex');
       const written: { path: string; bytes: number; md5: string }[] = [];

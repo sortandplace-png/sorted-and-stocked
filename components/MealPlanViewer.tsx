@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { format, startOfWeek, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { Calendar, Clock, ArrowLeft } from 'lucide-react';
+import { getEasternDateStr } from '@/lib/eastern-weekday';
 
 interface MealPlanEntry {
   id: string;
@@ -25,7 +26,11 @@ export default function MealPlanViewer({ initialEntries }: MealPlanViewerProps) 
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
   const [currentAnchorDate, setCurrentAnchorDate] = useState(new Date());
 
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  // SS-208. Was format(new Date(), 'yyyy-MM-dd') -- date-fns with no
+  // timeZone reads the JS runtime's own zone (UTC on Vercel), so from
+  // roughly 8pm Eastern this dropped today's entries from the active list
+  // a day early.
+  const todayStr = getEasternDateStr(new Date());
 
   // Rule: Exclude historical entries prior to today dynamically
   const activeEntries = initialEntries.filter(entry => entry.plan_date >= todayStr);

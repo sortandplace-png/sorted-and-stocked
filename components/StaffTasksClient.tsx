@@ -34,6 +34,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale } from 'next-intl';
 import { jobFamily, jobFamilyLabel, jobLabel, type JobFamily } from '@/lib/job-types';
 import { createClient } from '@/lib/supabase/client';
+import { getEasternDateStr } from '@/lib/eastern-weekday';
 import { compressImageToBlob } from '@/lib/compress-image';
 import { storageThumbnail } from '@/lib/storage-image';
 import { signSopPosters } from '@/lib/sop-posters';
@@ -139,8 +140,11 @@ const STATUS_LABEL: Record<Status, string> = {
   optional: 'As needed',
 };
 
+// SS-208. Was new Date().toISOString().slice(0,10) -- the UTC date, which
+// from roughly 8pm Eastern reads as tomorrow, showing staff the wrong
+// day's task list and marking things due/overdue a day early.
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  return getEasternDateStr(new Date());
 }
 
 // `today` is today's row whatever its state; `lastDone` is the most recent
