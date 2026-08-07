@@ -308,7 +308,18 @@ type EruvBanner = { name: string; eruvDate: string } | null
 
 async function getEruvTavshilinBanner(todayIso: string): Promise<EruvBanner> {
   const supabase = await createClient()
-  const { data: rows } = await supabase.from('yom_tov_dates').select('date, holiday_name').gte('date', todayIso)
+  // SS-479. yom_tov_dates is superseded (migration 220) -- computed via
+  // jewish_calendar_dates now. 60 days out is far more than the 7-day
+  // window this ever surfaces from. Rosh Chodesh/Chanukah/Purim excluded
+  // -- Eruv Tavshilin is a real Yom Tov concept only, and yom_tov_dates
+  // never contributed those rows for getUpcomingEruvTavshilin to consider.
+  const windowEnd = new Date(`${todayIso}T00:00:00Z`)
+  windowEnd.setUTCDate(windowEnd.getUTCDate() + 60)
+  const { data: rows } = await supabase
+    .rpc('jewish_calendar_dates', { p_from: todayIso, p_to: windowEnd.toISOString().slice(0, 10) })
+    .not('holiday_name', 'like', 'Rosh Chodesh%')
+    .not('holiday_name', 'like', 'Chanukah%')
+    .not('holiday_name', 'ilike', '%purim%')
   const alerts = getUpcomingEruvTavshilin(rows || [], todayIso).filter((a) => a.daysUntil <= 7)
   const next = alerts[0]
   return next ? { name: next.name, eruvDate: next.eruvDate } : null

@@ -33,8 +33,22 @@ export async function getNextObservance(): Promise<UpcomingObservance | null> {
   }).formatToParts(new Date());
   const eastMap = Object.fromEntries(eastern.map((p) => [p.type, p.value]));
   const todayStr = `${eastMap.year}-${eastMap.month}-${eastMap.day}`;
+  // SS-479. yom_tov_dates is superseded (migration 220) -- computed via
+  // jewish_calendar_dates now. The RPC needs both bounds, unlike the old
+  // open-ended .gte(); one year out is far more than enough to always
+  // contain the next real occasion. Rosh Chodesh/Chanukah/Purim excluded
+  // -- yom_tov_dates never had them, and "next observance" here means
+  // Yom Tov specifically, same scope as before this swap.
+  const oneYearOut = new Date(`${todayStr}T00:00:00Z`);
+  oneYearOut.setUTCFullYear(oneYearOut.getUTCFullYear() + 1);
+  const oneYearOutStr = oneYearOut.toISOString().slice(0, 10);
   const [{ data: yomTovRows }, { data: fastRows }] = await Promise.all([
-    supabase.from('yom_tov_dates').select('date, holiday_name').gte('date', todayStr).order('date'),
+    supabase
+      .rpc('jewish_calendar_dates', { p_from: todayStr, p_to: oneYearOutStr })
+      .not('holiday_name', 'like', 'Rosh Chodesh%')
+      .not('holiday_name', 'like', 'Chanukah%')
+      .not('holiday_name', 'ilike', '%purim%')
+      .order('date'),
     supabase.from('fast_days').select('date, holiday_name').gte('date', todayStr).order('date'),
   ]);
 

@@ -369,8 +369,13 @@ export default function RecipeDetailClient({
       // alone). Suggesting a seasonal Pesach dessert under a July side dish
       // is wrong regardless of what technically shares the flag. Excluded
       // from the general pool unless Pesach Mode is on for this property,
-      // or the real next Pesach (yom_tov_dates, not a new date engine) is
-      // within 30 days.
+      // or the real next Pesach (jewish_calendar_dates -- yom_tov_dates
+      // is superseded, migration 220 -- not a new date engine) is within
+      // 30 days. Already narrowly filtered to 'Pesach%' by name, so this
+      // one needs no Rosh Chodesh/Chanukah/Purim exclusion.
+      const todayIso = new Date().toISOString().slice(0, 10);
+      const oneYearOut = new Date(`${todayIso}T00:00:00Z`);
+      oneYearOut.setUTCFullYear(oneYearOut.getUTCFullYear() + 1);
       const [{ data }, { data: propertyRow }, { data: pesachDates }] = await Promise.all([
         supabase
           .from('recipes')
@@ -379,10 +384,8 @@ export default function RecipeDetailClient({
           .neq('id', recipeId),
         supabase.from('properties').select('feature_flags').eq('id', propertyId).single(),
         supabase
-          .from('yom_tov_dates')
-          .select('date')
+          .rpc('jewish_calendar_dates', { p_from: todayIso, p_to: oneYearOut.toISOString().slice(0, 10) })
           .ilike('holiday_name', 'Pesach%')
-          .gte('date', new Date().toISOString().slice(0, 10))
           .order('date')
           .limit(1),
       ]);

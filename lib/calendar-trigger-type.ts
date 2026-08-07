@@ -191,13 +191,25 @@ export async function getIsFastDayToday(todayStr: string): Promise<boolean> {
   }
 }
 
-// yom_tov_dates isn't property-scoped (shared calendar data) -- a plain
-// date match against tomorrow is enough.
+// SS-479. yom_tov_dates is superseded (migration 220) -- computed via
+// jewish_calendar_dates now, not a table read. NOT .maybeSingle(): the
+// RPC can legitimately return more than one row for the same date (e.g.
+// Chanukah overlapping Rosh Chodesh Tevet most years), and .maybeSingle()
+// throws on 2+ rows rather than returning one.
+//
+// Rosh Chodesh/Chanukah/Purim are excluded -- yom_tov_dates never
+// contained them, so "Erev Yom Tov" never fired the night before one of
+// those before this swap, and the computed source now returning them is
+// not license to silently widen what this function means.
 export async function getIsErevYomTov(tomorrowStr: string): Promise<boolean> {
   const { createClient } = await import('@/lib/supabase/server')
   const supabase = await createClient()
-  const { data } = await supabase.from('yom_tov_dates').select('date').eq('date', tomorrowStr).maybeSingle()
-  return !!data
+  const { data } = await supabase
+    .rpc('jewish_calendar_dates', { p_from: tomorrowStr, p_to: tomorrowStr })
+    .not('holiday_name', 'like', 'Rosh Chodesh%')
+    .not('holiday_name', 'like', 'Chanukah%')
+    .not('holiday_name', 'ilike', '%purim%')
+  return !!data && data.length > 0
 }
 
 // Same real Hebcal omer logic used elsewhere in this app -- fetch-and-filter

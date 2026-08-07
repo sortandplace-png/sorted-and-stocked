@@ -25,14 +25,40 @@ export default async function YomTovYearViewPage({ params }: { params: Promise<{
     .maybeSingle();
   const calendarLayers = (property?.calendar_layers as string[] | null) ?? ['jewish', 'civil'];
 
-  // Neither table is property-scoped (shared calendar data, same tables the
-  // Dashboard's Erev Yom Tov check and header countdown pill already read).
+  // SS-479. yom_tov_dates is superseded (migration 220) -- computed via
+  // jewish_calendar_dates now. That table read had no bound at all (all
+  // 42 rows, past and future); the RPC needs real bounds, so this uses a
+  // generous 1-year-back/3-year-forward window, wide enough for the
+  // client's month navigation to keep working the same way it did
+  // against the old fixed dataset.
+  //
+  // Rosh Chodesh/Chanukah/Purim excluded here too -- yom_tov_dates never
+  // contributed those rows, and classifyObservance (lib/yom-tov.ts) has
+  // no classification for them yet, so an unfiltered swap would render
+  // every Rosh Chodesh at the same full 'yomTov' visual weight as Yom
+  // Kippur. Surfacing these on the Year View is a real, separate design
+  // decision -- not a side effect of closing this cliff.
+  const yearViewStart = new Date(); yearViewStart.setUTCFullYear(yearViewStart.getUTCFullYear() - 1);
+  const yearViewEnd = new Date(); yearViewEnd.setUTCFullYear(yearViewEnd.getUTCFullYear() + 3);
   const [{ data: yomTov }, { data: fasts }] = await Promise.all([
-    supabase.from('yom_tov_dates').select('date, holiday_name, holiday_name_es').order('date'),
+    supabase
+      .rpc('jewish_calendar_dates', {
+        p_from: yearViewStart.toISOString().slice(0, 10),
+        p_to: yearViewEnd.toISOString().slice(0, 10),
+      })
+      .not('holiday_name', 'like', 'Rosh Chodesh%')
+      .not('holiday_name', 'like', 'Chanukah%')
+      .not('holiday_name', 'ilike', '%purim%')
+      .order('date'),
     supabase.from('fast_days').select('date, holiday_name, holiday_name_es').order('date'),
   ]);
 
-  const yomTovRows: Observance[] = (yomTov ?? []).map((r) => ({
+  // jewish_calendar_dates isn't in the generated Supabase types yet, so
+  // the RPC result comes back untyped -- annotated explicitly to match
+  // its real, verified return shape rather than leaving `r` as `any`.
+  const yomTovRows: Observance[] = (
+    (yomTov ?? []) as { date: string; holiday_name: string; holiday_name_es: string | null }[]
+  ).map((r) => ({
     date: r.date,
     name_en: r.holiday_name,
     name_es: r.holiday_name_es,

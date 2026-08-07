@@ -74,15 +74,22 @@ export default function HalachicCalendarClient() {
       .then(setData)
       .finally(() => setLoading(false));
 
-    // Separate from the Hebcal-backed Erev Pesach countdown above — this
-    // reuses the existing yom_tov_dates table (same source as the Dashboard
-    // card), no second date engine.
+    // SS-479. yom_tov_dates is superseded (migration 220) -- computed via
+    // jewish_calendar_dates now, same source as the Dashboard card. The
+    // RPC needs both bounds; one year out always contains the next 3
+    // occasions. Rosh Chodesh/Chanukah/Purim excluded -- this list means
+    // Yom Tov specifically, and Rosh Chodesh status already has its own,
+    // separate Hebcal-backed answer from /api/tools/halachic-calendar
+    // above, so it is not missing here, just not duplicated.
     const supabase = createClient();
     const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const oneYearOut = new Date(`${todayStr}T00:00:00Z`);
+    oneYearOut.setUTCFullYear(oneYearOut.getUTCFullYear() + 1);
     supabase
-      .from('yom_tov_dates')
-      .select('date, holiday_name')
-      .gte('date', todayStr)
+      .rpc('jewish_calendar_dates', { p_from: todayStr, p_to: oneYearOut.toISOString().slice(0, 10) })
+      .not('holiday_name', 'like', 'Rosh Chodesh%')
+      .not('holiday_name', 'like', 'Chanukah%')
+      .not('holiday_name', 'ilike', '%purim%')
       .order('date')
       .then(({ data: rows }) => {
         setUpcoming(groupYomTovOccasions(rows || [], todayStr).slice(0, 3));
